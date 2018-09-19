@@ -930,7 +930,6 @@ tamperedTargetInfo                      => tampered_target_info
 targetInfo                              => target_info
 targetInfoSize                          => target_info_size
 tcbEnd                                  => tcb_end
-tcbInfo                                 => tcb_info
 tcbInfoJson                             => tcb_info_json
 tcbInfoJsonSize                         => tcb_info_json_size
 tcbInfoSize                             => tcb_info_size
