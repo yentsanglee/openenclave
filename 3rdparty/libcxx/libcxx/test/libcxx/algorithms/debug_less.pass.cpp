@@ -162,9 +162,6 @@ void test_failing() {
 }
 
 int main() {
-printf("case1\n");
     test_passing();
-printf("case2\n");
     test_failing();
-printf("case4\n");
 }

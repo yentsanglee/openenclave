@@ -5,6 +5,7 @@ include(add_enclave_executable)
 add_executable(libcxx2_enc 
     enc.cpp
     fuzzing.cpp
+    test3.cpp
     memory_resource.cpp)
 
 target_compile_options(libcxx2_enc PRIVATE

@@ -3,21 +3,10 @@
 
 #include <openenclave/enclave.h>
 #include <openenclave/internal/tests.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include "../args.h"
-
-//#define _LIBCPP_ENABLE_CXX17_REMOVED_RANDOM_SHUFFLE
-#define _LIBCPP_DEBUG 0
-#include <algorithm>
-#include <cassert>
-#include <vector>
-#include <atomic>
-#include <type_traits>
-#include <iterator>
-#include <memory>
-#include <stdexcept>
-#include "test_workarounds.h"
-#include <__tree>
+#include "tests.h"
 
 extern "C" void _exit(int status)
 {
@@ -51,22 +40,6 @@ extern "C" int close(int fd)
     return 0;
 }
 
-namespace test1
-{
-#include "../../3rdparty/libcxx/libcxx/test/libcxx/algorithms/version.pass.cpp"
-};
-
-namespace test2
-{
-using namespace std;
-#include "../../3rdparty/libcxx/libcxx/test/libcxx/containers/associative/tree_balance_after_insert.pass.cpp"
-};
-
-namespace test3
-{
-#include "../../3rdparty/libcxx/libcxx/test/libcxx/algorithms/debug_less.pass.cpp"
-}
-
 OE_ECALL void test(void* args_)
 {
     args_t* args = (args_t*)args_;
@@ -76,9 +49,7 @@ OE_ECALL void test(void* args_)
 
     printf("running: %s\n", "test1");
 
-    test1::main();
-    test2::main();
-    test3::main();
+#include "tests.cpp"
 
     if (ret != 0)
         args->ret++;
@@ -88,6 +59,7 @@ OE_SET_ENCLAVE_SGX(
     1,    /* ProductID */
     1,    /* SecurityVersion */
     true, /* AllowDebug */
-    1024, /* HeapPageCount */
-    1024, /* StackPageCount */
+    4096, /* HeapPageCount */
+    4096, /* StackPageCount */
     2);   /* TCSCount */
+

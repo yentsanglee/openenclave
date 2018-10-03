@@ -1,0 +1,2 @@
+export PKG_CONFIG_PATH=${HOME}/openenclave/build/pkgconfig
+make
