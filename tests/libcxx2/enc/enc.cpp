@@ -8,6 +8,8 @@
 #include "../args.h"
 #include "tests.h"
 
+bool oe_disable_debug_malloc_check;
+
 extern "C" void _exit(int status)
 {
     oe_call_host("ocall_exit", (void*)(long)status);
@@ -28,7 +30,7 @@ extern "C" void exit(int status)
 
 typedef void (*Handler)(int signal);
 
-Handler signal(int signal, Handler)
+extern "C" Handler signal(int signal, Handler)
 {
     /* Ignore! */
     return NULL;
@@ -42,6 +44,8 @@ extern "C" int close(int fd)
 
 OE_ECALL void test(void* args_)
 {
+    oe_disable_debug_malloc_check = true;
+
     args_t* args = (args_t*)args_;
     int ret = 0;
 
