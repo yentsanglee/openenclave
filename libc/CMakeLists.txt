@@ -12,8 +12,10 @@ add_library(oelibc STATIC
     abort.S
     arc4random.c
     atexit.c
+    buf.c
     dladdr.c
     exp2l.S
+    ext2.c
     libunwind_stubs.c
     link.c
     locale.c
