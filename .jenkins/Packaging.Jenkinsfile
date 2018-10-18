@@ -11,13 +11,10 @@ stage('Build, Test, and Package') {
 
           }
           steps {
-withCredentials([file(credentialsId: 'oeciteam_rsa', variable: 'oeciteam-rsa')
-                 ]) {
-            sh "cp \$oeciteam-rsa ~/.ssh/id_rsa"
+            sh 'bash ./scripts/deploy-docs build ssh'
            }
         }
       }
     }
   }
-}
 }
