@@ -15,7 +15,6 @@ trap 'trap_handler ${LINENO} $?' ERR
 
 builddir=$1
 mode=$2
-file=$3
 
 case $mode in 
     ssh)
