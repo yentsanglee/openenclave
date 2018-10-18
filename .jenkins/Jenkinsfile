@@ -39,7 +39,7 @@ pipeline {
               // Note that `make package` is not expected to work
               // without extra configuration.
             }
-            sh './scripts/deploy-docs ssh build'
+            sh './scripts/deploy-docs build ssh'
           }
         }
       }
