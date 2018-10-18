@@ -35,8 +35,6 @@ pipeline {
             dir('build') {
               sh '''
                 cmake ..
-                make
-                OE_SIMULATION=1 ctest --verbose --output-on-failure || true
               '''
               // Note that `make package` is not expected to work
               // without extra configuration.
