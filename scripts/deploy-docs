@@ -38,9 +38,6 @@ case $mode in
 esac 
 
 root="$(git rev-parse --show-toplevel)"
-mkdir "$builddir"
-cd "$builddir"
-cmake ..
 cd "${root}/${builddir}" || exit 1
 
 make refman
