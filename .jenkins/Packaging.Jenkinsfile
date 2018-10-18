@@ -11,7 +11,9 @@ stage('Build, Test, and Package') {
 
           }
           steps {
-            git config core.sshCommand "ssh -i $oeciteam_rsa -F /dev/null"
+withCredentials([file(credentialsId: 'oeciteam_rsa', variable: 'oeciteam-rsa'),
+                 file(credentialsId: 'oeciteam_rsa_pub', variable: 'oeciteam-rsa-pub')]) {
+            git config core.sshCommand "ssh -i $oeciteam-rsa -F /dev/null"
             sh 'bash ./scripts/deploy-docs build ssh'
           }   
         
