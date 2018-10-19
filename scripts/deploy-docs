@@ -4,6 +4,7 @@
 # Licensed under the MIT License.
 
 ##==============================================================================
+set -x
 
 function trap_handler()
 {
