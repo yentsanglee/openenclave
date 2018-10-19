@@ -14,8 +14,8 @@ pipeline {
           }
           steps {
             sh 'bash ./scripts/test-build-config -p SGX1 -b RelWithDebInfo --build_package'
-            sh 'bash ./scripts/deploy-docs build ssh'
-          }
+withCredentials([usernamePassword(credentialsId: '40060061-6050-40f7-ac6a-53aeb767245f', passwordVariable: 'SERVICE_PRINCIPAL_PASSWORD', usernameVariable: 'SERVICE_PRINCIPAL_ID')]) {
+            sh 'bash ./scripts/deploy-docs build https $SERVICE_PRINCIPAL_ID $SERVICE_PRINCIPAL_PASSWORD'
         }
       }
     }
