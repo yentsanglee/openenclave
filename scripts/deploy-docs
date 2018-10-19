@@ -65,7 +65,9 @@ case $mode in
         git push -f git@github.com:Microsoft/openenclave.git $branch:$branch
     ;; 
     https)
-        git push -f "https://${username}:${password}@github.com/Microsoft/openenclave.git" $branch:$branch
+        echo "
+        git  push -f https://${username}:${password}@github.com/Microsoft/openenclave.git $branch:$branch"
+       git push  -f "https://${username}:${password}@github.com/Microsoft/openenclave.git" $branch:$branch
     ;;
     *)
         echo " Unexpected"
