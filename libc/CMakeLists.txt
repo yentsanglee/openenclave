@@ -16,6 +16,8 @@ add_library(oelibc STATIC
     dladdr.c
     exp2l.S
     ext2.c
+    cwd.c
+    filesys.c
     libunwind_stubs.c
     link.c
     locale.c

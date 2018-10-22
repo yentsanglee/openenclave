@@ -4786,3 +4786,121 @@ done:
 
     return err;
 }
+
+/*
+**==============================================================================
+**
+** filesys_impl_t:
+**
+**==============================================================================
+*/
+
+typedef struct _file_impl
+{
+    oe_file_t base;
+    ext2_file_t* ext2_file;
+}
+file_impl_t;
+
+static ssize_t _file_read(oe_file_t* file_, void *buf, size_t count)
+{
+    file_impl_t* file = (file_impl_t*)file_;
+    ssize_t rc = -1;
+
+    if (!file || !file->ext2_file)
+        goto done;
+
+    rc = ext2_read_file(file->ext2_file, buf, count);
+
+done:
+    return rc;
+}
+
+static int _file_close(oe_file_t* file_)
+{
+    file_impl_t* file = (file_impl_t*)file_;
+    ssize_t rc = -1;
+
+    if (!file || !file->ext2_file)
+        goto done;
+
+    if (ext2_close_file(file->ext2_file) != EXT2_ERR_NONE)
+        goto done;
+
+    memset(file, 0xDD, sizeof(file_impl_t));
+    free(file);
+    rc = 0;
+
+done:
+    return rc;
+}
+
+typedef struct _filesys_impl
+{
+    oe_filesys_t base;
+    ext2_t* ext2;
+}
+filesys_impl_t;
+
+/* ATTN: support create mode */
+static oe_file_t* _filesys_open(
+    oe_filesys_t* filesys_,
+    const char* path, 
+    int flags, 
+    mode_t mode)
+{
+    oe_file_t* ret = NULL;
+    filesys_impl_t* filesys = (filesys_impl_t*)filesys_;
+    ext2_file_t* ext2_file = NULL;
+    file_impl_t* file = NULL;
+
+    if (!filesys || !filesys->ext2)
+        goto done;
+
+    if (!(ext2_file = ext2_open_file(filesys->ext2, path, mode)))
+        goto done;
+
+    if (!(file = calloc(1, sizeof(file_impl_t))))
+        goto done;
+
+    file->base.read = _file_read;
+    file->base.close = _file_close;
+    file->ext2_file = ext2_file;
+    ext2_file = NULL;
+
+done:
+
+    if (ext2_file)
+        ext2_close_file(ext2_file);
+
+    return ret;
+}
+
+oe_filesys_t* ext2_new_filesys(ext2_block_device_t* dev)
+{
+    oe_filesys_t* ret = NULL;
+    ext2_t* ext2 = NULL;
+    filesys_impl_t* filesys = NULL;
+
+    if (ext2_new(dev, &ext2) != EXT2_ERR_NONE)
+        goto done;
+
+    if (!(filesys = calloc(1, sizeof(filesys_impl_t))))
+        goto done;
+
+    filesys->base.open = _filesys_open;
+    filesys->ext2 = ext2;
+    ret = &filesys->base;
+    ext2 = NULL;
+    filesys = NULL;
+
+done:
+
+    if (ext2)
+        ext2_delete(ext2);
+
+    if (filesys)
+        free(filesys);
+
+    return ret;
+}

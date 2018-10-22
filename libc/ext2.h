@@ -36,6 +36,7 @@
 #include <stdlib.h>
 
 #include "buf.h"
+#include "filesys.h"
 
 /*
 **==============================================================================
@@ -572,5 +573,8 @@ ext2_err_t ext2_get_first_blkno(
     const ext2_t* ext2,
     ext2_ino_t ino,
     uint32_t* blkno);
+
+/* Create an ext2 filesys object */
+oe_filesys_t* ext2_new_filesys(ext2_block_device_t* dev);
 
 #endif /* _ext2_h */
