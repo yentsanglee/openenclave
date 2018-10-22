@@ -30,9 +30,9 @@ void oe_handle_close_block_device(oe_enclave_t* enclave, uint64_t arg_in)
         fclose(file);
 }
 
-void oe_handle_get_block_device(oe_enclave_t* enclave, uint64_t arg_in)
+void oe_handle_block_device_get(oe_enclave_t* enclave, uint64_t arg_in)
 {
-    typedef oe_ocall_get_block_device_args_t args_t;
+    typedef oe_ocall_block_device_get_args_t args_t;
     args_t* args = (args_t*)arg_in;
     FILE* stream;
 
@@ -60,9 +60,9 @@ void oe_handle_get_block_device(oe_enclave_t* enclave, uint64_t arg_in)
     args->ret = 0;
 }
 
-void oe_handle_put_block_device(oe_enclave_t* enclave, uint64_t arg_in)
+void oe_handle_block_device_put(oe_enclave_t* enclave, uint64_t arg_in)
 {
-    typedef oe_ocall_get_block_device_args_t args_t;
+    typedef oe_ocall_block_device_get_args_t args_t;
     args_t* args = (args_t*)arg_in;
     FILE* stream;
 

@@ -35,9 +35,9 @@ static int _host_block_device_get(
 {
     int ret = -1;
     host_block_device_t* device = (host_block_device_t*)dev;
-    typedef oe_ocall_get_block_device_args_t args_t;
+    typedef oe_ocall_block_device_get_args_t args_t;
     args_t* args = NULL;
-    const uint16_t func = OE_OCALL_GET_BLOCK_DEVICE;
+    const uint16_t func = OE_OCALL_BLOCK_DEVICE_GET;
 
     if (!device || !data)
         goto done;
@@ -74,9 +74,9 @@ static int _host_block_device_put(
 {
     int ret = -1;
     host_block_device_t* device = (host_block_device_t*)dev;
-    typedef oe_ocall_put_block_device_args_t args_t;
+    typedef oe_ocall_block_device_put_args_t args_t;
     args_t* args = NULL;
-    const uint16_t func = OE_OCALL_GET_BLOCK_DEVICE;
+    const uint16_t func = OE_OCALL_BLOCK_DEVICE_GET;
 
     if (!device || !data)
         goto done;

@@ -479,12 +479,12 @@ static oe_result_t _handle_ocall(
             oe_handle_close_block_device(enclave, arg_in);
             break;
 
-        case OE_OCALL_GET_BLOCK_DEVICE:
-            oe_handle_get_block_device(enclave, arg_in);
+        case OE_OCALL_BLOCK_DEVICE_GET:
+            oe_handle_block_device_get(enclave, arg_in);
             break;
 
-        case OE_OCALL_PUT_BLOCK_DEVICE:
-            oe_handle_put_block_device(enclave, arg_in);
+        case OE_OCALL_BLOCK_DEVICE_PUT:
+            oe_handle_block_device_put(enclave, arg_in);
             break;
 
         default:
