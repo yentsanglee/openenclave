@@ -22,8 +22,8 @@ static entry_t _entries[MAX_ENTRIES];
 static size_t _num_entries;
 static pthread_mutex_t _lock = PTHREAD_MUTEX_INITIALIZER;
 
-/* Check that the path is an absolute path */
-static bool _is_valid_path(const char* path)
+/* Check that the path is a canonical path (see notes in function). */
+static bool _is_canonical_path(const char* path)
 {
     bool ret = false;
     char buf[PATH_MAX];
@@ -33,16 +33,20 @@ static bool _is_valid_path(const char* path)
     if (!path || strlen(path) >= PATH_MAX)
         goto done;
 
-    strcpy(buf, path);
+    strlcpy(buf, path, PATH_MAX);
 
     /* The path must begin with a slash. */
     if (buf[0] != '/')
         goto done;
 
-    /* The path may not have consecutive slashes. */
-    for (const char* p = buf + 1; *p; p++)
+    for (const char* p = buf; *p; p++)
     {
-        if (p[-1] == '/' && p[0] == '/')
+        /* The last character must not be a slash. */
+        if (p[0] == '/' && p[1] == '\0')
+            goto done;
+
+        /* The path may not have consecutive slashes. */
+        if (p[0] == '/' && p[1] == '/')
             goto done;
     }
 
@@ -62,11 +66,13 @@ done:
 int oe_filesys_mount(oe_filesys_t* filesys, const char* path)
 {
     int rc = 1;
+    bool locked = false;
+
+    if (!path || !_is_canonical_path(path) || !filesys)
+        goto done;
 
     pthread_mutex_lock(&_lock);
-
-    if (!path || !_is_valid_path(path) || !filesys)
-        goto done;
+    locked = true;
 
     if (_num_entries == MAX_ENTRIES)
         goto done;
@@ -89,7 +95,10 @@ int oe_filesys_mount(oe_filesys_t* filesys, const char* path)
     rc = 0;
 
 done:
-    pthread_mutex_unlock(&_lock);
+
+    if (locked)
+        pthread_mutex_unlock(&_lock);
+
     return rc;
 }
 
@@ -97,11 +106,13 @@ oe_filesys_t* oe_filesys_lookup(const char* path, char path_out[PATH_MAX])
 {
     oe_filesys_t* ret = NULL;
     size_t match_len = 0;
+    bool locked = false;
+
+    if (!path || !path_out || !_is_canonical_path(path))
+        goto done;
 
     pthread_mutex_lock(&_lock);
-
-    if (!path || !path_out || !_is_valid_path(path))
-        goto done;
+    locked = true;
 
     /* Find the longest mount point that contains this path. */
     for (size_t i = 0; i < _num_entries; i++)
@@ -113,14 +124,17 @@ oe_filesys_t* oe_filesys_lookup(const char* path, char path_out[PATH_MAX])
         {
             if (path_len > match_len)
             {
-                ret = _entries[i].filesys;
                 strlcpy(path_out, path + path_len, PATH_MAX);
                 match_len = path_len;
+                ret = _entries[i].filesys;
             }
         }
     }
 
 done:
-    pthread_mutex_unlock(&_lock);
+
+    if (locked)
+        pthread_mutex_unlock(&_lock);
+
     return ret;
 }

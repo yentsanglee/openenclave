@@ -12,6 +12,7 @@ add_library(oelibc STATIC
     abort.S
     arc4random.c
     atexit.c
+    blockdevice.c
     buf.c
     dladdr.c
     exp2l.S

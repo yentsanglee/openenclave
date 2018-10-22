@@ -94,6 +94,10 @@ typedef enum _oe_func {
     OE_OCALL_SLEEP,
     OE_OCALL_GET_TIME,
     OE_OCALL_BACKTRACE_SYMBOLS,
+    OE_OCALL_OPEN_BLOCK_DEVICE,
+    OE_OCALL_CLOSE_BLOCK_DEVICE,
+    OE_OCALL_GET_BLOCK_DEVICE,
+    OE_OCALL_PUT_BLOCK_DEVICE,
     /* Caution: always add new OCALL function numbers here */
 
     __OE_FUNC_MAX = OE_ENUM_MAX,
@@ -374,6 +378,35 @@ typedef struct _oe_backtrace_symbols_args
     int size;
     char** ret;
 } oe_backtrace_symbols_args_t;
+
+/*
+**==============================================================================
+**
+** oe_ocall_get_block_device_args_t
+** oe_ocall_put_block_device_args_t
+**
+**==============================================================================
+*/
+
+#define OE_BLOCK_DEVICE_BLOCK_SIZE 512
+
+typedef struct _oe_ocall_get_block_device_args
+{
+    int ret;
+    void* host_context;
+    uint32_t blkno;
+    uint8_t block[OE_BLOCK_DEVICE_BLOCK_SIZE];
+}
+oe_ocall_get_block_device_args_t;
+
+typedef struct _oe_ocall_put_block_device_args
+{
+    int ret;
+    void* host_context;
+    uint32_t blkno;
+    uint8_t block[OE_BLOCK_DEVICE_BLOCK_SIZE];
+}
+oe_ocall_put_block_device_args_t;
 
 /**
  * Perform a low-level enclave function call (ECALL).

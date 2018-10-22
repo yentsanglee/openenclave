@@ -133,7 +133,7 @@ typedef unsigned long ssize_t;
 #endif
 
 static ssize_t _read(
-    ext2_block_device_t* dev,
+    oe_block_device_t* dev,
     size_t offset,
     void* data,
     size_t size)
@@ -154,7 +154,7 @@ static ssize_t _read(
         uint32_t off; /* offset into this block */
         uint32_t len; /* bytes to read from this block */
 
-        if (dev->Get(dev, i, blk) != 0)
+        if (dev->get(dev, i, blk) != 0)
             return -1;
 
         /* If first block */
@@ -177,7 +177,7 @@ static ssize_t _read(
 }
 
 static ssize_t _write(
-    ext2_block_device_t* dev,
+    oe_block_device_t* dev,
     size_t offset,
     const void* data,
     size_t size)
@@ -199,7 +199,7 @@ static ssize_t _write(
         uint32_t len; /* bytes to write from this block */
 
         /* Fetch the block */
-        if (dev->Get(dev, i, blk) != 0)
+        if (dev->get(dev, i, blk) != 0)
             return -1;
 
         /* If first block */
@@ -218,7 +218,7 @@ static ssize_t _write(
         ptr += len;
 
         /* Rewrite the block */
-        if (dev->Put(dev, i, blk) != 0)
+        if (dev->put(dev, i, blk) != 0)
             return -1;
     }
 
@@ -1312,7 +1312,7 @@ void ext2_dump_super_block(const ext2_super_block_t* sb)
 }
 
 static ext2_err_t _read_super_block(
-    ext2_block_device_t* dev,
+    oe_block_device_t* dev,
     ext2_super_block_t* sb)
 {
     ext2_err_t err = EXT2_ERR_FAILED;
@@ -2526,7 +2526,7 @@ done:
 **==============================================================================
 */
 
-ext2_err_t ext2_new(ext2_block_device_t* dev, ext2_t** ext2_out)
+ext2_err_t ext2_new(oe_block_device_t* dev, ext2_t** ext2_out)
 {
     ext2_err_t err = EXT2_ERR_FAILED;
     ext2_t* ext2 = NULL;
@@ -2637,7 +2637,7 @@ void ext2_delete(ext2_t* ext2)
     if (ext2)
     {
         if (ext2->dev)
-            ext2->dev->Close(ext2->dev);
+            ext2->dev->close(ext2->dev);
 
         if (ext2->groups)
             free(ext2->groups);
@@ -4802,37 +4802,37 @@ typedef struct _file_impl
 }
 file_impl_t;
 
-static ssize_t _file_read(oe_file_t* file_, void *buf, size_t count)
+static ssize_t _file_read(oe_file_t* file, void *buf, size_t count)
 {
-    file_impl_t* file = (file_impl_t*)file_;
-    ssize_t rc = -1;
+    ssize_t ret = -1;
+    file_impl_t* file_impl = (file_impl_t*)file;
 
-    if (!file || !file->ext2_file)
+    if (!file_impl || !file_impl->ext2_file)
         goto done;
 
-    rc = ext2_read_file(file->ext2_file, buf, count);
+    ret = ext2_read_file(file_impl->ext2_file, buf, count);
 
 done:
-    return rc;
+    return ret;
 }
 
-static int _file_close(oe_file_t* file_)
+static int _file_close(oe_file_t* file)
 {
-    file_impl_t* file = (file_impl_t*)file_;
-    ssize_t rc = -1;
+    ssize_t ret = -1;
+    file_impl_t* file_impl = (file_impl_t*)file;
 
-    if (!file || !file->ext2_file)
+    if (!file_impl || !file_impl->ext2_file)
         goto done;
 
-    if (ext2_close_file(file->ext2_file) != EXT2_ERR_NONE)
+    if (ext2_close_file(file_impl->ext2_file) != EXT2_ERR_NONE)
         goto done;
 
-    memset(file, 0xDD, sizeof(file_impl_t));
-    free(file);
-    rc = 0;
+    memset(file_impl, 0, sizeof(file_impl_t));
+    free(file_impl);
+    ret = 0;
 
 done:
-    return rc;
+    return ret;
 }
 
 typedef struct _filesys_impl
@@ -4842,31 +4842,39 @@ typedef struct _filesys_impl
 }
 filesys_impl_t;
 
-/* ATTN: support create mode */
 static oe_file_t* _filesys_open(
-    oe_filesys_t* filesys_,
+    oe_filesys_t* filesys,
     const char* path, 
     int flags, 
     mode_t mode)
 {
     oe_file_t* ret = NULL;
-    filesys_impl_t* filesys = (filesys_impl_t*)filesys_;
+    filesys_impl_t* filesys_impl = (filesys_impl_t*)filesys;
     ext2_file_t* ext2_file = NULL;
-    file_impl_t* file = NULL;
 
-    if (!filesys || !filesys->ext2)
+    if (!filesys_impl || !filesys_impl->ext2)
         goto done;
 
-    if (!(ext2_file = ext2_open_file(filesys->ext2, path, mode)))
+    /* ATTN: support create mode */
+
+    /* Open the EXT2 file. */
+    if (!(ext2_file = ext2_open_file(filesys_impl->ext2, path, mode)))
         goto done;
 
-    if (!(file = calloc(1, sizeof(file_impl_t))))
-        goto done;
+    /* Allocate and initialize the file struct. */
+    {
+        file_impl_t* file_impl;
 
-    file->base.read = _file_read;
-    file->base.close = _file_close;
-    file->ext2_file = ext2_file;
-    ext2_file = NULL;
+        if (!(file_impl = calloc(1, sizeof(file_impl_t))))
+            goto done;
+
+        file_impl->base.read = _file_read;
+        file_impl->base.close = _file_close;
+        file_impl->ext2_file = ext2_file;
+        ext2_file = NULL;
+
+        ret = &file_impl->base;
+    }
 
 done:
 
@@ -4876,31 +4884,33 @@ done:
     return ret;
 }
 
-oe_filesys_t* ext2_new_filesys(ext2_block_device_t* dev)
+oe_filesys_t* ext2_new_filesys(oe_block_device_t* dev)
 {
     oe_filesys_t* ret = NULL;
     ext2_t* ext2 = NULL;
-    filesys_impl_t* filesys = NULL;
 
+    /* Create the new EXT2 struct. */
     if (ext2_new(dev, &ext2) != EXT2_ERR_NONE)
         goto done;
 
-    if (!(filesys = calloc(1, sizeof(filesys_impl_t))))
-        goto done;
+    /* Create an initalize the filesys struct. */
+    {
+        filesys_impl_t* filesys_impl = NULL;
 
-    filesys->base.open = _filesys_open;
-    filesys->ext2 = ext2;
-    ret = &filesys->base;
-    ext2 = NULL;
-    filesys = NULL;
+        if (!(filesys_impl = calloc(1, sizeof(filesys_impl_t))))
+            goto done;
+
+        filesys_impl->base.open = _filesys_open;
+        filesys_impl->ext2 = ext2;
+        ext2 = NULL;
+
+        ret = &filesys_impl->base;
+    }
 
 done:
 
     if (ext2)
         ext2_delete(ext2);
-
-    if (filesys)
-        free(filesys);
 
     return ret;
 }

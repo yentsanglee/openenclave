@@ -28,6 +28,7 @@
 #include "asmdefs.h"
 #include "enclave.h"
 #include "ocalls.h"
+#include "blockdevice.h"
 
 /*
 **==============================================================================
@@ -468,6 +469,22 @@ static oe_result_t _handle_ocall(
 
         case OE_OCALL_BACKTRACE_SYMBOLS:
             oe_handle_backtrace_symbols(enclave, arg_in);
+            break;
+
+        case OE_OCALL_OPEN_BLOCK_DEVICE:
+            oe_handle_open_block_device(enclave, arg_in, arg_out);
+            break;
+
+        case OE_OCALL_CLOSE_BLOCK_DEVICE:
+            oe_handle_close_block_device(enclave, arg_in);
+            break;
+
+        case OE_OCALL_GET_BLOCK_DEVICE:
+            oe_handle_get_block_device(enclave, arg_in);
+            break;
+
+        case OE_OCALL_PUT_BLOCK_DEVICE:
+            oe_handle_put_block_device(enclave, arg_in);
             break;
 
         default:
