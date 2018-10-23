@@ -4842,7 +4842,7 @@ typedef struct _filesys_impl
 }
 filesys_impl_t;
 
-static oe_file_t* _filesys_open(
+static oe_file_t* _filesys_open_file(
     oe_filesys_t* filesys,
     const char* path, 
     int flags, 
@@ -4884,6 +4884,22 @@ done:
     return ret;
 }
 
+static int _filesys_release(oe_filesys_t* filesys)
+{
+    filesys_impl_t* filesys_impl = (filesys_impl_t*)filesys;
+    int ret = -1;
+
+    if (!filesys_impl || !filesys_impl->ext2)
+        goto done;
+
+    ext2_delete(filesys_impl->ext2);
+
+    free(filesys_impl);
+
+done:
+    return ret;
+}
+
 oe_filesys_t* ext2_new_filesys(oe_block_device_t* dev)
 {
     oe_filesys_t* ret = NULL;
@@ -4900,7 +4916,8 @@ oe_filesys_t* ext2_new_filesys(oe_block_device_t* dev)
         if (!(filesys_impl = calloc(1, sizeof(filesys_impl_t))))
             goto done;
 
-        filesys_impl->base.open = _filesys_open;
+        filesys_impl->base.open_file = _filesys_open_file;
+        filesys_impl->base.release = _filesys_release;
         filesys_impl->ext2 = ext2;
         ext2 = NULL;
 

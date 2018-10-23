@@ -23,6 +23,7 @@ add_library(oelibc STATIC
     link.c
     locale.c
     malloc.c
+    mount.c
     pthread.c
     sched_yield.c
     stdlib.c
