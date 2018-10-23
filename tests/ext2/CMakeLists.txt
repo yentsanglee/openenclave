@@ -7,4 +7,8 @@ if (UNIX)
 	add_subdirectory(enc)
 endif()
 
-add_enclave_test(tests/ext2 ./host ext2_host ./enc ext2_enc)
+add_test(
+    tests/ext2 
+    ./host/ext2_host 
+    ./enc/ext2_enc 
+    /root/openenclave/libc/filesys/myext2)

@@ -8,7 +8,7 @@ void oe_handle_open_block_device(
     uint64_t* arg_out)
 {
     const char* device_name = (const char*)arg_in;
-    FILE* file;
+    FILE* stream;
 
     if (arg_out)
         *arg_out = 0;
@@ -16,10 +16,10 @@ void oe_handle_open_block_device(
     if (!device_name || !arg_out)
         return;
 
-    if (!(file = fopen(device_name, "rb")))
+    if (!(stream = fopen(device_name, "r+")))
         return;
 
-    *arg_out = (uint64_t)file;
+    *arg_out = (uint64_t)stream;
 }
 
 void oe_handle_close_block_device(oe_enclave_t* enclave, uint64_t arg_in)

@@ -3,7 +3,7 @@ FSNAME=myext2
 BLOCKS=20000
 LOOP=/dev/loop0
 
-all:
+all: create mount populate unmount
 
 create: $(FSNAME)
 

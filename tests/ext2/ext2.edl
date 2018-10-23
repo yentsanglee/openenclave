@@ -3,6 +3,7 @@
 
 enclave {
     trusted {
-        public int test_ext2();
+        public int test_ext2(
+            [string, in] const char* ext2_filename);
     };
 };

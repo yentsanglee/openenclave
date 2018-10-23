@@ -2,6 +2,7 @@
 #include <openenclave/internal/calls.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct _host_block_device
 {
@@ -49,7 +50,7 @@ static int _host_block_device_get(
     args->host_context = device->host_context;
     args->blkno = blkno;
 
-    if (oe_ocall(func, (uint64_t)device->host_context, NULL) != OE_OK)
+    if (oe_ocall(func, (uint64_t)args, NULL) != OE_OK)
         goto done;
 
     if (args->ret != 0)
@@ -89,7 +90,7 @@ static int _host_block_device_put(
     args->blkno = blkno;
     memcpy(args->block, data, sizeof(args->block));
 
-    if (oe_ocall(func, (uint64_t)device->host_context, NULL) != OE_OK)
+    if (oe_ocall(func, (uint64_t)args, NULL) != OE_OK)
         goto done;
 
     if (args->ret != 0)
@@ -140,6 +141,8 @@ oe_result_t oe_open_block_device(
 
     *block_device = &device->base;
     device = NULL;
+
+    result = OE_OK;
 
 done:
 

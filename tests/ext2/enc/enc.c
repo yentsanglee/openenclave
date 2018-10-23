@@ -2,13 +2,18 @@
 // Licensed under the MIT License.
 
 #include <openenclave/enclave.h>
-#include <openenclave/internal/enclavelibc.h>
-#include <openenclave/internal/hostalloc.h>
-#include <openenclave/internal/print.h>
+#include <openenclave/internal/mount.h>
+#include <openenclave/internal/tests.h>
+#include <stdio.h>
 #include "ext2_t.h"
 
-int test_ext2(void)
+int test_ext2(const char* ext2_filename)
 {
+    oe_result_t r;
+
+    r = oe_mount(OE_MOUNT_TYPE_EXT2, ext2_filename, ext2_filename);
+    OE_TEST(r == OE_OK);
+
     return 0;
 }
 

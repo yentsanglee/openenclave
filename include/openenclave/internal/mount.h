@@ -20,8 +20,7 @@ oe_result_t oe_mount(
     const char* device_name,
     const char* path);
 
-oe_result_t oe_unmount(
-    const char* path);
+oe_result_t oe_unmount(const char* path);
 
 OE_EXTERNC_END
 

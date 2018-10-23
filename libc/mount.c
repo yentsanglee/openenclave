@@ -58,6 +58,8 @@ oe_result_t oe_mount(
             break;
     }
 
+    result = OE_OK;
+
 done:
     return result;
 }
