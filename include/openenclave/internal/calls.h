@@ -396,8 +396,7 @@ typedef struct _oe_ocall_block_device_get_args
     void* host_context;
     uint32_t blkno;
     uint8_t block[OE_BLOCK_DEVICE_BLOCK_SIZE];
-}
-oe_ocall_block_device_get_args_t;
+} oe_ocall_block_device_get_args_t;
 
 typedef struct _oe_ocall_block_device_put_args
 {
@@ -405,8 +404,7 @@ typedef struct _oe_ocall_block_device_put_args
     void* host_context;
     uint32_t blkno;
     uint8_t block[OE_BLOCK_DEVICE_BLOCK_SIZE];
-}
-oe_ocall_block_device_put_args_t;
+} oe_ocall_block_device_put_args_t;
 
 /**
  * Perform a low-level enclave function call (ECALL).

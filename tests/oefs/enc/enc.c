@@ -2,17 +2,17 @@
 // Licensed under the MIT License.
 
 #define _GNU_SOURCE
+#include <limits.h>
 #include <openenclave/enclave.h>
-#include <openenclave/internal/mount.h>
 #include <openenclave/internal/file.h>
+#include <openenclave/internal/mount.h>
 #include <openenclave/internal/tests.h>
-#include "../../../libc/blockdevice.h"
-#include "../../../libc/oefs.h"
-#include <string.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stddef.h>
-#include <limits.h>
+#include <string.h>
+#include "../../../libc/blockdevice.h"
+#include "../../../libc/oefs.h"
 #include "oefs_t.h"
 
 int test_oefs(const char* oefs_filename)
@@ -37,11 +37,17 @@ int test_oefs(const char* oefs_filename)
         OE_TEST(r == OEFS_OK);
     }
 
+#if 1
     {
-        oefs_t oefs;
-        oefs_result_t r = oefs_open(&oefs, dev);
+        oefs_t* oefs;
+        oefs_result_t r = oefs_new(&oefs, dev);
         OE_TEST(r == OEFS_OK);
+
+        oefs_delete(oefs);
     }
+#endif
+
+    dev->close(dev);
 
     return 0;
 }

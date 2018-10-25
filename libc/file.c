@@ -1,7 +1,7 @@
-#include <openenclave/internal/file.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <limits.h>
+#include <openenclave/internal/file.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "filesys.h"
 
 oe_file_t* oe_file_open(const char* path, int flags, mode_t mode)
@@ -26,7 +26,7 @@ done:
     return ret;
 }
 
-ssize_t oe_file_read(oe_file_t* file, void *buf, size_t count)
+ssize_t oe_file_read(oe_file_t* file, void* buf, size_t count)
 {
     ssize_t ret = -1;
 
@@ -39,7 +39,7 @@ done:
     return ret;
 }
 
-ssize_t oe_file_write(oe_file_t* file, const void *buf, size_t count)
+ssize_t oe_file_write(oe_file_t* file, const void* buf, size_t count)
 {
     ssize_t ret = -1;
 

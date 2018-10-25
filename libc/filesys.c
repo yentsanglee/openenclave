@@ -1,10 +1,10 @@
 #define _GNU_SOURCE
+#include "filesys.h"
+#include <pthread.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include "filesys.h"
-#include <pthread.h>
 
 #define MAX_ENTRIES 64
 
@@ -15,8 +15,7 @@ typedef struct _entry
 
     /* The file system object */
     oe_filesys_t* filesys;
-}
-entry_t;
+} entry_t;
 
 static entry_t _entries[MAX_ENTRIES];
 static size_t _num_entries;

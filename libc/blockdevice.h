@@ -1,8 +1,8 @@
 #ifndef _oe_libc_blockdevice_h
 #define _oe_libc_blockdevice_h
 
-#include <stdint.h>
 #include <openenclave/enclave.h>
+#include <stdint.h>
 
 typedef struct _oe_block_device oe_block_device_t;
 

@@ -15,9 +15,9 @@ typedef unsigned mode_t;
 
 oe_file_t* oe_file_open(const char* path, int flags, mode_t mode);
 
-ssize_t oe_file_read(oe_file_t* file, void *buf, size_t count);
+ssize_t oe_file_read(oe_file_t* file, void* buf, size_t count);
 
-ssize_t oe_file_write(oe_file_t* file, const void *buf, size_t count);
+ssize_t oe_file_write(oe_file_t* file, const void* buf, size_t count);
 
 int oe_file_close(oe_file_t* file);
 

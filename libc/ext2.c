@@ -4670,9 +4670,9 @@ int32_t ext2_write_file(ext2_file_t* file, const void* data, uint32_t size)
             new_file_size = original_file_size;
     }
 
-/* 
-ATTN: extend the file by first+size 
-*/
+    /*
+    ATTN: extend the file by first+size
+    */
 
     /* Write the data block-by-block */
     for (i = first; i < file->blknos.size && remaining > 0 && !file->eof; i++)
@@ -4712,8 +4712,7 @@ ATTN: extend the file by first+size
 
             /* Reduce copy_bytes to bytes remaining in the file? */
             {
-                uint32_t file_bytes_remaining =
-                    new_file_size - file->offset;
+                uint32_t file_bytes_remaining = new_file_size - file->offset;
 
                 if (file_bytes_remaining < copy_bytes)
                 {
@@ -4911,10 +4910,9 @@ typedef struct _file_impl
 {
     oe_file_t base;
     ext2_file_t* ext2_file;
-}
-file_impl_t;
+} file_impl_t;
 
-static ssize_t _file_read(oe_file_t* file, void *buf, size_t count)
+static ssize_t _file_read(oe_file_t* file, void* buf, size_t count)
 {
     ssize_t ret = -1;
     file_impl_t* file_impl = (file_impl_t*)file;
@@ -4928,7 +4926,7 @@ done:
     return ret;
 }
 
-static ssize_t _file_write(oe_file_t* file, const void *buf, size_t count)
+static ssize_t _file_write(oe_file_t* file, const void* buf, size_t count)
 {
     ssize_t ret = -1;
     file_impl_t* file_impl = (file_impl_t*)file;
@@ -4965,19 +4963,17 @@ typedef struct _filesys_impl
 {
     oe_filesys_t base;
     ext2_t* ext2;
-}
-filesys_impl_t;
+} filesys_impl_t;
 
 static oe_file_t* _filesys_open_file(
     oe_filesys_t* filesys,
-    const char* path, 
-    int flags, 
+    const char* path,
+    int flags,
     mode_t mode)
 {
     oe_file_t* ret = NULL;
     filesys_impl_t* filesys_impl = (filesys_impl_t*)filesys;
     ext2_file_t* ext2_file = NULL;
-
 
     if (!filesys_impl || !filesys_impl->ext2)
         goto done;

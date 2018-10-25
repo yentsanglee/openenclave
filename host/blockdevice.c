@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 void oe_handle_open_block_device(
-    oe_enclave_t* enclave, 
+    oe_enclave_t* enclave,
     uint64_t arg_in,
     uint64_t* arg_out)
 {

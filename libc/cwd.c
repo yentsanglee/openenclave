@@ -1,13 +1,13 @@
-#include <unistd.h>
 #include <errno.h>
 #include <limits.h>
-#include <string.h>
 #include <pthread.h>
+#include <string.h>
+#include <unistd.h>
 
 static char _cwd[PATH_MAX] = "/";
 static pthread_mutex_t _lock = PTHREAD_MUTEX_INITIALIZER;
 
-char *getcwd(char *buf, size_t size)
+char* getcwd(char* buf, size_t size)
 {
     char* ret = NULL;
     char tmp[PATH_MAX];

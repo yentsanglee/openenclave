@@ -1,9 +1,9 @@
-#include <openenclave/internal/mount.h>
 #include <openenclave/internal/calls.h>
+#include <openenclave/internal/mount.h>
 #include <openenclave/internal/raise.h>
-#include "filesys.h"
 #include "blockdevice.h"
 #include "ext2.h"
+#include "filesys.h"
 
 static oe_result_t _mount_ext2(const char* device_name, const char* path)
 {
@@ -41,17 +41,14 @@ done:
     return result;
 }
 
-oe_result_t oe_mount(
-    oe_mount_type_t type,
-    const char* device,
-    const char* path)
+oe_result_t oe_mount(oe_mount_type_t type, const char* device, const char* path)
 {
     oe_result_t result = OE_UNEXPECTED;
 
     if (!device || !path)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    switch(type)
+    switch (type)
     {
         case OE_MOUNT_TYPE_EXT2:
             OE_CHECK(_mount_ext2(device, path));
@@ -64,8 +61,7 @@ done:
     return result;
 }
 
-oe_result_t oe_unmount(
-    const char* path)
+oe_result_t oe_unmount(const char* path)
 {
     return OE_UNSUPPORTED;
 }

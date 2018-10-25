@@ -10,9 +10,9 @@ typedef struct _oe_filesys oe_filesys_t;
 struct _oe_filesys
 {
     oe_file_t* (*open_file)(
-        oe_filesys_t* filesys, 
-        const char* path, 
-        int flags, 
+        oe_filesys_t* filesys,
+        const char* path,
+        int flags,
         mode_t mode);
 
     int (*release)(oe_filesys_t* filesys);
@@ -20,9 +20,9 @@ struct _oe_filesys
 
 struct _oe_file
 {
-    ssize_t (*read)(oe_file_t* file, void *buf, size_t count);
+    ssize_t (*read)(oe_file_t* file, void* buf, size_t count);
 
-    ssize_t (*write)(oe_file_t* file, const void *buf, size_t count);
+    ssize_t (*write)(oe_file_t* file, const void* buf, size_t count);
 
     int (*close)(oe_file_t* file);
 };

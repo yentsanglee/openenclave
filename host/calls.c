@@ -26,9 +26,9 @@
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/utils.h>
 #include "asmdefs.h"
+#include "blockdevice.h"
 #include "enclave.h"
 #include "ocalls.h"
-#include "blockdevice.h"
 
 /*
 **==============================================================================

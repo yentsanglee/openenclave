@@ -23,13 +23,13 @@
 /* oefs_dir_entry_t.d_type */
 #define OEFS_DT_UNKNOWN 0
 #define OEFS_DT_FIFO 1 /* unused */
-#define OEFS_DT_CHR 2 /* unused */
+#define OEFS_DT_CHR 2  /* unused */
 #define OEFS_DT_DIR 4
 #define OEFS_DT_BLK 6 /* unused */
 #define OEFS_DT_REG 8
-#define OEFS_DT_LNK 10 /* unused */
+#define OEFS_DT_LNK 10  /* unused */
 #define OEFS_DT_SOCK 12 /* unused */
-#define OEFS_DT_WHT 14 /* unused */
+#define OEFS_DT_WHT 14  /* unused */
 
 typedef struct _oefs_super_block
 {
@@ -44,8 +44,7 @@ typedef struct _oefs_super_block
 
     /* Reserved. */
     uint8_t s_reserved[500];
-}
-oefs_super_block_t;
+} oefs_super_block_t;
 
 OE_STATIC_ASSERT(sizeof(oefs_super_block_t) == OEFS_BLOCK_SIZE);
 
@@ -117,13 +116,12 @@ typedef struct _oefs_dir_entry
 
 OE_STATIC_ASSERT(sizeof(oefs_dir_entry_t) == 264);
 
-typedef enum _oefs_result
-{
+typedef enum _oefs_result {
     OEFS_OK,
     OEFS_BAD_PARAMETER,
     OEFS_FAILED,
-}
-oefs_result_t;
+    OEFS_NOT_FOUND,
+} oefs_result_t;
 
 // Initialize the blocks of a new file system; num_blocks must be a multiple
 // OEFS_BITS_PER_BLOCK (4096).
@@ -134,16 +132,31 @@ oefs_result_t oefs_compute_size(size_t num_blocks, size_t* total_bytes);
 typedef struct _oefs
 {
     oe_block_device_t* dev;
-    
+
     /* Super block. */
     oefs_super_block_t sb;
 
     /* Bitmap of allocated blocks. */
     uint8_t* bitmap;
     size_t bitmap_size;
-}
-oefs_t;
+} oefs_t;
 
-oefs_result_t oefs_open(oefs_t* oefs, oe_block_device_t* dev);
+typedef struct _efs_block
+{
+    uint8_t data[OEFS_BLOCK_SIZE];
+}
+oefs_block_t;
+
+typedef struct _oefs_file oefs_file_t;
+
+oefs_result_t oefs_new(oefs_t** oefs, oe_block_device_t* dev);
+
+oefs_result_t oefs_delete(oefs_t* oefs);
+
+int32_t oefs_read_file(oefs_file_t* file, void* data, uint32_t size);
+
+int32_t oefs_write_file(oefs_file_t* file, const void* data, uint32_t size);
+
+int oefs_close_file(oefs_file_t* file);
 
 #endif /* _oe_oefs_h */

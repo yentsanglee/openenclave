@@ -2,15 +2,15 @@
 // Licensed under the MIT License.
 
 #define _GNU_SOURCE
+#include <limits.h>
 #include <openenclave/enclave.h>
-#include <openenclave/internal/mount.h>
 #include <openenclave/internal/file.h>
+#include <openenclave/internal/mount.h>
 #include <openenclave/internal/tests.h>
-#include <string.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stddef.h>
-#include <limits.h>
+#include <string.h>
 #include "ext2_t.h"
 
 int test_ext2(const char* ext2_filename)

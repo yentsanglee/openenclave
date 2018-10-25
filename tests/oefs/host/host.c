@@ -35,7 +35,7 @@ int main(int argc, const char* argv[])
         exit(1);
     }
 
-#if 0
+#if 1
     r = oe_terminate_enclave(enclave);
     if (r != OE_OK)
     {

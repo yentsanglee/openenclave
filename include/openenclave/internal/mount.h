@@ -9,14 +9,12 @@
 
 OE_EXTERNC_BEGIN
 
-typedef enum _oe_mount_type
-{
+typedef enum _oe_mount_type {
     OE_MOUNT_TYPE_EXT2,
-}
-oe_mount_type_t;
+} oe_mount_type_t;
 
 oe_result_t oe_mount(
-    oe_mount_type_t type, 
+    oe_mount_type_t type,
     const char* device_name,
     const char* path);
 

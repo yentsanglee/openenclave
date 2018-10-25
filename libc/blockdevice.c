@@ -1,15 +1,14 @@
 #include "blockdevice.h"
 #include <openenclave/internal/calls.h>
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct _host_block_device
 {
     oe_block_device_t base;
     void* host_context;
-}
-host_block_device_t;
+} host_block_device_t;
 
 static int _host_block_device_close(oe_block_device_t* dev)
 {
@@ -23,6 +22,8 @@ static int _host_block_device_close(oe_block_device_t* dev)
     if (oe_ocall(func, (uint64_t)device->host_context, NULL) != OE_OK)
         goto done;
 
+    free(dev);
+
     ret = 0;
 
 done:
@@ -30,8 +31,8 @@ done:
 }
 
 static int _host_block_device_get(
-    oe_block_device_t* dev, 
-    uint32_t blkno, 
+    oe_block_device_t* dev,
+    uint32_t blkno,
     void* data)
 {
     int ret = -1;
@@ -69,8 +70,8 @@ done:
 }
 
 static int _host_block_device_put(
-    oe_block_device_t* dev, 
-    uint32_t blkno, 
+    oe_block_device_t* dev,
+    uint32_t blkno,
     const void* data)
 {
     int ret = -1;
