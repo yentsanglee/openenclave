@@ -97,36 +97,48 @@ done:
     return result;
 }
 
-static oefs_result_t _load_inode_blknos(
+static oefs_result_t _load_inode(
     oefs_t* oefs,
     uint32_t inode_blkno,
-    buf_u32_t* blknos)
+    oefs_inode_t* inode)
 {
     oefs_result_t result = OEFS_FAILED;
-    oefs_inode_t inode;
 
     /* Read this inode into memory. */
-    if (_read_block(oefs, inode_blkno, &inode) != OEFS_OK)
+    if (_read_block(oefs, inode_blkno, inode) != OEFS_OK)
         goto done;
 
     /* Check the inode magic number. */
-    if (inode.i_magic != OEFS_INODE_MAGIC)
+    if (inode->i_magic != OEFS_INODE_MAGIC)
         goto done;
+
+    result = OEFS_OK;
+
+done:
+    return result;
+}
+
+static oefs_result_t _load_inode_blknos(
+    oefs_t* oefs,
+    oefs_inode_t* inode,
+    buf_u32_t* blknos)
+{
+    oefs_result_t result = OEFS_FAILED;
 
     /* Collect direct block numbers. */
     {
-        size_t n = sizeof(inode.i_blocks) / sizeof(uint32_t);
+        size_t n = sizeof(inode->i_blocks) / sizeof(uint32_t);
 
-        for (size_t i = 0; i < n && inode.i_blocks[i]; i++)
+        for (size_t i = 0; i < n && inode->i_blocks[i]; i++)
         {
-            if (buf_u32_append(blknos, &inode.i_blocks[i], 1) != 0)
+            if (buf_u32_append(blknos, &inode->i_blocks[i], 1) != 0)
                 goto done;
         }
     }
 
     /* Traverse linked list of blknos blocks. */
     {
-        uint32_t next = inode.i_next;
+        uint32_t next = inode->i_next;
 
         while (next)
         {
@@ -154,6 +166,51 @@ static oefs_result_t _load_inode_blknos(
 
 done:
     return result;
+}
+
+static oefs_result_t _load_file(
+    oefs_t* oefs,
+    uint32_t inode_blkno,
+    buf_t* buf)
+{
+    oefs_result_t result = OEFS_FAILED;
+    buf_u32_t blknos = BUF_U32_INITIALIZER;
+    oefs_inode_t inode;
+
+    /* Read this inode into memory. */
+    if (_load_inode(oefs, inode_blkno, &inode) != OEFS_OK)
+        goto done;
+
+    /* Load the block numbers into memory. */
+    if (_load_inode_blknos(oefs, &inode, &blknos) != OEFS_OK)
+        goto done;
+
+    /* Load each block into memory. */
+    for (size_t i = 0; i < blknos.size; i++)
+    {
+        uint8_t block[OEFS_BLOCK_SIZE];
+
+        if (_read_block(oefs, blknos.data[i], block) != OEFS_OK)
+            goto done;
+
+        buf_append(buf, block, sizeof(block));
+    }
+
+    /* Adjust the size of the file. */
+    buf->size = inode.i_size;
+
+    result = OEFS_OK;
+
+done:
+    return result;
+}
+
+static __inline void _dump_dir_entry(oefs_dir_entry_t* entry)
+{
+    printf("=== oefs_dir_entry_t\n");
+    printf("d_inode=%u\n", entry->d_inode);
+    printf("d_type=%u\n", entry->d_type);
+    printf("d_name=%s\n", entry->d_name);
 }
 
 /*
@@ -509,13 +566,31 @@ oefs_result_t oefs_open(oefs_t* oefs, oe_block_device_t* dev)
 #if 1
     /* Load the block numbers for the root inode. */
     {
+        oefs_inode_t inode;
+
+        if (_load_inode(oefs, OEFS_ROOT_INODE_BLKNO, &inode) != OEFS_OK)
+            goto done;
+
         buf_u32_t blknos = BUF_U32_INITIALIZER;
-        _load_inode_blknos(oefs, OEFS_ROOT_INODE_BLKNO, &blknos);
+        _load_inode_blknos(oefs, &inode, &blknos);
 
         for (size_t i = 0; i < blknos.size; i++)
         {
             printf("blknos{i}=%u\n", blknos.data[i]);
         }
+
+    }
+#endif
+
+#if 1
+    {
+        buf_t buf = BUF_INITIALIZER;
+
+        if (_load_file(oefs, OEFS_ROOT_INODE_BLKNO, &buf) != 0)
+            goto done;
+
+        _dump_dir_entry((oefs_dir_entry_t*)buf.data);
+        _dump_dir_entry((oefs_dir_entry_t*)buf.data + 1);
     }
 #endif
 
