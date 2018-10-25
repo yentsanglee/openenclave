@@ -85,6 +85,8 @@ void oe_handle_block_device_put(oe_enclave_t* enclave, uint64_t arg_in)
 
         if (fwrite(args->block, 1, count, stream) != count)
             return;
+
+        fflush(stream);
     }
 
     args->ret = 0;

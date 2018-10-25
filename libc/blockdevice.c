@@ -77,7 +77,7 @@ static int _host_block_device_put(
     host_block_device_t* device = (host_block_device_t*)dev;
     typedef oe_ocall_block_device_put_args_t args_t;
     args_t* args = NULL;
-    const uint16_t func = OE_OCALL_BLOCK_DEVICE_GET;
+    const uint16_t func = OE_OCALL_BLOCK_DEVICE_PUT;
 
     if (!device || !data)
         goto done;

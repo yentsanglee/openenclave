@@ -989,7 +989,7 @@ done:
     return err;
 }
 
-static ext2_err_t _write_groub_with_bitmap(
+static ext2_err_t _write_group_with_bitmap(
     ext2_t* ext2,
     uint32_t grpno,
     ext2_block_t* bitmap)
@@ -1082,9 +1082,9 @@ static ext2_err_t _put_blocks(
         }
         else if (prevgrpno != grpno)
         {
-            /* Advanced to next group so write old bitmap and read new one. */
+            /* Advance to next group so write old bitmap and read new one. */
             if (_if_err(
-                    err = _write_groub_with_bitmap(ext2, prevgrpno, &bitmap)))
+                    err = _write_group_with_bitmap(ext2, prevgrpno, &bitmap)))
             {
                 goto done;
             }
@@ -1110,7 +1110,7 @@ static ext2_err_t _put_blocks(
         /* Always write final block. */
         if (i + 1 == nblknos)
         {
-            if (_if_err(err = _write_groub_with_bitmap(ext2, grpno, &bitmap)))
+            if (_if_err(err = _write_group_with_bitmap(ext2, grpno, &bitmap)))
             {
                 goto done;
             }
@@ -4643,8 +4643,120 @@ done:
 
 int32_t ext2_write_file(ext2_file_t* file, const void* data, uint32_t size)
 {
-    /* Unsupported */
-    return -1;
+    int32_t nread = -1;
+    uint32_t first;
+    uint32_t i;
+    uint32_t remaining;
+    uint8_t* end = (uint8_t*)data;
+    uint32_t new_file_size;
+
+    /* Check parameters */
+    if (!file || !file->ext2 || !data)
+        goto done;
+
+    /* The index of the first block to write: ext2->blknos[first] */
+    first = file->offset / file->ext2->block_size;
+
+    /* The number of bytes remaining to be written */
+    remaining = size;
+
+    /* Calculate the new size of the file (might be unchanged). */
+    {
+        uint32_t original_file_size = file->inode.i_size;
+
+        if (original_file_size < file->offset + size)
+            new_file_size = file->offset + size;
+        else
+            new_file_size = original_file_size;
+    }
+
+/* 
+ATTN: extend the file by first+size 
+*/
+
+    /* Write the data block-by-block */
+    for (i = first; i < file->blknos.size && remaining > 0 && !file->eof; i++)
+    {
+        ext2_block_t block;
+        uint32_t offset;
+
+        /* Read the block first. */
+        if (ext2_read_block(file->ext2, file->blknos.data[i], &block) !=
+            EXT2_ERR_NONE)
+        {
+            goto done;
+        }
+
+        /* The offset of the data within this block */
+        offset = file->offset % file->ext2->block_size;
+
+        /* Copy the minimum of these into the block.
+         *     bytes remaining
+         *     block-bytes-remaining
+         *     file-bytes-remaining
+         */
+        {
+            uint32_t copy_bytes;
+
+            /* Bytes to copy to user buffer */
+            copy_bytes = remaining;
+
+            /* Reduce copy_bytes to bytes remaining in the block? */
+            {
+                uint32_t block_bytes_remaining =
+                    file->ext2->block_size - offset;
+
+                if (block_bytes_remaining < copy_bytes)
+                    copy_bytes = block_bytes_remaining;
+            }
+
+            /* Reduce copy_bytes to bytes remaining in the file? */
+            {
+                uint32_t file_bytes_remaining =
+                    new_file_size - file->offset;
+
+                if (file_bytes_remaining < copy_bytes)
+                {
+                    copy_bytes = file_bytes_remaining;
+                    file->eof = true;
+                }
+            }
+
+            /* Copy data to user buffer */
+            memcpy(block.data + offset, end, copy_bytes);
+            remaining -= copy_bytes;
+            end += copy_bytes;
+            file->offset += copy_bytes;
+        }
+
+        /* Rewrite the block. */
+        if (ext2_write_block(file->ext2, file->blknos.data[i], &block) !=
+            EXT2_ERR_NONE)
+        {
+            goto done;
+        }
+    }
+
+    /* Append remaining data to the file. */
+    {
+        buf_u32_t blknos = BUF_U32_INITIALIZER;
+
+        /* Write the new raw blocks. */
+        if (_write_data(file->ext2, end, remaining, &blknos) != EXT2_ERR_NONE)
+            goto done;
+
+#if 0
+        /* Append new blocks to the file inode. */
+        if (_append_blocks_to_inode(file->ext2, &blknos) != EXT2_ERR_NONE)
+            goto done;
+#endif
+    }
+
+    /* Calculate number of bytes read */
+    nread = size - remaining;
+
+done:
+    return nread;
 }
 
 int ext2_flush_file(ext2_file_t* file)
@@ -4816,6 +4928,20 @@ done:
     return ret;
 }
 
+static ssize_t _file_write(oe_file_t* file, const void *buf, size_t count)
+{
+    ssize_t ret = -1;
+    file_impl_t* file_impl = (file_impl_t*)file;
+
+    if (!file_impl || !file_impl->ext2_file)
+        goto done;
+
+    ret = ext2_write_file(file_impl->ext2_file, buf, count);
+
+done:
+    return ret;
+}
+
 static int _file_close(oe_file_t* file)
 {
     ssize_t ret = -1;
@@ -4852,10 +4978,11 @@ static oe_file_t* _filesys_open_file(
     filesys_impl_t* filesys_impl = (filesys_impl_t*)filesys;
     ext2_file_t* ext2_file = NULL;
 
+
     if (!filesys_impl || !filesys_impl->ext2)
         goto done;
 
-    /* ATTN: support create mode */
+    /* ATTN: support create mode. */
 
     /* Open the EXT2 file. */
     if (!(ext2_file = ext2_open_file(filesys_impl->ext2, path, mode)))
@@ -4869,6 +4996,7 @@ static oe_file_t* _filesys_open_file(
             goto done;
 
         file_impl->base.read = _file_read;
+        file_impl->base.write = _file_write;
         file_impl->base.close = _file_close;
         file_impl->ext2_file = ext2_file;
         ext2_file = NULL;

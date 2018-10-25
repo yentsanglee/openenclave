@@ -22,6 +22,8 @@ struct _oe_file
 {
     ssize_t (*read)(oe_file_t* file, void *buf, size_t count);
 
+    ssize_t (*write)(oe_file_t* file, const void *buf, size_t count);
+
     int (*close)(oe_file_t* file);
 };
 
