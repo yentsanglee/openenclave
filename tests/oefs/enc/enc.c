@@ -21,6 +21,7 @@ int test_oefs(const char* oefs_filename)
 {
     oe_block_device_t* dev;
     size_t num_blocks = 10*4096;
+    oefs_t* oefs;
 
     {
         oe_result_t r = oe_open_block_device("/tmp/oefs", &dev);
@@ -42,13 +43,26 @@ int test_oefs(const char* oefs_filename)
 #endif
 
     {
-        oefs_t* oefs;
         oefs_result_t r = oefs_new(&oefs, dev);
         OE_TEST(r == OEFS_OK);
-
-        oefs_delete(oefs);
     }
 
+    {
+        oefs_dir_t* dir;
+        oefs_dirent_t* ent;
+
+        dir = oefs_opendir(oefs, "/");
+        OE_TEST(dir != NULL);
+
+        while ((ent = oefs_readdir(dir)))
+        {
+            printf("name=%s\n", ent->d_name);
+        }
+
+        oefs_closedir(dir);
+    }
+
+    oefs_delete(oefs);
     dev->close(dev);
 
     return 0;

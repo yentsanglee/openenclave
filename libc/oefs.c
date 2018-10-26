@@ -58,6 +58,12 @@ struct _oefs_file
     bool eof;
 };
 
+struct _oefs_dir
+{
+    oefs_file_t* file;
+    oefs_dirent_t dirent;
+};
+
 static __inline bool _test_bit(const uint8_t* data, uint32_t index)
 {
     uint32_t byte = index / 8;
@@ -333,10 +339,10 @@ done:
     return result;
 }
 
-static __inline void _dump_dir_entry(oefs_dir_entry_t* entry)
+static __inline void _dump_dirent(oefs_dirent_t* entry)
 {
-    printf("=== oefs_dir_entry_t\n");
-    printf("d_inode=%u\n", entry->d_inode);
+    printf("=== oefs_dirent_t\n");
+    printf("d_ino=%u\n", entry->d_ino);
     printf("d_type=%u\n", entry->d_type);
     printf("d_name=%s\n", entry->d_name);
 }
@@ -604,7 +610,7 @@ static oefs_result_t _dump_directory(oefs_t* oefs, uint32_t inode_blkno)
 {
     oefs_result_t result = OEFS_FAILED;
     oefs_file_t* file;
-    oefs_dir_entry_t entry;
+    oefs_dirent_t entry;
     int32_t n;
 
     if (_open_file(oefs, inode_blkno, &file) != 0)
@@ -612,7 +618,7 @@ static oefs_result_t _dump_directory(oefs_t* oefs, uint32_t inode_blkno)
 
     while ((n = oefs_read_file(file, &entry, sizeof(entry))) > 0)
     {
-        _dump_dir_entry(&entry);
+        _dump_dirent(&entry);
     }
 
     oefs_close_file(file);
@@ -740,7 +746,7 @@ oefs_result_t oefs_initialize(oe_block_device_t* dev, size_t num_blocks)
             .i_uid = 0,
             .i_gid = 0,
             .i_links = 0,
-            .i_size = 2 * sizeof(oefs_dir_entry_t),
+            .i_size = 2 * sizeof(oefs_dirent_t),
             .i_atime = 0,
             .i_ctime = 0,
             .i_mtime = 0,
@@ -762,13 +768,17 @@ oefs_result_t oefs_initialize(oe_block_device_t* dev, size_t num_blocks)
     {
         uint8_t blocks[2][OEFS_BLOCK_SIZE];
 
-        oefs_dir_entry_t dir_entries[] = {
-            {.d_inode = OEFS_ROOT_INODE_BLKNO,
+        oefs_dirent_t dir_entries[] = {
+            {.d_ino = OEFS_ROOT_INODE_BLKNO,
+             .d_off = 0 * sizeof(oefs_dirent_t),
+             .d_reclen = sizeof(oefs_dirent_t),
              .d_type = OEFS_DT_DIR,
              .d_name = ".."
 
             },
-            {.d_inode = OEFS_ROOT_INODE_BLKNO,
+            {.d_ino = OEFS_ROOT_INODE_BLKNO,
+             .d_off = 1 * sizeof(oefs_dirent_t),
+             .d_reclen = sizeof(oefs_dirent_t),
              .d_type = OEFS_DT_DIR,
              .d_name = "."},
         };
@@ -1172,21 +1182,6 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
 
 #if 0
     {
-        void* data;
-        size_t size;
-
-        if (oefs_load_file(oefs, OEFS_ROOT_INODE_BLKNO, &data, &size) != 0)
-            goto done;
-
-        _dump_dir_entry((oefs_dir_entry_t*)data);
-        _dump_dir_entry((oefs_dir_entry_t*)data + 1);
-
-        free(data);
-    }
-#endif
-
-#if 1
-    {
         printf("<<<<<<<<<<\n");
 
         if (_dump_directory(oefs, OEFS_ROOT_INODE_BLKNO) != OEFS_OK)
@@ -1196,12 +1191,12 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
     }
 #endif
 
-#if 1
+#if 0
     {
         oefs_file_t* file;
         int32_t n;
         uint32_t count = 0;
-        oefs_dir_entry_t entry;
+        oefs_dirent_t entry;
 
         if (_open_file(oefs, OEFS_ROOT_INODE_BLKNO, &file) != 0)
             goto done;
@@ -1225,7 +1220,7 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
         const uint32_t N = 6000;
         for (uint32_t i = 0; i < N; i++)
         {
-            entry.d_inode = OEFS_ROOT_INODE_BLKNO;
+            entry.d_ino = OEFS_ROOT_INODE_BLKNO;
             entry.d_type = OEFS_DT_REG;
             sprintf(entry.d_name, "filename-%u", count + i);
 
@@ -1237,7 +1232,6 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
 
             printf("name{%s}\n", entry.d_name);
 
-#if 1
             const size_t r = sizeof(entry);
 
             if ((n = oefs_write_file(file, &entry, sizeof(entry))) != r)
@@ -1245,16 +1239,13 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
                 fprintf(stderr, "error: oops\n");
                 goto done;
             }
-#endif
         }
 
-#if 1
         if ((n = oefs_write_file(file, buf.data, buf.size)) != buf.size)
         {
             fprintf(stderr, "error: oops\n");
             goto done;
         }
-#endif
 
         buf_release(&buf);
 
@@ -1262,7 +1253,7 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
     }
 #endif
 
-#if 1
+#if 0
     {
         printf("<<<<<<<<<<\n");
 
@@ -1307,4 +1298,76 @@ oefs_result_t oefs_delete(oefs_t* oefs)
 
 done:
     return result;
+}
+
+oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* name)
+{
+    oefs_dir_t* dir = NULL;
+    oefs_file_t* file = NULL;
+    uint32_t inode_blkno = 0;
+
+    if (!oefs || !name)
+        goto done;
+
+    if (strcmp(name, "/") == 0)
+    {
+        inode_blkno = OEFS_ROOT_INODE_BLKNO;
+    }
+    else
+    {
+        /* ATTN: */
+        goto done;
+    }
+
+    if (_open_file(oefs, inode_blkno, &file) != 0)
+        goto done;
+
+    if (!(dir = calloc(1, sizeof(oefs_dir_t))))
+        goto done;
+
+    dir->file = file;
+    file = NULL;
+
+done:
+
+    if (file)
+        oefs_close_file(file);
+
+    return dir;
+}
+
+oefs_dirent_t* oefs_readdir(oefs_dir_t* dir)
+{
+    oefs_dirent_t* ret = NULL;
+    int32_t n;
+
+    if (!dir || !dir->file)
+        goto done;
+
+    n = oefs_read_file(dir->file, &dir->dirent, sizeof(oefs_dirent_t));
+
+    if (n != sizeof(oefs_dirent_t))
+        goto done;
+
+    ret = &dir->dirent;
+
+done:
+
+    return ret;
+}
+
+int oefs_closedir(oefs_dir_t* dir)
+{
+    int ret = -1;
+
+    if (!dir || !dir->file)
+        goto done;
+
+    oefs_close_file(dir->file);
+    dir->file = NULL;
+
+    free(dir);
+
+done:
+    return ret;
 }

@@ -20,7 +20,7 @@
 
 #define OEFS_ROOT_INODE_BLKNO 1
 
-/* oefs_dir_entry_t.d_type */
+/* oefs_dirent_t.d_type */
 #define OEFS_DT_UNKNOWN 0
 #define OEFS_DT_FIFO 1 /* unused */
 #define OEFS_DT_CHR 2  /* unused */
@@ -101,20 +101,19 @@ typedef struct _oefs_bnode
 
 OE_STATIC_ASSERT(sizeof(oefs_bnode_t) == OEFS_BLOCK_SIZE);
 
-typedef struct _oefs_dir_entry
+typedef struct _oefs_dirent
 {
-    /* Inode of this entry. */
-    uint32_t d_inode;
-
-    /* Type of this entry (file, directory, etc.). */
-    uint32_t d_type;
-
-    /* Name of this file. */
+    uint32_t d_ino;
+    uint32_t d_off;
+    uint16_t d_reclen;
+    uint8_t d_type;
     char d_name[OEFS_PATH_MAX];
+    uint8_t __d_reserved;
+} oefs_dirent_t;
 
-} oefs_dir_entry_t;
+typedef struct _oefs_dir oefs_dir_t;
 
-OE_STATIC_ASSERT(sizeof(oefs_dir_entry_t) == 264);
+OE_STATIC_ASSERT(sizeof(oefs_dirent_t) == 256+12);
 
 typedef enum _oefs_result {
     OEFS_OK,
@@ -158,5 +157,11 @@ int32_t oefs_read_file(oefs_file_t* file, void* data, uint32_t size);
 int32_t oefs_write_file(oefs_file_t* file, const void* data, uint32_t size);
 
 int oefs_close_file(oefs_file_t* file);
+
+oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* name);
+
+oefs_dirent_t* oefs_readdir(oefs_dir_t* dir);
+
+int oefs_closedir(oefs_dir_t* dir);
 
 #endif /* _oe_oefs_h */
