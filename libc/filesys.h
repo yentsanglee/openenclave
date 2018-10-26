@@ -2,7 +2,11 @@
 #define _oe_filesys_h
 
 #include <fcntl.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "blockdev.h"
 
 typedef struct _oe_file oe_file_t;
 typedef struct _oe_filesys oe_filesys_t;
@@ -33,5 +37,7 @@ int oe_filesys_mount(oe_filesys_t* filesys, const char* path);
 // Lookup the file system that contains the given path. Path_out will contain
 // the absolute path of the file within the file system.
 oe_filesys_t* oe_filesys_lookup(const char* path, char path_out[PATH_MAX]);
+
+oe_filesys_t* oefs_new_filesys(oe_block_dev_t* dev);
 
 #endif /* _oe_filesys_h */

@@ -2,10 +2,9 @@
 #include <openenclave/internal/mount.h>
 #include <openenclave/internal/raise.h>
 #include "blockdev.h"
-#include "ext2.h"
 #include "filesys.h"
 
-static oe_result_t _mount_ext2(const char* device_name, const char* path)
+static oe_result_t _mount_oefs(const char* device_name, const char* path)
 {
     oe_result_t result = OE_UNEXPECTED;
     oe_block_dev_t* block_dev = NULL;
@@ -14,9 +13,9 @@ static oe_result_t _mount_ext2(const char* device_name, const char* path)
     /* Create the host block device */
     OE_CHECK(oe_open_host_block_dev(device_name, &block_dev));
 
-    /* Create an ext2 filesys object */
+    /* Create an oefs filesys object */
     {
-        if (!(filesys = ext2_new_filesys(block_dev)))
+        if (!(filesys = oefs_new_filesys(block_dev)))
             OE_RAISE(OE_FAILURE);
 
         block_dev = NULL;
@@ -51,7 +50,7 @@ oe_result_t oe_mount(oe_mount_type_t type, const char* device, const char* path)
     switch (type)
     {
         case OE_MOUNT_TYPE_EXT2:
-            OE_CHECK(_mount_ext2(device, path));
+            OE_CHECK(_mount_oefs(device, path));
             break;
     }
 

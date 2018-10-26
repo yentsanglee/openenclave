@@ -15,7 +15,6 @@ add_library(oelibc STATIC
     buf.c
     dladdr.c
     exp2l.S
-    ext2.c
     file.c
     cwd.c
     filesys.c
@@ -24,6 +23,7 @@ add_library(oelibc STATIC
     link.c
     locale.c
     oefs.c
+    oefsfilesys.c
     malloc.c
     mount.c
     pthread.c
