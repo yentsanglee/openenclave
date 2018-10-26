@@ -287,7 +287,7 @@ done:
     return result;
 }
 
-oefs_result_t oefs_load_file(
+static oefs_result_t _load_file(
     oefs_t* oefs,
     uint32_t ino,
     void** data,
@@ -643,6 +643,71 @@ static bool _sane_file(oefs_file_t* file)
         return false;
 
     return true;
+}
+
+static oefs_result_t _split_path(
+    const char* path,
+    char dirname[OEFS_PATH_MAX],
+    char basename[OEFS_PATH_MAX])
+{
+    oefs_result_t result = OEFS_FAILED;
+    char* slash;
+
+    /* Reject paths that are too long. */
+    if (strlen(path) >= OEFS_PATH_MAX)
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    /* Reject paths that are not absolute */
+    if (path[0] != '/')
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    /* Handle root directory up front */
+    if (strcmp(path, "/") == 0)
+    {
+        strlcpy(dirname, "/", OEFS_PATH_MAX);
+        strlcpy(basename, "/", OEFS_PATH_MAX);
+        result = OEFS_OK;
+        goto done;
+    }
+
+    /* This cannot fail (prechecked) */
+    if (!(slash = strrchr(path, '/')))
+        goto done;
+
+    /* If path ends with '/' character */
+    if (!slash[1])
+        goto done;
+
+    /* Split the path */
+    {
+        if (slash == path)
+        {
+            strlcpy(dirname, "/", OEFS_PATH_MAX);
+        }
+        else
+        {
+            uint32_t index = slash - path;
+            strlcpy(dirname, path, OEFS_PATH_MAX);
+
+            if (index < OEFS_PATH_MAX)
+                dirname[index] = '\0';
+            else
+                dirname[OEFS_PATH_MAX - 1] = '\0';
+        }
+
+        strlcpy(basename, slash + 1, OEFS_PATH_MAX);
+    }
+
+    result = OEFS_OK;
+
+done:
+    return result;
 }
 
 /*
@@ -1182,90 +1247,6 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_dev_t* dev)
             goto done;
     }
 
-#if 0
-    {
-        printf("<<<<<<<<<<\n");
-
-        if (_dump_directory(oefs, OEFS_ROOT_INO) != OEFS_OK)
-            goto done;
-
-        printf(">>>>>>>>>>\n");
-    }
-#endif
-
-#if 0
-    {
-        oefs_file_t* file;
-        int32_t n;
-        uint32_t count = 0;
-        oefs_dirent_t entry;
-
-        if (_open_file(oefs, OEFS_ROOT_INO, &file) != 0)
-            goto done;
-
-        printf("<<<<<<<<<<\n");
-        {
-            memset(&entry, 0, sizeof(entry));
-
-            while ((n = oefs_read_file(file, &entry, sizeof(entry))) > 0)
-            {
-                count++;
-            }
-
-            printf("count=%d\n", count);
-        }
-        printf(">>>>>>>>>>\n");
-
-        buf_t buf = BUF_INITIALIZER;
-
-        /* Write directory entries. */
-        const uint32_t N = 6000;
-        for (uint32_t i = 0; i < N; i++)
-        {
-            entry.d_ino = OEFS_ROOT_INO;
-            entry.d_type = OEFS_DT_REG;
-            sprintf(entry.d_name, "filename-%u", count + i);
-
-            if (buf_append(&buf, &entry, sizeof(entry)) != 0)
-            {
-                fprintf(stderr, "EEEEEEEEEEEEEEEEEEEEEEE\n");
-                oe_abort();
-            }
-
-            printf("name{%s}\n", entry.d_name);
-
-            const size_t r = sizeof(entry);
-
-            if ((n = oefs_write_file(file, &entry, sizeof(entry))) != r)
-            {
-                fprintf(stderr, "error: oops\n");
-                goto done;
-            }
-        }
-
-        if ((n = oefs_write_file(file, buf.data, buf.size)) != buf.size)
-        {
-            fprintf(stderr, "error: oops\n");
-            goto done;
-        }
-
-        buf_release(&buf);
-
-        oefs_close_file(file);
-    }
-#endif
-
-#if 0
-    {
-        printf("<<<<<<<<<<\n");
-
-        if (_dump_directory(oefs, OEFS_ROOT_INO) != OEFS_OK)
-            goto done;
-
-        printf(">>>>>>>>>>\n");
-    }
-#endif
-
     *oefs_out = oefs;
     oefs = NULL;
 
@@ -1400,6 +1381,7 @@ oefs_result_t __oefs_create_file(
 
         memset(&inode, 0, sizeof(oefs_inode_t));
 
+        inode.i_magic = OEFS_INODE_MAGIC;
         inode.i_links = 1;
 
         if (_assign_blkno(oefs, &ino) != OEFS_OK)
@@ -1463,6 +1445,129 @@ done:
 
     if (file)
         oefs_close_file(file);
+
+    return result;
+}
+
+oefs_result_t oefs_open_file(
+    oefs_t* oefs,
+    const char* pathname,
+    int flags,
+    uint32_t mode,
+    oefs_file_t** file_out)
+{
+    oefs_result_t result = OEFS_FAILED;
+    char dirname[OEFS_PATH_MAX];
+    char basename[OEFS_PATH_MAX];
+    oefs_dir_t* dir = NULL;
+    oefs_dirent_t* ent;
+    oefs_file_t* file = NULL;
+    uint32_t ino = 0;
+
+    if (file_out)
+        *file_out = NULL;
+
+    if (!oefs || !pathname || !file_out)
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    if (_split_path(pathname, dirname, basename) != OEFS_OK)
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    if (!(dir = oefs_opendir(oefs, dirname)))
+    {
+        result = OEFS_NOT_FOUND;
+        goto done;
+    }
+
+    while ((ent = oefs_readdir(dir)))
+    {
+        if (strcmp(ent->d_name, basename) == 0)
+        {
+            ino = ent->d_ino;
+            break;
+        }
+    }
+
+    if (!ino)
+    {
+        result = OEFS_NOT_FOUND;
+        goto done;
+    }
+
+    if (_open_file(oefs, ino, &file) != OEFS_OK)
+        goto done;
+
+    *file_out = file;
+
+    result = OEFS_OK;
+
+done:
+
+    if (dir)
+        oefs_closedir(dir);
+
+    return result;
+}
+
+oefs_result_t oefs_load_file(
+    oefs_t* oefs,
+    const char* path,
+    void** data_out,
+    size_t* size_out)
+{
+    oefs_result_t result = OEFS_FAILED;
+    oefs_file_t* file = NULL;
+    buf_t buf = BUF_INITIALIZER;
+
+    if (data_out)
+        *data_out = NULL;
+
+    if (size_out)
+        *size_out = 0;
+
+    if (!oefs || !path || !data_out || !size_out)
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    if (oefs_open_file(oefs, path, 0, 0, &file) != OEFS_OK)
+        goto done;
+
+    {
+        char block[OEFS_BLOCK_SIZE];
+        int32_t n;
+
+        while ((n = oefs_read_file(file, block, sizeof(block))) > 0)
+        {
+            if (n != sizeof(block))
+                goto done;
+
+            if (buf_append(&buf, block, sizeof(block)) != 0)
+                goto done;
+        }
+    }
+
+    *data_out = buf.data;
+    *size_out = buf.size;
+
+    buf.data = NULL;
+    buf.size = 0;
+
+    result = OEFS_OK;
+
+done:
+
+    if (file)
+        oefs_close_file(file);
+
+    buf_release(&buf);
 
     return result;
 }

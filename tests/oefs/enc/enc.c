@@ -13,6 +13,7 @@
 #include <string.h>
 #include "../../../libc/blockdev.h"
 #include "../../../libc/oefs.h"
+#include "../../../libc/buf.h"
 #include "oefs_t.h"
 
 #define INIT
@@ -52,6 +53,48 @@ static void create_files(oefs_t* oefs)
     }
 }
 
+static void update_file(oefs_t* oefs, const char* path)
+{
+    oefs_result_t r;
+    oefs_file_t* file = NULL;
+    const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+    const size_t FILE_SIZE = 1024;
+    buf_t buf = BUF_INITIALIZER;
+    int32_t n;
+
+    r = oefs_open_file(oefs, path, 0, 0, &file);
+    OE_TEST(r == OEFS_OK);
+
+    for (size_t i = 0; i < FILE_SIZE; i++)
+    {
+        char c = alphabet[i % (sizeof(alphabet)-1)];
+
+        if (buf_append(&buf, &c, 1) != 0)
+            OE_TEST(false);
+    }
+
+    n = oefs_write_file(file, buf.data, buf.size);
+    OE_TEST(n == buf.size);
+
+    oefs_close_file(file);
+
+    /* Load the file to make sure the changes took. */
+    {
+        void* data;
+        size_t size;
+
+        r = oefs_load_file(oefs, path, &data, &size);
+        OE_TEST(r == OEFS_OK);
+        printf("%.*s\n", (uint32_t)size, data);
+        OE_TEST(size == buf.size);
+        OE_TEST(memcmp(data, buf.data, size) == 0);
+
+        free(data);
+    }
+
+    buf_release(&buf);
+}
+
 int test_oefs(const char* oefs_filename)
 {
     oe_block_dev_t* dev;
@@ -84,6 +127,9 @@ int test_oefs(const char* oefs_filename)
 
     /* Dump the root directory. */
     dump_dir(oefs, "/");
+
+    /* Test updating of a file. */
+    update_file(oefs, "/filename-1");
 
     oefs_delete(oefs);
     dev->close(dev);

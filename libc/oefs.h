@@ -170,4 +170,17 @@ oefs_result_t __oefs_create_file(
     const char* name,
     oefs_file_t** file_out);
 
+oefs_result_t oefs_open_file(
+    oefs_t* oefs,
+    const char* pathname,
+    int flags,
+    uint32_t mode,
+    oefs_file_t** file_out);
+
+oefs_result_t oefs_load_file(
+    oefs_t* oefs,
+    const char* path,
+    void** data_out,
+    size_t* size_out);
+
 #endif /* _oe_oefs_h */
