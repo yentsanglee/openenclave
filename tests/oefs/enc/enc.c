@@ -17,42 +17,67 @@
 
 #define INIT
 
+#define BLOCK_SIZE 512
+
+static void dump_dir(oefs_t* oefs, const char* dirname)
+{
+    oefs_dir_t* dir;
+    oefs_dirent_t* ent;
+
+    dir = oefs_opendir(oefs, dirname);
+    OE_TEST(dir != NULL);
+
+    while ((ent = oefs_readdir(dir)))
+    {
+        printf("name=%s\n", ent->d_name);
+    }
+
+    oefs_closedir(dir);
+}
+
 int test_oefs(const char* oefs_filename)
 {
     oe_block_dev_t* dev;
-#ifdef INIT
     size_t num_blocks = 4 * 4096;
-#endif
     oefs_t* oefs;
     oe_result_t result;
     oefs_result_t r;
-    const size_t NUM_FILES = 1000;
+    const size_t NUM_FILES = 100;
+    size_t size;
 
+    (void)NUM_FILES;
+    (void)oefs;
+
+    {
+        r = oefs_compute_size(num_blocks, &size);
+        OE_TEST(r == OEFS_OK);
+    }
+
+#if 1
     {
         result = oe_open_host_block_dev("/tmp/oefs", &dev);
         OE_TEST(result == OE_OK);
     }
-
-#ifdef INIT
+#else
     {
-        size_t size;
-        r = oefs_compute_size(num_blocks, &size);
-        OE_TEST(r == OEFS_OK);
-        printf("*** size=%zu\n", size);
+        result = oe_open_ram_block_dev(size, &dev);
+        OE_TEST(result == OE_OK);
+        OE_TEST(dev != NULL);
     }
 #endif
 
+
+#if 1
 #ifdef INIT
     {
         r = oefs_initialize(dev, num_blocks);
         OE_TEST(r == OEFS_OK);
     }
 #endif
+#endif
 
-    {
-        r = oefs_new(&oefs, dev);
-        OE_TEST(r == OEFS_OK);
-    }
+    r = oefs_new(&oefs, dev);
+    OE_TEST(r == OEFS_OK);
 
     /* Create multiple files. */
     for (size_t i = 0; i < NUM_FILES; i++)
@@ -67,20 +92,7 @@ int test_oefs(const char* oefs_filename)
         oefs_close_file(file);
     }
 
-    {
-        oefs_dir_t* dir;
-        oefs_dirent_t* ent;
-
-        dir = oefs_opendir(oefs, "/");
-        OE_TEST(dir != NULL);
-
-        while ((ent = oefs_readdir(dir)))
-        {
-            printf("name=%s\n", ent->d_name);
-        }
-
-        oefs_closedir(dir);
-    }
+    dump_dir(oefs, "/");
 
     oefs_delete(oefs);
     dev->close(dev);

@@ -10,6 +10,7 @@ typedef struct _block_dev
 {
     oe_block_dev_t base;
     uint8_t* mem;
+    size_t size;
 } block_dev_t;
 
 static int _block_dev_close(oe_block_dev_t* dev)
@@ -21,6 +22,7 @@ static int _block_dev_close(oe_block_dev_t* dev)
         goto done;
 
     free(device->mem);
+    free(device);
 
     ret = 0;
 
@@ -39,7 +41,12 @@ static int _block_dev_get(
     if (!device || !data)
         goto done;
 
-    memcpy(data, device->mem + (blkno * BLOCK_SIZE), BLOCK_SIZE);
+    uint8_t* ptr = device->mem + (blkno * BLOCK_SIZE);
+
+    if (ptr + BLOCK_SIZE > device->mem + device->size)
+        goto done;
+
+    memcpy(data, ptr, BLOCK_SIZE);
 
     ret = 0;
 
@@ -59,7 +66,12 @@ static int _block_dev_put(
     if (!device || !data)
         goto done;
 
-    memcpy(device->mem + (blkno * BLOCK_SIZE), data, BLOCK_SIZE);
+    uint8_t* ptr = device->mem + (blkno * BLOCK_SIZE);
+
+    if (ptr + BLOCK_SIZE > device->mem + device->size)
+        goto done;
+
+    memcpy(ptr, data, BLOCK_SIZE);
 
     ret = 0;
 
@@ -85,13 +97,18 @@ oe_result_t oe_open_ram_block_dev(
     if (size % BLOCK_SIZE)
         goto done;
 
+    if (!(device = calloc(1, sizeof(block_dev_t))))
+        goto done;
+
     device->base.close = _block_dev_close;
     device->base.get = _block_dev_get;
     device->base.put = _block_dev_put;
+    device->size = size;
 
     if (!(device->mem = calloc(1, size)))
         goto done;
 
+    *block_dev = &device->base;
     device = NULL;
 
     result = OE_OK;
