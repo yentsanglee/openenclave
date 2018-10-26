@@ -1283,22 +1283,29 @@ done:
     return result;
 }
 
-oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* name)
+oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* path)
 {
     oefs_dir_t* dir = NULL;
     oefs_file_t* file = NULL;
     uint32_t ino = 0;
+    char dirname[OEFS_PATH_MAX];
+    char basename[OEFS_PATH_MAX];
 
-    if (!oefs || !name)
+    if (!oefs || !path)
         goto done;
 
-    if (strcmp(name, "/") == 0)
+    if (_split_path(path, dirname, basename) != OEFS_OK)
+        goto done;
+
+printf("dirname{%s}\n", dirname);
+printf("basename{%s}\n", basename);
+
+    if (strcmp(dirname, "/") == 0 && strcmp(basename, "/") == 0)
     {
         ino = OEFS_ROOT_INO;
     }
     else
     {
-        /* ATTN: */
         goto done;
     }
 
