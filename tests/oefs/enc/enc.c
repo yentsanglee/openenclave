@@ -46,7 +46,8 @@ static void create_files(oefs_t* oefs)
         snprintf(name, sizeof(name), "filename-%zu", i);
 
         oefs_file_t* file = NULL;
-        oefs_result_t r = __oefs_create_file(oefs, OEFS_ROOT_INO, name, &file);
+        oefs_result_t r = __oefs_create_file_or_dir(
+            oefs, OEFS_ROOT_INO, name, OEFS_DT_REG, &file);
         OE_TEST(r == OEFS_OK);
         OE_TEST(file != NULL);
         oefs_close_file(file);

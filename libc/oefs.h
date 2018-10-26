@@ -164,10 +164,11 @@ oefs_dirent_t* oefs_readdir(oefs_dir_t* dir);
 
 int oefs_closedir(oefs_dir_t* dir);
 
-oefs_result_t __oefs_create_file(
+oefs_result_t __oefs_create_file_or_dir(
     oefs_t* oefs,
     uint32_t dir_ino,
     const char* name,
+    uint8_t type,
     oefs_file_t** file_out);
 
 oefs_result_t oefs_open_file(

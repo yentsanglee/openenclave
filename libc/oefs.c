@@ -1355,10 +1355,11 @@ done:
     return ret;
 }
 
-oefs_result_t __oefs_create_file(
+oefs_result_t __oefs_create_file_or_dir(
     oefs_t* oefs,
     uint32_t dir_ino,
     const char* name,
+    uint8_t type,
     oefs_file_t** file_out)
 {
     oefs_result_t result = OEFS_FAILED;
@@ -1397,7 +1398,7 @@ oefs_result_t __oefs_create_file(
             goto done;
     }
 
-    /* Add an entry to the directory for this file. */
+    /* Add an entry to the directory for this inode. */
     {
         oefs_dirent_t dirent;
         int32_t n;
@@ -1424,7 +1425,7 @@ oefs_result_t __oefs_create_file(
             dirent.d_ino = ino;
             dirent.d_off = file->offset;
             dirent.d_reclen = sizeof(dirent);
-            dirent.d_type = OEFS_DT_REG;
+            dirent.d_type = type;
             strlcpy(dirent.d_name, name, sizeof(dirent.d_name));
 
             n = oefs_write_file(file, &dirent, sizeof(dirent));
@@ -1540,6 +1541,7 @@ oefs_result_t oefs_load_file(
     if (oefs_open_file(oefs, path, 0, 0, &file) != OEFS_OK)
         goto done;
 
+    /* Read the blocks into memory. */
     {
         char block[OEFS_BLOCK_SIZE];
         int32_t n;
