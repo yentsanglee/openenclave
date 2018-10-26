@@ -20,7 +20,9 @@
 int test_oefs(const char* oefs_filename)
 {
     oe_block_device_t* dev;
-    size_t num_blocks = 10*4096;
+#ifdef INIT
+    size_t num_blocks = 4*4096;
+#endif
     oefs_t* oefs;
 
     {
@@ -28,12 +30,14 @@ int test_oefs(const char* oefs_filename)
         OE_TEST(r == OE_OK);
     }
 
+#ifdef INIT
     {
         size_t size;
         oefs_result_t r = oefs_compute_size(num_blocks, &size);
         OE_TEST(r == OEFS_OK);
         printf("*** size=%zu\n", size);
     }
+#endif
 
 #ifdef INIT
     {
