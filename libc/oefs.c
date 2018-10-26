@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "oefs.h"
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/hexdump.h>
@@ -45,7 +46,7 @@ struct _oefs_file
 {
     oefs_t* oefs;
 
-    uint32_t inode_blkno;
+    uint32_t ino;
     oefs_inode_t inode;
 
     uint32_t last_bnode_blkno;
@@ -147,13 +148,13 @@ done:
 
 static oefs_result_t _load_inode(
     oefs_t* oefs,
-    uint32_t inode_blkno,
+    uint32_t ino,
     oefs_inode_t* inode)
 {
     oefs_result_t result = OEFS_FAILED;
 
     /* Read this inode into memory. */
-    if (_read_block(oefs, inode_blkno, inode) != OEFS_OK)
+    if (_read_block(oefs, ino, inode) != OEFS_OK)
         goto done;
 
     /* Check the inode magic number. */
@@ -236,7 +237,7 @@ done:
 
 static oefs_result_t _open_file(
     oefs_t* oefs,
-    uint32_t inode_blkno,
+    uint32_t ino,
     oefs_file_t** file_out)
 {
     oefs_result_t result = OEFS_FAILED;
@@ -245,17 +246,17 @@ static oefs_result_t _open_file(
     if (file_out)
         *file_out = NULL;
 
-    if (!oefs || !inode_blkno || !file_out)
+    if (!oefs || !ino || !file_out)
         goto done;
 
     if (!(file = calloc(1, sizeof(oefs_file_t))))
         goto done;
 
     file->oefs = oefs;
-    file->inode_blkno = inode_blkno;
+    file->ino = ino;
 
     /* Read this inode into memory. */
-    if (_load_inode(oefs, inode_blkno, &file->inode) != OEFS_OK)
+    if (_load_inode(oefs, ino, &file->inode) != OEFS_OK)
         goto done;
 
     /* Load the block numbers into memory. */
@@ -286,7 +287,9 @@ done:
     return result;
 }
 
-oefs_result_t oefs_load_file(oefs_t* oefs, uint32_t inode_blkno,
+oefs_result_t oefs_load_file(
+    oefs_t* oefs,
+    uint32_t ino,
     void** data,
     size_t* size)
 {
@@ -302,7 +305,7 @@ oefs_result_t oefs_load_file(oefs_t* oefs, uint32_t inode_blkno,
         *size = 0;
 
     /* Read this inode into memory. */
-    if (_load_inode(oefs, inode_blkno, &inode) != OEFS_OK)
+    if (_load_inode(oefs, ino, &inode) != OEFS_OK)
         goto done;
 
     /* Load the block numbers into memory. */
@@ -359,6 +362,7 @@ static oefs_result_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
         {
             _set_bit(oefs->bitmap, i);
             *blkno = i + 1;
+            oefs->sb.s_free_blocks--;
             result = OEFS_OK;
             goto done;
         }
@@ -383,6 +387,7 @@ static oefs_result_t _unassign_blkno(oefs_t* oefs, uint32_t blkno)
         goto done;
 
     _clr_bit(oefs->bitmap, index);
+    oefs->sb.s_free_blocks++;
 
     result = OEFS_OK;
 
@@ -408,7 +413,7 @@ static oefs_result_t _flush_bitmap(oefs_t* oefs)
 {
     oefs_result_t result = OEFS_OK;
     size_t num_bitmap_blocks;
-    
+
     /* Calculate the number of bitmap blocks. */
     num_bitmap_blocks = oefs->sb.s_num_blocks / OEFS_BITS_PER_BLOCK;
 
@@ -470,13 +475,10 @@ static oefs_result_t _write_data(
         if (_write_block(oefs, blkno, &block))
             goto done;
 
-        /* Update the super block */
-        oefs->sb.s_free_blocks--;
-
         /* Advance to next block of data to write. */
         ptr += copy_size;
         remaining -= copy_size;
-        
+
         /* Set this flag to the memory structures will be flushed. */
         changed = true;
     }
@@ -506,7 +508,7 @@ static void _fill_slots(
     const uint32_t* ptr = *ptr_in_out;
     uint32_t rem = *rem_in_out;
     uint32_t i = 0;
-    
+
     /* Find the first free slot if any. */
     while (i < num_slots && slots[i])
         i++;
@@ -524,7 +526,7 @@ static void _fill_slots(
 }
 
 static oefs_result_t _append_block_chain(
-    oefs_file_t* file, 
+    oefs_file_t* file,
     const buf_u32_t* blknos)
 {
     oefs_result_t result = OEFS_FAILED;
@@ -543,7 +545,7 @@ static oefs_result_t _append_block_chain(
         object = &file->inode;
         slots = file->inode.i_blocks;
         count = COUNTOF(file->inode.i_blocks);
-        blkno = file->inode_blkno;
+        blkno = file->ino;
         next = &file->inode.i_next;
     }
     else
@@ -606,14 +608,14 @@ done:
     return result;
 }
 
-static oefs_result_t _dump_directory(oefs_t* oefs, uint32_t inode_blkno)
+static oefs_result_t _dump_directory(oefs_t* oefs, uint32_t ino)
 {
     oefs_result_t result = OEFS_FAILED;
     oefs_file_t* file;
     oefs_dirent_t entry;
     int32_t n;
 
-    if (_open_file(oefs, inode_blkno, &file) != 0)
+    if (_open_file(oefs, ino, &file) != 0)
         goto done;
 
     while ((n = oefs_read_file(file, &entry, sizeof(entry))) > 0)
@@ -634,7 +636,7 @@ static bool _sane_file(oefs_file_t* file)
     if (!file->oefs)
         return false;
 
-    if (!file->inode_blkno)
+    if (!file->ino)
         return false;
 
     if (file->inode.i_total_blocks != file->blknos.size)
@@ -651,7 +653,7 @@ static bool _sane_file(oefs_file_t* file)
 **==============================================================================
 */
 
-oefs_result_t oefs_initialize(oe_block_device_t* dev, size_t num_blocks)
+oefs_result_t oefs_initialize(oe_block_dev_t* dev, size_t num_blocks)
 {
     oefs_result_t result = OEFS_FAILED;
     size_t num_bitmap_blocks;
@@ -769,14 +771,14 @@ oefs_result_t oefs_initialize(oe_block_device_t* dev, size_t num_blocks)
         uint8_t blocks[2][OEFS_BLOCK_SIZE];
 
         oefs_dirent_t dir_entries[] = {
-            {.d_ino = OEFS_ROOT_INODE_BLKNO,
+            {.d_ino = OEFS_ROOT_INO,
              .d_off = 0 * sizeof(oefs_dirent_t),
              .d_reclen = sizeof(oefs_dirent_t),
              .d_type = OEFS_DT_DIR,
              .d_name = ".."
 
             },
-            {.d_ino = OEFS_ROOT_INODE_BLKNO,
+            {.d_ino = OEFS_ROOT_INO,
              .d_off = 1 * sizeof(oefs_dirent_t),
              .d_reclen = sizeof(oefs_dirent_t),
              .d_type = OEFS_DT_DIR,
@@ -815,25 +817,25 @@ done:
     return result;
 }
 
-typedef struct _block_device
+typedef struct _block_dev
 {
-    oe_block_device_t base;
+    oe_block_dev_t base;
     size_t size;
-} block_device_t;
+} block_dev_t;
 
-static int _block_device_close(oe_block_device_t* dev)
+static int _block_dev_close(oe_block_dev_t* dev)
 {
     return 0;
 }
 
-static int _block_device_get(oe_block_device_t* dev, uint32_t blkno, void* data)
+static int _block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
 {
     return -1;
 }
 
-int _block_device_put(oe_block_device_t* dev, uint32_t blkno, const void* data)
+int _block_dev_put(oe_block_dev_t* dev, uint32_t blkno, const void* data)
 {
-    block_device_t* device = (block_device_t*)dev;
+    block_dev_t* device = (block_dev_t*)dev;
     device->size += OEFS_BLOCK_SIZE;
     return 0;
 }
@@ -842,11 +844,11 @@ oefs_result_t oefs_compute_size(size_t num_blocks, size_t* total_bytes)
 {
     oefs_result_t result = OEFS_FAILED;
 
-    block_device_t dev = {.base =
+    block_dev_t dev = {.base =
                               {
-                                  .close = _block_device_close,
-                                  .get = _block_device_get,
-                                  .put = _block_device_put,
+                                  .close = _block_dev_close,
+                                  .get = _block_dev_get,
+                                  .put = _block_dev_put,
                               },
                           .size = 0};
 
@@ -1070,7 +1072,7 @@ int32_t oefs_write_file(oefs_file_t* file, const void* data, uint32_t size)
     file->inode.i_size = new_file_size;
 
     /* Flush the inode to disk. */
-    if (_write_block(file->oefs, file->inode_blkno, &file->inode) != OEFS_OK)
+    if (_write_block(file->oefs, file->ino, &file->inode) != OEFS_OK)
         goto done;
 
     /* Calculate number of bytes read */
@@ -1095,7 +1097,7 @@ done:
     return ret;
 }
 
-oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
+oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_dev_t* dev)
 {
     oefs_result_t result = OEFS_FAILED;
     size_t num_blocks;
@@ -1173,7 +1175,7 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
     {
         oefs_inode_t inode;
 
-        if (_read_block(oefs, OEFS_ROOT_INODE_BLKNO, &inode) != OEFS_OK)
+        if (_read_block(oefs, OEFS_ROOT_INO, &inode) != OEFS_OK)
             goto done;
 
         if (inode.i_magic != OEFS_INODE_MAGIC)
@@ -1184,7 +1186,7 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
     {
         printf("<<<<<<<<<<\n");
 
-        if (_dump_directory(oefs, OEFS_ROOT_INODE_BLKNO) != OEFS_OK)
+        if (_dump_directory(oefs, OEFS_ROOT_INO) != OEFS_OK)
             goto done;
 
         printf(">>>>>>>>>>\n");
@@ -1198,7 +1200,7 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
         uint32_t count = 0;
         oefs_dirent_t entry;
 
-        if (_open_file(oefs, OEFS_ROOT_INODE_BLKNO, &file) != 0)
+        if (_open_file(oefs, OEFS_ROOT_INO, &file) != 0)
             goto done;
 
         printf("<<<<<<<<<<\n");
@@ -1220,7 +1222,7 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
         const uint32_t N = 6000;
         for (uint32_t i = 0; i < N; i++)
         {
-            entry.d_ino = OEFS_ROOT_INODE_BLKNO;
+            entry.d_ino = OEFS_ROOT_INO;
             entry.d_type = OEFS_DT_REG;
             sprintf(entry.d_name, "filename-%u", count + i);
 
@@ -1257,7 +1259,7 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
     {
         printf("<<<<<<<<<<\n");
 
-        if (_dump_directory(oefs, OEFS_ROOT_INODE_BLKNO) != OEFS_OK)
+        if (_dump_directory(oefs, OEFS_ROOT_INO) != OEFS_OK)
             goto done;
 
         printf(">>>>>>>>>>\n");
@@ -1304,14 +1306,14 @@ oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* name)
 {
     oefs_dir_t* dir = NULL;
     oefs_file_t* file = NULL;
-    uint32_t inode_blkno = 0;
+    uint32_t ino = 0;
 
     if (!oefs || !name)
         goto done;
 
     if (strcmp(name, "/") == 0)
     {
-        inode_blkno = OEFS_ROOT_INODE_BLKNO;
+        ino = OEFS_ROOT_INO;
     }
     else
     {
@@ -1319,7 +1321,7 @@ oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* name)
         goto done;
     }
 
-    if (_open_file(oefs, inode_blkno, &file) != 0)
+    if (_open_file(oefs, ino, &file) != 0)
         goto done;
 
     if (!(dir = calloc(1, sizeof(oefs_dir_t))))
@@ -1370,4 +1372,97 @@ int oefs_closedir(oefs_dir_t* dir)
 
 done:
     return ret;
+}
+
+oefs_result_t __oefs_create_file(
+    oefs_t* oefs,
+    uint32_t dir_ino,
+    const char* name,
+    oefs_file_t** file_out)
+{
+    oefs_result_t result = OEFS_FAILED;
+    uint32_t ino;
+    oefs_file_t* file = NULL;
+
+    if (file_out)
+        *file_out = NULL;
+
+    if (!oefs || !dir_ino || !name || strlen(name) >= OEFS_PATH_MAX ||
+        !file_out)
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    /* Create an inode for the new file. */
+    {
+        oefs_inode_t inode;
+
+        memset(&inode, 0, sizeof(oefs_inode_t));
+
+        inode.i_links = 1;
+
+        if (_assign_blkno(oefs, &ino) != OEFS_OK)
+            goto done;
+
+        if (_flush_bitmap(oefs) != OEFS_OK)
+            goto done;
+
+        if (_flush_super_block(oefs) != OEFS_OK)
+            goto done;
+
+        if (_write_block(oefs, ino, &inode))
+            goto done;
+    }
+
+    /* Add an entry to the directory for this file. */
+    {
+        oefs_dirent_t dirent;
+        int32_t n;
+
+        if (_open_file(oefs, dir_ino, &file) != 0)
+            goto done;
+
+        /* Check for duplicates. */
+        while ((n = oefs_read_file(file, &dirent, sizeof(dirent))) > 0)
+        {
+            if (n != sizeof(dirent))
+                goto done;
+
+            if (strcmp(dirent.d_name, name) == 0)
+            {
+                result = OEFS_ALREADY_EXISTS;
+                goto done;
+            }
+        }
+
+        /* Append the entry to the directory. */
+        {
+            memset(&dirent, 0, sizeof(dirent));
+            dirent.d_ino = ino;
+            dirent.d_off = file->offset;
+            dirent.d_reclen = sizeof(dirent);
+            dirent.d_type = OEFS_DT_REG;
+            strlcpy(dirent.d_name, name, sizeof(dirent.d_name));
+
+            n = oefs_write_file(file, &dirent, sizeof(dirent));
+
+            if (n != sizeof(dirent))
+                goto done;
+        }
+    }
+
+    *file_out = file;
+    file = NULL;
+
+    result = OEFS_OK;
+
+done:
+
+    /* TODO: should blocks be unassigned on failure? */
+
+    if (file)
+        oefs_close_file(file);
+
+    return result;
 }

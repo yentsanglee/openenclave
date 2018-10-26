@@ -1,8 +1,8 @@
-#include "blockdevice.h"
+#include "hostblockdev.h"
 #include <openenclave/internal/calls.h>
 #include <stdio.h>
 
-void oe_handle_open_block_device(
+void oe_handle_open_block_dev(
     oe_enclave_t* enclave,
     uint64_t arg_in,
     uint64_t* arg_out)
@@ -22,7 +22,7 @@ void oe_handle_open_block_device(
     *arg_out = (uint64_t)stream;
 }
 
-void oe_handle_close_block_device(oe_enclave_t* enclave, uint64_t arg_in)
+void oe_handle_close_block_dev(oe_enclave_t* enclave, uint64_t arg_in)
 {
     FILE* file = (FILE*)arg_in;
 
@@ -30,9 +30,9 @@ void oe_handle_close_block_device(oe_enclave_t* enclave, uint64_t arg_in)
         fclose(file);
 }
 
-void oe_handle_block_device_get(oe_enclave_t* enclave, uint64_t arg_in)
+void oe_handle_block_dev_get(oe_enclave_t* enclave, uint64_t arg_in)
 {
-    typedef oe_ocall_block_device_get_args_t args_t;
+    typedef oe_ocall_block_dev_get_args_t args_t;
     args_t* args = (args_t*)arg_in;
     FILE* stream;
 
@@ -60,9 +60,9 @@ void oe_handle_block_device_get(oe_enclave_t* enclave, uint64_t arg_in)
     args->ret = 0;
 }
 
-void oe_handle_block_device_put(oe_enclave_t* enclave, uint64_t arg_in)
+void oe_handle_block_dev_put(oe_enclave_t* enclave, uint64_t arg_in)
 {
-    typedef oe_ocall_block_device_get_args_t args_t;
+    typedef oe_ocall_block_dev_get_args_t args_t;
     args_t* args = (args_t*)arg_in;
     FILE* stream;
 

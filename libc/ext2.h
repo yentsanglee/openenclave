@@ -35,7 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "blockdevice.h"
+#include "blockdev.h"
 #include "buf.h"
 #include "filesys.h"
 
@@ -240,7 +240,7 @@ typedef struct _ext2_inode
 
 typedef struct _ext2
 {
-    oe_block_device_t* dev;
+    oe_block_dev_t* dev;
     ext2_super_block_t sb;
     uint32_t block_size; /* block size in bytes */
     uint32_t group_count;
@@ -500,7 +500,7 @@ ext2_err_t ext2_load_file_from_path(
 
 ext2_err_t ext2_load_file(const char* path, void** data, uint32_t* size);
 
-ext2_err_t ext2_new(oe_block_device_t* dev, ext2_t** ext2);
+ext2_err_t ext2_new(oe_block_dev_t* dev, ext2_t** ext2);
 
 void ext2_delete(ext2_t* ext2);
 
@@ -558,6 +558,6 @@ ext2_err_t ext2_get_first_blkno(
     uint32_t* blkno);
 
 /* Create an ext2 filesys object */
-oe_filesys_t* ext2_new_filesys(oe_block_device_t* dev);
+oe_filesys_t* ext2_new_filesys(oe_block_dev_t* dev);
 
 #endif /* _ext2_h */

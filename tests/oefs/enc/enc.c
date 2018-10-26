@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../../libc/blockdevice.h"
+#include "../../../libc/blockdev.h"
 #include "../../../libc/oefs.h"
 #include "oefs_t.h"
 
@@ -19,21 +19,24 @@
 
 int test_oefs(const char* oefs_filename)
 {
-    oe_block_device_t* dev;
+    oe_block_dev_t* dev;
 #ifdef INIT
-    size_t num_blocks = 4*4096;
+    size_t num_blocks = 4 * 4096;
 #endif
     oefs_t* oefs;
+    oe_result_t result;
+    oefs_result_t r;
+    const size_t NUM_FILES = 1000;
 
     {
-        oe_result_t r = oe_open_block_device("/tmp/oefs", &dev);
-        OE_TEST(r == OE_OK);
+        result = oe_open_host_block_dev("/tmp/oefs", &dev);
+        OE_TEST(result == OE_OK);
     }
 
 #ifdef INIT
     {
         size_t size;
-        oefs_result_t r = oefs_compute_size(num_blocks, &size);
+        r = oefs_compute_size(num_blocks, &size);
         OE_TEST(r == OEFS_OK);
         printf("*** size=%zu\n", size);
     }
@@ -41,14 +44,27 @@ int test_oefs(const char* oefs_filename)
 
 #ifdef INIT
     {
-        oefs_result_t r = oefs_initialize(dev, num_blocks);
+        r = oefs_initialize(dev, num_blocks);
         OE_TEST(r == OEFS_OK);
     }
 #endif
 
     {
-        oefs_result_t r = oefs_new(&oefs, dev);
+        r = oefs_new(&oefs, dev);
         OE_TEST(r == OEFS_OK);
+    }
+
+    /* Create multiple files. */
+    for (size_t i = 0; i < NUM_FILES; i++)
+    {
+        char name[OEFS_PATH_MAX];
+        snprintf(name, sizeof(name), "filename-%zu", i);
+
+        oefs_file_t* file = NULL;
+        r = __oefs_create_file(oefs, OEFS_ROOT_INO, name, &file);
+        OE_TEST(r == OEFS_OK);
+        OE_TEST(file != NULL);
+        oefs_close_file(file);
     }
 
     {
@@ -73,9 +89,9 @@ int test_oefs(const char* oefs_filename)
 }
 
 OE_SET_ENCLAVE_SGX(
-    1,    /* ProductID */
-    1,    /* SecurityVersion */
-    true, /* AllowDebug */
-    10*1024, /* HeapPageCount */
-    10*1024, /* StackPageCount */
-    2);   /* TCSCount */
+    1,         /* ProductID */
+    1,         /* SecurityVersion */
+    true,      /* AllowDebug */
+    10 * 1024, /* HeapPageCount */
+    10 * 1024, /* StackPageCount */
+    2);        /* TCSCount */

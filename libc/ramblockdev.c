@@ -1,0 +1,105 @@
+#include "blockdev.h"
+#include <openenclave/internal/calls.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define BLOCK_SIZE 512
+
+typedef struct _block_dev
+{
+    oe_block_dev_t base;
+    uint8_t* mem;
+} block_dev_t;
+
+static int _block_dev_close(oe_block_dev_t* dev)
+{
+    int ret = -1;
+    block_dev_t* device = (block_dev_t*)dev;
+
+    if (!device)
+        goto done;
+
+    free(device->mem);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int _block_dev_get(
+    oe_block_dev_t* dev,
+    uint32_t blkno,
+    void* data)
+{
+    int ret = -1;
+    block_dev_t* device = (block_dev_t*)dev;
+
+    if (!device || !data)
+        goto done;
+
+    memcpy(data, device->mem + (blkno * BLOCK_SIZE), BLOCK_SIZE);
+
+    ret = 0;
+
+done:
+
+    return ret;
+}
+
+static int _block_dev_put(
+    oe_block_dev_t* dev,
+    uint32_t blkno,
+    const void* data)
+{
+    int ret = -1;
+    block_dev_t* device = (block_dev_t*)dev;
+
+    if (!device || !data)
+        goto done;
+
+    memcpy(device->mem + (blkno * BLOCK_SIZE), data, BLOCK_SIZE);
+
+    ret = 0;
+
+done:
+
+    return ret;
+}
+
+oe_result_t oe_open_ram_block_dev(
+    size_t size,
+    oe_block_dev_t** block_dev)
+{
+    oe_result_t result = OE_FAILURE;
+    block_dev_t* device = NULL;
+
+    if (block_dev)
+        *block_dev = NULL;
+
+    if (!size || !block_dev)
+        goto done;
+
+    /* Size must be a multiple of the block size. */
+    if (size % BLOCK_SIZE)
+        goto done;
+
+    device->base.close = _block_dev_close;
+    device->base.get = _block_dev_get;
+    device->base.put = _block_dev_put;
+
+    if (!(device->mem = calloc(1, size)))
+        goto done;
+
+    device = NULL;
+
+    result = OE_OK;
+
+done:
+
+    if (device)
+        free(device);
+
+    return result;
+}

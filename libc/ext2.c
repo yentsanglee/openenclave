@@ -133,7 +133,7 @@ typedef unsigned long ssize_t;
 #endif
 
 static ssize_t _read(
-    oe_block_device_t* dev,
+    oe_block_dev_t* dev,
     size_t offset,
     void* data,
     size_t size)
@@ -177,7 +177,7 @@ static ssize_t _read(
 }
 
 static ssize_t _write(
-    oe_block_device_t* dev,
+    oe_block_dev_t* dev,
     size_t offset,
     const void* data,
     size_t size)
@@ -1312,7 +1312,7 @@ void ext2_dump_super_block(const ext2_super_block_t* sb)
 }
 
 static ext2_err_t _read_super_block(
-    oe_block_device_t* dev,
+    oe_block_dev_t* dev,
     ext2_super_block_t* sb)
 {
     ext2_err_t err = EXT2_ERR_FAILED;
@@ -2526,7 +2526,7 @@ done:
 **==============================================================================
 */
 
-ext2_err_t ext2_new(oe_block_device_t* dev, ext2_t** ext2_out)
+ext2_err_t ext2_new(oe_block_dev_t* dev, ext2_t** ext2_out)
 {
     ext2_err_t err = EXT2_ERR_FAILED;
     ext2_t* ext2 = NULL;
@@ -5024,7 +5024,7 @@ done:
     return ret;
 }
 
-oe_filesys_t* ext2_new_filesys(oe_block_device_t* dev)
+oe_filesys_t* ext2_new_filesys(oe_block_dev_t* dev)
 {
     oe_filesys_t* ret = NULL;
     ext2_t* ext2 = NULL;

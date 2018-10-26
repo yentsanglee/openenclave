@@ -3,7 +3,7 @@
 
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/types.h>
-#include "blockdevice.h"
+#include "blockdev.h"
 
 #define OEFS_PATH_MAX 256
 
@@ -18,7 +18,7 @@
 /* The minimum number of blocks in a file system. */
 #define OEFS_MIN_BLOCKS OEFS_BLOCK_SIZE
 
-#define OEFS_ROOT_INODE_BLKNO 1
+#define OEFS_ROOT_INO 1
 
 /* oefs_dirent_t.d_type */
 #define OEFS_DT_UNKNOWN 0
@@ -113,24 +113,25 @@ typedef struct _oefs_dirent
 
 typedef struct _oefs_dir oefs_dir_t;
 
-OE_STATIC_ASSERT(sizeof(oefs_dirent_t) == 256+12);
+OE_STATIC_ASSERT(sizeof(oefs_dirent_t) == 256 + 12);
 
 typedef enum _oefs_result {
     OEFS_OK,
     OEFS_BAD_PARAMETER,
     OEFS_FAILED,
     OEFS_NOT_FOUND,
+    OEFS_ALREADY_EXISTS,
 } oefs_result_t;
 
 // Initialize the blocks of a new file system; num_blocks must be a multiple
 // OEFS_BITS_PER_BLOCK (4096).
-oefs_result_t oefs_initialize(oe_block_device_t* dev, size_t num_blocks);
+oefs_result_t oefs_initialize(oe_block_dev_t* dev, size_t num_blocks);
 
 oefs_result_t oefs_compute_size(size_t num_blocks, size_t* total_bytes);
 
 typedef struct _oefs
 {
-    oe_block_device_t* dev;
+    oe_block_dev_t* dev;
 
     /* Super block. */
     oefs_super_block_t sb;
@@ -143,12 +144,11 @@ typedef struct _oefs
 typedef struct _efs_block
 {
     uint8_t data[OEFS_BLOCK_SIZE];
-}
-oefs_block_t;
+} oefs_block_t;
 
 typedef struct _oefs_file oefs_file_t;
 
-oefs_result_t oefs_new(oefs_t** oefs, oe_block_device_t* dev);
+oefs_result_t oefs_new(oefs_t** oefs, oe_block_dev_t* dev);
 
 oefs_result_t oefs_delete(oefs_t* oefs);
 
@@ -163,5 +163,11 @@ oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* name);
 oefs_dirent_t* oefs_readdir(oefs_dir_t* dir);
 
 int oefs_closedir(oefs_dir_t* dir);
+
+oefs_result_t __oefs_create_file(
+    oefs_t* oefs,
+    uint32_t dir_ino,
+    const char* name,
+    oefs_file_t** file_out);
 
 #endif /* _oe_oefs_h */

@@ -12,7 +12,6 @@ add_library(oelibc STATIC
     abort.S
     arc4random.c
     atexit.c
-    blockdevice.c
     buf.c
     dladdr.c
     exp2l.S
@@ -20,6 +19,7 @@ add_library(oelibc STATIC
     file.c
     cwd.c
     filesys.c
+    hostblockdev.c
     libunwind_stubs.c
     link.c
     locale.c
@@ -27,6 +27,7 @@ add_library(oelibc STATIC
     malloc.c
     mount.c
     pthread.c
+    ramblockdev.c
     sched_yield.c
     stdlib.c
     strerror.c

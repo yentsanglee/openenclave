@@ -5,7 +5,6 @@ if (UNIX)
 set(PLATFORM_SRC
     ../common/asn1.c
     ../common/cert.c
-    blockdevice.c
     crypto/asn1.c
     crypto/cert.c
     crypto/crl.c
@@ -24,6 +23,7 @@ set(PLATFORM_SRC
     linux/sgxioctl.c
     linux/sgxsign.c
     linux/time.c
+    hostblockdev.c
     sgxquoteprovider.c
     )
 elseif (WIN32)

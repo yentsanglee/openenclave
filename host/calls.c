@@ -26,7 +26,7 @@
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/utils.h>
 #include "asmdefs.h"
-#include "blockdevice.h"
+#include "hostblockdev.h"
 #include "enclave.h"
 #include "ocalls.h"
 
@@ -472,19 +472,19 @@ static oe_result_t _handle_ocall(
             break;
 
         case OE_OCALL_OPEN_BLOCK_DEVICE:
-            oe_handle_open_block_device(enclave, arg_in, arg_out);
+            oe_handle_open_block_dev(enclave, arg_in, arg_out);
             break;
 
         case OE_OCALL_CLOSE_BLOCK_DEVICE:
-            oe_handle_close_block_device(enclave, arg_in);
+            oe_handle_close_block_dev(enclave, arg_in);
             break;
 
         case OE_OCALL_BLOCK_DEVICE_GET:
-            oe_handle_block_device_get(enclave, arg_in);
+            oe_handle_block_dev_get(enclave, arg_in);
             break;
 
         case OE_OCALL_BLOCK_DEVICE_PUT:
-            oe_handle_block_device_put(enclave, arg_in);
+            oe_handle_block_dev_put(enclave, arg_in);
             break;
 
         default:

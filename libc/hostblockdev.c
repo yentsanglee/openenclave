@@ -1,20 +1,20 @@
-#include "blockdevice.h"
+#include "blockdev.h"
 #include <openenclave/internal/calls.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct _host_block_device
+typedef struct _host_block_dev
 {
-    oe_block_device_t base;
+    oe_block_dev_t base;
     void* host_context;
-} host_block_device_t;
+} host_block_dev_t;
 
-static int _host_block_device_close(oe_block_device_t* dev)
+static int _host_block_dev_close(oe_block_dev_t* dev)
 {
     int ret = -1;
     const uint16_t func = OE_OCALL_CLOSE_BLOCK_DEVICE;
-    host_block_device_t* device = (host_block_device_t*)dev;
+    host_block_dev_t* device = (host_block_dev_t*)dev;
 
     if (!device)
         goto done;
@@ -30,14 +30,14 @@ done:
     return ret;
 }
 
-static int _host_block_device_get(
-    oe_block_device_t* dev,
+static int _host_block_dev_get(
+    oe_block_dev_t* dev,
     uint32_t blkno,
     void* data)
 {
     int ret = -1;
-    host_block_device_t* device = (host_block_device_t*)dev;
-    typedef oe_ocall_block_device_get_args_t args_t;
+    host_block_dev_t* device = (host_block_dev_t*)dev;
+    typedef oe_ocall_block_dev_get_args_t args_t;
     args_t* args = NULL;
     const uint16_t func = OE_OCALL_BLOCK_DEVICE_GET;
 
@@ -69,14 +69,14 @@ done:
     return ret;
 }
 
-static int _host_block_device_put(
-    oe_block_device_t* dev,
+static int _host_block_dev_put(
+    oe_block_dev_t* dev,
     uint32_t blkno,
     const void* data)
 {
     int ret = -1;
-    host_block_device_t* device = (host_block_device_t*)dev;
-    typedef oe_ocall_block_device_put_args_t args_t;
+    host_block_dev_t* device = (host_block_dev_t*)dev;
+    typedef oe_ocall_block_dev_put_args_t args_t;
     args_t* args = NULL;
     const uint16_t func = OE_OCALL_BLOCK_DEVICE_PUT;
 
@@ -107,26 +107,26 @@ done:
     return ret;
 }
 
-oe_result_t oe_open_block_device(
+oe_result_t oe_open_host_block_dev(
     const char* device_name,
-    oe_block_device_t** block_device)
+    oe_block_dev_t** block_dev)
 {
     oe_result_t result = OE_FAILURE;
     char* name = NULL;
     void* host_context = NULL;
     const uint16_t func = OE_OCALL_OPEN_BLOCK_DEVICE;
-    host_block_device_t* device = NULL;
+    host_block_dev_t* device = NULL;
 
-    if (block_device)
-        *block_device = NULL;
+    if (block_dev)
+        *block_dev = NULL;
 
-    if (!device_name || !block_device)
+    if (!device_name || !block_dev)
         goto done;
 
     if (!(name = oe_host_strndup(device_name, strlen(device_name))))
         goto done;
 
-    if (!(device = calloc(1, sizeof(host_block_device_t))))
+    if (!(device = calloc(1, sizeof(host_block_dev_t))))
         goto done;
 
     if (oe_ocall(func, (uint64_t)name, (uint64_t*)&host_context) != OE_OK)
@@ -135,12 +135,12 @@ oe_result_t oe_open_block_device(
     if (!host_context)
         goto done;
 
-    device->base.close = _host_block_device_close;
-    device->base.get = _host_block_device_get;
-    device->base.put = _host_block_device_put;
+    device->base.close = _host_block_dev_close;
+    device->base.get = _host_block_dev_get;
+    device->base.put = _host_block_dev_put;
     device->host_context = host_context;
 
-    *block_device = &device->base;
+    *block_dev = &device->base;
     device = NULL;
 
     result = OE_OK;

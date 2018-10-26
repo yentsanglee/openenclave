@@ -382,29 +382,29 @@ typedef struct _oe_backtrace_symbols_args
 /*
 **==============================================================================
 **
-** oe_ocall_block_device_get_args_t
-** oe_ocall_block_device_put_args_t
+** oe_ocall_block_dev_get_args_t
+** oe_ocall_block_dev_put_args_t
 **
 **==============================================================================
 */
 
 #define OE_BLOCK_DEVICE_BLOCK_SIZE 512
 
-typedef struct _oe_ocall_block_device_get_args
+typedef struct _oe_ocall_block_dev_get_args
 {
     int ret;
     void* host_context;
     uint32_t blkno;
     uint8_t block[OE_BLOCK_DEVICE_BLOCK_SIZE];
-} oe_ocall_block_device_get_args_t;
+} oe_ocall_block_dev_get_args_t;
 
-typedef struct _oe_ocall_block_device_put_args
+typedef struct _oe_ocall_block_dev_put_args
 {
     int ret;
     void* host_context;
     uint32_t blkno;
     uint8_t block[OE_BLOCK_DEVICE_BLOCK_SIZE];
-} oe_ocall_block_device_put_args_t;
+} oe_ocall_block_dev_put_args_t;
 
 /**
  * Perform a low-level enclave function call (ECALL).
