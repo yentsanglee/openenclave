@@ -15,6 +15,8 @@
 #include "../../../libc/oefs.h"
 #include "oefs_t.h"
 
+#define INIT
+
 int test_oefs(const char* oefs_filename)
 {
     oe_block_device_t* dev;
@@ -32,12 +34,13 @@ int test_oefs(const char* oefs_filename)
         printf("*** size=%zu\n", size);
     }
 
+#ifdef INIT
     {
         oefs_result_t r = oefs_initialize(dev, num_blocks);
         OE_TEST(r == OEFS_OK);
     }
+#endif
 
-#if 1
     {
         oefs_t* oefs;
         oefs_result_t r = oefs_new(&oefs, dev);
@@ -45,7 +48,6 @@ int test_oefs(const char* oefs_filename)
 
         oefs_delete(oefs);
     }
-#endif
 
     dev->close(dev);
 

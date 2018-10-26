@@ -35,7 +35,10 @@
 **==============================================================================
 */
 
+#define COUNTOF(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
+
 #define SUPER_BLOCK_PHYSICAL_BLKNO 2
+
 #define BITMAP_PHYSICAL_BLKNO 3
 
 struct _oefs_file
@@ -277,11 +280,20 @@ done:
     return result;
 }
 
-static oefs_result_t _load_file(oefs_t* oefs, uint32_t inode_blkno, buf_t* buf)
+oefs_result_t oefs_load_file(oefs_t* oefs, uint32_t inode_blkno,
+    void** data,
+    size_t* size)
 {
     oefs_result_t result = OEFS_FAILED;
     buf_u32_t blknos = BUF_U32_INITIALIZER;
     oefs_inode_t inode;
+    buf_t buf = BUF_INITIALIZER;
+
+    if (data)
+        *data = NULL;
+
+    if (size)
+        *size = 0;
 
     /* Read this inode into memory. */
     if (_load_inode(oefs, inode_blkno, &inode) != OEFS_OK)
@@ -299,15 +311,24 @@ static oefs_result_t _load_file(oefs_t* oefs, uint32_t inode_blkno, buf_t* buf)
         if (_read_block(oefs, blknos.data[i], block) != OEFS_OK)
             goto done;
 
-        buf_append(buf, block, sizeof(block));
+        buf_append(&buf, block, sizeof(block));
     }
 
     /* Adjust the size of the file. */
-    buf->size = inode.i_size;
+    buf.size = inode.i_size;
+
+    *data = buf.data;
+    *size = buf.size;
 
     result = OEFS_OK;
 
 done:
+
+    if (result != OEFS_OK)
+        buf_release(&buf);
+
+    buf_u32_release(&blknos);
+
     return result;
 }
 
@@ -409,7 +430,7 @@ static oefs_result_t _write_data(
     uint32_t size,
     buf_u32_t* blknos)
 {
-    oefs_result_t result = OEFS_OK;
+    oefs_result_t result = OEFS_FAILED;
     const uint8_t* ptr = (const uint8_t*)data;
     uint32_t remaining = size;
     bool changed = false;
@@ -469,18 +490,146 @@ done:
     return result;
 }
 
-oefs_result_t _append_blkno_chain(oefs_file_t* file, const buf_u32_t* blknos)
+static void _fill_slots(
+    uint32_t* slots,
+    uint32_t num_slots,
+    const uint32_t** ptr_in_out,
+    uint32_t* rem_in_out)
+{
+    const uint32_t* ptr = *ptr_in_out;
+    uint32_t rem = *rem_in_out;
+    uint32_t i = 0;
+    
+    /* Find the first free slot if any. */
+    while (i < num_slots && slots[i])
+        i++;
+
+    /* Copy into free slots. */
+    for (uint32_t j = i; j < num_slots && rem; i++)
+    {
+        slots[j] = *ptr;
+        ptr++;
+        rem--;
+    }
+
+    *ptr_in_out = ptr;
+    *rem_in_out = rem;
+}
+
+static oefs_result_t _append_block_chain(
+    oefs_file_t* file, 
+    const buf_u32_t* blknos)
 {
     oefs_result_t result = OEFS_FAILED;
+    const uint32_t* ptr = blknos->data;
+    uint32_t rem = blknos->size;
 
-    if (file->inode.i_next)
+    const void* object;
+    uint32_t* slots;
+    uint32_t count;
+    uint32_t blkno;
+    uint32_t* next;
+    oefs_bnode_t bnode = file->last_bnode;
+
+    if (file->inode.i_next == 0)
     {
+        object = &file->inode;
+        slots = file->inode.i_blocks;
+        count = COUNTOF(file->inode.i_blocks);
+        blkno = file->inode_blkno;
+        next = &file->inode.i_next;
     }
     else
     {
+        object = &file->last_bnode;
+        slots = file->last_bnode.b_blocks;
+        count = COUNTOF(file->last_bnode.b_blocks);
+        blkno = file->last_bnode_blkno;
+        next = &file->last_bnode.b_next;
     }
 
+    while (rem)
+    {
+        /* Fill the slots with as many block numbers as will fit. */
+        _fill_slots(slots, count, &ptr, &rem);
+
+        /* If the blocks overflowed the slots, then create a new bnode. */
+        if (rem)
+        {
+            /* Assign a block number for a new bnode. */
+            if (_assign_blkno(file->oefs, next) != OEFS_OK)
+                goto done;
+
+            /* Rewrite the current inode or bnode. */
+            if (_write_block(file->oefs, blkno, object) != 0)
+                goto done;
+
+            /* Initialize the new bnode with zeros. */
+            memset(&bnode, 0, sizeof(oefs_bnode_t));
+
+            /* Set up variables to refer to the new bnode. */
+            object = &bnode;
+            slots = bnode.b_blocks;
+            count = COUNTOF(bnode.b_blocks);
+            blkno = *next;
+            next = &bnode.b_next;
+        }
+        else
+        {
+            /* Rewrite the inode or bnode. */
+            if (_write_block(file->oefs, blkno, object) != 0)
+                goto done;
+        }
+    }
+
+    /* Update the last bnode if it changed. */
+    if (object == &bnode)
+    {
+        file->last_bnode = bnode;
+        file->last_bnode_blkno = blkno;
+    }
+
+    result = OEFS_OK;
+
+done:
     return result;
+}
+
+static oefs_result_t _dump_directory(oefs_t* oefs, uint32_t inode_blkno)
+{
+    oefs_result_t result = OEFS_FAILED;
+    oefs_file_t* file;
+    oefs_dir_entry_t entry;
+    int32_t n;
+
+    if (_open_file(oefs, inode_blkno, &file) != 0)
+        goto done;
+
+    while ((n = oefs_read_file(file, &entry, sizeof(entry))) > 0)
+    {
+        _dump_dir_entry(&entry);
+    }
+
+    oefs_close_file(file);
+
+    result = OEFS_OK;
+
+done:
+    return result;
+}
+
+static bool _sane_file(oefs_file_t* file)
+{
+    if (!file->oefs)
+        return false;
+
+    if (!file->inode_blkno)
+        return false;
+
+    if (file->inode.i_total_blocks != file->blknos.size)
+        return false;
+
+    return true;
 }
 
 /*
@@ -803,7 +952,10 @@ int32_t oefs_write_file(oefs_file_t* file, const void* data, uint32_t size)
     if (!file || !file->oefs || (!data && size))
         goto done;
 
-    /* The index of the first block to read. */
+    if (!_sane_file(file))
+        goto done;
+
+    /* The index of the first block to write. */
     first = file->offset / OEFS_BLOCK_SIZE;
 
     /* The number of bytes remaining to be read */
@@ -818,7 +970,7 @@ int32_t oefs_write_file(oefs_file_t* file, const void* data, uint32_t size)
     }
 
     /* Write the data block-by-block */
-    for (i = first; i < file->blknos.size && remaining > 0 && !file->eof; i++)
+    for (i = first; i < file->blknos.size && remaining; i++)
     {
         oefs_block_t block;
         uint32_t offset;
@@ -855,7 +1007,6 @@ int32_t oefs_write_file(oefs_file_t* file, const void* data, uint32_t size)
                 if (file_bytes_remaining < copy_bytes)
                 {
                     copy_bytes = file_bytes_remaining;
-                    file->eof = true;
                 }
             }
 
@@ -876,17 +1027,36 @@ int32_t oefs_write_file(oefs_file_t* file, const void* data, uint32_t size)
     }
 
     /* Append remaining data to the file. */
+    if (remaining)
     {
         buf_u32_t blknos = BUF_U32_INITIALIZER;
 
-        /* Write the new raw blocks. */
+        /* Write the new blocks. */
         if (_write_data(file->oefs, ptr, remaining, &blknos) != OEFS_OK)
             goto done;
 
         /* Append these block numbers to the block-numbers chain. */
-        if (_append_blkno_chain(file, &blknos) != OEFS_OK)
+        if (_append_block_chain(file, &blknos) != OEFS_OK)
             goto done;
+
+        /* Update the inode's total_blocks */
+        file->inode.i_total_blocks += blknos.size;
+
+        /* Append these block numbers to the file. */
+        buf_u32_append(&file->blknos, blknos.data, blknos.size);
+
+        buf_u32_release(&blknos);
+
+        file->offset += remaining;
+        remaining = 0;
     }
+
+    /* Update the file size. */
+    file->inode.i_size = new_file_size;
+
+    /* Flush the inode to disk. */
+    if (_write_block(file->oefs, file->inode_blkno, &file->inode) != OEFS_OK)
+        goto done;
 
     /* Calculate number of bytes read */
     ret = size - remaining;
@@ -996,32 +1166,28 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
     }
 
 #if 0
-    /* Load the block numbers for the root inode. */
     {
-        oefs_inode_t inode;
+        void* data;
+        size_t size;
 
-        if (_load_inode(oefs, OEFS_ROOT_INODE_BLKNO, &inode) != OEFS_OK)
+        if (oefs_load_file(oefs, OEFS_ROOT_INODE_BLKNO, &data, &size) != 0)
             goto done;
 
-        buf_u32_t blknos = BUF_U32_INITIALIZER;
-        _load_blknos(oefs, &inode, &blknos, NULL, NULL);
+        _dump_dir_entry((oefs_dir_entry_t*)data);
+        _dump_dir_entry((oefs_dir_entry_t*)data + 1);
 
-        for (size_t i = 0; i < blknos.size; i++)
-        {
-            printf("blknos{i}=%u\n", blknos.data[i]);
-        }
+        free(data);
     }
 #endif
 
-#if 0
+#if 1
     {
-        buf_t buf = BUF_INITIALIZER;
+        printf("<<<<<<<<<<\n");
 
-        if (_load_file(oefs, OEFS_ROOT_INODE_BLKNO, &buf) != 0)
+        if (_dump_directory(oefs, OEFS_ROOT_INODE_BLKNO) != OEFS_OK)
             goto done;
 
-        _dump_dir_entry((oefs_dir_entry_t*)buf.data);
-        _dump_dir_entry((oefs_dir_entry_t*)buf.data + 1);
+        printf(">>>>>>>>>>\n");
     }
 #endif
 
@@ -1029,28 +1195,57 @@ oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_device_t* dev)
     {
         oefs_file_t* file;
         int32_t n;
-        int32_t m = 0;
-        char buf[13];
+        uint32_t count = 0;
+        oefs_dir_entry_t entry;
 
         if (_open_file(oefs, OEFS_ROOT_INODE_BLKNO, &file) != 0)
             goto done;
 
         printf("<<<<<<<<<<\n");
-
-        memset(buf, 0, sizeof(buf));
-
-        while ((n = oefs_read_file(file, buf, sizeof(buf))) > 0)
         {
-            oe_hex_dump(buf, n);
+            memset(&entry, 0, sizeof(entry));
 
-            m += n;
+            while ((n = oefs_read_file(file, &entry, sizeof(entry))) > 0)
+            {
+                count++;
+            }
+
+            printf("count=%d\n", count);
         }
-
-        printf("m=%d\n", m);
-
         printf(">>>>>>>>>>\n");
 
+        /* Write directory entries. */
+        for (uint32_t i = 0; i < 6000; i++)
+        {
+            entry.d_inode = OEFS_ROOT_INODE_BLKNO;
+            entry.d_type = OEFS_DT_REG;
+
+            printf("***count=%u\n", count + i);
+            printf("***num_blocks=%u\n", file->blknos.size);
+            printf("***total_blocks=%u\n", file->inode.i_total_blocks);
+
+            sprintf(entry.d_name, "filename-%u", count + i);
+            const size_t r = sizeof(entry);
+
+            if ((n = oefs_write_file(file, &entry, sizeof(entry))) != r)
+            {
+                fprintf(stderr, "error: oops\n");
+                goto done;
+            }
+        }
+
         oefs_close_file(file);
+    }
+#endif
+
+#if 1
+    {
+        printf("<<<<<<<<<<\n");
+
+        if (_dump_directory(oefs, OEFS_ROOT_INODE_BLKNO) != OEFS_OK)
+            goto done;
+
+        printf(">>>>>>>>>>\n");
     }
 #endif
 
