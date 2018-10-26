@@ -20,7 +20,7 @@
 int test_oefs(const char* oefs_filename)
 {
     oe_block_device_t* dev;
-    size_t num_blocks = 4096;
+    size_t num_blocks = 10*4096;
 
     {
         oe_result_t r = oe_open_block_device("/tmp/oefs", &dev);
@@ -58,6 +58,6 @@ OE_SET_ENCLAVE_SGX(
     1,    /* ProductID */
     1,    /* SecurityVersion */
     true, /* AllowDebug */
-    1024, /* HeapPageCount */
-    1024, /* StackPageCount */
+    10*1024, /* HeapPageCount */
+    10*1024, /* StackPageCount */
     2);   /* TCSCount */
