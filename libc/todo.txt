@@ -1,0 +1,59 @@
+File operations:
+================
+SYS_read        x
+SYS_readv
+SYS_write       x
+SYS_writev
+SYS_open        x
+SYS_close       x
+SYS_mkdir       x
+SYS_rmdir
+SYS_stat
+SYS_fstat
+SYS_lstat
+SYS_lseek
+SYS_access
+SYS_fcntl
+SYS_flock
+SYS_fsync
+SYS_fdatasync
+SYS_truncate
+SYS_ftruncate
+SYS_getdents
+SYS_creat
+SYS_link
+SYS_unlink
+SYS_symlink
+SYS_readlink
+SYS_rename
+
+CWD operations:
+===============
+SYS_getcwd
+SYS_chdir
+SYS_fchdir
+
+Permissions:
+============
+SYS_chmod
+SYS_fchmod
+SYS_chown
+SYS_fchown
+SYS_lchown
+SYS_umask
+
+UID/GID operations:
+===================
+SYS_getuid
+SYS_getgid
+SYS_setuid
+SYS_setgid
+SYS_geteuid
+SYS_getegid
+SYS_setpgid
+SYS_getppid
+SYS_getpgrp
+
+Other:
+======
+Path normalization
