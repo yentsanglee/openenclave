@@ -1,3 +1,11 @@
+Next:
+=====
+rmdir
+link
+unlink
+stat
+rename
+
 File operations:
 ================
 SYS_read        x
@@ -14,7 +22,6 @@ SYS_lstat
 SYS_lseek
 SYS_access
 SYS_fcntl
-SYS_flock
 SYS_fsync
 SYS_fdatasync
 SYS_truncate
