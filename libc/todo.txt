@@ -5,16 +5,19 @@ link
 unlink
 stat
 rename
+lseek
+truncate
 
 File operations:
 ================
 SYS_read        x
-SYS_readv
+SYS_creat       x
 SYS_write       x
-SYS_writev
 SYS_open        x
 SYS_close       x
 SYS_mkdir       x
+SYS_writev
+SYS_readv
 SYS_rmdir
 SYS_stat
 SYS_fstat
@@ -27,7 +30,6 @@ SYS_fdatasync
 SYS_truncate
 SYS_ftruncate
 SYS_getdents
-SYS_creat
 SYS_link
 SYS_unlink
 SYS_symlink
