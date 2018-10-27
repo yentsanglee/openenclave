@@ -3,6 +3,7 @@
 
 #define _GNU_SOURCE
 #include <limits.h>
+#include <ctype.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/file.h>
 #include <openenclave/internal/mount.h>
@@ -20,7 +21,7 @@
 
 #define BLOCK_SIZE 512
 
-static void dump_dir(oefs_t* oefs, const char* dirname)
+static void _dump_dir(oefs_t* oefs, const char* dirname)
 {
     oefs_dir_t* dir;
     oefs_dirent_t* ent;
@@ -28,33 +29,84 @@ static void dump_dir(oefs_t* oefs, const char* dirname)
     dir = oefs_opendir(oefs, dirname);
     OE_TEST(dir != NULL);
 
+    printf("=== _dump_dir(%s)\n", dirname);
+
     while ((ent = oefs_readdir(dir)))
     {
         printf("name=%s\n", ent->d_name);
     }
 
+    printf("\n");
+
     oefs_closedir(dir);
 }
 
-static void create_files(oefs_t* oefs)
+static void _create_files(oefs_t* oefs)
 {
     const size_t NUM_FILES = 100;
+    oefs_result_t r;
+    oefs_file_t* file;
 
     for (size_t i = 0; i < NUM_FILES; i++)
     {
-        char name[OEFS_PATH_MAX];
-        snprintf(name, sizeof(name), "filename-%zu", i);
-
-        oefs_file_t* file = NULL;
-        oefs_result_t r = __oefs_create_file_or_dir(
-            oefs, OEFS_ROOT_INO, name, OEFS_DT_REG, &file);
+        char path[OEFS_PATH_MAX];
+        snprintf(path, sizeof(path), "/filename-%04zu", i);
+        r = oefs_create_file(oefs, path, 0, &file);
         OE_TEST(r == OEFS_OK);
         OE_TEST(file != NULL);
         oefs_close_file(file);
     }
 }
 
-static void update_file(oefs_t* oefs, const char* path)
+static void _create_dirs(oefs_t* oefs)
+{
+    const size_t NUM_DIRS = 10;
+    oefs_result_t r;
+
+    for (size_t i = 0; i < NUM_DIRS; i++)
+    {
+        char name[OEFS_PATH_MAX];
+        snprintf(name, sizeof(name), "/dir-%04zu", i);
+
+        r = oefs_mkdir(oefs, name, 0);
+        OE_TEST(r == OEFS_OK);
+    }
+
+    r = oefs_mkdir(oefs, "/aaa", 0);
+    OE_TEST(r == OEFS_OK);
+
+    r = oefs_mkdir(oefs, "/aaa/bbb", 0);
+    OE_TEST(r == OEFS_OK);
+
+    r = oefs_mkdir(oefs, "/aaa/bbb/ccc", 0);
+    OE_TEST(r == OEFS_OK);
+}
+
+static void _dump_file(oefs_t* oefs, const char* path)
+{
+    void* data;
+    size_t size;
+    oefs_result_t r;
+
+    r = oefs_load_file(oefs, path, &data, &size);
+    OE_TEST(r == OEFS_OK);
+
+    for (size_t i = 0; i < size; i++)
+    {
+        uint8_t b = *((uint8_t*)data + i);
+
+        if (isprint(b))
+            printf("%c", b);
+        else
+            printf("<%02x>", b);
+    }
+
+    printf("\n");
+
+    free(data);
+}
+
+static void _update_file(oefs_t* oefs, const char* path)
 {
     oefs_result_t r;
     oefs_file_t* file = NULL;
@@ -76,8 +128,9 @@ static void update_file(oefs_t* oefs, const char* path)
 
     n = oefs_write_file(file, buf.data, buf.size);
     OE_TEST(n == buf.size);
-
     oefs_close_file(file);
+
+    _dump_file(oefs, path);
 
     /* Load the file to make sure the changes took. */
     {
@@ -86,7 +139,6 @@ static void update_file(oefs_t* oefs, const char* path)
 
         r = oefs_load_file(oefs, path, &data, &size);
         OE_TEST(r == OEFS_OK);
-        printf("%.*s\n", (uint32_t)size, data);
         OE_TEST(size == buf.size);
         OE_TEST(memcmp(data, buf.data, size) == 0);
 
@@ -94,6 +146,25 @@ static void update_file(oefs_t* oefs, const char* path)
     }
 
     buf_release(&buf);
+}
+
+static void _create_myfile(oefs_t* oefs)
+{
+    oefs_result_t r;
+    oefs_file_t* file;
+    const char path[] = "/aaa/bbb/ccc/myfile";
+
+    r = oefs_create_file(oefs, path, 0, &file);
+    OE_TEST(r == OEFS_OK);
+
+    const char message[] = "Hello World!";
+
+    int32_t n = oefs_write_file(file, message, sizeof(message));
+    OE_TEST(n == sizeof(message));
+
+    oefs_close_file(file);
+
+    _dump_file(oefs, path);
 }
 
 int test_oefs(const char* oefs_filename)
@@ -124,13 +195,21 @@ int test_oefs(const char* oefs_filename)
     OE_TEST(r == OEFS_OK);
 
     /* Create some files. */
-    create_files(oefs);
+    _create_files(oefs);
 
-    /* Dump the root directory. */
-    dump_dir(oefs, "/");
+    /* Create some directories. */
+    _create_dirs(oefs);
+
+    /* Dump some directories. */
+    _dump_dir(oefs, "/");
+    _dump_dir(oefs, "/dir-0001");
+    _dump_dir(oefs, "/aaa/bbb/ccc");
 
     /* Test updating of a file. */
-    update_file(oefs, "/filename-1");
+    _update_file(oefs, "/filename-0001");
+
+    /* Create "/aaa/bbb/ccc/myfile" */
+    _create_myfile(oefs);
 
     oefs_delete(oefs);
     dev->close(dev);
