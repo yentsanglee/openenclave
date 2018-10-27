@@ -591,7 +591,8 @@ static oefs_result_t _dump_directory(oefs_t* oefs, uint32_t ino)
         _dump_dirent(&entry);
     }
 
-    oefs_close_file(file);
+    if (oefs_close_file(file) != OEFS_OK)
+        goto done;
 
     result = OEFS_OK;
 
@@ -1536,9 +1537,9 @@ done:
     return ret;
 }
 
-int oefs_close_file(oefs_file_t* file)
+oefs_result_t oefs_close_file(oefs_file_t* file)
 {
-    int ret = -1;
+    oefs_result_t result = OEFS_FAILED;
 
     if (!file)
         goto done;
@@ -1547,8 +1548,10 @@ int oefs_close_file(oefs_file_t* file)
     memset(file, 0, sizeof(oefs_file_t));
     free(file);
 
+    result = OEFS_OK;
+
 done:
-    return ret;
+    return result;
 }
 
 oefs_result_t oefs_new(oefs_t** oefs_out, oe_block_dev_t* dev)
@@ -2070,6 +2073,59 @@ oefs_result_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat)
     stat->st_atime = inode.i_atime;
     stat->st_mtime = inode.i_mtime;
     stat->st_ctime = inode.i_ctime;
+
+    result = OEFS_OK;
+
+done:
+    return result;
+}
+
+oefs_result_t oefs_lseek(
+    oefs_file_t* file, 
+    ssize_t offset, 
+    int whence, 
+    ssize_t* offset_out)
+{
+    oefs_result_t result = OEFS_FAILED;
+    ssize_t new_offset;
+
+    if (offset_out)
+        *offset_out = 0;
+
+    if (!file || !offset_out)
+        goto done;
+
+    switch (whence)
+    {
+        case OEFS_SEEK_SET:
+        {
+            new_offset = offset;
+            break;
+        }
+        case OEFS_SEEK_CUR:
+        {
+            new_offset = file->offset + offset;
+            break;
+        }
+        case OEFS_SEEK_END:
+        {
+            /* Note: gaps are not supported. */
+            new_offset = file->inode.i_size + offset;
+            break;
+        }
+        default:
+        {
+            goto done;
+        }
+    }
+
+    /* Check whether the new offset if out of range. */
+    if (new_offset < 0 || new_offset > file->offset)
+        goto done;
+
+    file->offset = new_offset;
+
+    *offset_out = new_offset;
 
     result = OEFS_OK;
 

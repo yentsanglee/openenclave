@@ -63,6 +63,10 @@
 #define OEFS_M_REG (OEFS_S_IFREG | OEFS_M_ALL_RW)
 #define OEFS_M_DIR (OEFS_S_IFDIR | OEFS_M_ALL_RWX)
 
+#define OEFS_SEEK_SET 0
+#define OEFS_SEEK_CUR 1
+#define OEFS_SEEK_END 2
+
 typedef struct _oefs_super_block
 {
     /* Magic number: OEFS_SUPER_BLOCK_MAGIC. */
@@ -213,7 +217,7 @@ int32_t oefs_read_file(oefs_file_t* file, void* data, uint32_t size);
 
 int32_t oefs_write_file(oefs_file_t* file, const void* data, uint32_t size);
 
-int oefs_close_file(oefs_file_t* file);
+oefs_result_t oefs_close_file(oefs_file_t* file);
 
 oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* name);
 
@@ -249,5 +253,11 @@ oefs_result_t oefs_truncate_file(oefs_t* oefs, const char* path);
 oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path);
 
 oefs_result_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat);
+
+oefs_result_t oefs_lseek(
+    oefs_file_t* file, 
+    ssize_t offset, 
+    int whence, 
+    ssize_t* offset_out);
 
 #endif /* _oe_oefs_h */

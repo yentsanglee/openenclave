@@ -10,6 +10,7 @@
 #include <openenclave/internal/tests.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../../../libc/blockdev.h"
@@ -286,6 +287,48 @@ static void _remove_dir(oefs_t* oefs, const char* path)
     OE_TEST(r == OEFS_OK);
 }
 
+static void _test_lseek(oefs_t* oefs)
+{
+    oefs_result_t r;
+    oefs_file_t* file;
+    const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+    const size_t alphabet_length = OE_COUNTOF(alphabet) - 1;
+    char buf[1093];
+    ssize_t offset;
+
+    r = oefs_create_file(oefs, "/somefile", 0, &file);
+    OE_TEST(r == OEFS_OK);
+
+    for (size_t i = 0; i < alphabet_length; i++)
+    {
+        memset(buf, alphabet[i], sizeof(buf));
+        int32_t n = oefs_write_file(file, buf, sizeof(buf));
+        OE_TEST(n == sizeof(buf));
+    }
+
+    r = oefs_lseek(file, 0, OEFS_SEEK_CUR, &offset);
+    OE_TEST(r == OEFS_OK);
+    OE_TEST(offset == sizeof(buf) * 26);
+
+    r = oefs_lseek(file, -2 * sizeof(buf), OEFS_SEEK_CUR, &offset);
+    OE_TEST(r == OEFS_OK);
+
+    memset(buf, 0, sizeof(buf));
+    int32_t n = oefs_read_file(file, buf, sizeof(buf));
+    OE_TEST(n == sizeof(buf));
+
+    {
+        char tmp[sizeof(buf)];
+        memset(tmp, 'y', sizeof(tmp));
+        OE_TEST(memcmp(buf, tmp, sizeof(tmp)) == 0);
+    }
+
+    r = oefs_close_file(file);
+    OE_TEST(r == OEFS_OK);
+
+    //_dump_file(oefs, "/somefile");
+}
+
 int test_oefs(const char* oefs_filename)
 {
     oe_block_dev_t* dev;
@@ -362,6 +405,9 @@ int test_oefs(const char* oefs_filename)
     /* Remove files named like filename-NNNN */
     _remove_files_nnnn(oefs);
     _dump_dir(oefs, "/");
+
+    /* Test the lseek function. */
+    _test_lseek(oefs);
 
     oefs_delete(oefs);
     dev->close(dev);
