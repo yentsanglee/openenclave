@@ -145,6 +145,14 @@ void buf_u32_release(buf_u32_t* buf)
     buf_release(&tmp);
 }
 
+void buf_u32_clear(buf_u32_t* buf)
+{
+    buf_u32_release(buf);
+    buf->data = NULL;
+    buf->size = 0;
+    buf->cap = 0;
+}
+
 int buf_u32_append(buf_u32_t* buf, const uint32_t* data, uint32_t size)
 {
     buf_t tmp;

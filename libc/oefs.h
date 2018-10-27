@@ -31,6 +31,38 @@
 #define OEFS_DT_SOCK 12 /* unused */
 #define OEFS_DT_WHT 14  /* unused */
 
+#define OEFS_S_IFSOCK 0xC000
+#define OEFS_S_IFLNK 0xA000
+#define OEFS_S_IFREG 0x8000
+#define OEFS_S_IFBLK 0x6000
+#define OEFS_S_IFDIR 0x4000
+#define OEFS_S_IFCHR 0x2000
+#define OEFS_S_IFIFO 0x1000
+#define OEFS_S_ISUID 0x0800
+#define OEFS_S_ISGID 0x0400
+#define OEFS_S_ISVTX 0x0200
+#define OEFS_S_IRUSR 0x0100
+#define OEFS_S_IWUSR 0x0080
+#define OEFS_S_IXUSR 0x0040
+#define OEFS_S_IRGRP 0x0020
+#define OEFS_S_IWGRP 0x0010
+#define OEFS_S_IXGRP 0x0008
+#define OEFS_S_IROTH 0x0004
+#define OEFS_S_IWOTH 0x0002
+#define OEFS_S_IXOTH 0x0001
+
+/* Mode flags. */
+#define OEFS_M_USR_RWX (OEFS_S_IRUSR | OEFS_S_IWUSR | OEFS_S_IXUSR)
+#define OEFS_M_GRP_RWX (OEFS_S_IRGRP | OEFS_S_IWGRP | OEFS_S_IXGRP)
+#define OEFS_M_OTH_RWX (OEFS_S_IROTH | OEFS_S_IWOTH | OEFS_S_IXOTH)
+#define OEFS_M_ALL_RWX (OEFS_M_USR_RWX | OEFS_M_GRP_RWX | OEFS_M_OTH_RWX)
+#define OEFS_M_USR_RW (OEFS_S_IRUSR | OEFS_S_IWUSR)
+#define OEFS_M_GRP_RW (OEFS_S_IRGRP | OEFS_S_IWGRP)
+#define OEFS_M_OTH_RW (OEFS_S_IROTH | OEFS_S_IWOTH)
+#define OEFS_M_ALL_RW (OEFS_M_USR_RW | OEFS_M_GRP_RW | OEFS_M_OTH_RW)
+#define OEFS_M_REG (OEFS_S_IFREG | OEFS_M_ALL_RW)
+#define OEFS_M_DIR (OEFS_S_IFDIR | OEFS_M_ALL_RWX)
+
 typedef struct _oefs_super_block
 {
     /* Magic number: OEFS_SUPER_BLOCK_MAGIC. */
@@ -74,7 +106,7 @@ typedef struct _oefs_inode
     uint32_t i_dtime;
 
     /* Total number of 512-byte blocks in this file. */
-    uint32_t i_total_blocks;
+    uint32_t i_num_blocks;
 
     /* The next blknos block. */
     uint32_t i_next;
@@ -113,7 +145,28 @@ typedef struct _oefs_dirent
 
 typedef struct _oefs_dir oefs_dir_t;
 
-OE_STATIC_ASSERT(sizeof(oefs_dirent_t) == 256 + 12);
+OE_STATIC_ASSERT(sizeof(oefs_dirent_t) == 268);
+
+typedef struct _oefs_stat
+{
+    uint32_t st_dev;
+    uint32_t st_ino;
+    uint16_t st_mode;
+    uint16_t __st_padding;
+    uint32_t st_nlink;
+    uint16_t st_uid;
+    uint16_t st_gid;
+    uint32_t st_rdev;
+    uint32_t st_size;
+    uint32_t st_blksize;
+    uint32_t st_blocks;
+    uint32_t st_atime;
+    uint32_t st_mtime;
+    uint32_t st_ctime;
+}
+oefs_stat_t;
+
+OE_STATIC_ASSERT(sizeof(oefs_stat_t) == 48);
 
 typedef enum _oefs_result {
     OEFS_OK,
@@ -140,6 +193,9 @@ typedef struct _oefs
     /* Bitmap of allocated blocks. */
     uint8_t* bitmap;
     size_t bitmap_size;
+
+    /* Whether the super block or bitmap has been touched but not flushed. */
+    bool dirty;
 } oefs_t;
 
 typedef struct _efs_block
@@ -185,5 +241,13 @@ oefs_result_t oefs_create_file(
     const char* path,
     uint32_t mode,
     oefs_file_t** file);
+
+oefs_result_t oefs_remove_file(oefs_t* oefs, const char* path);
+
+oefs_result_t oefs_truncate_file(oefs_t* oefs, const char* path);
+
+oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path);
+
+oefs_result_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat);
 
 #endif /* _oe_oefs_h */

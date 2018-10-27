@@ -83,6 +83,8 @@ typedef struct _buf_u32
 
 void buf_u32_release(buf_u32_t* buf);
 
+void buf_u32_clear(buf_u32_t* buf);
+
 int buf_u32_append(buf_u32_t* buf, const uint32_t* data, uint32_t size);
 
 #endif /* _buf_h */

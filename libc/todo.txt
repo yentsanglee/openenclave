@@ -1,12 +1,9 @@
 Next:
 =====
-rmdir
-link
-unlink
 stat
 rename
 lseek
-truncate
+tell
 
 File operations:
 ================
@@ -27,13 +24,13 @@ SYS_access
 SYS_fcntl
 SYS_fsync
 SYS_fdatasync
-SYS_truncate
+SYS_truncate    x
 SYS_ftruncate
 SYS_getdents
-SYS_link
-SYS_unlink
-SYS_symlink
-SYS_readlink
+SYS_link        x (unsupported)
+SYS_unlink      x (remove)
+SYS_symlink     x (unsupported)
+SYS_readlink    x (unsupported)
 SYS_rename
 
 CWD operations:
