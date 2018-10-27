@@ -656,6 +656,236 @@ done:
     return result;
 }
 
+static oefs_result_t _create_file(
+    oefs_t* oefs,
+    uint32_t dir_ino,
+    const char* name,
+    uint8_t type,
+    uint32_t* ino_out)
+{
+    oefs_result_t result = OEFS_FAILED;
+    uint32_t ino;
+    oefs_file_t* file = NULL;
+
+    if (ino_out)
+        *ino_out = 0;
+
+    if (!oefs || !dir_ino || !name || strlen(name) >= OEFS_PATH_MAX)
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    /* Create an inode for the new file. */
+    {
+        oefs_inode_t inode;
+
+        memset(&inode, 0, sizeof(oefs_inode_t));
+
+        inode.i_magic = OEFS_INODE_MAGIC;
+        inode.i_links = 1;
+
+        if (_assign_blkno(oefs, &ino) != OEFS_OK)
+            goto done;
+
+        if (_flush_bitmap(oefs) != OEFS_OK)
+            goto done;
+
+        if (_flush_super_block(oefs) != OEFS_OK)
+            goto done;
+
+        if (_write_block(oefs, ino, &inode))
+            goto done;
+    }
+
+    /* Add an entry to the directory for this inode. */
+    {
+        oefs_dirent_t dirent;
+        int32_t n;
+
+        if (_open_file(oefs, dir_ino, &file) != 0)
+            goto done;
+
+        /* Check for duplicates. */
+        while ((n = oefs_read_file(file, &dirent, sizeof(dirent))) > 0)
+        {
+            if (n != sizeof(dirent))
+                goto done;
+
+            if (strcmp(dirent.d_name, name) == 0)
+            {
+                result = OEFS_ALREADY_EXISTS;
+                goto done;
+            }
+        }
+
+        /* Append the entry to the directory. */
+        {
+            memset(&dirent, 0, sizeof(dirent));
+            dirent.d_ino = ino;
+            dirent.d_off = file->offset;
+            dirent.d_reclen = sizeof(dirent);
+            dirent.d_type = type;
+            strlcpy(dirent.d_name, name, sizeof(dirent.d_name));
+
+            n = oefs_write_file(file, &dirent, sizeof(dirent));
+
+            if (n != sizeof(dirent))
+                goto done;
+        }
+    }
+
+    if (ino_out)
+        *ino_out = ino;
+
+    result = OEFS_OK;
+
+done:
+
+    /* TODO: should blocks be unassigned on failure? */
+
+    if (file)
+        oefs_close_file(file);
+
+    return result;
+}
+
+static oefs_dir_t* _opendir_by_ino(oefs_t* oefs, uint32_t ino)
+{
+    oefs_dir_t* dir = NULL;
+    oefs_file_t* file = NULL;
+
+    if (!oefs || !ino)
+        goto done;
+
+    if (_open_file(oefs, ino, &file) != 0)
+        goto done;
+
+    if (!(dir = calloc(1, sizeof(oefs_dir_t))))
+        goto done;
+
+    dir->ino = ino;
+    dir->file = file;
+    file = NULL;
+
+done:
+
+    if (file)
+        oefs_close_file(file);
+
+    return dir;
+}
+
+static oefs_result_t _path_to_ino(oefs_t* oefs, const char* path, uint32_t* ino)
+{
+    oefs_result_t result = OEFS_FAILED;
+    char buf[OEFS_PATH_MAX];
+    const char* elements[128];
+    const uint8_t MAX_ELEMENTS = COUNTOF(elements);
+    uint8_t num_elements = 0;
+    uint8_t i;
+    uint32_t current_ino = 0;
+    oefs_dir_t* dir = NULL;
+
+    if (ino)
+        *ino = 0;
+
+    /* Check for null parameters */
+    if (!oefs || !path || !ino)
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    /* Check path length */
+    if (strlen(path) >= OEFS_PATH_MAX)
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    /* Make copy of the path. */
+    strlcpy(buf, path, sizeof(buf));
+
+    /* Be sure path begins with "/" */
+    if (path[0] != '/')
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    elements[num_elements++] = "/";
+
+    /* Split the path into components */
+    {
+        char* p;
+        char* save;
+
+        for (p = strtok_r(buf, "/", &save); p; p = strtok_r(NULL, "/", &save))
+        {
+            if (num_elements == MAX_ELEMENTS)
+            {
+                result = OEFS_BUFFER_OVERFLOW;
+                goto done;
+            }
+
+            elements[num_elements++] = p;
+        }
+    }
+
+    /* Load each inode along the path until we find it. */
+    for (i = 0; i < num_elements; i++)
+    {
+        if (strcmp(elements[i], "/") == 0)
+        {
+            current_ino = OEFS_ROOT_INO;
+        }
+        else
+        {
+            oefs_dirent_t* ent;
+
+            if (!(dir = _opendir_by_ino(oefs, current_ino)))
+                goto done;
+
+            current_ino = 0;
+
+            while ((ent = oefs_readdir(dir)))
+            {
+                /* If final path element or a directory. */
+                if (num_elements == i + 1 || ent->d_type == OEFS_DT_DIR)
+                {
+                    if (strcmp(ent->d_name, elements[i]) == 0)
+                    {
+                        current_ino = ent->d_ino;
+                        break;
+                    }
+                }
+            }
+
+            if (!current_ino)
+            {
+                /* Not found case */
+                result = OEFS_NOT_FOUND;
+                goto done;
+            }
+
+            oefs_closedir(dir);
+            dir = NULL;
+        }
+    }
+
+    *ino = current_ino;
+
+    result = OEFS_OK;
+
+done:
+
+    if (dir)
+        oefs_closedir(dir);
+
+    return result;
+}
+
 /*
 **==============================================================================
 **
@@ -854,14 +1084,12 @@ int _block_dev_put(oe_block_dev_t* dev, uint32_t blkno, const void* data)
 oefs_result_t oefs_compute_size(size_t num_blocks, size_t* total_bytes)
 {
     oefs_result_t result = OEFS_FAILED;
+    block_dev_t dev;
 
-    block_dev_t dev = {.base =
-                              {
-                                  .close = _block_dev_close,
-                                  .get = _block_dev_get,
-                                  .put = _block_dev_put,
-                              },
-                          .size = 0};
+    dev.base.close = _block_dev_close;
+    dev.base.get = _block_dev_get;
+    dev.base.put = _block_dev_put;
+    dev.size = 0;
 
     if (total_bytes)
         *total_bytes = 0;
@@ -1229,145 +1457,6 @@ done:
     return result;
 }
 
-static oefs_dir_t* _opendir_by_ino(oefs_t* oefs, uint32_t ino)
-{
-    oefs_dir_t* dir = NULL;
-    oefs_file_t* file = NULL;
-
-    if (!oefs || !ino)
-        goto done;
-
-    if (_open_file(oefs, ino, &file) != 0)
-        goto done;
-
-    if (!(dir = calloc(1, sizeof(oefs_dir_t))))
-        goto done;
-
-    dir->ino = ino;
-    dir->file = file;
-    file = NULL;
-
-done:
-
-    if (file)
-        oefs_close_file(file);
-
-    return dir;
-}
-
-static oefs_result_t _path_to_ino(
-    oefs_t* oefs,
-    const char* path,
-    uint32_t* ino)
-{
-    oefs_result_t result = OEFS_FAILED;
-    char buf[OEFS_PATH_MAX];
-    const char* elements[128];
-    const uint8_t MAX_ELEMENTS = COUNTOF(elements);
-    uint8_t num_elements = 0;
-    uint8_t i;
-    uint32_t current_ino = 0;
-    oefs_dir_t* dir = NULL;
-
-    if (ino)
-        *ino = 0;
-
-    /* Check for null parameters */
-    if (!oefs || !path || !ino)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
-
-    /* Check path length */
-    if (strlen(path) >= OEFS_PATH_MAX)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
-
-    /* Make copy of the path. */
-    strlcpy(buf, path, sizeof(buf));
-
-    /* Be sure path begins with "/" */
-    if (path[0] != '/')
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
-
-    elements[num_elements++] = "/";
-
-    /* Split the path into components */
-    {
-        char* p;
-        char* save;
-
-        for (p = strtok_r(buf, "/", &save); p; p = strtok_r(NULL, "/", &save))
-        {
-            if (num_elements == MAX_ELEMENTS)
-            {
-                result = OEFS_BUFFER_OVERFLOW;
-                goto done;
-            }
-
-            elements[num_elements++] = p;
-        }
-    }
-
-    /* Load each inode along the path until we find it. */
-    for (i = 0; i < num_elements; i++)
-    {
-        if (strcmp(elements[i], "/") == 0)
-        {
-            current_ino = OEFS_ROOT_INO;
-        }
-        else
-        {
-            oefs_dirent_t* ent;
-
-            if (!(dir = _opendir_by_ino(oefs, current_ino)))
-                goto done;
-
-            current_ino = 0;
-
-            while ((ent = oefs_readdir(dir)))
-            {
-                /* If final path element or a directory. */
-                if (num_elements == i + 1 || ent->d_type == OEFS_DT_DIR)
-                {
-                    if (strcmp(ent->d_name, elements[i]) == 0)
-                    {
-                        current_ino = ent->d_ino;
-                        break;
-                    }
-                }
-            }
-
-            if (!current_ino)
-            {
-                /* Not found case */
-                result = OEFS_NOT_FOUND;
-                goto done;
-            }
-
-            oefs_closedir(dir);
-            dir = NULL;
-        }
-    }
-
-    *ino = current_ino;
-
-    result = OEFS_OK;
-
-done:
-
-    if (dir)
-        oefs_closedir(dir);
-
-    return result;
-}
-
 oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* path)
 {
     oefs_dir_t* ret = NULL;
@@ -1421,100 +1510,6 @@ int oefs_closedir(oefs_dir_t* dir)
 
 done:
     return ret;
-}
-
-static oefs_result_t _create_file(
-    oefs_t* oefs,
-    uint32_t dir_ino,
-    const char* name,
-    uint8_t type,
-    uint32_t* ino_out)
-{
-    oefs_result_t result = OEFS_FAILED;
-    uint32_t ino;
-    oefs_file_t* file = NULL;
-
-    if (ino_out)
-        *ino_out = 0;
-
-    if (!oefs || !dir_ino || !name || strlen(name) >= OEFS_PATH_MAX)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
-
-    /* Create an inode for the new file. */
-    {
-        oefs_inode_t inode;
-
-        memset(&inode, 0, sizeof(oefs_inode_t));
-
-        inode.i_magic = OEFS_INODE_MAGIC;
-        inode.i_links = 1;
-
-        if (_assign_blkno(oefs, &ino) != OEFS_OK)
-            goto done;
-
-        if (_flush_bitmap(oefs) != OEFS_OK)
-            goto done;
-
-        if (_flush_super_block(oefs) != OEFS_OK)
-            goto done;
-
-        if (_write_block(oefs, ino, &inode))
-            goto done;
-    }
-
-    /* Add an entry to the directory for this inode. */
-    {
-        oefs_dirent_t dirent;
-        int32_t n;
-
-        if (_open_file(oefs, dir_ino, &file) != 0)
-            goto done;
-
-        /* Check for duplicates. */
-        while ((n = oefs_read_file(file, &dirent, sizeof(dirent))) > 0)
-        {
-            if (n != sizeof(dirent))
-                goto done;
-
-            if (strcmp(dirent.d_name, name) == 0)
-            {
-                result = OEFS_ALREADY_EXISTS;
-                goto done;
-            }
-        }
-
-        /* Append the entry to the directory. */
-        {
-            memset(&dirent, 0, sizeof(dirent));
-            dirent.d_ino = ino;
-            dirent.d_off = file->offset;
-            dirent.d_reclen = sizeof(dirent);
-            dirent.d_type = type;
-            strlcpy(dirent.d_name, name, sizeof(dirent.d_name));
-
-            n = oefs_write_file(file, &dirent, sizeof(dirent));
-
-            if (n != sizeof(dirent))
-                goto done;
-        }
-    }
-
-    if (ino_out)
-        *ino_out = ino;
-
-    result = OEFS_OK;
-
-done:
-
-    /* TODO: should blocks be unassigned on failure? */
-
-    if (file)
-        oefs_close_file(file);
-
-    return result;
 }
 
 oefs_result_t oefs_open_file(
@@ -1673,8 +1668,8 @@ done:
 }
 
 oefs_result_t oefs_create_file(
-    oefs_t* oefs, 
-    const char* path, 
+    oefs_t* oefs,
+    const char* path,
     uint32_t mode,
     oefs_file_t** file_out)
 {

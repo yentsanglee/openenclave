@@ -1,6 +1,6 @@
-#include "filesys.h"
 #include "oefs.h"
 #include <string.h>
+#include "filesys.h"
 
 typedef struct _file_impl
 {
@@ -74,7 +74,7 @@ static oe_file_t* _filesys_open_file(
     if (!filesys_impl || !filesys_impl->oefs)
         goto done;
 
-    /* ATTN: support create mode. */
+/* ATTN: support create mode. */
 
 #if 0
     if (!(oefs_file = oefs_open_file(filesys_impl->oefs, path, mode)))

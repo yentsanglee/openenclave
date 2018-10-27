@@ -181,8 +181,8 @@ oefs_result_t oefs_load_file(
 oefs_result_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode);
 
 oefs_result_t oefs_create_file(
-    oefs_t* oefs, 
-    const char* path, 
+    oefs_t* oefs,
+    const char* path,
     uint32_t mode,
     oefs_file_t** file);
 

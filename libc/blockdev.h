@@ -20,8 +20,6 @@ oe_result_t oe_open_host_block_dev(
     const char* device_name,
     oe_block_dev_t** block_dev);
 
-oe_result_t oe_open_ram_block_dev(
-    size_t size,
-    oe_block_dev_t** block_dev);
+oe_result_t oe_open_ram_block_dev(size_t size, oe_block_dev_t** block_dev);
 
 #endif /* _oe_blockdev_h */

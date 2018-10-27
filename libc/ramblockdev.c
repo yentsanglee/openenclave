@@ -1,8 +1,8 @@
-#include "blockdev.h"
 #include <openenclave/internal/calls.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "blockdev.h"
 
 #define BLOCK_SIZE 512
 
@@ -30,10 +30,7 @@ done:
     return ret;
 }
 
-static int _block_dev_get(
-    oe_block_dev_t* dev,
-    uint32_t blkno,
-    void* data)
+static int _block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
 {
     int ret = -1;
     block_dev_t* device = (block_dev_t*)dev;
@@ -55,10 +52,7 @@ done:
     return ret;
 }
 
-static int _block_dev_put(
-    oe_block_dev_t* dev,
-    uint32_t blkno,
-    const void* data)
+static int _block_dev_put(oe_block_dev_t* dev, uint32_t blkno, const void* data)
 {
     int ret = -1;
     block_dev_t* device = (block_dev_t*)dev;
@@ -80,9 +74,7 @@ done:
     return ret;
 }
 
-oe_result_t oe_open_ram_block_dev(
-    size_t size,
-    oe_block_dev_t** block_dev)
+oe_result_t oe_open_ram_block_dev(size_t size, oe_block_dev_t** block_dev)
 {
     oe_result_t result = OE_FAILURE;
     block_dev_t* device = NULL;

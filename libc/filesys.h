@@ -4,8 +4,8 @@
 #include <fcntl.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "blockdev.h"
 
 typedef struct _oe_file oe_file_t;

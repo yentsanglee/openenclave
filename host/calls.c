@@ -26,8 +26,8 @@
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/utils.h>
 #include "asmdefs.h"
-#include "hostblockdev.h"
 #include "enclave.h"
+#include "hostblockdev.h"
 #include "ocalls.h"
 
 /*

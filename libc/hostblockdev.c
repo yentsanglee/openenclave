@@ -1,8 +1,8 @@
-#include "blockdev.h"
 #include <openenclave/internal/calls.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "blockdev.h"
 
 typedef struct _host_block_dev
 {
@@ -30,10 +30,7 @@ done:
     return ret;
 }
 
-static int _host_block_dev_get(
-    oe_block_dev_t* dev,
-    uint32_t blkno,
-    void* data)
+static int _host_block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
 {
     int ret = -1;
     host_block_dev_t* device = (host_block_dev_t*)dev;

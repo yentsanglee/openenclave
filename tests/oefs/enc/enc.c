@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #define _GNU_SOURCE
-#include <limits.h>
 #include <ctype.h>
+#include <limits.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/file.h>
 #include <openenclave/internal/mount.h>
@@ -13,8 +13,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../../../libc/blockdev.h"
-#include "../../../libc/oefs.h"
 #include "../../../libc/buf.h"
+#include "../../../libc/oefs.h"
 #include "oefs_t.h"
 
 #define INIT
@@ -120,7 +120,7 @@ static void _update_file(oefs_t* oefs, const char* path)
 
     for (size_t i = 0; i < FILE_SIZE; i++)
     {
-        char c = alphabet[i % (sizeof(alphabet)-1)];
+        char c = alphabet[i % (sizeof(alphabet) - 1)];
 
         if (buf_append(&buf, &c, 1) != 0)
             OE_TEST(false);
