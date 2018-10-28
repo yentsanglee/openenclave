@@ -1,6 +1,5 @@
 Todo:
 
-(A) Rename function
 (A) Code walk-through
 (A) Block encryption
 (A) Integrate with mount function.
@@ -19,4 +18,4 @@ Todo:
 (X) Use standard function names (open rather than open_file).
 (X) Change all return types to oefs_result_t.
 (X) Link function.
-
+(X) Rename function
