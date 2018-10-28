@@ -197,7 +197,7 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t nblocks);
 /* Initialize the oefs instance from the given device. */
 oefs_result_t oefs_initialize(oefs_t** oefs, oe_block_dev_t* dev);
 
-/* Rlease the oefs intance. */
+/* Release the oefs instance. */
 oefs_result_t oefs_release(oefs_t* oefs);
 
 int32_t oefs_read(oefs_file_t* file, void* data, uint32_t size);
