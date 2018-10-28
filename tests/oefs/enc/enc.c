@@ -403,6 +403,51 @@ static void _test_links(oefs_t* oefs)
     r = oefs_stat(oefs, "/dir1/file1", &stat);
     OE_TEST(r == OEFS_OK);
     OE_TEST(stat.st_nlink == 1);
+
+    r = oefs_unlink(oefs, "/dir1/file1");
+    OE_TEST(r == OEFS_OK);
+
+    oefs_rmdir(oefs, "/dir1");
+    OE_TEST(r == OEFS_OK);
+
+    oefs_rmdir(oefs, "/dir2");
+    OE_TEST(r == OEFS_OK);
+}
+
+static void _test_rename(oefs_t* oefs)
+{
+    oefs_result_t r;
+    oefs_file_t* file;
+    int32_t n;
+    char buf[1024];
+
+    r = oefs_mkdir(oefs, "/dir1", 0);
+    OE_TEST(r == OEFS_OK);
+
+    r = oefs_mkdir(oefs, "/dir2", 0);
+    OE_TEST(r == OEFS_OK);
+
+    r = oefs_create(oefs, "/dir1/file1", 0, &file);
+    OE_TEST(r == OEFS_OK);
+    r = oefs_write(file, "abcdefghijklmnopqrstuvwxyz", 26, &n);
+    OE_TEST(r == OEFS_OK);
+    OE_TEST(n == 26);
+    oefs_close(file);
+
+    r = oefs_rename(oefs, "/dir1/file1", "/dir2/file2");
+    OE_TEST(r == OEFS_OK);
+
+    r = oefs_open(oefs, "/dir2/file2", 0, 0, &file);
+    OE_TEST(r == OEFS_OK);
+    r = oefs_read(file, buf, sizeof(buf), &n);
+    OE_TEST(r == OEFS_OK);
+    OE_TEST(n == 26);
+    OE_TEST(strncmp(buf, "abcdefghijklmnopqrstuvwxyz", 26) == 0);
+    oefs_close(file);
+
+    oefs_stat_t stat;
+    r = oefs_stat(oefs, "/dir1/file1", &stat);
+    OE_TEST(r != OEFS_OK);
 }
 
 int test_oefs(const char* oefs_filename)
@@ -487,6 +532,9 @@ int test_oefs(const char* oefs_filename)
 
     /* Test the link function. */
     _test_links(oefs);
+
+    /* Test the rename function. */
+    _test_rename(oefs);
 
     oefs_release(oefs);
     dev->close(dev);

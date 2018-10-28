@@ -248,6 +248,11 @@ oefs_result_t oefs_link(
     const char* old_path,
     const char* new_path);
 
+oefs_result_t oefs_rename(
+    oefs_t* oefs,
+    const char* old_path,
+    const char* new_path);
+
 oefs_result_t oefs_unlink(oefs_t* oefs, const char* path);
 
 oefs_result_t oefs_truncate(oefs_t* oefs, const char* path);

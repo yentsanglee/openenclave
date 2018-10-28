@@ -2136,6 +2136,32 @@ done:
     return result;
 }
 
+oefs_result_t oefs_rename(
+    oefs_t* oefs,
+    const char* old_path,
+    const char* new_path)
+{
+    oefs_result_t result = OEFS_FAILED;
+
+    if (!old_path || !new_path)
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    if (oefs_link(oefs, old_path, new_path) != OEFS_OK)
+        goto done;
+
+    if (oefs_unlink(oefs, old_path) != OEFS_OK)
+        goto done;
+
+    result = OEFS_OK;
+
+done:
+
+    return result;
+}
+
 oefs_result_t oefs_unlink(oefs_t* oefs, const char* path)
 {
     oefs_result_t result = OEFS_FAILED;
