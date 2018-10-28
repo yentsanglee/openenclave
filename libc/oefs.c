@@ -693,19 +693,20 @@ static oefs_result_t _create_file(
 
     /* Add an entry to the directory for this inode. */
     {
-        oefs_dirent_t dirent;
+        oefs_dirent_t de;
+        oefs_result_t r;
         int32_t n;
 
         if (_open_file(oefs, dir_ino, &file) != 0)
             goto done;
 
         /* Check for duplicates. */
-        while ((n = oefs_read(file, &dirent, sizeof(dirent))) > 0)
+        while ((r = oefs_read(file, &de, sizeof(de), &n)) == OEFS_OK && n > 0)
         {
-            if (n != sizeof(dirent))
+            if (n != sizeof(de))
                 goto done;
 
-            if (strcmp(dirent.d_name, name) == 0)
+            if (strcmp(de.d_name, name) == 0)
             {
                 result = OEFS_ALREADY_EXISTS;
                 goto done;
@@ -714,16 +715,16 @@ static oefs_result_t _create_file(
 
         /* Append the entry to the directory. */
         {
-            memset(&dirent, 0, sizeof(dirent));
-            dirent.d_ino = ino;
-            dirent.d_off = file->offset;
-            dirent.d_reclen = sizeof(dirent);
-            dirent.d_type = type;
-            strlcpy(dirent.d_name, name, sizeof(dirent.d_name));
+            memset(&de, 0, sizeof(de));
+            de.d_ino = ino;
+            de.d_off = file->offset;
+            de.d_reclen = sizeof(de);
+            de.d_type = type;
+            strlcpy(de.d_name, name, sizeof(de.d_name));
 
-            n = oefs_write(file, &dirent, sizeof(dirent));
+            n = oefs_write(file, &de, sizeof(de));
 
-            if (n != sizeof(dirent))
+            if (n != sizeof(de))
                 goto done;
         }
     }
@@ -803,12 +804,13 @@ static oefs_result_t _load_file(
     oefs_result_t result = OEFS_FAILED;
     buf_t buf = BUF_INITIALIZER;
     char data[OEFS_BLOCK_SIZE];
+    oefs_result_t r;
     int32_t n;
 
     *data_out = NULL;
     *size_out = 0;
 
-    while ((n = oefs_read(file, data, sizeof(data))) > 0)
+    while ((r = oefs_read(file, data, sizeof(data), &n)) == OEFS_OK && n > 0)
     {
         if (buf_append(&buf, data, n) != 0)
             goto done;
@@ -1300,13 +1302,20 @@ done:
     return result;
 }
 
-int32_t oefs_read(oefs_file_t* file, void* data, uint32_t size)
+oefs_result_t oefs_read(
+    oefs_file_t* file, 
+    void* data, 
+    uint32_t size,
+    int32_t* nread)
 {
-    int32_t ret = -1;
+    oefs_result_t result = OEFS_FAILED;
     uint32_t first;
     uint32_t i;
     uint32_t remaining;
     uint8_t* ptr = (uint8_t*)data;
+
+    if (nread)
+        *nread = 0;
 
     /* Check parameters */
     if (!file || !file->oefs || (!data && size))
@@ -1374,10 +1383,12 @@ int32_t oefs_read(oefs_file_t* file, void* data, uint32_t size)
     }
 
     /* Calculate number of bytes read */
-    ret = size - remaining;
+    *nread = size - remaining;
+
+    result = OEFS_OK;
 
 done:
-    return ret;
+    return result;
 }
 
 int32_t oefs_write(oefs_file_t* file, const void* data, uint32_t size)
@@ -1666,14 +1677,15 @@ done:
 oefs_dirent_t* oefs_readdir(oefs_dir_t* dir)
 {
     oefs_dirent_t* ret = NULL;
+    oefs_result_t r;
     int32_t n;
 
     if (!dir || !dir->file)
         goto done;
 
-    n = oefs_read(dir->file, &dir->dirent, sizeof(oefs_dirent_t));
+    r = oefs_read(dir->file, &dir->dirent, sizeof(oefs_dirent_t), &n);
 
-    if (n != sizeof(oefs_dirent_t))
+    if (r != OEFS_OK || n != sizeof(oefs_dirent_t))
         goto done;
 
     ret = &dir->dirent;

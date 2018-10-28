@@ -295,6 +295,7 @@ static void _test_lseek(oefs_t* oefs)
     const size_t alphabet_length = OE_COUNTOF(alphabet) - 1;
     char buf[1093];
     ssize_t offset;
+    int32_t n;
 
     r = oefs_create(oefs, "/somefile", 0, &file);
     OE_TEST(r == OEFS_OK);
@@ -314,7 +315,8 @@ static void _test_lseek(oefs_t* oefs)
     OE_TEST(r == OEFS_OK);
 
     memset(buf, 0, sizeof(buf));
-    int32_t n = oefs_read(file, buf, sizeof(buf));
+    r = oefs_read(file, buf, sizeof(buf), &n);
+    OE_TEST(r == OEFS_OK);
     OE_TEST(n == sizeof(buf));
 
     {

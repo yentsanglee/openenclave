@@ -200,7 +200,11 @@ oefs_result_t oefs_initialize(oefs_t** oefs, oe_block_dev_t* dev);
 /* Release the oefs instance. */
 oefs_result_t oefs_release(oefs_t* oefs);
 
-int32_t oefs_read(oefs_file_t* file, void* data, uint32_t size);
+oefs_result_t oefs_read(
+    oefs_file_t* file, 
+    void* data, 
+    uint32_t size,
+    int32_t* nread);
 
 int32_t oefs_write(oefs_file_t* file, const void* data, uint32_t size);
 

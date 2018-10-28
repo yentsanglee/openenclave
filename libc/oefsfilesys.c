@@ -12,11 +12,15 @@ static ssize_t _file_read(oe_file_t* file, void* buf, size_t count)
 {
     ssize_t ret = -1;
     file_impl_t* file_impl = (file_impl_t*)file;
+    int32_t n;
 
     if (!file_impl || !file_impl->oefs_file)
         goto done;
 
-    ret = oefs_read(file_impl->oefs_file, buf, count);
+    if (oefs_read(file_impl->oefs_file, buf, count, &n) != OEFS_OK)
+        goto done;
+
+    ret = n;
 
 done:
     return ret;
