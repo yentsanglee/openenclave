@@ -1,26 +1,21 @@
 Todo:
 
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-
-(A) Use standard function names (open rather than open_file).
-(A) Change all return types to oefs_result_t.
-(A) Refine error naming and handling.
-(A) Handle mode parameters.
+(A) Code walk-through
 (A) Rename function.
-(A) Block caching
-(A) blockdev->flush() protocol.
+(A) Link function.
 (A) Block encryption
 (A) Integrate with mount function.
-(A) Integrate with syscalls.c.
-(A) Path normalization.
-(A) Current-working-directory operations.
-(A) Test refetching from disk (verify synching).
-(A) Investigate monotonic counters through file I/O.
-(A) Implement ordinary (non-encrypted) host fiel I/O.
-
-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-
-(C) Implement link() and unlink().
-
+(A) Integrate with libc.
+(A) Test syncing
+---
+(B) Path normalization.
+(B) Current-working-directory operations.
+(B) Block caching
+(B) blockdev->flush() protocol.
+(B) Implement ordinary (non-encrypted) host file I/O.
+---
+(C) Refine error naming and handling.
+(C) Handle mode parameters.
+---
+(X) Use standard function names (open rather than open_file).
+(X) Change all return types to oefs_result_t.
