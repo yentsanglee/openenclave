@@ -207,7 +207,8 @@ static void _update_file(oefs_t* oefs, const char* path)
             OE_TEST(false);
     }
 
-    n = oefs_write(file, buf.data, buf.size);
+    r = oefs_write(file, buf.data, buf.size, &n);
+    OE_TEST(r == OEFS_OK);
     OE_TEST(n == buf.size);
     oefs_close(file);
 
@@ -262,7 +263,9 @@ static void _create_myfile(oefs_t* oefs)
 
     const char message[] = "Hello World!";
 
-    int32_t n = oefs_write(file, message, sizeof(message));
+    int32_t n;
+    r = oefs_write(file, message, sizeof(message), &n);
+    OE_TEST(r == OEFS_OK);
     OE_TEST(n == sizeof(message));
 
     oefs_close(file);
@@ -295,7 +298,8 @@ static void _test_lseek(oefs_t* oefs)
     const size_t alphabet_length = OE_COUNTOF(alphabet) - 1;
     char buf[1093];
     ssize_t offset;
-    int32_t n;
+    int32_t nread;
+    int32_t nwritten;
 
     r = oefs_create(oefs, "/somefile", 0, &file);
     OE_TEST(r == OEFS_OK);
@@ -303,8 +307,9 @@ static void _test_lseek(oefs_t* oefs)
     for (size_t i = 0; i < alphabet_length; i++)
     {
         memset(buf, alphabet[i], sizeof(buf));
-        int32_t n = oefs_write(file, buf, sizeof(buf));
-        OE_TEST(n == sizeof(buf));
+        r = oefs_write(file, buf, sizeof(buf), &nwritten);
+        OE_TEST(r == OEFS_OK);
+        OE_TEST(nwritten == sizeof(buf));
     }
 
     r = oefs_lseek(file, 0, OEFS_SEEK_CUR, &offset);
@@ -315,9 +320,9 @@ static void _test_lseek(oefs_t* oefs)
     OE_TEST(r == OEFS_OK);
 
     memset(buf, 0, sizeof(buf));
-    r = oefs_read(file, buf, sizeof(buf), &n);
+    r = oefs_read(file, buf, sizeof(buf), &nread);
     OE_TEST(r == OEFS_OK);
-    OE_TEST(n == sizeof(buf));
+    OE_TEST(nread == sizeof(buf));
 
     {
         char tmp[sizeof(buf)];

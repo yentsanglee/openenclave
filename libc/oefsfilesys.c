@@ -30,11 +30,15 @@ static ssize_t _file_write(oe_file_t* file, const void* buf, size_t count)
 {
     ssize_t ret = -1;
     file_impl_t* file_impl = (file_impl_t*)file;
+    int32_t nwritten;
 
     if (!file_impl || !file_impl->oefs_file)
         goto done;
 
-    ret = oefs_write(file_impl->oefs_file, buf, count);
+    if (oefs_write(file_impl->oefs_file, buf, count, &nwritten) != OEFS_OK)
+        goto done;
+
+    ret = nwritten;
 
 done:
     return ret;

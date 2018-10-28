@@ -722,9 +722,9 @@ static oefs_result_t _create_file(
             de.d_type = type;
             strlcpy(de.d_name, name, sizeof(de.d_name));
 
-            n = oefs_write(file, &de, sizeof(de));
+            r = oefs_write(file, &de, sizeof(de), &n);
 
-            if (n != sizeof(de))
+            if (r != OEFS_OK || n != sizeof(de))
                 goto done;
         }
     }
@@ -868,9 +868,13 @@ static oefs_result_t _remove_file(oefs_t* oefs, uint32_t dir_ino, uint32_t ino)
         {
             if (entries[i].d_ino != ino)
             {
-                const size_t n = sizeof(oefs_dirent_t);
+                const uint32_t n = sizeof(oefs_dirent_t);
+                oefs_result_t r;
+                int32_t nwritten;
 
-                if (oefs_write(dir, &entries[i], n) != n)
+                r = oefs_write(dir, &entries[i], n, &nwritten);
+
+                if (r != OEFS_OK || nwritten != n)
                     goto done;
             }
         }
@@ -1391,17 +1395,24 @@ done:
     return result;
 }
 
-int32_t oefs_write(oefs_file_t* file, const void* data, uint32_t size)
+oefs_result_t oefs_write(
+    oefs_file_t* file, 
+    const void* data, 
+    uint32_t size,
+    int32_t* nwritten)
 {
-    int32_t ret = -1;
+    oefs_result_t result = OEFS_FAILED;
     uint32_t first;
     uint32_t i;
     uint32_t remaining;
     const uint8_t* ptr = (uint8_t*)data;
     uint32_t new_file_size;
 
+    if (nwritten)
+        *nwritten = 0;
+
     /* Check parameters */
-    if (!file || !file->oefs || (!data && size))
+    if (!file || !file->oefs || (!data && size) || !nwritten)
         goto done;
 
     if (!_sane_file(file))
@@ -1510,11 +1521,13 @@ int32_t oefs_write(oefs_file_t* file, const void* data, uint32_t size)
     if (_write_block(file->oefs, file->ino, &file->inode) != OEFS_OK)
         goto done;
 
-    /* Calculate number of bytes read */
-    ret = size - remaining;
+    result = OEFS_OK;
+
+    /* Calculate number of bytes written */
+    *nwritten = size - remaining;
 
 done:
-    return ret;
+    return result;
 }
 
 oefs_result_t oefs_close(oefs_file_t* file)
@@ -1827,7 +1840,8 @@ oefs_result_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode)
     /* Write the empty directory contents. */
     {
         oefs_dirent_t dirents[2];
-        int32_t n;
+        oefs_result_t r;
+        int32_t nwritten;
 
         /* Initialize the ".." directory. */
         dirents[0].d_ino = dir_ino;
@@ -1843,9 +1857,9 @@ oefs_result_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode)
         dirents[1].d_type = OEFS_DT_DIR;
         strcpy(dirents[1].d_name, ".");
 
-        n = oefs_write(file, &dirents, sizeof(dirents));
+        r = oefs_write(file, &dirents, sizeof(dirents), &nwritten);
 
-        if (n != sizeof(dirents))
+        if (r != OEFS_OK || nwritten != sizeof(dirents))
             goto done;
     }
 

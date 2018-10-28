@@ -206,7 +206,11 @@ oefs_result_t oefs_read(
     uint32_t size,
     int32_t* nread);
 
-int32_t oefs_write(oefs_file_t* file, const void* data, uint32_t size);
+oefs_result_t oefs_write(
+    oefs_file_t* file, 
+    const void* data, 
+    uint32_t size,
+    int32_t* nwritten);
 
 oefs_result_t oefs_close(oefs_file_t* file);
 
