@@ -1,7 +1,6 @@
 #define _GNU_SOURCE
 #include "oefs.h"
 #include <openenclave/internal/enclavelibc.h>
-#include <openenclave/internal/hexdump.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -294,14 +293,6 @@ done:
     return result;
 }
 
-static __inline void _dump_dirent(oefs_dirent_t* entry)
-{
-    printf("=== oefs_dirent_t\n");
-    printf("d_ino=%u\n", entry->d_ino);
-    printf("d_type=%u\n", entry->d_type);
-    printf("d_name=%s\n", entry->d_name);
-}
-
 static oefs_result_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
 {
     oefs_result_t result = OEFS_FAILED;
@@ -571,30 +562,6 @@ static oefs_result_t _append_block_chain(
         file->last_bnode = bnode;
         file->last_bnode_blkno = blkno;
     }
-
-    result = OEFS_OK;
-
-done:
-    return result;
-}
-
-static oefs_result_t _dump_directory(oefs_t* oefs, uint32_t ino)
-{
-    oefs_result_t result = OEFS_FAILED;
-    oefs_file_t* file;
-    oefs_dirent_t entry;
-    int32_t n;
-
-    if (_open_file(oefs, ino, &file) != 0)
-        goto done;
-
-    while ((n = oefs_read(file, &entry, sizeof(entry))) > 0)
-    {
-        _dump_dirent(&entry);
-    }
-
-    if (oefs_close(file) != OEFS_OK)
-        goto done;
 
     result = OEFS_OK;
 
