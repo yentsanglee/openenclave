@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #define _GNU_SOURCE
+#include <assert.h>
 #include <ctype.h>
 #include <limits.h>
 #include <openenclave/enclave.h>
@@ -10,7 +11,6 @@
 #include <openenclave/internal/tests.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../../../libc/blockdev.h"
@@ -341,6 +341,70 @@ static void _test_lseek(oefs_t* oefs)
     //_dump_file(oefs, "/somefile");
 }
 
+static void _test_links(oefs_t* oefs)
+{
+    oefs_result_t r;
+    oefs_file_t* file;
+    int32_t n;
+    char buf[1024];
+    oefs_stat_t stat;
+
+    r = oefs_mkdir(oefs, "/dir1", 0);
+    OE_TEST(r == OEFS_OK);
+
+    r = oefs_mkdir(oefs, "/dir2", 0);
+    OE_TEST(r == OEFS_OK);
+
+    r = oefs_create(oefs, "/dir1/file1", 0, &file);
+    OE_TEST(r == OEFS_OK);
+    r = oefs_write(file, "abcdefghijklmnopqrstuvwxyz", 26, &n);
+    OE_TEST(r == OEFS_OK);
+    OE_TEST(n == 26);
+    oefs_close(file);
+
+    r = oefs_create(oefs, "/dir2/exists", 0, &file);
+    OE_TEST(r == OEFS_OK);
+    oefs_close(file);
+
+    r = oefs_link(oefs, "/dir1/file1", "/dir2/file2");
+    OE_TEST(r == OEFS_OK);
+
+    r = oefs_link(oefs, "/dir1/file1", "/dir2/exists");
+    OE_TEST(r == OEFS_OK);
+
+    r = oefs_open(oefs, "/dir2/file2", 0, 0, &file);
+    OE_TEST(r == OEFS_OK);
+    r = oefs_read(file, buf, sizeof(buf), &n);
+    OE_TEST(r == OEFS_OK);
+    OE_TEST(n == 26);
+    OE_TEST(strncmp(buf, "abcdefghijklmnopqrstuvwxyz", 26) == 0);
+    oefs_close(file);
+
+    r = oefs_open(oefs, "/dir2/exists", 0, 0, &file);
+    OE_TEST(r == OEFS_OK);
+    r = oefs_read(file, buf, sizeof(buf), &n);
+    OE_TEST(r == OEFS_OK);
+    OE_TEST(n == 26);
+    OE_TEST(strncmp(buf, "abcdefghijklmnopqrstuvwxyz", 26) == 0);
+    oefs_close(file);
+
+    r = oefs_stat(oefs, "/dir1/file1", &stat);
+    OE_TEST(r == OEFS_OK);
+    OE_TEST(stat.st_nlink == 3);
+
+    r = oefs_unlink(oefs, "/dir2/file2");
+    OE_TEST(r == OEFS_OK);
+    r = oefs_stat(oefs, "/dir1/file1", &stat);
+    OE_TEST(r == OEFS_OK);
+    OE_TEST(stat.st_nlink == 2);
+
+    r = oefs_unlink(oefs, "/dir2/exists");
+    OE_TEST(r == OEFS_OK);
+    r = oefs_stat(oefs, "/dir1/file1", &stat);
+    OE_TEST(r == OEFS_OK);
+    OE_TEST(stat.st_nlink == 1);
+}
+
 int test_oefs(const char* oefs_filename)
 {
     oe_block_dev_t* dev;
@@ -421,6 +485,9 @@ int test_oefs(const char* oefs_filename)
     /* Test the lseek function. */
     _test_lseek(oefs);
 
+    /* Test the link function. */
+    _test_links(oefs);
+
     oefs_release(oefs);
     dev->close(dev);
 
@@ -434,4 +501,3 @@ OE_SET_ENCLAVE_SGX(
     10 * 1024, /* HeapPageCount */
     10 * 1024, /* StackPageCount */
     2);        /* TCSCount */
-

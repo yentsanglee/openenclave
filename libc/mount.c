@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/mount.h>
 #include <openenclave/internal/raise.h>

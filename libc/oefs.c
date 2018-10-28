@@ -1,10 +1,13 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #define _GNU_SOURCE
 #include "oefs.h"
+#include <assert.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include "buf.h"
 
 #define TRACE printf("%s(%u): %s()\n", __FILE__, __LINE__, __FUNCTION__)
@@ -669,6 +672,8 @@ static oefs_result_t _create_file(
         goto done;
     }
 
+    /* ATTN: should create replace an existing file? */
+
     /* Create an inode for the new file. */
     {
         oefs_inode_t inode;
@@ -836,13 +841,46 @@ done:
     return result;
 }
 
-static oefs_result_t _remove_file(oefs_t* oefs, uint32_t dir_ino, uint32_t ino)
+static oefs_result_t _release_inode(oefs_t* oefs, uint32_t ino)
+{
+    oefs_result_t result = OEFS_FAILED;
+    oefs_file_t* file = NULL;
+
+    if (_open_file(oefs, ino, &file) != OEFS_OK)
+        goto done;
+
+    if (_truncate_file(file) != OEFS_OK)
+        goto done;
+
+    /* Unassign the inode block. */
+    if (_unassign_blkno(oefs, file->ino) != OEFS_OK)
+        goto done;
+
+    result = OEFS_OK;
+
+done:
+
+    if (file)
+        oefs_close(file);
+
+    if (_flush(oefs) != OEFS_OK)
+        return OEFS_FAILED;
+
+    return result;
+}
+
+static oefs_result_t _unlink_file(
+    oefs_t* oefs,
+    uint32_t dir_ino,
+    uint32_t ino,
+    const char* name)
 {
     oefs_result_t result = OEFS_FAILED;
     oefs_file_t* dir = NULL;
     oefs_file_t* file = NULL;
     void* data = NULL;
     size_t size = 0;
+    oefs_inode_t inode;
 
     if (!oefs || !dir_ino || !ino)
     {
@@ -873,7 +911,7 @@ static oefs_result_t _remove_file(oefs_t* oefs, uint32_t dir_ino, uint32_t ino)
 
         for (size_t i = 0; i < num_entries; i++)
         {
-            if (entries[i].d_ino != ino)
+            if (strcmp(entries[i].d_name, name) != 0)
             {
                 const uint32_t n = sizeof(oefs_dirent_t);
                 oefs_result_t r;
@@ -887,17 +925,24 @@ static oefs_result_t _remove_file(oefs_t* oefs, uint32_t dir_ino, uint32_t ino)
         }
     }
 
-    /* Open the file being removed. */
-    if (_open_file(oefs, ino, &file) != OEFS_OK)
+    /* Load the inode into memory. */
+    if (_load_inode(oefs, ino, &inode) != OEFS_OK)
         goto done;
 
-    /* Truncate the file. */
-    if (_truncate_file(file) != OEFS_OK)
-        goto done;
+    /* If this is the only link to this file, then remove it. */
+    if (inode.i_links == 1)
+    {
+        if (_release_inode(oefs, ino) != OEFS_OK)
+            goto done;
+    }
+    else
+    {
+        /* Decrement the number of links. */
+        inode.i_links--;
 
-    /* Unassign the inode block. */
-    if (_unassign_blkno(oefs, file->ino) != OEFS_OK)
-        goto done;
+        /* Rewrite the inode. */
+        _write_block(oefs, ino, &inode);
+    }
 
     result = OEFS_OK;
 
@@ -945,8 +990,8 @@ done:
 }
 
 static oefs_result_t _path_to_ino(
-    oefs_t* oefs, 
-    const char* path, 
+    oefs_t* oefs,
+    const char* path,
     uint32_t* dir_ino_out,
     uint32_t* ino_out,
     uint8_t* type_out) /* oefs_dir_t.d_type */
@@ -1319,8 +1364,8 @@ done:
 }
 
 oefs_result_t oefs_read(
-    oefs_file_t* file, 
-    void* data, 
+    oefs_file_t* file,
+    void* data,
     uint32_t size,
     int32_t* nread)
 {
@@ -1408,8 +1453,8 @@ done:
 }
 
 oefs_result_t oefs_write(
-    oefs_file_t* file, 
-    const void* data, 
+    oefs_file_t* file,
+    const void* data,
     uint32_t size,
     int32_t* nwritten)
 {
@@ -1955,12 +2000,150 @@ done:
     return result;
 }
 
+oefs_result_t oefs_link(
+    oefs_t* oefs,
+    const char* old_path,
+    const char* new_path)
+{
+    oefs_result_t result = OEFS_FAILED;
+    uint32_t ino;
+    char dirname[OEFS_PATH_MAX];
+    char basename[OEFS_PATH_MAX];
+    uint32_t dir_ino;
+    oefs_file_t* dir = NULL;
+    uint32_t release_ino = 0;
+
+    if (!old_path || !new_path)
+    {
+        result = OEFS_BAD_PARAMETER;
+        goto done;
+    }
+
+    /* Get the inode number of the old path. */
+    {
+        uint8_t type;
+
+        if (_path_to_ino(oefs, old_path, NULL, &ino, &type) != OEFS_OK)
+        {
+            result = OEFS_NOT_FOUND;
+            goto done;
+        }
+
+        /* Only regular files can be linked. */
+        if (type != OEFS_DT_REG)
+            goto done;
+    }
+
+    /* Split the new path. */
+    if (_split_path(new_path, dirname, basename) != OEFS_OK)
+        goto done;
+
+    /* Open the destination directory. */
+    {
+        uint8_t type;
+
+        if (_path_to_ino(oefs, dirname, NULL, &dir_ino, &type) != OEFS_OK)
+            goto done;
+
+        if (type != OEFS_DT_DIR)
+            goto done;
+
+        if (_open_file(oefs, dir_ino, &dir) != 0)
+            goto done;
+    }
+
+    /* Replace the destination file if it already exists. */
+    for (;;)
+    {
+        oefs_dirent_t ent;
+        int32_t n;
+
+        if (oefs_read(dir, &ent, sizeof(ent), &n) != OEFS_OK)
+            goto done;
+
+        if (n == 0)
+            break;
+
+        if (n != sizeof(ent))
+            goto done;
+
+        if (strcmp(ent.d_name, basename) == 0)
+        {
+            release_ino = ent.d_ino;
+
+            if (ent.d_type != OEFS_DT_REG)
+                goto done;
+
+            if (oefs_lseek(dir, -sizeof(ent), OEFS_SEEK_CUR, NULL) != OEFS_OK)
+                goto done;
+
+            ent.d_ino = ino;
+
+            if (oefs_write(dir, &ent, sizeof(ent), &n) != OEFS_OK)
+                goto done;
+
+            break;
+        }
+    }
+
+    /* Append the entry to the directory. */
+    if (!release_ino)
+    {
+        oefs_dirent_t ent;
+        int32_t n;
+
+        memset(&ent, 0, sizeof(ent));
+        ent.d_ino = ino;
+        ent.d_off = dir->offset;
+        ent.d_reclen = sizeof(ent);
+        ent.d_type = OEFS_DT_REG;
+        strlcpy(ent.d_name, basename, sizeof(ent.d_name));
+
+        if (oefs_write(dir, &ent, sizeof(ent), &n) != OEFS_OK)
+            goto done;
+
+        if (n != sizeof(ent))
+            goto done;
+    }
+
+    /* Increment the number of links to this file. */
+    {
+        oefs_inode_t inode;
+
+        if (_load_inode(oefs, ino, &inode) != OEFS_OK)
+            goto done;
+
+        inode.i_links++;
+
+        if (_write_block(oefs, ino, &inode) != OEFS_OK)
+            goto done;
+    }
+
+    /* Remove the destination file if it existed above. */
+    if (release_ino)
+    {
+        if (_release_inode(oefs, release_ino) != OEFS_OK)
+            goto done;
+    }
+
+    result = OEFS_OK;
+
+done:
+
+    if (dir)
+        oefs_close(dir);
+
+    return result;
+}
+
 oefs_result_t oefs_unlink(oefs_t* oefs, const char* path)
 {
     oefs_result_t result = OEFS_FAILED;
     uint32_t dir_ino;
     uint32_t ino;
     uint8_t type;
+    char dirname[OEFS_PATH_MAX];
+    char basename[OEFS_PATH_MAX];
 
     if (!oefs || !path)
     {
@@ -1975,7 +2158,10 @@ oefs_result_t oefs_unlink(oefs_t* oefs, const char* path)
     if (type != OEFS_DT_REG)
         goto done;
 
-    if (_remove_file(oefs, dir_ino, ino) != OEFS_OK)
+    if (_split_path(path, dirname, basename) != OEFS_OK)
+        goto done;
+
+    if (_unlink_file(oefs, dir_ino, ino, basename) != OEFS_OK)
         goto done;
 
     result = OEFS_OK;
@@ -2027,6 +2213,8 @@ oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path)
     uint32_t dir_ino;
     uint32_t ino;
     uint8_t type;
+    char dirname[OEFS_PATH_MAX];
+    char basename[OEFS_PATH_MAX];
 
     if (!oefs || !path)
     {
@@ -2056,7 +2244,10 @@ oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path)
             goto done;
     }
 
-    if (_remove_file(oefs, dir_ino, ino) != OEFS_OK)
+    if (_split_path(path, dirname, basename) != OEFS_OK)
+        goto done;
+
+    if (_unlink_file(oefs, dir_ino, ino, basename) != OEFS_OK)
         goto done;
 
     result = OEFS_OK;
@@ -2110,9 +2301,9 @@ done:
 }
 
 oefs_result_t oefs_lseek(
-    oefs_file_t* file, 
-    ssize_t offset, 
-    int whence, 
+    oefs_file_t* file,
+    ssize_t offset,
+    int whence,
     ssize_t* offset_out)
 {
     oefs_result_t result = OEFS_FAILED;
@@ -2121,7 +2312,7 @@ oefs_result_t oefs_lseek(
     if (offset_out)
         *offset_out = 0;
 
-    if (!file || !offset_out)
+    if (!file)
         goto done;
 
     switch (whence)
@@ -2154,7 +2345,8 @@ oefs_result_t oefs_lseek(
 
     file->offset = new_offset;
 
-    *offset_out = new_offset;
+    if (offset_out)
+        *offset_out = new_offset;
 
     result = OEFS_OK;
 

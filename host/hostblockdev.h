@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #ifndef _oe_host_blockdevice_h
 #define _oe_host_blockdevice_h
 

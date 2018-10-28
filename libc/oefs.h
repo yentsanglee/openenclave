@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #ifndef _oe_oefs_h
 #define _oe_oefs_h
 
@@ -158,8 +161,7 @@ typedef struct _oefs_stat
     uint32_t st_atime;
     uint32_t st_mtime;
     uint32_t st_ctime;
-}
-oefs_stat_t;
+} oefs_stat_t;
 
 OE_STATIC_ASSERT(sizeof(oefs_stat_t) == 48);
 
@@ -201,14 +203,14 @@ oefs_result_t oefs_initialize(oefs_t** oefs, oe_block_dev_t* dev);
 oefs_result_t oefs_release(oefs_t* oefs);
 
 oefs_result_t oefs_read(
-    oefs_file_t* file, 
-    void* data, 
+    oefs_file_t* file,
+    void* data,
     uint32_t size,
     int32_t* nread);
 
 oefs_result_t oefs_write(
-    oefs_file_t* file, 
-    const void* data, 
+    oefs_file_t* file,
+    const void* data,
     uint32_t size,
     int32_t* nwritten);
 
@@ -241,6 +243,11 @@ oefs_result_t oefs_create(
     uint32_t mode,
     oefs_file_t** file);
 
+oefs_result_t oefs_link(
+    oefs_t* oefs,
+    const char* old_path,
+    const char* new_path);
+
 oefs_result_t oefs_unlink(oefs_t* oefs, const char* path);
 
 oefs_result_t oefs_truncate(oefs_t* oefs, const char* path);
@@ -250,9 +257,9 @@ oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path);
 oefs_result_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat);
 
 oefs_result_t oefs_lseek(
-    oefs_file_t* file, 
-    ssize_t offset, 
-    int whence, 
+    oefs_file_t* file,
+    ssize_t offset,
+    int whence,
     ssize_t* offset_out);
 
 #endif /* _oe_oefs_h */

@@ -1,8 +1,8 @@
 Todo:
 
-(A) Code walk-through
 (A) Rename function.
 (A) Link function.
+(A) Code walk-through
 (A) Block encryption
 (A) Integrate with mount function.
 (A) Integrate with libc.
