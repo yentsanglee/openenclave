@@ -714,6 +714,9 @@ static oefs_result_t _create_file(
             }
         }
 
+        if (r != OEFS_OK)
+            goto done;
+
         /* Append the entry to the directory. */
         {
             memset(&de, 0, sizeof(de));
@@ -816,6 +819,9 @@ static oefs_result_t _load_file(
         if (buf_append(&buf, data, n) != 0)
             goto done;
     }
+
+    if (r != OEFS_OK)
+        goto done;
 
     *data_out = buf.data;
     *size_out = buf.size;

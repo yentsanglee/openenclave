@@ -188,7 +188,7 @@ typedef enum _oefs_result {
 
 typedef struct _oefs_file oefs_file_t;
 
-/* Compute the size in bytes of a file system with the given block count. */
+/* Compute required size of a file system with the given block count. */
 oefs_result_t oefs_size(size_t nblocks, size_t* size);
 
 /* Build an OE file system on the given device. */
