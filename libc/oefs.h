@@ -214,11 +214,11 @@ oefs_result_t oefs_write(
 
 oefs_result_t oefs_close(oefs_file_t* file);
 
-oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* name);
+oefs_result_t oefs_opendir(oefs_t* oefs, const char* path, oefs_dir_t** dir);
 
-oefs_dirent_t* oefs_readdir(oefs_dir_t* dir);
+oefs_result_t oefs_readdir(oefs_dir_t* dir, oefs_dirent_t** dirent);
 
-int oefs_closedir(oefs_dir_t* dir);
+oefs_result_t oefs_closedir(oefs_dir_t* dir);
 
 oefs_result_t oefs_open(
     oefs_t* oefs,

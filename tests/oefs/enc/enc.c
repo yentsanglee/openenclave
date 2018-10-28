@@ -24,22 +24,27 @@
 
 static void _dump_dir(oefs_t* oefs, const char* dirname)
 {
+    oefs_result_t r;
     oefs_dir_t* dir;
     oefs_dirent_t* ent;
 
-    dir = oefs_opendir(oefs, dirname);
+    r = oefs_opendir(oefs, dirname, &dir);
+    OE_TEST(r == OEFS_OK);
     OE_TEST(dir != NULL);
 
     printf("<<<<<<<< _dump_dir(%s)\n", dirname);
 
-    while ((ent = oefs_readdir(dir)))
+    while ((r = oefs_readdir(dir, &ent)) == OEFS_OK && ent)
     {
         printf("name=%s\n", ent->d_name);
     }
 
+    OE_TEST(r == OEFS_OK);
+
     printf(">>>>>>>>\n\n");
 
-    oefs_closedir(dir);
+    r = oefs_closedir(dir);
+    OE_TEST(r == OEFS_OK);
 }
 
 static void _create_files(oefs_t* oefs)

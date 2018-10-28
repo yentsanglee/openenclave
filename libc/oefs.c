@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "buf.h"
 
 #define TRACE printf("%s(%u): %s()\n", __FILE__, __LINE__, __FUNCTION__)
@@ -1024,6 +1025,7 @@ static oefs_result_t _path_to_ino(
         }
         else
         {
+            oefs_result_t r;
             oefs_dirent_t* ent;
 
             if (!(dir = _opendir_by_ino(oefs, current_ino)))
@@ -1032,7 +1034,7 @@ static oefs_result_t _path_to_ino(
             dir_ino = current_ino;
             current_ino = 0;
 
-            while ((ent = oefs_readdir(dir)))
+            while ((r = oefs_readdir(dir, &ent)) == OEFS_OK && ent)
             {
                 /* If final path element or a directory. */
                 if (final_element || ent->d_type == OEFS_DT_DIR)
@@ -1051,13 +1053,17 @@ static oefs_result_t _path_to_ino(
                 }
             }
 
+            if (r != OEFS_OK)
+                goto done;
+
             if (!current_ino)
             {
                 result = OEFS_NOT_FOUND;
                 goto done;
             }
 
-            oefs_closedir(dir);
+            if (oefs_closedir(dir) != OEFS_OK)
+                goto done;
             dir = NULL;
         }
     }
@@ -1668,49 +1674,69 @@ done:
     return result;
 }
 
-oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* path)
+oefs_result_t oefs_opendir(oefs_t* oefs, const char* path, oefs_dir_t** dir)
 {
-    oefs_dir_t* ret = NULL;
+    oefs_result_t result = OEFS_FAILED;
     uint32_t ino;
 
-    if (!oefs || !path)
+    if (dir)
+        *dir = NULL;
+
+    if (!oefs || !path || !dir)
         goto done;
 
     if (_path_to_ino(oefs, path, NULL, &ino, NULL) != OEFS_OK)
         goto done;
 
-    if (!(ret = _opendir_by_ino(oefs, ino)))
+    if (!(*dir = _opendir_by_ino(oefs, ino)))
         goto done;
+
+    result = OEFS_OK;
 
 done:
 
-    return ret;
+    return result;
 }
 
-oefs_dirent_t* oefs_readdir(oefs_dir_t* dir)
+oefs_result_t oefs_readdir(oefs_dir_t* dir, oefs_dirent_t** dirent)
 {
-    oefs_dirent_t* ret = NULL;
+    oefs_result_t result = OEFS_FAILED;
     oefs_result_t r;
-    int32_t n;
+    int32_t nread = 0;
+
+    if (dirent)
+        *dirent = NULL;
 
     if (!dir || !dir->file)
         goto done;
 
-    r = oefs_read(dir->file, &dir->dirent, sizeof(oefs_dirent_t), &n);
+    r = oefs_read(dir->file, &dir->dirent, sizeof(oefs_dirent_t), &nread);
 
-    if (r != OEFS_OK || n != sizeof(oefs_dirent_t))
+    if (r != OEFS_OK)
         goto done;
 
-    ret = &dir->dirent;
+    /* Check for end of file. */
+    if (nread == 0)
+    {
+        result = OEFS_OK;
+        goto done;
+    }
+
+    /* Check for an illegal read size. */
+    if (nread != sizeof(oefs_dirent_t))
+        goto done;
+
+    *dirent = &dir->dirent;
+    result = OEFS_OK;
 
 done:
 
-    return ret;
+    return result;
 }
 
-int oefs_closedir(oefs_dir_t* dir)
+oefs_result_t oefs_closedir(oefs_dir_t* dir)
 {
-    int ret = -1;
+    oefs_result_t result = OEFS_FAILED;
 
     if (!dir || !dir->file)
         goto done;
@@ -1720,8 +1746,10 @@ int oefs_closedir(oefs_dir_t* dir)
 
     free(dir);
 
+    result = OEFS_OK;
+
 done:
-    return ret;
+    return result;
 }
 
 oefs_result_t oefs_open(
