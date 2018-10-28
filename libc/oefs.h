@@ -6,21 +6,12 @@
 #include "blockdev.h"
 
 #define OEFS_PATH_MAX 256
-
 #define OEFS_BLOCK_SIZE 512
-
 #define OEFS_BITS_PER_BLOCK (OEFS_BLOCK_SIZE * 8)
-
 #define OEFS_SUPER_BLOCK_MAGIC 0x0EF55FE0
-
 #define OEFS_INODE_MAGIC 0x0120DD021
 
-/* The minimum number of blocks in a file system. */
-#define OEFS_MIN_BLOCKS OEFS_BLOCK_SIZE
-
-#define OEFS_ROOT_INO 1
-
-/* oefs_dirent_t.d_type */
+/* oefs_dirent_t.d_type -- the file type. */
 #define OEFS_DT_UNKNOWN 0
 #define OEFS_DT_FIFO 1 /* unused */
 #define OEFS_DT_CHR 2  /* unused */
@@ -31,6 +22,7 @@
 #define OEFS_DT_SOCK 12 /* unused */
 #define OEFS_DT_WHT 14  /* unused */
 
+/* oefs_inode_t.i_mode -- access rights. */
 #define OEFS_S_IFSOCK 0xC000
 #define OEFS_S_IFLNK 0xA000
 #define OEFS_S_IFREG 0x8000
@@ -50,19 +42,18 @@
 #define OEFS_S_IROTH 0x0004
 #define OEFS_S_IWOTH 0x0002
 #define OEFS_S_IXOTH 0x0001
+#define OEFS_S_IRWXUSR (OEFS_S_IRUSR | OEFS_S_IWUSR | OEFS_S_IXUSR)
+#define OEFS_S_IRWXGRP (OEFS_S_IRGRP | OEFS_S_IWGRP | OEFS_S_IXGRP)
+#define OEFS_S_IRWXOTH (OEFS_S_IROTH | OEFS_S_IWOTH | OEFS_S_IXOTH)
+#define OEFS_S_IRWXALL (OEFS_S_IRWXUSR | OEFS_S_IRWXGRP | OEFS_S_IRWXOTH)
+#define OEFS_S_IRWUSR (OEFS_S_IRUSR | OEFS_S_IWUSR)
+#define OEFS_S_IRWGRP (OEFS_S_IRGRP | OEFS_S_IWGRP)
+#define OEFS_S_IRWOTH (OEFS_S_IROTH | OEFS_S_IWOTH)
+#define OEFS_S_IRWALL (OEFS_S_IRWUSR | OEFS_S_IRWGRP | OEFS_S_IRWOTH)
+#define OEFS_S_REG_DEFAULT (OEFS_S_IFREG | OEFS_S_IRWALL)
+#define OEFS_S_DIR_DEFAULT (OEFS_S_IFDIR | OEFS_S_IRWXALL)
 
-/* Mode flags. */
-#define OEFS_M_USR_RWX (OEFS_S_IRUSR | OEFS_S_IWUSR | OEFS_S_IXUSR)
-#define OEFS_M_GRP_RWX (OEFS_S_IRGRP | OEFS_S_IWGRP | OEFS_S_IXGRP)
-#define OEFS_M_OTH_RWX (OEFS_S_IROTH | OEFS_S_IWOTH | OEFS_S_IXOTH)
-#define OEFS_M_ALL_RWX (OEFS_M_USR_RWX | OEFS_M_GRP_RWX | OEFS_M_OTH_RWX)
-#define OEFS_M_USR_RW (OEFS_S_IRUSR | OEFS_S_IWUSR)
-#define OEFS_M_GRP_RW (OEFS_S_IRGRP | OEFS_S_IWGRP)
-#define OEFS_M_OTH_RW (OEFS_S_IROTH | OEFS_S_IWOTH)
-#define OEFS_M_ALL_RW (OEFS_M_USR_RW | OEFS_M_GRP_RW | OEFS_M_OTH_RW)
-#define OEFS_M_REG (OEFS_S_IFREG | OEFS_M_ALL_RW)
-#define OEFS_M_DIR (OEFS_S_IFDIR | OEFS_M_ALL_RWX)
-
+/* whence parameter for oefs_lseek(). */
 #define OEFS_SEEK_SET 0
 #define OEFS_SEEK_CUR 1
 #define OEFS_SEEK_END 2
@@ -72,8 +63,8 @@ typedef struct _oefs_super_block
     /* Magic number: OEFS_SUPER_BLOCK_MAGIC. */
     uint32_t s_magic;
 
-    /* Total blocks in the file system. */
-    uint32_t s_num_blocks;
+    /* The total number of blocks in the file system. */
+    uint32_t s_nblocks;
 
     /* The number of free blocks. */
     uint32_t s_free_blocks;
@@ -110,7 +101,7 @@ typedef struct _oefs_inode
     uint32_t i_dtime;
 
     /* Total number of 512-byte blocks in this file. */
-    uint32_t i_num_blocks;
+    uint32_t i_nblocks;
 
     /* The next blknos block. */
     uint32_t i_next;
@@ -172,6 +163,20 @@ oefs_stat_t;
 
 OE_STATIC_ASSERT(sizeof(oefs_stat_t) == 48);
 
+typedef struct _oefs
+{
+    oe_block_dev_t* dev;
+    oefs_super_block_t sb;
+    uint8_t* bitmap;
+    size_t bitmap_size;
+    bool dirty;
+} oefs_t;
+
+typedef struct _oefs_block
+{
+    uint8_t data[OEFS_BLOCK_SIZE];
+} oefs_block_t;
+
 typedef enum _oefs_result {
     OEFS_OK,
     OEFS_BAD_PARAMETER,
@@ -181,43 +186,25 @@ typedef enum _oefs_result {
     OEFS_BUFFER_OVERFLOW,
 } oefs_result_t;
 
-// Initialize the blocks of a new file system; num_blocks must be a multiple
-// OEFS_BITS_PER_BLOCK (4096).
-oefs_result_t oefs_initialize(oe_block_dev_t* dev, size_t num_blocks);
-
-oefs_result_t oefs_compute_size(size_t num_blocks, size_t* total_bytes);
-
-typedef struct _oefs
-{
-    oe_block_dev_t* dev;
-
-    /* Super block. */
-    oefs_super_block_t sb;
-
-    /* Bitmap of allocated blocks. */
-    uint8_t* bitmap;
-    size_t bitmap_size;
-
-    /* Whether the super block or bitmap has been touched but not flushed. */
-    bool dirty;
-} oefs_t;
-
-typedef struct _efs_block
-{
-    uint8_t data[OEFS_BLOCK_SIZE];
-} oefs_block_t;
-
 typedef struct _oefs_file oefs_file_t;
 
-oefs_result_t oefs_new(oefs_t** oefs, oe_block_dev_t* dev);
+/* Compute the size in bytes of a file system with the given block count. */
+oefs_result_t oefs_size(size_t nblocks, size_t* size);
 
-oefs_result_t oefs_delete(oefs_t* oefs);
+/* Build an OE file system on the given device. */
+oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t nblocks);
 
-int32_t oefs_read_file(oefs_file_t* file, void* data, uint32_t size);
+/* Initialize the oefs instance from the given device. */
+oefs_result_t oefs_initialize(oefs_t** oefs, oe_block_dev_t* dev);
 
-int32_t oefs_write_file(oefs_file_t* file, const void* data, uint32_t size);
+/* Rlease the oefs intance. */
+oefs_result_t oefs_release(oefs_t* oefs);
 
-oefs_result_t oefs_close_file(oefs_file_t* file);
+int32_t oefs_read(oefs_file_t* file, void* data, uint32_t size);
+
+int32_t oefs_write(oefs_file_t* file, const void* data, uint32_t size);
+
+oefs_result_t oefs_close(oefs_file_t* file);
 
 oefs_dir_t* oefs_opendir(oefs_t* oefs, const char* name);
 
@@ -225,14 +212,14 @@ oefs_dirent_t* oefs_readdir(oefs_dir_t* dir);
 
 int oefs_closedir(oefs_dir_t* dir);
 
-oefs_result_t oefs_open_file(
+oefs_result_t oefs_open(
     oefs_t* oefs,
     const char* pathname,
     int flags,
     uint32_t mode,
     oefs_file_t** file_out);
 
-oefs_result_t oefs_load_file(
+oefs_result_t oefs_load(
     oefs_t* oefs,
     const char* path,
     void** data_out,
@@ -240,15 +227,15 @@ oefs_result_t oefs_load_file(
 
 oefs_result_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode);
 
-oefs_result_t oefs_create_file(
+oefs_result_t oefs_create(
     oefs_t* oefs,
     const char* path,
     uint32_t mode,
     oefs_file_t** file);
 
-oefs_result_t oefs_remove_file(oefs_t* oefs, const char* path);
+oefs_result_t oefs_unlink(oefs_t* oefs, const char* path);
 
-oefs_result_t oefs_truncate_file(oefs_t* oefs, const char* path);
+oefs_result_t oefs_truncate(oefs_t* oefs, const char* path);
 
 oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path);
 

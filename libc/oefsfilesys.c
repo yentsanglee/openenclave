@@ -16,7 +16,7 @@ static ssize_t _file_read(oe_file_t* file, void* buf, size_t count)
     if (!file_impl || !file_impl->oefs_file)
         goto done;
 
-    ret = oefs_read_file(file_impl->oefs_file, buf, count);
+    ret = oefs_read(file_impl->oefs_file, buf, count);
 
 done:
     return ret;
@@ -30,7 +30,7 @@ static ssize_t _file_write(oe_file_t* file, const void* buf, size_t count)
     if (!file_impl || !file_impl->oefs_file)
         goto done;
 
-    ret = oefs_write_file(file_impl->oefs_file, buf, count);
+    ret = oefs_write(file_impl->oefs_file, buf, count);
 
 done:
     return ret;
@@ -44,7 +44,7 @@ static int _file_close(oe_file_t* file)
     if (!file_impl || !file_impl->oefs_file)
         goto done;
 
-    if (oefs_close_file(file_impl->oefs_file) != OEFS_OK)
+    if (oefs_close(file_impl->oefs_file) != OEFS_OK)
         goto done;
 
     memset(file_impl, 0, sizeof(file_impl_t));
@@ -77,7 +77,7 @@ static oe_file_t* _filesys_open_file(
 /* ATTN: support create mode. */
 
 #if 0
-    if (!(oefs_file = oefs_open_file(filesys_impl->oefs, path, mode)))
+    if (!(oefs_file = oefs_open(filesys_impl->oefs, path, mode)))
         goto done;
 #else
     goto done;
@@ -102,7 +102,7 @@ static oe_file_t* _filesys_open_file(
 done:
 
     if (oefs_file)
-        oefs_close_file(oefs_file);
+        oefs_close(oefs_file);
 
     return ret;
 }
@@ -115,7 +115,7 @@ static int _filesys_release(oe_filesys_t* filesys)
     if (!filesys_impl || !filesys_impl->oefs)
         goto done;
 
-    oefs_delete(filesys_impl->oefs);
+    oefs_release(filesys_impl->oefs);
 
     free(filesys_impl);
 
@@ -128,7 +128,7 @@ oe_filesys_t* oefs_new_filesys(oe_block_dev_t* dev)
     oe_filesys_t* ret = NULL;
     oefs_t* oefs = NULL;
 
-    if (oefs_new(&oefs, dev) != OEFS_OK)
+    if (oefs_initialize(&oefs, dev) != OEFS_OK)
         goto done;
 
     {
@@ -148,7 +148,7 @@ oe_filesys_t* oefs_new_filesys(oe_block_dev_t* dev)
 done:
 
     if (oefs)
-        oefs_delete(oefs);
+        oefs_release(oefs);
 
     return ret;
 }
