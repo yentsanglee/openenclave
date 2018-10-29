@@ -1526,7 +1526,7 @@ oefs_result_t oefs_close(oefs_file_t* file)
     oefs_result_t result = OEFS_FAILED;
 
     if (!file)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
     buf_u32_release(&file->blknos);
     memset(file, 0, sizeof(oefs_file_t));
@@ -1549,31 +1549,28 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
         *oefs_out = NULL;
 
     if (!dev || !oefs_out)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     if (!(oefs = calloc(1, sizeof(oefs_t))))
-        goto done;
+        RAISE(OEFS_OUT_OF_MEMORY);
 
     /* Save pointer to device (caller is responsible for releasing it). */
     oefs->dev = dev;
 
     /* Read the super block from the file system. */
     if (dev->get(dev, SUPER_BLOCK_PHYSICAL_BLKNO, &oefs->sb) != 0)
-        goto done;
+        RAISE(OEFS_FAILED);
 
     /* Check the superblock magic number. */
     if (oefs->sb.s_magic != OEFS_SUPER_BLOCK_MAGIC)
-        goto done;
+        RAISE(OEFS_SANITY);
 
     /* Get the number of blocks. */
     num_blocks = oefs->sb.s_nblocks;
 
     /* Check that the number of blocks is correct. */
     if (!num_blocks || (num_blocks % OEFS_BITS_PER_BLOCK))
-        goto done;
+        RAISE(OEFS_SANITY);
 
     /* Allocate space for the block bitmap. */
     {
@@ -1585,7 +1582,7 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
 
         /* Allocate the bitmap. */
         if (!(bitmap = calloc(1, bitmap_size)))
-            goto done;
+            RAISE(OEFS_OUT_OF_MEMORY);
 
         /* Read the bitset into memory */
         for (size_t i = 0; i < num_bitmap_blocks; i++)
@@ -1593,7 +1590,7 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
             uint8_t* ptr = bitmap + (i * OEFS_BLOCK_SIZE);
 
             if (dev->get(dev, BITMAP_PHYSICAL_BLKNO + i, ptr) != 0)
-                goto done;
+                RAISE(OEFS_FAILED);
         }
 
         /* The first three bits should always be set. These include:
@@ -1605,7 +1602,7 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
             !_test_bit(bitmap, bitmap_size, 1) ||
             !_test_bit(bitmap, bitmap_size, 2))
         {
-            goto done;
+            RAISE(OEFS_SANITY);
         }
 
         oefs->bitmap = bitmap;
@@ -1646,8 +1643,8 @@ oefs_result_t oefs_release(oefs_t* oefs)
 {
     oefs_result_t result = OEFS_FAILED;
 
-    if (!oefs)
-        goto done;
+    if (!oefs || !oefs->bitmap)
+        RAISE(OEFS_BAD_PARAMETER);
 
     free(oefs->bitmap);
     memset(oefs, 0, sizeof(oefs_t));
@@ -1668,11 +1665,9 @@ oefs_result_t oefs_opendir(oefs_t* oefs, const char* path, oefs_dir_t** dir)
         *dir = NULL;
 
     if (!oefs || !path || !dir)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
-    if (_path_to_ino(oefs, path, NULL, &ino, NULL) != OEFS_OK)
-        goto done;
-
+    CHECK(_path_to_ino(oefs, path, NULL, &ino, NULL));
     CHECK(_opendir_by_ino(oefs, ino, dir));
 
     result = OEFS_OK;
@@ -1685,30 +1680,23 @@ done:
 oefs_result_t oefs_readdir(oefs_dir_t* dir, oefs_dirent_t** ent)
 {
     oefs_result_t result = OEFS_FAILED;
-    oefs_result_t r;
     int32_t nread = 0;
 
     if (ent)
         *ent = NULL;
 
     if (!dir || !dir->file)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
-    r = oefs_read(dir->file, &dir->ent, sizeof(oefs_dirent_t), &nread);
-
-    if (r != OEFS_OK)
-        goto done;
+    CHECK(oefs_read(dir->file, &dir->ent, sizeof(oefs_dirent_t), &nread));
 
     /* Check for end of file. */
     if (nread == 0)
-    {
-        result = OEFS_OK;
-        goto done;
-    }
+        RAISE(OEFS_OK);
 
     /* Check for an illegal read size. */
     if (nread != sizeof(oefs_dirent_t))
-        goto done;
+        RAISE(OEFS_SANITY);
 
     *ent = &dir->ent;
     result = OEFS_OK;
