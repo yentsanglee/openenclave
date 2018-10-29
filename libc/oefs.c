@@ -141,7 +141,7 @@ INLINE void _clr_bit(uint8_t* data, uint32_t size, uint32_t index)
 INLINE uint32_t _get_physical_blkno(oefs_t* oefs, uint32_t blkno)
 {
     /* Calculate the number of bitmap blocks. */
-    size_t num_bitmap_blocks = oefs->sb.s_nblocks / OEFS_BITS_PER_BLOCK;
+    size_t num_bitmap_blocks = oefs->sb.read.s_nblocks / OEFS_BITS_PER_BLOCK;
     return blkno + (3 + num_bitmap_blocks) - 1;
 }
 
@@ -151,11 +151,11 @@ static oefs_result_t _read_block(oefs_t* oefs, size_t blkno, void* block)
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
-    if (blkno == 0 || blkno > oefs->sb.s_nblocks)
+    if (blkno == 0 || blkno > oefs->sb.read.s_nblocks)
         RAISE(OEFS_OUT_OF_BOUNDS);
 
     /* Sanity check: make sure the block is not free. */
-    if (!_test_bit(oefs->bitmap, oefs->bitmap_size, blkno - 1))
+    if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, blkno - 1))
         RAISE(OEFS_SANITY);
 
     /* Convert the logical block number to a physical block number. */
@@ -177,11 +177,11 @@ static oefs_result_t _write_block(oefs_t* oefs, size_t blkno, const void* block)
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
-    if (blkno == 0 || blkno > oefs->sb.s_nblocks)
+    if (blkno == 0 || blkno > oefs->sb.read.s_nblocks)
         RAISE(OEFS_BAD_PARAMETER);
 
     /* Sanity check: make sure the block is not free. */
-    if (!_test_bit(oefs->bitmap, oefs->bitmap_size, blkno - 1))
+    if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, blkno - 1))
         RAISE(OEFS_SANITY);
 
     /* Convert the logical block number to a physical block number. */
@@ -313,6 +313,18 @@ done:
     return result;
 }
 
+static oefs_super_block_t* _sb_write(oefs_t* oefs)
+{
+    oefs->dirty = true;
+    return &oefs->sb.__write;
+}
+
+static uint8_t* _bitmap_write(oefs_t* oefs)
+{
+    oefs->dirty = true;
+    return oefs->bitmap.__write;
+}
+
 static oefs_result_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
 {
     oefs_result_t result = OEFS_FAILED;
@@ -321,11 +333,11 @@ static oefs_result_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
 
     for (uint32_t i = 0; i < oefs->bitmap_size * 8; i++)
     {
-        if (!_test_bit(oefs->bitmap, oefs->bitmap_size, i))
+        if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, i))
         {
-            _set_bit(oefs->bitmap, oefs->bitmap_size, i);
+            _set_bit(_bitmap_write(oefs), oefs->bitmap_size, i);
             *blkno = i + 1;
-            oefs->sb.s_free_blocks--;
+            _sb_write(oefs)->s_free_blocks--;
             RAISE(OEFS_OK);
         }
     }
@@ -345,11 +357,11 @@ static oefs_result_t _unassign_blkno(oefs_t* oefs, uint32_t blkno)
     if (blkno == 0 || index >= nbits)
         RAISE(OEFS_BAD_PARAMETER);
 
-    if (!_test_bit(oefs->bitmap, oefs->bitmap_size, index))
+    if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, index))
         RAISE(OEFS_SANITY);
 
-    _clr_bit(oefs->bitmap, oefs->bitmap_size, index);
-    oefs->sb.s_free_blocks++;
+    _clr_bit(_bitmap_write(oefs), oefs->bitmap_size, index);
+    _sb_write(oefs)->s_free_blocks++;
 
     result = OEFS_OK;
 
@@ -384,13 +396,13 @@ static oefs_result_t _flush_bitmap(oefs_t* oefs)
     size_t num_bitmap_blocks;
 
     /* Calculate the number of bitmap blocks. */
-    num_bitmap_blocks = oefs->sb.s_nblocks / OEFS_BITS_PER_BLOCK;
+    num_bitmap_blocks = oefs->sb.read.s_nblocks / OEFS_BITS_PER_BLOCK;
 
     /* Flush each bitmap block that changed. */
     for (size_t i = 0; i < num_bitmap_blocks; i++)
     {
         /* Set pointer to the i-th block to write. */
-        oefs_block_t* block = (oefs_block_t*)oefs->bitmap + i;
+        oefs_block_t* block = (oefs_block_t*)oefs->bitmap.read + i;
         oefs_block_t* block_copy = (oefs_block_t*)oefs->bitmap_copy + i;
 
         /* Flush this bitmap block if it changed. */
@@ -416,8 +428,12 @@ static oefs_result_t _flush(oefs_t* oefs)
 {
     oefs_result_t result = OEFS_FAILED;
 
-    CHECK(_flush_bitmap(oefs));
-    CHECK(_flush_super_block(oefs));
+    if (oefs->dirty)
+    {
+        CHECK(_flush_bitmap(oefs));
+        CHECK(_flush_super_block(oefs));
+        oefs->dirty = false;
+    }
 
     result = OEFS_OK;
 
@@ -1553,14 +1569,14 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
         RAISE(OEFS_FAILED);
 
     /* Check the superblock magic number. */
-    if (oefs->sb.s_magic != OEFS_SUPER_BLOCK_MAGIC)
+    if (oefs->sb.read.s_magic != OEFS_SUPER_BLOCK_MAGIC)
         RAISE(OEFS_SANITY);
 
     /* Make copy of super block. */
     memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs->sb_copy));
 
     /* Get the number of blocks. */
-    num_blocks = oefs->sb.s_nblocks;
+    num_blocks = oefs->sb.read.s_nblocks;
 
     /* Check that the number of blocks is correct. */
     if (!num_blocks || (num_blocks % OEFS_BITS_PER_BLOCK))
@@ -1606,7 +1622,7 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
             RAISE(OEFS_SANITY);
         }
 
-        oefs->bitmap = bitmap;
+        oefs->bitmap.read = bitmap;
         oefs->bitmap_copy = bitmap_copy;
         oefs->bitmap_size = bitmap_size;
         bitmap = NULL;
@@ -1632,7 +1648,8 @@ done:
 
     if (oefs)
     {
-        free(oefs->bitmap);
+        free(_bitmap_write(oefs));
+        free(oefs->bitmap_copy);
         free(oefs);
     }
 
@@ -1649,10 +1666,10 @@ oefs_result_t oefs_release(oefs_t* oefs)
 {
     oefs_result_t result = OEFS_FAILED;
 
-    if (!oefs || !oefs->bitmap || !oefs->bitmap_copy)
+    if (!oefs || !oefs->bitmap.read || !oefs->bitmap_copy)
         RAISE(OEFS_BAD_PARAMETER);
 
-    free(oefs->bitmap);
+    free(_bitmap_write(oefs));
     free(oefs->bitmap_copy);
     memset(oefs, 0, sizeof(oefs_t));
     free(oefs);

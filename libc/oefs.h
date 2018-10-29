@@ -169,12 +169,29 @@ typedef struct _oefs
 {
     oe_block_dev_t* dev;
 
-    oefs_super_block_t sb;
-    oefs_super_block_t sb_copy;
+    union
+    {
+        const oefs_super_block_t read;
+        // This field should only be accessed with the _sb_write() method, 
+        // which sets the oefs_t.dirty flag.
+        oefs_super_block_t __write;
+    }
+    sb;
 
-    uint8_t* bitmap;
+    union
+    {
+        // This field should only be accessed with the _bitmap_write() method,
+        // which sets the oefs_t.dirty flag.
+        uint8_t* __write;
+        const uint8_t* read;
+    }
+    bitmap;
+
+    oefs_super_block_t sb_copy;
     uint8_t* bitmap_copy;
     size_t bitmap_size;
+
+    bool dirty;
 } oefs_t;
 
 typedef struct _oefs_block
