@@ -8,7 +8,7 @@
 typedef struct _file_impl
 {
     oe_file_t base;
-    oefs_file_t* oefs_file;
+    fs_file_t* oefs_file;
 } file_impl_t;
 
 static ssize_t _file_read(oe_file_t* file, void* buf, size_t count)
@@ -80,7 +80,7 @@ static oe_file_t* _filesys_open_file(
 {
     oe_file_t* ret = NULL;
     filesys_impl_t* filesys_impl = (filesys_impl_t*)filesys;
-    oefs_file_t* oefs_file = NULL;
+    fs_file_t* oefs_file = NULL;
 
     if (!filesys_impl || !filesys_impl->oefs)
         goto done;
@@ -126,7 +126,7 @@ static int _filesys_release(oe_filesys_t* filesys)
     if (!filesys_impl || !filesys_impl->oefs)
         goto done;
 
-    oefs_release(filesys_impl->oefs);
+    oefs_release(&filesys_impl->oefs->base);
 
     free(filesys_impl);
 
@@ -137,9 +137,9 @@ done:
 oe_filesys_t* oefs_new_filesys(oe_block_dev_t* dev)
 {
     oe_filesys_t* ret = NULL;
-    oefs_t* oefs = NULL;
+    fs_t* fs = NULL;
 
-    if (oefs_initialize(&oefs, dev) != OE_EOK)
+    if (oefs_initialize(&fs, dev) != OE_EOK)
         goto done;
 
     {
@@ -150,16 +150,16 @@ oe_filesys_t* oefs_new_filesys(oe_block_dev_t* dev)
 
         filesys_impl->base.open_file = _filesys_open_file;
         filesys_impl->base.release = _filesys_release;
-        filesys_impl->oefs = oefs;
-        oefs = NULL;
+        filesys_impl->oefs = (oefs_t*)fs;
+        fs = NULL;
 
         ret = &filesys_impl->base;
     }
 
 done:
 
-    if (oefs)
-        oefs_release(oefs);
+    if (fs)
+        oefs_release(fs);
 
     return ret;
 }
