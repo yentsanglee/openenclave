@@ -152,7 +152,7 @@ static oefs_result_t _read_block(oefs_t* oefs, size_t blkno, void* block)
 
     /* Check whether the block number is valid. */
     if (blkno == 0 || blkno > oefs->sb.s_nblocks)
-        RAISE(OEFS_BOUNDS);
+        RAISE(OEFS_OUT_OF_BOUNDS);
 
     /* Sanity check: make sure the block is not free. */
     if (!_test_bit(oefs->bitmap, oefs->bitmap_size, blkno - 1))
@@ -1980,7 +1980,7 @@ oefs_result_t oefs_link(
         CHECK(oefs_write(dir, &ent, sizeof(ent), &n));
 
         if (n != sizeof(ent))
-            goto done;
+            RAISE(OEFS_FAILED);
     }
 
     /* Increment the number of links to this file. */
@@ -2014,16 +2014,10 @@ oefs_result_t oefs_rename(
     oefs_result_t result = OEFS_FAILED;
 
     if (!old_path || !new_path)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
-    if (oefs_link(oefs, old_path, new_path) != OEFS_OK)
-        goto done;
-
-    if (oefs_unlink(oefs, old_path) != OEFS_OK)
-        goto done;
+    CHECK(oefs_link(oefs, old_path, new_path));
+    CHECK(oefs_unlink(oefs, old_path));
 
     result = OEFS_OK;
 
@@ -2042,23 +2036,16 @@ oefs_result_t oefs_unlink(oefs_t* oefs, const char* path)
     char basename[OEFS_PATH_MAX];
 
     if (!oefs || !path)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
-    if (_path_to_ino(oefs, path, &dir_ino, &ino, &type) != OEFS_OK)
-        goto done;
+    CHECK(_path_to_ino(oefs, path, &dir_ino, &ino, &type));
 
     /* Only regular files can be removed. */
     if (type != OEFS_DT_REG)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
-    if (_split_path(path, dirname, basename) != OEFS_OK)
-        goto done;
-
-    if (_unlink_file(oefs, dir_ino, ino, basename) != OEFS_OK)
-        goto done;
+    CHECK(_split_path(path, dirname, basename));
+    CHECK(_unlink_file(oefs, dir_ino, ino, basename));
 
     result = OEFS_OK;
 
@@ -2075,23 +2062,16 @@ oefs_result_t oefs_truncate(oefs_t* oefs, const char* path)
     uint8_t type;
 
     if (!oefs || !path)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
-    if (_path_to_ino(oefs, path, NULL, &ino, &type) != OEFS_OK)
-        goto done;
+    CHECK(_path_to_ino(oefs, path, NULL, &ino, &type));
 
     /* Only regular files can be truncated. */
     if (type != OEFS_DT_REG)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
-    if (_open_file(oefs, ino, &file) != OEFS_OK)
-        goto done;
-
-    if (_truncate_file(file) != OEFS_OK)
-        goto done;
+    CHECK(_open_file(oefs, ino, &file));
+    CHECK(_truncate_file(file));
 
     result = OEFS_OK;
 
@@ -2113,38 +2093,30 @@ oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path)
     char basename[OEFS_PATH_MAX];
 
     if (!oefs || !path)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
-    if (_path_to_ino(oefs, path, &dir_ino, &ino, &type) != OEFS_OK)
-        goto done;
+    CHECK(_path_to_ino(oefs, path, &dir_ino, &ino, &type));
 
     /* The path must refer to a directory. */
     if (type != OEFS_DT_DIR)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* The inode must be a directory and the directory must be empty. */
     {
         oefs_inode_t inode;
 
-        if (_load_inode(oefs, ino, &inode) != OEFS_OK)
-            goto done;
+        CHECK(_load_inode(oefs, ino, &inode));
 
         if (!(inode.i_mode & OEFS_S_IFDIR))
-            goto done;
+            RAISE(OEFS_SANITY);
 
         /* The directory must contain two entries: "." and ".." */
         if (inode.i_size != 2 * sizeof(oefs_dirent_t))
-            goto done;
+            RAISE(OEFS_SANITY);
     }
 
-    if (_split_path(path, dirname, basename) != OEFS_OK)
-        goto done;
-
-    if (_unlink_file(oefs, dir_ino, ino, basename) != OEFS_OK)
-        goto done;
+    CHECK(_split_path(path, dirname, basename));
+    CHECK(_unlink_file(oefs, dir_ino, ino, basename));
 
     result = OEFS_OK;
 
@@ -2164,16 +2136,10 @@ oefs_result_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat)
         memset(stat, 0, sizeof(oefs_stat_t));
 
     if (!oefs || !path || !stat)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
-    if (_path_to_ino(oefs, path, NULL, &ino, &type) != OEFS_OK)
-        goto done;
-
-    if (_load_inode(oefs, ino, &inode) != OEFS_OK)
-        goto done;
+    CHECK(_path_to_ino(oefs, path, NULL, &ino, &type));
+    CHECK(_load_inode(oefs, ino, &inode));
 
     stat->st_dev = 0;
     stat->st_ino = ino;
@@ -2209,7 +2175,7 @@ oefs_result_t oefs_lseek(
         *offset_out = 0;
 
     if (!file)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
     switch (whence)
     {
@@ -2225,19 +2191,18 @@ oefs_result_t oefs_lseek(
         }
         case OEFS_SEEK_END:
         {
-            /* Note: gaps are not supported. */
             new_offset = file->inode.i_size + offset;
             break;
         }
         default:
         {
-            goto done;
+            RAISE(OEFS_BAD_PARAMETER);
         }
     }
 
     /* Check whether the new offset if out of range. */
     if (new_offset < 0 || new_offset > file->offset)
-        goto done;
+        RAISE(OEFS_OUT_OF_BOUNDS);
 
     file->offset = new_offset;
 
