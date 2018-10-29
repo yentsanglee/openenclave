@@ -1,16 +1,14 @@
 Todo:
 
-(A) Code walk-through
-(A) Block encryption
+(A) Encryption
 (A) Integrate with mount function.
 (A) Integrate with libc.
-(A) Test syncing
 ---
-(B) Path normalization.
-(B) Current-working-directory operations.
-(B) Block caching
-(B) blockdev->flush() protocol.
+(B) Relative path handling
 (B) Implement ordinary (non-encrypted) host file I/O.
+(B) Switchless calls.
 ---
+(C) blockdev->flush() protocol.
+(C) Block caching
 (C) Refine error naming and handling.
 (C) Handle mode parameters.
