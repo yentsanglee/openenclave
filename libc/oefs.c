@@ -70,6 +70,12 @@
     while (0)
 // clang-format on
 
+#define OEFS_BITS_PER_BLOCK (FS_BLOCK_SIZE * 8)
+
+#define OEFS_SUPER_BLOCK_MAGIC 0x0EF55FE0
+
+#define OEFS_INODE_MAGIC 0x0120DD021
+
 /* The logical block number of the root directory inode. */
 #define OEFS_ROOT_INO 1
 
@@ -78,8 +84,6 @@
 
 /* The first physical block number of the block bitmap. */
 #define BITMAP_PHYSICAL_BLKNO 3
-
-#if 1
 
 typedef struct _oefs_super_block
 {
@@ -190,8 +194,6 @@ typedef struct _oefs_block
 {
     uint8_t data[FS_BLOCK_SIZE];
 } oefs_block_t;
-
-#endif
 
 struct _fs_file
 {
