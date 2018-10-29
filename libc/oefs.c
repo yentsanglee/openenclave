@@ -8,9 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "buf.h"
-
-#define TRACE printf("%s(%u): %s()\n", __FILE__, __LINE__, __FUNCTION__)
 
 /*
 **==============================================================================
@@ -41,7 +40,35 @@
 **==============================================================================
 */
 
+#define TRACE printf("%s(%u): %s()\n", __FILE__, __LINE__, __FUNCTION__)
+
+#define INLINE static __inline
+
 #define COUNTOF(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
+
+// clang-format off
+#define CHECK(RESULT)                      \
+    do                                     \
+    {                                      \
+        oefs_result_t __result__ = RESULT; \
+        if (__result__ != OEFS_OK)         \
+        {                                  \
+            result = __result__;           \
+            goto done;                     \
+        }                                  \
+    }                                      \
+    while (0)
+// clang-format on
+
+// clang-format off
+#define RAISE(RESULT)    \
+    do                   \
+    {                    \
+        result = RESULT; \
+        goto done;       \
+    }                    \
+    while (0)
+// clang-format on
 
 /* The logical block number of the root directory inode. */
 #define OEFS_ROOT_INO 1
@@ -86,31 +113,34 @@ struct _oefs_dir
     oefs_dirent_t ent;
 };
 
-/*BOOKMARK*/
-
-static __inline bool _test_bit(const uint8_t* data, uint32_t index)
+INLINE bool _test_bit(const uint8_t* data, uint32_t size, uint32_t index)
 {
     uint32_t byte = index / 8;
     uint32_t bit = index % 8;
+    assert(byte < size);
     return data[byte] & (1 << bit);
 }
 
-static __inline void _set_bit(uint8_t* data, uint32_t index)
+INLINE void _set_bit(uint8_t* data, uint32_t size, uint32_t index)
 {
     uint32_t byte = index / 8;
     uint32_t bit = index % 8;
+    assert(byte < size);
     data[byte] |= (1 << bit);
 }
 
-static __inline void _clr_bit(uint8_t* data, uint32_t index)
+INLINE void _clr_bit(uint8_t* data, uint32_t size, uint32_t index)
 {
     uint32_t byte = index / 8;
     uint32_t bit = index % 8;
+    assert(byte < size);
     data[byte] &= ~(1 << bit);
 }
 
+/*BOOKMARK*/
+
 /* Get the physical block number from a logical block number. */
-static __inline uint32_t _get_physical_blkno(oefs_t* oefs, uint32_t blkno)
+INLINE uint32_t _get_physical_blkno(oefs_t* oefs, uint32_t blkno)
 {
     /* Calculate the number of bitmap blocks. */
     size_t num_bitmap_blocks = oefs->sb.s_nblocks / OEFS_BITS_PER_BLOCK;
@@ -127,7 +157,7 @@ static oefs_result_t _read_block(oefs_t* oefs, size_t blkno, void* block)
         goto done;
 
     /* Sanity check: make sure the block is not free. */
-    if (!_test_bit(oefs->bitmap, blkno - 1))
+    if (!_test_bit(oefs->bitmap, oefs->bitmap_size, blkno - 1))
         goto done;
 
     /* Convert the logical block number to a physical block number. */
@@ -153,7 +183,7 @@ static oefs_result_t _write_block(oefs_t* oefs, size_t blkno, const void* block)
         goto done;
 
     /* Sanity check: make sure the block is not free. */
-    if (!_test_bit(oefs->bitmap, blkno - 1))
+    if (!_test_bit(oefs->bitmap, oefs->bitmap_size, blkno - 1))
         goto done;
 
     /* Convert the logical block number to a physical block number. */
@@ -304,9 +334,9 @@ static oefs_result_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
 
     for (uint32_t i = 0; i < oefs->bitmap_size * 8; i++)
     {
-        if (!_test_bit(oefs->bitmap, i))
+        if (!_test_bit(oefs->bitmap, oefs->bitmap_size, i))
         {
-            _set_bit(oefs->bitmap, i);
+            _set_bit(oefs->bitmap, oefs->bitmap_size, i);
             *blkno = i + 1;
             oefs->sb.s_free_blocks--;
             result = OEFS_OK;
@@ -330,10 +360,10 @@ static oefs_result_t _unassign_blkno(oefs_t* oefs, uint32_t blkno)
     if (blkno == 0 || index >= nbits)
         goto done;
 
-    if (!_test_bit(oefs->bitmap, index))
+    if (!_test_bit(oefs->bitmap, oefs->bitmap_size, index))
         goto done;
 
-    _clr_bit(oefs->bitmap, index);
+    _clr_bit(oefs->bitmap, oefs->bitmap_size, index);
     oefs->sb.s_free_blocks++;
 
     oefs->dirty = true;
@@ -1202,11 +1232,11 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
         memset(block, 0, sizeof(block));
 
         /* Set the bit for the root inode. */
-        _set_bit(block, 0);
+        _set_bit(block, sizeof(block), 0);
 
         /* Set the bits for the root directory. */
-        _set_bit(block, 1);
-        _set_bit(block, 2);
+        _set_bit(block, sizeof(block), 1);
+        _set_bit(block, sizeof(block), 2);
 
         /* Write the block. */
         if (dev->put(dev, blkno++, &block) != 0)
@@ -1664,8 +1694,9 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
          * (2) The first root directory block.
          * (3) The second root directory block.
          */
-        if (!_test_bit(bitmap, 0) || !_test_bit(bitmap, 0) ||
-            !_test_bit(bitmap, 0))
+        if (!_test_bit(bitmap, bitmap_size, 0) || 
+            !_test_bit(bitmap, bitmap_size, 1) ||
+            !_test_bit(bitmap, bitmap_size, 2))
         {
             goto done;
         }

@@ -186,6 +186,7 @@ typedef enum _oefs_result {
     OEFS_NOT_FOUND,
     OEFS_ALREADY_EXISTS,
     OEFS_BUFFER_OVERFLOW,
+    OEFS_BOUNDS,
 } oefs_result_t;
 
 typedef struct _oefs_file oefs_file_t;
