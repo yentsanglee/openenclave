@@ -229,29 +229,29 @@ struct _fs_dir
     fs_dirent_t ent;
 };
 
-static oe_errno_t _oefs_release(fs_t* fs);
+static oe_errno_t _fs_release(fs_t* fs);
 
-static oe_errno_t _oefs_read(
+static oe_errno_t _fs_read(
     fs_file_t* file,
     void* data,
     uint32_t size,
     int32_t* nread);
 
-static oe_errno_t _oefs_write(
+static oe_errno_t _fs_write(
     fs_file_t* file,
     const void* data,
     uint32_t size,
     int32_t* nwritten);
 
-static oe_errno_t _oefs_close(fs_file_t* file);
+static oe_errno_t _fs_close(fs_file_t* file);
 
-static oe_errno_t _oefs_readdir(fs_dir_t* dir, fs_dirent_t** dirent);
+static oe_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** dirent);
 
 static oe_errno_t oefs_closedir(fs_dir_t* dir);
 
-static oe_errno_t _oefs_unlink(fs_t* fs, const char* path);
+static oe_errno_t _fs_unlink(fs_t* fs, const char* path);
 
-static oe_errno_t _oefs_lseek(
+static oe_errno_t _fs_lseek(
     fs_file_t* file,
     ssize_t offset,
     int whence,
@@ -843,7 +843,7 @@ static oe_errno_t _create_file(
         /* Check for duplicates. */
         for (;;)
         {
-            CHECK(_oefs_read(file, &ent, sizeof(ent), &n));
+            CHECK(_fs_read(file, &ent, sizeof(ent), &n));
 
             if (n == 0)
                 break;
@@ -866,7 +866,7 @@ static oe_errno_t _create_file(
             ent.d_type = type;
             strlcpy(ent.d_name, name, sizeof(ent.d_name));
 
-            CHECK(_oefs_write(file, &ent, sizeof(ent), &n));
+            CHECK(_fs_write(file, &ent, sizeof(ent), &n));
 
             if (n != sizeof(ent))
                 RAISE(OE_EIO);
@@ -879,7 +879,7 @@ static oe_errno_t _create_file(
 done:
 
     if (file)
-        _oefs_close(file);
+        _fs_close(file);
 
     if (_flush(oefs) != 0)
         return OE_EIO;
@@ -939,7 +939,7 @@ static oe_errno_t _load_file(
 
     for (;;)
     {
-        CHECK(_oefs_read(file, data, sizeof(data), &n)); 
+        CHECK(_fs_read(file, data, sizeof(data), &n)); 
 
         if (n == 0)
             break;
@@ -971,7 +971,7 @@ static oe_errno_t _release_inode(oefs_t* oefs, uint32_t ino)
 done:
 
     if (file)
-        _oefs_close(file);
+        _fs_close(file);
 
     if (_flush(oefs) != 0)
         return OE_EIO;
@@ -1024,7 +1024,7 @@ static oe_errno_t _unlink_file(
                 const uint32_t n = sizeof(fs_dirent_t);
                 int32_t nwritten;
 
-                CHECK(_oefs_write(dir, &entries[i], n, &nwritten));
+                CHECK(_fs_write(dir, &entries[i], n, &nwritten));
 
                 if (nwritten != n)
                     RAISE(OE_EIO);
@@ -1052,10 +1052,10 @@ static oe_errno_t _unlink_file(
 done:
 
     if (dir)
-        _oefs_close(dir);
+        _fs_close(dir);
 
     if (file)
-        _oefs_close(file);
+        _fs_close(file);
 
     if (data)
         free(data);
@@ -1093,7 +1093,7 @@ static oe_errno_t _opendir_by_ino(
 done:
 
     if (file)
-        _oefs_close(file);
+        _fs_close(file);
 
     return err;
 }
@@ -1180,7 +1180,7 @@ static oe_errno_t _path_to_ino(
 
             for (;;)
             {
-                CHECK(_oefs_readdir(dir, &ent));
+                CHECK(_fs_readdir(dir, &ent));
 
                 if (!ent)
                     break;
@@ -1223,7 +1223,15 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_read(
+/*
+**==============================================================================
+**
+** static fs methods:
+**
+**==============================================================================
+*/
+
+static oe_errno_t _fs_read(
     fs_file_t* file,
     void* data,
     uint32_t size,
@@ -1309,7 +1317,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_write(
+static oe_errno_t _fs_write(
     fs_file_t* file,
     const void* data,
     uint32_t size,
@@ -1440,7 +1448,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_close(fs_file_t* file)
+static oe_errno_t _fs_close(fs_file_t* file)
 {
     oe_errno_t err = OE_EOK;
 
@@ -1455,7 +1463,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_release(fs_t* fs)
+static oe_errno_t _fs_release(fs_t* fs)
 {
     oe_errno_t err = OE_EOK;
     oefs_t* oefs = (oefs_t*)fs;
@@ -1472,7 +1480,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_opendir(fs_t* fs, const char* path, fs_dir_t** dir)
+static oe_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir)
 {
     oe_errno_t err = OE_EOK;
     oefs_t* oefs = (oefs_t*)fs;
@@ -1492,7 +1500,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
+static oe_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
 {
     oe_errno_t err = OE_EOK;
     int32_t nread = 0;
@@ -1503,7 +1511,7 @@ static oe_errno_t _oefs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
     if (!dir || !dir->file)
         RAISE(OE_EINVAL);
 
-    CHECK(_oefs_read(dir->file, &dir->ent, sizeof(fs_dirent_t), &nread));
+    CHECK(_fs_read(dir->file, &dir->ent, sizeof(fs_dirent_t), &nread));
 
     /* Check for end of file. */
     if (nread == 0)
@@ -1527,7 +1535,7 @@ static oe_errno_t oefs_closedir(fs_dir_t* dir)
     if (!dir || !dir->file)
         RAISE(OE_EINVAL);
 
-    _oefs_close(dir->file);
+    _fs_close(dir->file);
     dir->file = NULL;
     free(dir);
 
@@ -1535,7 +1543,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_open(
+static oe_errno_t _fs_open(
     fs_t* fs,
     const char* path,
     int flags,
@@ -1563,7 +1571,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_load(
+static oe_errno_t _fs_load(
     fs_t* fs,
     const char* path,
     void** data_out,
@@ -1584,7 +1592,7 @@ static oe_errno_t _oefs_load(
     if (!oefs || !path || !data_out || !size_out)
         RAISE(OE_EINVAL);
 
-    CHECK(_oefs_open(fs, path, 0, 0, &file));
+    CHECK(_fs_open(fs, path, 0, 0, &file));
     CHECK(_load_file(file, &data, &size));
 
     *data_out = data;
@@ -1595,7 +1603,7 @@ static oe_errno_t _oefs_load(
 done:
 
     if (file)
-        _oefs_close(file);
+        _fs_close(file);
 
     if (data)
         free(data);
@@ -1603,7 +1611,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_mkdir(fs_t* fs, const char* path, uint32_t mode)
+static oe_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
 {
     oefs_t* oefs = (oefs_t*)fs;
     oe_errno_t err = OE_EOK;
@@ -1647,7 +1655,7 @@ static oe_errno_t _oefs_mkdir(fs_t* fs, const char* path, uint32_t mode)
         dirents[1].d_type = FS_DT_DIR;
         strcpy(dirents[1].d_name, ".");
 
-        CHECK(_oefs_write(file, &dirents, sizeof(dirents), &nwritten));
+        CHECK(_fs_write(file, &dirents, sizeof(dirents), &nwritten));
 
         if (nwritten != sizeof(dirents))
             RAISE(OE_EIO);
@@ -1656,12 +1664,12 @@ static oe_errno_t _oefs_mkdir(fs_t* fs, const char* path, uint32_t mode)
 done:
 
     if (file)
-        _oefs_close(file);
+        _fs_close(file);
 
     return err;
 }
 
-static oe_errno_t _oefs_create(
+static oe_errno_t _fs_create(
     fs_t* fs,
     const char* path,
     uint32_t mode,
@@ -1701,7 +1709,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_link(
+static oe_errno_t _fs_link(
     fs_t* fs,
     const char* old_path,
     const char* new_path)
@@ -1750,7 +1758,7 @@ static oe_errno_t _oefs_link(
         fs_dirent_t ent;
         int32_t n;
 
-        CHECK(_oefs_read(dir, &ent, sizeof(ent), &n));
+        CHECK(_fs_read(dir, &ent, sizeof(ent), &n));
 
         if (n == 0)
             break;
@@ -1765,9 +1773,9 @@ static oe_errno_t _oefs_link(
             if (ent.d_type != FS_DT_REG)
                 RAISE(OE_EINVAL);
 
-            CHECK(_oefs_lseek(dir, -sizeof(ent), FS_SEEK_CUR, NULL));
+            CHECK(_fs_lseek(dir, -sizeof(ent), FS_SEEK_CUR, NULL));
             ent.d_ino = ino;
-            CHECK(_oefs_write(dir, &ent, sizeof(ent), &n));
+            CHECK(_fs_write(dir, &ent, sizeof(ent), &n));
 
             break;
         }
@@ -1786,7 +1794,7 @@ static oe_errno_t _oefs_link(
         ent.d_type = FS_DT_REG;
         strlcpy(ent.d_name, basename, sizeof(ent.d_name));
 
-        CHECK(_oefs_write(dir, &ent, sizeof(ent), &n));
+        CHECK(_fs_write(dir, &ent, sizeof(ent), &n));
 
         if (n != sizeof(ent))
             RAISE(OE_EIO);
@@ -1808,12 +1816,12 @@ static oe_errno_t _oefs_link(
 done:
 
     if (dir)
-        _oefs_close(dir);
+        _fs_close(dir);
 
     return err;
 }
 
-static oe_errno_t _oefs_rename(
+static oe_errno_t _fs_rename(
     fs_t* fs,
     const char* old_path,
     const char* new_path)
@@ -1823,15 +1831,15 @@ static oe_errno_t _oefs_rename(
     if (!old_path || !new_path)
         RAISE(OE_EINVAL);
 
-    CHECK(_oefs_link(fs, old_path, new_path));
-    CHECK(_oefs_unlink(fs, old_path));
+    CHECK(_fs_link(fs, old_path, new_path));
+    CHECK(_fs_unlink(fs, old_path));
 
 done:
 
     return err;
 }
 
-static oe_errno_t _oefs_unlink(fs_t* fs, const char* path)
+static oe_errno_t _fs_unlink(fs_t* fs, const char* path)
 {
     oefs_t* oefs = (oefs_t*)fs;
     oe_errno_t err = OE_EOK;
@@ -1858,7 +1866,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_truncate(fs_t* fs, const char* path)
+static oe_errno_t _fs_truncate(fs_t* fs, const char* path)
 {
     oefs_t* oefs = (oefs_t*)fs;
     oe_errno_t err = OE_EOK;
@@ -1881,12 +1889,12 @@ static oe_errno_t _oefs_truncate(fs_t* fs, const char* path)
 done:
 
     if (file)
-        _oefs_close(file);
+        _fs_close(file);
 
     return err;
 }
 
-static oe_errno_t _oefs_rmdir(fs_t* fs, const char* path)
+static oe_errno_t _fs_rmdir(fs_t* fs, const char* path)
 {
     oefs_t* oefs = (oefs_t*)fs;
     oe_errno_t err = OE_EOK;
@@ -1927,7 +1935,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
+static oe_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
 {
     oefs_t* oefs = (oefs_t*)fs;
     oe_errno_t err = OE_EOK;
@@ -1963,7 +1971,7 @@ done:
     return err;
 }
 
-static oe_errno_t _oefs_lseek(
+static oe_errno_t _fs_lseek(
     fs_file_t* file,
     ssize_t offset,
     int whence,
@@ -2291,24 +2299,30 @@ oe_errno_t oefs_initialize(fs_t** fs_out, oe_block_dev_t* dev)
             RAISE(OE_EIO);
     }
 
-    oefs->base.fs_release = _oefs_release;
-    oefs->base.fs_read = _oefs_read;
-    oefs->base.fs_write = _oefs_write;
-    oefs->base.fs_close = _oefs_close;
-    oefs->base.fs_opendir = _oefs_opendir;
-    oefs->base.fs_readdir = _oefs_readdir;
+    oefs->base.fs_release = _fs_release;
+
+    /* File handle methods. */
+    oefs->base.fs_create = _fs_create;
+    oefs->base.fs_open = _fs_open;
+    oefs->base.fs_lseek = _fs_lseek;
+    oefs->base.fs_read = _fs_read;
+    oefs->base.fs_write = _fs_write;
+    oefs->base.fs_load = _fs_load;
+    oefs->base.fs_close = _fs_close;
+
+    /* File path methods. */
+    oefs->base.fs_stat = _fs_stat;
+    oefs->base.fs_link = _fs_link;
+    oefs->base.fs_unlink = _fs_unlink;
+    oefs->base.fs_rename = _fs_rename;
+    oefs->base.fs_truncate = _fs_truncate;
+    oefs->base.fs_mkdir = _fs_mkdir;
+    oefs->base.fs_rmdir = _fs_rmdir;
+
+    /* Directory handle methods. */
+    oefs->base.fs_opendir = _fs_opendir;
+    oefs->base.fs_readdir = _fs_readdir;
     oefs->base.fs_closedir = oefs_closedir;
-    oefs->base.fs_open = _oefs_open;
-    oefs->base.fs_load = _oefs_load;
-    oefs->base.fs_mkdir = _oefs_mkdir;
-    oefs->base.fs_create = _oefs_create;
-    oefs->base.fs_link = _oefs_link;
-    oefs->base.fs_rename = _oefs_rename;
-    oefs->base.fs_unlink = _oefs_unlink;
-    oefs->base.fs_truncate = _oefs_truncate;
-    oefs->base.fs_rmdir = _oefs_rmdir;
-    oefs->base.fs_stat = _oefs_stat;
-    oefs->base.fs_lseek = _oefs_lseek;
 
     *fs_out = &oefs->base;
     oefs = NULL;

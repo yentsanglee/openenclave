@@ -89,6 +89,25 @@ struct _fs
 {
     oe_errno_t (*fs_release)(fs_t* fs);
 
+    oe_errno_t (*fs_create)(
+        fs_t* fs,
+        const char* path,
+        uint32_t mode,
+        fs_file_t** file);
+
+    oe_errno_t (*fs_open)(
+        fs_t* fs,
+        const char* pathname,
+        int flags,
+        uint32_t mode,
+        fs_file_t** file_out);
+
+    oe_errno_t (*fs_lseek)(
+        fs_file_t* file,
+        ssize_t offset,
+        int whence,
+        ssize_t* offset_out);
+
     oe_errno_t (*fs_read)(
         fs_file_t* file,
         void* data,
@@ -101,58 +120,40 @@ struct _fs
         uint32_t size,
         int32_t* nwritten);
 
-    oe_errno_t (*fs_close)(fs_file_t* file);
-
-    oe_errno_t (*fs_opendir)(fs_t* fs, const char* path, fs_dir_t** dir);
-
-    oe_errno_t (*fs_readdir)(fs_dir_t* dir, fs_dirent_t** dirent);
-
-    oe_errno_t (*fs_closedir)(fs_dir_t* dir);
-
-    oe_errno_t (*fs_open)(
-        fs_t* fs,
-        const char* pathname,
-        int flags,
-        uint32_t mode,
-        fs_file_t** file_out);
-
+    /* ATTN: remove? */
     oe_errno_t (*fs_load)(
         fs_t* fs,
         const char* path,
         void** data_out,
         size_t* size_out);
 
-    oe_errno_t (*fs_mkdir)(fs_t* fs, const char* path, uint32_t mode);
+    oe_errno_t (*fs_close)(fs_file_t* file);
 
-    oe_errno_t (*fs_create)(
-        fs_t* fs,
-        const char* path,
-        uint32_t mode,
-        fs_file_t** file);
+    oe_errno_t (*fs_stat)(fs_t* fs, const char* path, fs_stat_t* stat);
 
     oe_errno_t (*fs_link)(
         fs_t* fs,
         const char* old_path,
         const char* new_path);
 
+    oe_errno_t (*fs_unlink)(fs_t* fs, const char* path);
+
     oe_errno_t (*fs_rename)(
         fs_t* fs,
         const char* old_path,
         const char* new_path);
 
-    oe_errno_t (*fs_unlink)(fs_t* fs, const char* path);
-
     oe_errno_t (*fs_truncate)(fs_t* fs, const char* path);
+
+    oe_errno_t (*fs_mkdir)(fs_t* fs, const char* path, uint32_t mode);
 
     oe_errno_t (*fs_rmdir)(fs_t* fs, const char* path);
 
-    oe_errno_t (*fs_stat)(fs_t* fs, const char* path, fs_stat_t* stat);
+    oe_errno_t (*fs_opendir)(fs_t* fs, const char* path, fs_dir_t** dir);
 
-    oe_errno_t (*fs_lseek)(
-        fs_file_t* file,
-        ssize_t offset,
-        int whence,
-        ssize_t* offset_out);
+    oe_errno_t (*fs_readdir)(fs_dir_t* dir, fs_dirent_t** dirent);
+
+    oe_errno_t (*fs_closedir)(fs_dir_t* dir);
 };
 
 #endif /* _fs_h */
