@@ -189,6 +189,8 @@ typedef enum _oefs_result {
     OEFS_BOUNDS,
     OEFS_SANITY,
     OEFS_OUT_OF_MEMORY,
+    OEFS_UNEXPECTED,
+    OEFS_BAD_PATH,
 } oefs_result_t;
 
 typedef struct _oefs_file oefs_file_t;

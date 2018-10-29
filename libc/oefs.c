@@ -205,8 +205,7 @@ static oefs_result_t _load_inode(
     oefs_result_t result = OEFS_FAILED;
 
     /* Read this inode into memory. */
-    if (_read_block(oefs, ino, inode) != OEFS_OK)
-        RAISE(OEFS_FAILED);
+    CHECK(_read_block(oefs, ino, inode));
 
     /* Check the inode magic number. */
     if (inode->i_magic != OEFS_INODE_MAGIC)
@@ -247,8 +246,7 @@ static oefs_result_t _load_blknos(
             size_t n;
 
             /* Read this bnode into memory. */
-            if (_read_block(oefs, next, &bnode) != OEFS_OK)
-                RAISE(OEFS_FAILED);
+            CHECK(_read_block(oefs, next, &bnode));
 
             /* Append this bnode blkno. */
             if (buf_u32_append(bnode_blknos, &next, 1) != 0)
@@ -544,8 +542,7 @@ static oefs_result_t _append_block_chain(
 
         blkno = file->bnode_blknos.data[file->bnode_blknos.size-1];
 
-        if (_read_block(file->oefs, blkno, &bnode) != OEFS_OK)
-            RAISE(OEFS_FAILED);
+        CHECK(_read_block(file->oefs, blkno, &bnode));
 
         object = &bnode;
         slots = bnode.b_blocks;
@@ -623,34 +620,27 @@ static oefs_result_t _split_path(
 
     /* Reject paths that are too long. */
     if (strlen(path) >= OEFS_PATH_MAX)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Reject paths that are not absolute */
     if (path[0] != '/')
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Handle root directory up front */
     if (strcmp(path, "/") == 0)
     {
         strlcpy(dirname, "/", OEFS_PATH_MAX);
         strlcpy(basename, "/", OEFS_PATH_MAX);
-        result = OEFS_OK;
-        goto done;
+        RAISE(OEFS_OK);
     }
 
     /* This cannot fail (prechecked) */
     if (!(slash = strrchr(path, '/')))
-        goto done;
+        RAISE(OEFS_UNEXPECTED);
 
     /* If path ends with '/' character */
     if (!slash[1])
-        goto done;
+        RAISE(OEFS_BAD_PATH);
 
     /* Split the path */
     {
@@ -693,10 +683,7 @@ static oefs_result_t _create_file(
         *ino_out = 0;
 
     if (!oefs || !dir_ino || !name || strlen(name) >= OEFS_PATH_MAX)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* ATTN: should create replace an existing file? */
 
@@ -714,52 +701,47 @@ static oefs_result_t _create_file(
         else if (type == OEFS_DT_REG)
             inode.i_mode = OEFS_S_REG_DEFAULT;
         else
-            goto done;
+            RAISE(OEFS_BAD_PARAMETER);
 
-        if (_assign_blkno(oefs, &ino) != OEFS_OK)
-            goto done;
-
+        CHECK(_assign_blkno(oefs, &ino));
         CHECK(_write_block(oefs, ino, &inode));
     }
 
     /* Add an entry to the directory for this inode. */
     {
-        oefs_dirent_t de;
-        oefs_result_t r;
+        oefs_dirent_t ent;
         int32_t n;
 
-        if (_open_file(oefs, dir_ino, &file) != 0)
-            goto done;
+        CHECK(_open_file(oefs, dir_ino, &file));
 
         /* Check for duplicates. */
-        while ((r = oefs_read(file, &de, sizeof(de), &n)) == OEFS_OK && n > 0)
+        for (;;)
         {
-            if (n != sizeof(de))
-                goto done;
+            CHECK(oefs_read(file, &ent, sizeof(ent), &n));
 
-            if (strcmp(de.d_name, name) == 0)
-            {
-                result = OEFS_ALREADY_EXISTS;
-                goto done;
-            }
+            if (n == 0)
+                break;
+
+            if (n != sizeof(ent))
+                RAISE(OEFS_SANITY);
+
+            if (strcmp(ent.d_name, name) == 0)
+                RAISE(OEFS_ALREADY_EXISTS);
         }
-
-        if (r != OEFS_OK)
-            goto done;
 
         /* Append the entry to the directory. */
         {
-            memset(&de, 0, sizeof(de));
-            de.d_ino = ino;
-            de.d_off = file->offset;
-            de.d_reclen = sizeof(de);
-            de.d_type = type;
-            strlcpy(de.d_name, name, sizeof(de.d_name));
+            memset(&ent, 0, sizeof(ent));
+            ent.d_ino = ino;
+            ent.d_off = file->offset;
+            ent.d_reclen = sizeof(ent);
+            ent.d_type = type;
+            strlcpy(ent.d_name, name, sizeof(ent.d_name));
 
-            r = oefs_write(file, &de, sizeof(de), &n);
+            CHECK(oefs_write(file, &ent, sizeof(ent), &n));
 
-            if (r != OEFS_OK || n != sizeof(de))
-                goto done;
+            if (n != sizeof(ent))
+                RAISE(OEFS_FAILED);
         }
     }
 
@@ -784,24 +766,15 @@ static oefs_result_t _truncate_file(oefs_file_t* file)
     oefs_result_t result = OEFS_FAILED;
 
     if (!file)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Release all the data blocks. */
     for (size_t i = 0; i < file->blknos.size; i++)
-    {
-        if (_unassign_blkno(file->oefs, file->blknos.data[i]) != OEFS_OK)
-            goto done;
-    }
+        CHECK(_unassign_blkno(file->oefs, file->blknos.data[i]));
 
     /* Release all the bnode blocks. */
     for (size_t i = 0; i < file->bnode_blknos.size; i++)
-    {
-        if (_unassign_blkno(file->oefs, file->bnode_blknos.data[i]) != OEFS_OK)
-            goto done;
-    }
+        CHECK(_unassign_blkno(file->oefs, file->bnode_blknos.data[i]));
 
     /* Update the inode. */
     file->inode.i_size = 0;
@@ -815,8 +788,7 @@ static oefs_result_t _truncate_file(oefs_file_t* file)
     file->offset = 0;
 
     /* Sync the inode to disk. */
-    if (_write_block(file->oefs, file->ino, &file->inode) != OEFS_OK)
-        goto done;
+    CHECK(_write_block(file->oefs, file->ino, &file->inode));
 
     result = OEFS_OK;
 
@@ -836,20 +808,21 @@ static oefs_result_t _load_file(
     oefs_result_t result = OEFS_FAILED;
     buf_t buf = BUF_INITIALIZER;
     char data[OEFS_BLOCK_SIZE];
-    oefs_result_t r;
     int32_t n;
 
     *data_out = NULL;
     *size_out = 0;
 
-    while ((r = oefs_read(file, data, sizeof(data), &n)) == OEFS_OK && n > 0)
+    for (;;)
     {
-        if (buf_append(&buf, data, n) != 0)
-            goto done;
-    }
+        CHECK(oefs_read(file, data, sizeof(data), &n)); 
 
-    if (r != OEFS_OK)
-        goto done;
+        if (n == 0)
+            break;
+
+        if (buf_append(&buf, data, n) != 0)
+            RAISE(OEFS_OUT_OF_MEMORY);
+    }
 
     *data_out = buf.data;
     *size_out = buf.size;
@@ -964,7 +937,7 @@ static oefs_result_t _unlink_file(
         inode.i_links--;
 
         /* Rewrite the inode. */
-        _write_block(oefs, ino, &inode);
+        CHECK(_write_block(oefs, ino, &inode));
     }
 
     result = OEFS_OK;
@@ -1417,8 +1390,7 @@ oefs_result_t oefs_read(
         oefs_block_t block;
         uint32_t offset;
 
-        if (_read_block(file->oefs, file->blknos.data[i], &block) != OEFS_OK)
-            goto done;
+        CHECK(_read_block(file->oefs, file->blknos.data[i], &block));
 
         /* The offset of the data within this block */
         offset = file->offset % OEFS_BLOCK_SIZE;
@@ -1518,8 +1490,7 @@ oefs_result_t oefs_write(
         oefs_block_t block;
         uint32_t offset;
 
-        if (_read_block(file->oefs, file->blknos.data[i], &block) != OEFS_OK)
-            goto done;
+        CHECK(_read_block(file->oefs, file->blknos.data[i], &block));
 
         /* The offset of the data within this block */
         offset = file->offset % OEFS_BLOCK_SIZE;
@@ -1565,8 +1536,7 @@ oefs_result_t oefs_write(
         }
 
         /* Rewrite the block. */
-        if (_write_block(file->oefs, file->blknos.data[i], &block) != OEFS_OK)
-            goto done;
+        CHECK(_write_block(file->oefs, file->blknos.data[i], &block));
     }
 
     /* Append remaining data to the file. */
@@ -1598,8 +1568,7 @@ oefs_result_t oefs_write(
     file->inode.i_size = new_file_size;
 
     /* Flush the inode to disk. */
-    if (_write_block(file->oefs, file->ino, &file->inode) != OEFS_OK)
-        goto done;
+    CHECK(_write_block(file->oefs, file->ino, &file->inode));
 
     result = OEFS_OK;
 
@@ -1706,11 +1675,10 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
     {
         oefs_inode_t inode;
 
-        if (_read_block(oefs, OEFS_ROOT_INO, &inode) != OEFS_OK)
-            goto done;
+        CHECK(_read_block(oefs, OEFS_ROOT_INO, &inode));
 
         if (inode.i_magic != OEFS_INODE_MAGIC)
-            goto done;
+            RAISE(OEFS_SANITY);
     }
 
     *oefs_out = oefs;
@@ -2139,8 +2107,7 @@ oefs_result_t oefs_link(
 
         inode.i_links++;
 
-        if (_write_block(oefs, ino, &inode) != OEFS_OK)
-            goto done;
+        CHECK(_write_block(oefs, ino, &inode));
     }
 
     /* Remove the destination file if it existed above. */
