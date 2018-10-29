@@ -15,17 +15,13 @@ add_library(oelibc STATIC
     buf.c
     dladdr.c
     exp2l.S
-    file.c
     cwd.c
-    filesys.c
     hostblockdev.c
     libunwind_stubs.c
     link.c
     locale.c
     oefs.c
-    oefsfilesys.c
     malloc.c
-    mount.c
     pthread.c
     ramblockdev.c
     sched_yield.c

@@ -5,6 +5,8 @@
 #include <string.h>
 #include "filesys.h"
 
+typedef struct _oefs oefs_t;
+
 typedef struct _file_impl
 {
     oe_file_t base;

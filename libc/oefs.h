@@ -13,6 +13,8 @@
 #define OEFS_SUPER_BLOCK_MAGIC 0x0EF55FE0
 #define OEFS_INODE_MAGIC 0x0120DD021
 
+#if 0
+
 typedef struct _oefs_super_block
 {
     /* Magic number: OEFS_SUPER_BLOCK_MAGIC. */
@@ -122,6 +124,8 @@ typedef struct _oefs_block
 {
     uint8_t data[FS_BLOCK_SIZE];
 } oefs_block_t;
+
+#endif
 
 /* Compute required size of a file system with the given block count. */
 oe_errno_t oefs_size(size_t nblocks, size_t* size);
