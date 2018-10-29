@@ -1917,7 +1917,7 @@ oefs_result_t oefs_link(
 
         /* Only regular files can be linked. */
         if (type != OEFS_DT_REG)
-            goto done;
+            RAISE(OEFS_BAD_PARAMETER);
     }
 
     /* Split the new path. */
