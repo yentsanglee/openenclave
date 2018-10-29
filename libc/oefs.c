@@ -1711,11 +1711,10 @@ oefs_result_t oefs_closedir(oefs_dir_t* dir)
     oefs_result_t result = OEFS_FAILED;
 
     if (!dir || !dir->file)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
     oefs_close(dir->file);
     dir->file = NULL;
-
     free(dir);
 
     result = OEFS_OK;
@@ -1739,16 +1738,10 @@ oefs_result_t oefs_open(
         *file_out = NULL;
 
     if (!oefs || !path || !file_out)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
-    if (_path_to_ino(oefs, path, NULL, &ino, NULL) != OEFS_OK)
-        goto done;
-
-    if (_open_file(oefs, ino, &file) != OEFS_OK)
-        goto done;
+    CHECK(_path_to_ino(oefs, path, NULL, &ino, NULL));
+    CHECK(_open_file(oefs, ino, &file));
 
     *file_out = file;
 
@@ -1777,17 +1770,10 @@ oefs_result_t oefs_load(
         *size_out = 0;
 
     if (!oefs || !path || !data_out || !size_out)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
-    if (oefs_open(oefs, path, 0, 0, &file) != OEFS_OK)
-        goto done;
-
-    /* Read the data into memory. */
-    if (_load_file(file, &data, &size) != 0)
-        goto done;
+    CHECK(oefs_open(oefs, path, 0, 0, &file));
+    CHECK(_load_file(file, &data, &size));
 
     *data_out = data;
     *size_out = size;
@@ -1817,30 +1803,23 @@ oefs_result_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode)
     oefs_file_t* file = NULL;
 
     if (!oefs || !path)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Split the path into parent path and final component. */
-    if (_split_path(path, dirname, basename) != OEFS_OK)
-        goto done;
+    CHECK(_split_path(path, dirname, basename));
 
     /* Get the inode of the parent directory. */
-    if (_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL) != OEFS_OK)
-        goto done;
+    CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL));
 
-    /* Create the directory file. */
-    if (_create_file(oefs, dir_ino, basename, OEFS_DT_DIR, &ino) != OEFS_OK)
-        goto done;
+    /* Create the new directory file. */
+    CHECK(_create_file(oefs, dir_ino, basename, OEFS_DT_DIR, &ino));
 
-    if (_open_file(oefs, ino, &file) != OEFS_OK)
-        goto done;
+    /* Open the newly created directory */
+    CHECK(_open_file(oefs, ino, &file));
 
     /* Write the empty directory contents. */
     {
         oefs_dirent_t dirents[2];
-        oefs_result_t r;
         int32_t nwritten;
 
         /* Initialize the ".." directory. */
@@ -1857,10 +1836,10 @@ oefs_result_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode)
         dirents[1].d_type = OEFS_DT_DIR;
         strcpy(dirents[1].d_name, ".");
 
-        r = oefs_write(file, &dirents, sizeof(dirents), &nwritten);
+        CHECK(oefs_write(file, &dirents, sizeof(dirents), &nwritten));
 
-        if (r != OEFS_OK || nwritten != sizeof(dirents))
-            goto done;
+        if (nwritten != sizeof(dirents))
+            RAISE(OEFS_FAILED);
     }
 
     result = OEFS_OK;
@@ -1890,26 +1869,19 @@ oefs_result_t oefs_create(
         *file_out = NULL;
 
     if (!oefs || !path || !file_out)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Split the path into parent directory and file name */
-    if (_split_path(path, dirname, basename) != OEFS_OK)
-        goto done;
+    CHECK(_split_path(path, dirname, basename));
 
     /* Get the inode of the parent directory. */
-    if (_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL) != OEFS_OK)
-        goto done;
+    CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL));
 
     /* Create the new file. */
-    if (_create_file(oefs, dir_ino, basename, OEFS_DT_REG, &ino) != OEFS_OK)
-        goto done;
+    CHECK(_create_file(oefs, dir_ino, basename, OEFS_DT_REG, &ino));
 
     /* Open the new file. */
-    if (_open_file(oefs, ino, &file) != OEFS_OK)
-        goto done;
+    CHECK(_open_file(oefs, ino, &file));
 
     *file_out = file;
     file = NULL;
@@ -1935,20 +1907,13 @@ oefs_result_t oefs_link(
     uint32_t release_ino = 0;
 
     if (!old_path || !new_path)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Get the inode number of the old path. */
     {
         uint8_t type;
 
-        if (_path_to_ino(oefs, old_path, NULL, &ino, &type) != OEFS_OK)
-        {
-            result = OEFS_NOT_FOUND;
-            goto done;
-        }
+        CHECK(_path_to_ino(oefs, old_path, NULL, &ino, &type));
 
         /* Only regular files can be linked. */
         if (type != OEFS_DT_REG)
@@ -1956,21 +1921,18 @@ oefs_result_t oefs_link(
     }
 
     /* Split the new path. */
-    if (_split_path(new_path, dirname, basename) != OEFS_OK)
-        goto done;
+    CHECK(_split_path(new_path, dirname, basename));
 
     /* Open the destination directory. */
     {
         uint8_t type;
 
-        if (_path_to_ino(oefs, dirname, NULL, &dir_ino, &type) != OEFS_OK)
-            goto done;
+        CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, &type));
 
         if (type != OEFS_DT_DIR)
-            goto done;
+            RAISE(OEFS_BAD_PARAMETER);
 
-        if (_open_file(oefs, dir_ino, &dir) != 0)
-            goto done;
+        CHECK(_open_file(oefs, dir_ino, &dir));
     }
 
     /* Replace the destination file if it already exists. */
@@ -1979,29 +1941,24 @@ oefs_result_t oefs_link(
         oefs_dirent_t ent;
         int32_t n;
 
-        if (oefs_read(dir, &ent, sizeof(ent), &n) != OEFS_OK)
-            goto done;
+        CHECK(oefs_read(dir, &ent, sizeof(ent), &n));
 
         if (n == 0)
             break;
 
         if (n != sizeof(ent))
-            goto done;
+            RAISE(OEFS_SANITY);
 
         if (strcmp(ent.d_name, basename) == 0)
         {
             release_ino = ent.d_ino;
 
             if (ent.d_type != OEFS_DT_REG)
-                goto done;
+                RAISE(OEFS_BAD_PARAMETER);
 
-            if (oefs_lseek(dir, -sizeof(ent), OEFS_SEEK_CUR, NULL) != OEFS_OK)
-                goto done;
-
+            CHECK(oefs_lseek(dir, -sizeof(ent), OEFS_SEEK_CUR, NULL));
             ent.d_ino = ino;
-
-            if (oefs_write(dir, &ent, sizeof(ent), &n) != OEFS_OK)
-                goto done;
+            CHECK(oefs_write(dir, &ent, sizeof(ent), &n));
 
             break;
         }
@@ -2020,8 +1977,7 @@ oefs_result_t oefs_link(
         ent.d_type = OEFS_DT_REG;
         strlcpy(ent.d_name, basename, sizeof(ent.d_name));
 
-        if (oefs_write(dir, &ent, sizeof(ent), &n) != OEFS_OK)
-            goto done;
+        CHECK(oefs_write(dir, &ent, sizeof(ent), &n));
 
         if (n != sizeof(ent))
             goto done;
@@ -2031,20 +1987,14 @@ oefs_result_t oefs_link(
     {
         oefs_inode_t inode;
 
-        if (_load_inode(oefs, ino, &inode) != OEFS_OK)
-            goto done;
-
+        CHECK(_load_inode(oefs, ino, &inode));
         inode.i_links++;
-
         CHECK(_write_block(oefs, ino, &inode));
     }
 
     /* Remove the destination file if it existed above. */
     if (release_ino)
-    {
-        if (_release_inode(oefs, release_ino) != OEFS_OK)
-            goto done;
-    }
+        CHECK(_release_inode(oefs, release_ino));
 
     result = OEFS_OK;
 
