@@ -137,8 +137,6 @@ INLINE void _clr_bit(uint8_t* data, uint32_t size, uint32_t index)
     data[byte] &= ~(1 << bit);
 }
 
-/*BOOKMARK*/
-
 /* Get the physical block number from a logical block number. */
 INLINE uint32_t _get_physical_blkno(oefs_t* oefs, uint32_t blkno)
 {
@@ -154,18 +152,18 @@ static oefs_result_t _read_block(oefs_t* oefs, size_t blkno, void* block)
 
     /* Check whether the block number is valid. */
     if (blkno == 0 || blkno > oefs->sb.s_nblocks)
-        goto done;
+        RAISE(OEFS_BOUNDS);
 
     /* Sanity check: make sure the block is not free. */
     if (!_test_bit(oefs->bitmap, oefs->bitmap_size, blkno - 1))
-        goto done;
+        RAISE(OEFS_SANITY);
 
     /* Convert the logical block number to a physical block number. */
     physical_blkno = _get_physical_blkno(oefs, blkno);
 
     /* Get the physical block. */
     if (oefs->dev->get(oefs->dev, physical_blkno, block) != 0)
-        goto done;
+        RAISE(OEFS_FAILED);
 
     result = OEFS_OK;
 
@@ -180,18 +178,18 @@ static oefs_result_t _write_block(oefs_t* oefs, size_t blkno, const void* block)
 
     /* Check whether the block number is valid. */
     if (blkno == 0 || blkno > oefs->sb.s_nblocks)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Sanity check: make sure the block is not free. */
     if (!_test_bit(oefs->bitmap, oefs->bitmap_size, blkno - 1))
-        goto done;
+        RAISE(OEFS_SANITY);
 
     /* Convert the logical block number to a physical block number. */
     physical_blkno = _get_physical_blkno(oefs, blkno);
 
     /* Get the physical block. */
     if (oefs->dev->put(oefs->dev, physical_blkno, block) != 0)
-        goto done;
+        RAISE(OEFS_FAILED);
 
     result = OEFS_OK;
 
@@ -208,11 +206,11 @@ static oefs_result_t _load_inode(
 
     /* Read this inode into memory. */
     if (_read_block(oefs, ino, inode) != OEFS_OK)
-        goto done;
+        RAISE(OEFS_FAILED);
 
     /* Check the inode magic number. */
     if (inode->i_magic != OEFS_INODE_MAGIC)
-        goto done;
+        RAISE(OEFS_SANITY);
 
     result = OEFS_OK;
 
@@ -228,14 +226,14 @@ static oefs_result_t _load_blknos(
 {
     oefs_result_t result = OEFS_FAILED;
 
-    /* Collect direct block numbers. */
+    /* Collect direct block numbers from the inode. */
     {
         size_t n = sizeof(inode->i_blocks) / sizeof(uint32_t);
 
         for (size_t i = 0; i < n && inode->i_blocks[i]; i++)
         {
             if (buf_u32_append(blknos, &inode->i_blocks[i], 1) != 0)
-                goto done;
+                RAISE(OEFS_OUT_OF_MEMORY);
         }
     }
 
@@ -250,11 +248,11 @@ static oefs_result_t _load_blknos(
 
             /* Read this bnode into memory. */
             if (_read_block(oefs, next, &bnode) != OEFS_OK)
-                goto done;
+                RAISE(OEFS_FAILED);
 
             /* Append this bnode blkno. */
             if (buf_u32_append(bnode_blknos, &next, 1) != 0)
-                goto done;
+                RAISE(OEFS_OUT_OF_MEMORY);
 
             n = sizeof(bnode.b_blocks) / sizeof(uint32_t);
 
@@ -262,7 +260,7 @@ static oefs_result_t _load_blknos(
             for (size_t i = 0; i < n && bnode.b_blocks[i]; i++)
             {
                 if (buf_u32_append(blknos, &bnode.b_blocks[i], 1) != 0)
-                    goto done;
+                    RAISE(OEFS_OUT_OF_MEMORY);
             }
 
             next = bnode.b_next;
@@ -274,6 +272,10 @@ static oefs_result_t _load_blknos(
 done:
     return result;
 }
+
+/*
+BOOKMARK:
+*/
 
 static oefs_result_t _open_file(
     oefs_t* oefs,
@@ -287,17 +289,17 @@ static oefs_result_t _open_file(
         *file_out = NULL;
 
     if (!oefs || !ino || !file_out)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
     if (!(file = calloc(1, sizeof(oefs_file_t))))
-        goto done;
+        RAISE(OEFS_OUT_OF_MEMORY);
 
     file->oefs = oefs;
     file->ino = ino;
 
     /* Read this inode into memory. */
     if (_load_inode(oefs, ino, &file->inode) != OEFS_OK)
-        goto done;
+        RAISE(OEFS_FAILED);
 
     /* Load the block numbers into memory. */
     if (_load_blknos(
@@ -306,7 +308,7 @@ static oefs_result_t _open_file(
             &file->bnode_blknos,
             &file->blknos) != OEFS_OK)
     {
-        goto done;
+        RAISE(OEFS_FAILED);
     }
 
     *file_out = file;
@@ -319,7 +321,6 @@ done:
     if (file)
     {
         buf_u32_release(&file->blknos);
-        memcpy(file, 0, sizeof(oefs_file_t));
         free(file);
     }
 
@@ -339,13 +340,12 @@ static oefs_result_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
             _set_bit(oefs->bitmap, oefs->bitmap_size, i);
             *blkno = i + 1;
             oefs->sb.s_free_blocks--;
-            result = OEFS_OK;
             oefs->dirty = true;
-            goto done;
+            RAISE(OEFS_OK);
         }
     }
 
-    result = OEFS_NOT_FOUND;
+    RAISE(OEFS_NOT_FOUND);
 
 done:
     return result;
@@ -358,10 +358,10 @@ static oefs_result_t _unassign_blkno(oefs_t* oefs, uint32_t blkno)
     uint32_t index = blkno - 1;
 
     if (blkno == 0 || index >= nbits)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
     if (!_test_bit(oefs->bitmap, oefs->bitmap_size, index))
-        goto done;
+        RAISE(OEFS_SANITY);
 
     _clr_bit(oefs->bitmap, oefs->bitmap_size, index);
     oefs->sb.s_free_blocks++;
@@ -376,10 +376,10 @@ done:
 
 static oefs_result_t _flush_super_block(oefs_t* oefs)
 {
-    oefs_result_t result = OEFS_OK;
+    oefs_result_t result = OEFS_FAILED;
 
     if (oefs->dev->put(oefs->dev, SUPER_BLOCK_PHYSICAL_BLKNO, &oefs->sb) != 0)
-        goto done;
+        RAISE(OEFS_FAILED);
 
     result = OEFS_OK;
 
@@ -390,7 +390,7 @@ done:
 /* TODO: optimize to use partial bitmap flushing */
 static oefs_result_t _flush_bitmap(oefs_t* oefs)
 {
-    oefs_result_t result = OEFS_OK;
+    oefs_result_t result = OEFS_FAILED;
     size_t num_bitmap_blocks;
 
     /* Calculate the number of bitmap blocks. */
@@ -406,7 +406,7 @@ static oefs_result_t _flush_bitmap(oefs_t* oefs)
         uint32_t blkno = BITMAP_PHYSICAL_BLKNO + i;
 
         if (oefs->dev->put(oefs->dev, blkno, block) != 0)
-            goto done;
+            RAISE(OEFS_FAILED);
     }
 
     result = OEFS_OK;
@@ -422,10 +422,10 @@ static oefs_result_t _flush(oefs_t* oefs)
     if (oefs->dirty)
     {
         if (_flush_bitmap(oefs) != OEFS_OK)
-            goto done;
+            RAISE(OEFS_FAILED);
 
         if (_flush_super_block(oefs) != OEFS_OK)
-            goto done;
+            RAISE(OEFS_FAILED);
 
         oefs->dirty = false;
     }
@@ -455,11 +455,11 @@ static oefs_result_t _write_data(
 
         /* Assign a new block number from the in-memory bitmap. */
         if (_assign_blkno(oefs, &blkno) != OEFS_OK)
-            goto done;
+            RAISE(OEFS_FAILED);
 
         /* Append the new block number to the array of blocks numbers. */
         if (buf_u32_append(blknos, &blkno, 1) != 0)
-            goto done;
+            RAISE(OEFS_OUT_OF_MEMORY);
 
         /* Calculate bytes to copy to the block. */
         copy_size = (remaining > OEFS_BLOCK_SIZE) ? OEFS_BLOCK_SIZE : remaining;
@@ -471,8 +471,7 @@ static oefs_result_t _write_data(
         memcpy(block.data, ptr, copy_size);
 
         /* Write the new block. */
-        if (_write_block(oefs, blkno, &block) != OEFS_OK)
-            goto done;
+        CHECK(_write_block(oefs, blkno, &block));
 
         /* Advance to next block of data to write. */
         ptr += copy_size;
@@ -541,12 +540,12 @@ static oefs_result_t _append_block_chain(
     else
     {
         if (file->bnode_blknos.size == 0)
-            goto done;
+            RAISE(OEFS_SANITY);
 
         blkno = file->bnode_blknos.data[file->bnode_blknos.size-1];
 
         if (_read_block(file->oefs, blkno, &bnode) != OEFS_OK)
-            goto done;
+            RAISE(OEFS_FAILED);
 
         object = &bnode;
         slots = bnode.b_blocks;
@@ -566,17 +565,16 @@ static oefs_result_t _append_block_chain(
 
             /* Assign a block number for a new bnode. */
             if (_assign_blkno(file->oefs, &new_blkno) != OEFS_OK)
-                goto done;
+                RAISE(OEFS_FAILED);
 
             /* Append the bnode blkno to the file struct. */
             if (buf_u32_append(&file->bnode_blknos, &new_blkno, 1) != 0)
-                goto done;
+                RAISE(OEFS_OUT_OF_MEMORY);
 
             *next = new_blkno;
 
             /* Rewrite the current inode or bnode. */
-            if (_write_block(file->oefs, blkno, object) != 0)
-                goto done;
+            CHECK(_write_block(file->oefs, blkno, object));
 
             /* Initialize the new bnode with zeros. */
             memset(&bnode, 0, sizeof(oefs_bnode_t));
@@ -591,8 +589,7 @@ static oefs_result_t _append_block_chain(
         else
         {
             /* Rewrite the inode or bnode. */
-            if (_write_block(file->oefs, blkno, object) != 0)
-                goto done;
+            CHECK(_write_block(file->oefs, blkno, object));
         }
     }
 
@@ -722,8 +719,7 @@ static oefs_result_t _create_file(
         if (_assign_blkno(oefs, &ino) != OEFS_OK)
             goto done;
 
-        if (_write_block(oefs, ino, &inode))
-            goto done;
+        CHECK(_write_block(oefs, ino, &inode));
     }
 
     /* Add an entry to the directory for this inode. */
