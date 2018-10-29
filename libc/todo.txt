@@ -14,8 +14,3 @@ Todo:
 ---
 (C) Refine error naming and handling.
 (C) Handle mode parameters.
----
-(X) Use standard function names (open rather than open_file).
-(X) Change all return types to oefs_result_t.
-(X) Link function.
-(X) Rename function
