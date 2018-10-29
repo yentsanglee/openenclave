@@ -378,7 +378,6 @@ done:
     return result;
 }
 
-/* TODO: optimize to use partial bitmap flushing */
 static oefs_result_t _flush_bitmap(oefs_t* oefs)
 {
     oefs_result_t result = OEFS_FAILED;
