@@ -120,13 +120,6 @@ struct _fs
         uint32_t size,
         int32_t* nwritten);
 
-    /* ATTN: remove? */
-    oe_errno_t (*fs_load)(
-        fs_t* fs,
-        const char* path,
-        void** data_out,
-        size_t* size_out);
-
     oe_errno_t (*fs_close)(fs_file_t* file);
 
     oe_errno_t (*fs_stat)(fs_t* fs, const char* path, fs_stat_t* stat);

@@ -1571,46 +1571,6 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_load(
-    fs_t* fs,
-    const char* path,
-    void** data_out,
-    size_t* size_out)
-{
-    oefs_t* oefs = (oefs_t*)fs;
-    oe_errno_t err = OE_EOK;
-    fs_file_t* file = NULL;
-    void* data = NULL;
-    size_t size = 0;
-
-    if (data_out)
-        *data_out = NULL;
-
-    if (size_out)
-        *size_out = 0;
-
-    if (!oefs || !path || !data_out || !size_out)
-        RAISE(OE_EINVAL);
-
-    CHECK(_fs_open(fs, path, 0, 0, &file));
-    CHECK(_load_file(file, &data, &size));
-
-    *data_out = data;
-    *size_out = size;
-
-    data = NULL;
-
-done:
-
-    if (file)
-        _fs_close(file);
-
-    if (data)
-        free(data);
-
-    return err;
-}
-
 static oe_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
 {
     oefs_t* oefs = (oefs_t*)fs;
@@ -2307,7 +2267,6 @@ oe_errno_t oefs_initialize(fs_t** fs_out, oe_block_dev_t* dev)
     oefs->base.fs_lseek = _fs_lseek;
     oefs->base.fs_read = _fs_read;
     oefs->base.fs_write = _fs_write;
-    oefs->base.fs_load = _fs_load;
     oefs->base.fs_close = _fs_close;
 
     /* File path methods. */

@@ -21,6 +21,59 @@
 
 #define BLOCK_SIZE 512
 
+static int _load(
+    fs_t* fs,
+    const char* path,
+    void** data_out,
+    size_t* size_out)
+{
+    int ret = -1;
+    fs_file_t* file = NULL;
+    buf_t buf = BUF_INITIALIZER;
+
+    if (data_out)
+        *data_out = NULL;
+
+    if (size_out)
+        *size_out = 0;
+
+    if (!fs || !path || !data_out || !size_out)
+        goto done;
+
+    if (fs->fs_open(fs, path, 0, 0, &file))
+        goto done;
+
+    for (;;)
+    {
+        char data[4096];
+        int32_t n;
+
+        if (fs->fs_read(file, data, sizeof(data), &n) != OE_EOK)
+            goto done;
+
+        if (n == 0)
+            break;
+
+        if (buf_append(&buf, data, n) != 0)
+            goto done;
+    }
+
+    *data_out = buf.data;
+    *size_out = buf.size;
+    memset(&buf, 0, sizeof(buf));
+
+    ret = 0;
+
+done:
+
+    if (file)
+        fs->fs_close(file);
+
+    buf_release(&buf);
+
+    return ret;
+}
+
 static void _dump_dir(fs_t* fs, const char* dirname)
 {
     oe_errno_t r;
@@ -166,10 +219,8 @@ static void _dump_file(fs_t* fs, const char* path)
 {
     void* data;
     size_t size;
-    oe_errno_t r;
 
-    r = fs->fs_load(fs, path, &data, &size);
-    OE_TEST(r == OE_EOK);
+    OE_TEST(_load(fs, path, &data, &size) == 0);
 
     printf("<<<<<<<< _dump_file(%s): %zu bytes\n", path, size);
 
@@ -221,8 +272,7 @@ static void _update_file(fs_t* fs, const char* path)
         void* data;
         size_t size;
 
-        r = fs->fs_load(fs, path, &data, &size);
-        OE_TEST(r == OE_EOK);
+        OE_TEST(_load(fs, path, &data, &size) == 0);
         OE_TEST(size == buf.size);
         OE_TEST(memcmp(data, buf.data, size) == 0);
 
