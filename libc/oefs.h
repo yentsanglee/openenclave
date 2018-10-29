@@ -175,8 +175,6 @@ typedef struct _oefs
     uint8_t* bitmap;
     uint8_t* bitmap_copy;
     size_t bitmap_size;
-
-    bool dirty;
 } oefs_t;
 
 typedef struct _oefs_block

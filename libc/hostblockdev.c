@@ -7,6 +7,10 @@
 #include <string.h>
 #include "blockdev.h"
 
+#if 0
+#define DUMP
+#endif
+
 typedef struct _host_block_dev
 {
     oe_block_dev_t base;
@@ -40,6 +44,10 @@ static int _host_block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
     typedef oe_ocall_block_dev_get_args_t args_t;
     args_t* args = NULL;
     const uint16_t func = OE_OCALL_BLOCK_DEVICE_GET;
+
+#ifdef DUMP
+    printf("HOST.GET{%u}\n", blkno);
+#endif
 
     if (!device || !data)
         goto done;
@@ -79,6 +87,10 @@ static int _host_block_dev_put(
     typedef oe_ocall_block_dev_put_args_t args_t;
     args_t* args = NULL;
     const uint16_t func = OE_OCALL_BLOCK_DEVICE_PUT;
+
+#ifdef DUMP
+    printf("HOST.PUT{%u}\n", blkno);
+#endif
 
     if (!device || !data)
         goto done;
