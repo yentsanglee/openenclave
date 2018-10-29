@@ -1053,7 +1053,6 @@ static oefs_result_t _path_to_ino(
         }
         else
         {
-            oefs_result_t r;
             oefs_dirent_t* ent;
 
             CHECK(_opendir_by_ino(oefs, current_ino, &dir));
@@ -1061,8 +1060,13 @@ static oefs_result_t _path_to_ino(
             dir_ino = current_ino;
             current_ino = 0;
 
-            while ((r = oefs_readdir(dir, &ent)) == OEFS_OK && ent)
+            for (;;)
             {
+                CHECK(oefs_readdir(dir, &ent));
+
+                if (!ent)
+                    break;
+
                 /* If final path element or a directory. */
                 if (final_element || ent->d_type == OEFS_DT_DIR)
                 {
@@ -1080,17 +1084,10 @@ static oefs_result_t _path_to_ino(
                 }
             }
 
-            if (r != OEFS_OK)
-                goto done;
-
             if (!current_ino)
-            {
-                result = OEFS_NOT_FOUND;
-                goto done;
-            }
+                RAISE(OEFS_NOT_FOUND);
 
-            if (oefs_closedir(dir) != OEFS_OK)
-                goto done;
+            CHECK(oefs_closedir(dir));
             dir = NULL;
         }
     }
@@ -1126,17 +1123,11 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
     uint8_t empty_block[OEFS_BLOCK_SIZE];
 
     if (!dev || num_blocks < OEFS_BITS_PER_BLOCK)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Fail if num_blocks is not a multiple of the block size. */
     if (num_blocks % OEFS_BITS_PER_BLOCK)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Initialize an empty block. */
     memset(empty_block, 0, sizeof(empty_block));
@@ -1146,17 +1137,11 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
 
     /* Write empty block one. */
     if (dev->put(dev, blkno++, empty_block) != 0)
-    {
-        result = OEFS_FAILED;
-        goto done;
-    }
+        RAISE(OEFS_FAILED);
 
     /* Write empty block two. */
     if (dev->put(dev, blkno++, empty_block) != 0)
-    {
-        result = OEFS_FAILED;
-        goto done;
-    }
+        RAISE(OEFS_FAILED);
 
     /* Write the super block */
     {
@@ -1168,10 +1153,7 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
         sb.s_free_blocks = num_blocks - 3;
 
         if (dev->put(dev, blkno++, &sb) != 0)
-        {
-            result = OEFS_FAILED;
-            goto done;
-        }
+            RAISE(OEFS_FAILED);
     }
 
     /* Write the first bitmap block. */
@@ -1189,20 +1171,14 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
 
         /* Write the block. */
         if (dev->put(dev, blkno++, &block) != 0)
-        {
-            result = OEFS_FAILED;
-            goto done;
-        }
+            RAISE(OEFS_FAILED);
     }
 
     /* Write the subsequent (empty) bitmap blocks. */
     for (size_t i = 1; i < num_bitmap_blocks; i++)
     {
         if (dev->put(dev, blkno++, &empty_block) != 0)
-        {
-            result = OEFS_FAILED;
-            goto done;
-        }
+            RAISE(OEFS_FAILED);
     }
 
     /* Write the root directory inode. */
@@ -1225,10 +1201,7 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
         };
 
         if (dev->put(dev, blkno++, &root_inode) != 0)
-        {
-            result = OEFS_FAILED;
-            goto done;
-        }
+            RAISE(OEFS_FAILED);
     }
 
     /* Write the ".." and "." directory entries for the root directory.  */
@@ -1254,26 +1227,17 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
         memcpy(blocks, dir_entries, sizeof(dir_entries));
 
         if (dev->put(dev, blkno++, &blocks[0]) != 0)
-        {
-            result = OEFS_FAILED;
-            goto done;
-        }
+            RAISE(OEFS_FAILED);
 
         if (dev->put(dev, blkno++, &blocks[1]) != 0)
-        {
-            result = OEFS_FAILED;
-            goto done;
-        }
+            RAISE(OEFS_FAILED);
     }
 
     /* Write the remaining empty blocks. */
     for (size_t i = 0; i < num_blocks - 3; i++)
     {
         if (dev->put(dev, blkno++, &empty_block) != 0)
-        {
-            result = OEFS_FAILED;
-            goto done;
-        }
+            RAISE(OEFS_FAILED);
     }
 
     result = OEFS_OK;
@@ -1318,8 +1282,7 @@ oefs_result_t oefs_size(size_t num_blocks, size_t* size)
     if (size)
         *size = 0;
 
-    if ((result = oefs_mkfs(&dev.base, num_blocks)) != OEFS_OK)
-        goto done;
+    CHECK(oefs_mkfs(&dev.base, num_blocks));
 
     if (size)
         *size = dev.size;
@@ -1330,7 +1293,7 @@ oefs_result_t oefs_size(size_t num_blocks, size_t* size)
         size_t size = (3 + num_bitmap_blocks + num_blocks) * OEFS_BLOCK_SIZE;
 
         if (size != dev.size)
-            goto done;
+            RAISE(OEFS_SANITY);
     }
 
     result = OEFS_OK;
@@ -1356,7 +1319,7 @@ oefs_result_t oefs_read(
 
     /* Check parameters */
     if (!file || !file->oefs || (!data && size))
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* The index of the first block to read. */
     first = file->offset / OEFS_BLOCK_SIZE;
@@ -1445,10 +1408,10 @@ oefs_result_t oefs_write(
 
     /* Check parameters */
     if (!file || !file->oefs || (!data && size) || !nwritten)
-        goto done;
+        RAISE(OEFS_BAD_PARAMETER);
 
     if (!_sane_file(file))
-        goto done;
+        RAISE(OEFS_SANITY);
 
     /* The index of the first block to write. */
     first = file->offset / OEFS_BLOCK_SIZE;
@@ -1525,18 +1488,17 @@ oefs_result_t oefs_write(
         buf_u32_t blknos = BUF_U32_INITIALIZER;
 
         /* Write the new blocks. */
-        if (_write_data(file->oefs, ptr, remaining, &blknos) != OEFS_OK)
-            goto done;
+        CHECK(_write_data(file->oefs, ptr, remaining, &blknos));
 
         /* Append these block numbers to the block-numbers chain. */
-        if (_append_block_chain(file, &blknos) != OEFS_OK)
-            goto done;
+        CHECK(_append_block_chain(file, &blknos));
 
         /* Update the inode's total_blocks */
         file->inode.i_nblocks += blknos.size;
 
         /* Append these block numbers to the file. */
-        buf_u32_append(&file->blknos, blknos.data, blknos.size);
+        if (buf_u32_append(&file->blknos, blknos.data, blknos.size) != 0)
+            RAISE(OEFS_OUT_OF_MEMORY);
 
         buf_u32_release(&blknos);
 
