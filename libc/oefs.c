@@ -247,7 +247,7 @@ static oe_errno_t _fs_close(fs_file_t* file);
 
 static oe_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** dirent);
 
-static oe_errno_t oefs_closedir(fs_dir_t* dir);
+static oe_errno_t _fs_closedir(fs_dir_t* dir);
 
 static oe_errno_t _fs_unlink(fs_t* fs, const char* path);
 
@@ -1205,7 +1205,7 @@ static oe_errno_t _path_to_ino(
             if (!current_ino)
                 RAISE(OE_ENOENT);
 
-            CHECK(oefs_closedir(dir));
+            CHECK(_fs_closedir(dir));
             dir = NULL;
         }
     }
@@ -1218,7 +1218,7 @@ static oe_errno_t _path_to_ino(
 done:
 
     if (dir)
-        oefs_closedir(dir);
+        _fs_closedir(dir);
 
     return err;
 }
@@ -1528,7 +1528,7 @@ done:
     return err;
 }
 
-static oe_errno_t oefs_closedir(fs_dir_t* dir)
+static oe_errno_t _fs_closedir(fs_dir_t* dir)
 {
     oe_errno_t err = OE_EOK;
 
@@ -2322,7 +2322,7 @@ oe_errno_t oefs_initialize(fs_t** fs_out, oe_block_dev_t* dev)
     /* Directory handle methods. */
     oefs->base.fs_opendir = _fs_opendir;
     oefs->base.fs_readdir = _fs_readdir;
-    oefs->base.fs_closedir = oefs_closedir;
+    oefs->base.fs_closedir = _fs_closedir;
 
     *fs_out = &oefs->base;
     oefs = NULL;
