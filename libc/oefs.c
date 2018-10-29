@@ -43,31 +43,50 @@
 
 #define COUNTOF(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
 
+/* The logical block number of the root directory inode. */
 #define OEFS_ROOT_INO 1
 
+/* The physical block number of the super block. */
 #define SUPER_BLOCK_PHYSICAL_BLKNO 2
 
+/* The first physical block number of the block bitmap. */
 #define BITMAP_PHYSICAL_BLKNO 3
 
 struct _oefs_file
 {
     oefs_t* oefs;
+
+    /* The file's inode number. */
     uint32_t ino;
+
+    /* The file's inode */
     oefs_inode_t inode;
+
+    /* The block numbers that contain the file's data. */
     buf_u32_t blknos;
+
+    /* The block numbers that contain the file's block numbers. */
     buf_u32_t bnode_blknos;
-    uint32_t last_bnode_blkno;
-    oefs_bnode_t last_bnode;
+
+    /* The file offset (or current position). */
     uint32_t offset;
+
     bool eof;
 };
 
 struct _oefs_dir
 {
+    /* The inode number of this directory. */
     uint32_t ino;
+
+    /* The open file which contains the directory entries. */
     oefs_file_t* file;
-    oefs_dirent_t dirent;
+
+    /* The current directory entry. */
+    oefs_dirent_t ent;
 };
+
+/*BOOKMARK*/
 
 static __inline bool _test_bit(const uint8_t* data, uint32_t index)
 {
@@ -175,17 +194,9 @@ static oefs_result_t _load_blknos(
     oefs_t* oefs,
     oefs_inode_t* inode,
     buf_u32_t* bnode_blknos,
-    buf_u32_t* blknos,
-    uint32_t* last_bnode_blkno,
-    oefs_bnode_t* last_bnode)
+    buf_u32_t* blknos)
 {
     oefs_result_t result = OEFS_FAILED;
-
-    if (last_bnode_blkno)
-        *last_bnode_blkno = 0;
-
-    if (last_bnode)
-        memset(last_bnode, 0, sizeof(oefs_bnode_t));
 
     /* Collect direct block numbers. */
     {
@@ -222,16 +233,6 @@ static oefs_result_t _load_blknos(
             {
                 if (buf_u32_append(blknos, &bnode.b_blocks[i], 1) != 0)
                     goto done;
-            }
-
-            /* Save the last bnode in the chain. */
-            if (!bnode.b_next)
-            {
-                if (last_bnode_blkno)
-                    *last_bnode_blkno = next;
-
-                if (last_bnode)
-                    *last_bnode = bnode;
             }
 
             next = bnode.b_next;
@@ -273,9 +274,7 @@ static oefs_result_t _open_file(
             oefs,
             &file->inode,
             &file->bnode_blknos,
-            &file->blknos,
-            &file->last_bnode_blkno,
-            &file->last_bnode) != OEFS_OK)
+            &file->blknos) != OEFS_OK)
     {
         goto done;
     }
@@ -499,7 +498,7 @@ static oefs_result_t _append_block_chain(
     uint32_t count;
     uint32_t blkno;
     uint32_t* next;
-    oefs_bnode_t bnode = file->last_bnode;
+    oefs_bnode_t bnode;
 
     if (file->inode.i_next == 0)
     {
@@ -511,11 +510,18 @@ static oefs_result_t _append_block_chain(
     }
     else
     {
-        object = &file->last_bnode;
-        slots = file->last_bnode.b_blocks;
-        count = COUNTOF(file->last_bnode.b_blocks);
-        blkno = file->last_bnode_blkno;
-        next = &file->last_bnode.b_next;
+        if (file->bnode_blknos.size == 0)
+            goto done;
+
+        blkno = file->bnode_blknos.data[file->bnode_blknos.size-1];
+
+        if (_read_block(file->oefs, blkno, &bnode) != OEFS_OK)
+            goto done;
+
+        object = &bnode;
+        slots = bnode.b_blocks;
+        count = COUNTOF(bnode.b_blocks);
+        next = &bnode.b_next;
     }
 
     while (rem)
@@ -558,13 +564,6 @@ static oefs_result_t _append_block_chain(
             if (_write_block(file->oefs, blkno, object) != 0)
                 goto done;
         }
-    }
-
-    /* Update the last bnode if it changed. */
-    if (object == &bnode)
-    {
-        file->last_bnode = bnode;
-        file->last_bnode_blkno = blkno;
     }
 
     result = OEFS_OK;
@@ -782,9 +781,7 @@ static oefs_result_t _truncate_file(oefs_file_t* file)
     file->inode.i_size = 0;
     file->inode.i_next = 0;
     file->inode.i_nblocks = 0;
-    file->last_bnode_blkno = 0;
     memset(file->inode.i_blocks, 0, sizeof(file->inode.i_blocks));
-    memset(&file->last_bnode, 0, sizeof(file->last_bnode));
 
     /* Update the file struct. */
     buf_u32_clear(&file->blknos);
@@ -1749,19 +1746,19 @@ done:
     return result;
 }
 
-oefs_result_t oefs_readdir(oefs_dir_t* dir, oefs_dirent_t** dirent)
+oefs_result_t oefs_readdir(oefs_dir_t* dir, oefs_dirent_t** ent)
 {
     oefs_result_t result = OEFS_FAILED;
     oefs_result_t r;
     int32_t nread = 0;
 
-    if (dirent)
-        *dirent = NULL;
+    if (ent)
+        *ent = NULL;
 
     if (!dir || !dir->file)
         goto done;
 
-    r = oefs_read(dir->file, &dir->dirent, sizeof(oefs_dirent_t), &nread);
+    r = oefs_read(dir->file, &dir->ent, sizeof(oefs_dirent_t), &nread);
 
     if (r != OEFS_OK)
         goto done;
@@ -1777,7 +1774,7 @@ oefs_result_t oefs_readdir(oefs_dir_t* dir, oefs_dirent_t** dirent)
     if (nread != sizeof(oefs_dirent_t))
         goto done;
 
-    *dirent = &dir->dirent;
+    *ent = &dir->ent;
     result = OEFS_OK;
 
 done:
