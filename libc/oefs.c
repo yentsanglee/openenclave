@@ -1543,6 +1543,7 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
     oefs_result_t result = OEFS_FAILED;
     size_t num_blocks;
     uint8_t* bitmap = NULL;
+    uint8_t* bitmap_copy = NULL;
     oefs_t* oefs = NULL;
 
     if (oefs_out)
@@ -1565,6 +1566,9 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
     if (oefs->sb.s_magic != OEFS_SUPER_BLOCK_MAGIC)
         RAISE(OEFS_SANITY);
 
+    /* Make copy of super block. */
+    memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs->sb_copy));
+
     /* Get the number of blocks. */
     num_blocks = oefs->sb.s_nblocks;
 
@@ -1584,6 +1588,10 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
         if (!(bitmap = calloc(1, bitmap_size)))
             RAISE(OEFS_OUT_OF_MEMORY);
 
+        /* Allocate the bitmap. */
+        if (!(bitmap_copy = calloc(1, bitmap_size)))
+            RAISE(OEFS_OUT_OF_MEMORY);
+
         /* Read the bitset into memory */
         for (size_t i = 0; i < num_bitmap_blocks; i++)
         {
@@ -1592,6 +1600,9 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
             if (dev->get(dev, BITMAP_PHYSICAL_BLKNO + i, ptr) != 0)
                 RAISE(OEFS_FAILED);
         }
+
+        /* Make copy of the bitmap. */
+        memcpy(bitmap_copy, bitmap, bitmap_size);
 
         /* The first three bits should always be set. These include:
          * (1) The root inode block.
@@ -1606,8 +1617,10 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
         }
 
         oefs->bitmap = bitmap;
+        oefs->bitmap_copy = bitmap_copy;
         oefs->bitmap_size = bitmap_size;
         bitmap = NULL;
+        bitmap_copy = NULL;
     }
 
     /* Check the root inode. */
@@ -1636,6 +1649,9 @@ done:
     if (bitmap)
         free(bitmap);
 
+    if (bitmap_copy)
+        free(bitmap_copy);
+
     return result;
 }
 
@@ -1643,10 +1659,11 @@ oefs_result_t oefs_release(oefs_t* oefs)
 {
     oefs_result_t result = OEFS_FAILED;
 
-    if (!oefs || !oefs->bitmap)
+    if (!oefs || !oefs->bitmap || !oefs->bitmap_copy)
         RAISE(OEFS_BAD_PARAMETER);
 
     free(oefs->bitmap);
+    free(oefs->bitmap_copy);
     memset(oefs, 0, sizeof(oefs_t));
     free(oefs);
 

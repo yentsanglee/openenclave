@@ -168,9 +168,14 @@ OE_STATIC_ASSERT(sizeof(oefs_stat_t) == 48);
 typedef struct _oefs
 {
     oe_block_dev_t* dev;
+
     oefs_super_block_t sb;
+    oefs_super_block_t sb_copy;
+
     uint8_t* bitmap;
+    uint8_t* bitmap_copy;
     size_t bitmap_size;
+
     bool dirty;
 } oefs_t;
 
