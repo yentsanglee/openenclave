@@ -47,26 +47,26 @@
 #define COUNTOF(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
 
 // clang-format off
-#define CHECK(RESULT)                      \
-    do                                     \
-    {                                      \
-        oefs_result_t __result__ = RESULT; \
-        if (__result__ != OEFS_OK)         \
-        {                                  \
-            result = __result__;           \
-            goto done;                     \
-        }                                  \
-    }                                      \
+#define CHECK(ERR)                \
+    do                            \
+    {                             \
+        oe_errno_t __err__ = ERR; \
+        if (__err__ < 0)          \
+        {                         \
+            err = __err__;        \
+            goto done;            \
+        }                         \
+    }                             \
     while (0)
 // clang-format on
 
 // clang-format off
-#define RAISE(RESULT)    \
-    do                   \
-    {                    \
-        result = RESULT; \
-        goto done;       \
-    }                    \
+#define RAISE(ERR) \
+    do             \
+    {              \
+        err = ERR; \
+        goto done; \
+    }              \
     while (0)
 // clang-format on
 
@@ -145,85 +145,79 @@ INLINE uint32_t _get_physical_blkno(oefs_t* oefs, uint32_t blkno)
     return blkno + (3 + num_bitmap_blocks) - 1;
 }
 
-static oefs_result_t _read_block(oefs_t* oefs, size_t blkno, void* block)
+static oe_errno_t _read_block(oefs_t* oefs, size_t blkno, void* block)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
     if (blkno == 0 || blkno > oefs->sb.read.s_nblocks)
-        RAISE(OEFS_OUT_OF_BOUNDS);
+        RAISE(OE_EIO);
 
     /* Sanity check: make sure the block is not free. */
     if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, blkno - 1))
-        RAISE(OEFS_SANITY);
+        RAISE(OE_EIO);
 
     /* Convert the logical block number to a physical block number. */
     physical_blkno = _get_physical_blkno(oefs, blkno);
 
     /* Get the physical block. */
     if (oefs->dev->get(oefs->dev, physical_blkno, block) != 0)
-        RAISE(OEFS_FAILED);
-
-    result = OEFS_OK;
+        RAISE(OE_EIO);
 
 done:
-    return result;
+    return err;
 }
 
-static oefs_result_t _write_block(oefs_t* oefs, size_t blkno, const void* block)
+static oe_errno_t _write_block(oefs_t* oefs, size_t blkno, const void* block)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
     if (blkno == 0 || blkno > oefs->sb.read.s_nblocks)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Sanity check: make sure the block is not free. */
     if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, blkno - 1))
-        RAISE(OEFS_SANITY);
+        RAISE(OE_EIO);
 
     /* Convert the logical block number to a physical block number. */
     physical_blkno = _get_physical_blkno(oefs, blkno);
 
     /* Get the physical block. */
     if (oefs->dev->put(oefs->dev, physical_blkno, block) != 0)
-        RAISE(OEFS_FAILED);
-
-    result = OEFS_OK;
+        RAISE(OE_EIO);
 
 done:
-    return result;
+    return err;
 }
 
-static oefs_result_t _load_inode(
+static oe_errno_t _load_inode(
     oefs_t* oefs,
     uint32_t ino,
     oefs_inode_t* inode)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
 
     /* Read this inode into memory. */
     CHECK(_read_block(oefs, ino, inode));
 
     /* Check the inode magic number. */
     if (inode->i_magic != OEFS_INODE_MAGIC)
-        RAISE(OEFS_SANITY);
-
-    result = OEFS_OK;
+        RAISE(OE_EIO);
 
 done:
-    return result;
+    return err;
 }
 
-static oefs_result_t _load_blknos(
+static oe_errno_t _load_blknos(
     oefs_t* oefs,
     oefs_inode_t* inode,
     buf_u32_t* bnode_blknos,
     buf_u32_t* blknos)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
 
     /* Collect direct block numbers from the inode. */
     {
@@ -232,7 +226,7 @@ static oefs_result_t _load_blknos(
         for (size_t i = 0; i < n && inode->i_blocks[i]; i++)
         {
             if (buf_u32_append(blknos, &inode->i_blocks[i], 1) != 0)
-                RAISE(OEFS_OUT_OF_MEMORY);
+                RAISE(OE_ENOMEM);
         }
     }
 
@@ -250,7 +244,7 @@ static oefs_result_t _load_blknos(
 
             /* Append this bnode blkno. */
             if (buf_u32_append(bnode_blknos, &next, 1) != 0)
-                RAISE(OEFS_OUT_OF_MEMORY);
+                RAISE(OE_ENOMEM);
 
             n = sizeof(bnode.b_blocks) / sizeof(uint32_t);
 
@@ -258,35 +252,33 @@ static oefs_result_t _load_blknos(
             for (size_t i = 0; i < n && bnode.b_blocks[i]; i++)
             {
                 if (buf_u32_append(blknos, &bnode.b_blocks[i], 1) != 0)
-                    RAISE(OEFS_OUT_OF_MEMORY);
+                    RAISE(OE_ENOMEM);
             }
 
             next = bnode.b_next;
         }
     }
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-static oefs_result_t _open_file(
+static oe_errno_t _open_file(
     oefs_t* oefs,
     uint32_t ino,
     oefs_file_t** file_out)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     oefs_file_t* file = NULL;
 
     if (file_out)
         *file_out = NULL;
 
     if (!oefs || !ino || !file_out)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     if (!(file = calloc(1, sizeof(oefs_file_t))))
-        RAISE(OEFS_OUT_OF_MEMORY);
+        RAISE(OE_ENOMEM);
 
     file->oefs = oefs;
     file->ino = ino;
@@ -300,8 +292,6 @@ static oefs_result_t _open_file(
     *file_out = file;
     file = NULL;
 
-    result = OEFS_OK;
-
 done:
 
     if (file)
@@ -310,7 +300,7 @@ done:
         free(file);
     }
 
-    return result;
+    return err;
 }
 
 static oefs_super_block_t* _sb_write(oefs_t* oefs)
@@ -325,9 +315,9 @@ static uint8_t* _bitmap_write(oefs_t* oefs)
     return oefs->bitmap.__write;
 }
 
-static oefs_result_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
+static oe_errno_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
 
     *blkno = 0;
 
@@ -338,40 +328,37 @@ static oefs_result_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
             _set_bit(_bitmap_write(oefs), oefs->bitmap_size, i);
             *blkno = i + 1;
             _sb_write(oefs)->s_free_blocks--;
-            RAISE(OEFS_OK);
+            RAISE(0);
         }
     }
 
-    RAISE(OEFS_NOT_FOUND);
+    RAISE(OE_ENOSPC);
 
 done:
-    return result;
+    return err;
 }
 
-static oefs_result_t _unassign_blkno(oefs_t* oefs, uint32_t blkno)
+static oe_errno_t _unassign_blkno(oefs_t* oefs, uint32_t blkno)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     uint32_t nbits = oefs->bitmap_size * 8;
     uint32_t index = blkno - 1;
 
     if (blkno == 0 || index >= nbits)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
-    if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, index))
-        RAISE(OEFS_SANITY);
+    assert(_test_bit(oefs->bitmap.read, oefs->bitmap_size, index));
 
     _clr_bit(_bitmap_write(oefs), oefs->bitmap_size, index);
     _sb_write(oefs)->s_free_blocks++;
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-static oefs_result_t _flush_super_block(oefs_t* oefs)
+static oe_errno_t _flush_super_block(oefs_t* oefs)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
 
     /* Flush the superblock if it changed. */
     if (memcmp(&oefs->sb, &oefs->sb_copy, sizeof(oefs_super_block_t)) != 0)
@@ -379,20 +366,18 @@ static oefs_result_t _flush_super_block(oefs_t* oefs)
         const uint32_t blkno = SUPER_BLOCK_PHYSICAL_BLKNO;
 
         if (oefs->dev->put(oefs->dev, blkno, &oefs->sb) != 0)
-            RAISE(OEFS_FAILED);
+            RAISE(OE_EFAIL);
 
         memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs_super_block_t));
     }
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-static oefs_result_t _flush_bitmap(oefs_t* oefs)
+static oe_errno_t _flush_bitmap(oefs_t* oefs)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     size_t num_bitmap_blocks;
 
     /* Calculate the number of bitmap blocks. */
@@ -412,21 +397,19 @@ static oefs_result_t _flush_bitmap(oefs_t* oefs)
             uint32_t blkno = BITMAP_PHYSICAL_BLKNO + i;
 
             if (oefs->dev->put(oefs->dev, blkno, block) != 0)
-                RAISE(OEFS_FAILED);
+                RAISE(OE_EFAIL);
 
             memcpy(block_copy, block, OEFS_BLOCK_SIZE);
         }
     }
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-static oefs_result_t _flush(oefs_t* oefs)
+static oe_errno_t _flush(oefs_t* oefs)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
 
     if (oefs->dirty)
     {
@@ -435,19 +418,17 @@ static oefs_result_t _flush(oefs_t* oefs)
         oefs->dirty = false;
     }
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-static oefs_result_t _write_data(
+static oe_errno_t _write_data(
     oefs_t* oefs,
     const void* data,
     uint32_t size,
     buf_u32_t* blknos)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     const uint8_t* ptr = (const uint8_t*)data;
     uint32_t remaining = size;
 
@@ -463,7 +444,7 @@ static oefs_result_t _write_data(
 
         /* Append the new block number to the array of blocks numbers. */
         if (buf_u32_append(blknos, &blkno, 1) != 0)
-            RAISE(OEFS_OUT_OF_MEMORY);
+            RAISE(OE_ENOMEM);
 
         /* Calculate bytes to copy to the block. */
         copy_size = (remaining > OEFS_BLOCK_SIZE) ? OEFS_BLOCK_SIZE : remaining;
@@ -482,14 +463,12 @@ static oefs_result_t _write_data(
         remaining -= copy_size;
     }
 
-    result = OEFS_OK;
-
 done:
 
-    if (_flush(oefs) != OEFS_OK)
-        return OEFS_FAILED;
+    if (_flush(oefs) != 0)
+        return OE_EFAIL;
 
-    return result;
+    return err;
 }
 
 static void _fill_slots(
@@ -518,11 +497,11 @@ static void _fill_slots(
     *rem_in_out = rem;
 }
 
-static oefs_result_t _append_block_chain(
+static oe_errno_t _append_block_chain(
     oefs_file_t* file,
     const buf_u32_t* blknos)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     const uint32_t* ptr = blknos->data;
     uint32_t rem = blknos->size;
 
@@ -543,8 +522,10 @@ static oefs_result_t _append_block_chain(
     }
     else
     {
+        assert(file->bnode_blknos.size != 0);
+
         if (file->bnode_blknos.size == 0)
-            RAISE(OEFS_SANITY);
+            RAISE(OE_EIO);
 
         blkno = file->bnode_blknos.data[file->bnode_blknos.size-1];
 
@@ -567,12 +548,12 @@ static oefs_result_t _append_block_chain(
             uint32_t new_blkno;
 
             /* Assign a block number for a new bnode. */
-            if (_assign_blkno(file->oefs, &new_blkno) != OEFS_OK)
-                RAISE(OEFS_FAILED);
+            if (_assign_blkno(file->oefs, &new_blkno) != 0)
+                RAISE(OE_EFAIL);
 
             /* Append the bnode blkno to the file struct. */
             if (buf_u32_append(&file->bnode_blknos, &new_blkno, 1) != 0)
-                RAISE(OEFS_OUT_OF_MEMORY);
+                RAISE(OE_ENOMEM);
 
             *next = new_blkno;
 
@@ -596,10 +577,8 @@ static oefs_result_t _append_block_chain(
         }
     }
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
 static bool _sane_file(oefs_file_t* file)
@@ -616,37 +595,37 @@ static bool _sane_file(oefs_file_t* file)
     return true;
 }
 
-static oefs_result_t _split_path(
+static oe_errno_t _split_path(
     const char* path,
     char dirname[OEFS_PATH_MAX],
     char basename[OEFS_PATH_MAX])
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     char* slash;
 
     /* Reject paths that are too long. */
     if (strlen(path) >= OEFS_PATH_MAX)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Reject paths that are not absolute */
     if (path[0] != '/')
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Handle root directory up front */
     if (strcmp(path, "/") == 0)
     {
         strlcpy(dirname, "/", OEFS_PATH_MAX);
         strlcpy(basename, "/", OEFS_PATH_MAX);
-        RAISE(OEFS_OK);
+        RAISE(0);
     }
 
     /* This cannot fail (prechecked) */
     if (!(slash = strrchr(path, '/')))
-        RAISE(OEFS_UNEXPECTED);
+        RAISE(OE_EINVAL);
 
     /* If path ends with '/' character */
     if (!slash[1])
-        RAISE(OEFS_BAD_PATH);
+        RAISE(OE_EINVAL);
 
     /* Split the path */
     {
@@ -668,20 +647,18 @@ static oefs_result_t _split_path(
         strlcpy(basename, slash + 1, OEFS_PATH_MAX);
     }
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-static oefs_result_t _create_file(
+static oe_errno_t _create_file(
     oefs_t* oefs,
     uint32_t dir_ino,
     const char* name,
     uint8_t type,
     uint32_t* ino_out)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     uint32_t ino;
     oefs_file_t* file = NULL;
 
@@ -689,7 +666,7 @@ static oefs_result_t _create_file(
         *ino_out = 0;
 
     if (!oefs || !dir_ino || !name || strlen(name) >= OEFS_PATH_MAX)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* ATTN: should create replace an existing file? */
 
@@ -707,7 +684,7 @@ static oefs_result_t _create_file(
         else if (type == OEFS_DT_REG)
             inode.i_mode = OEFS_S_REG_DEFAULT;
         else
-            RAISE(OEFS_BAD_PARAMETER);
+            RAISE(OE_EINVAL);
 
         CHECK(_assign_blkno(oefs, &ino));
         CHECK(_write_block(oefs, ino, &inode));
@@ -728,11 +705,13 @@ static oefs_result_t _create_file(
             if (n == 0)
                 break;
 
+            assert(n == sizeof(ent));
+
             if (n != sizeof(ent))
-                RAISE(OEFS_SANITY);
+                RAISE(OE_EIO);
 
             if (strcmp(ent.d_name, name) == 0)
-                RAISE(OEFS_ALREADY_EXISTS);
+                RAISE(OE_EEXIST);
         }
 
         /* Append the entry to the directory. */
@@ -747,32 +726,30 @@ static oefs_result_t _create_file(
             CHECK(oefs_write(file, &ent, sizeof(ent), &n));
 
             if (n != sizeof(ent))
-                RAISE(OEFS_FAILED);
+                RAISE(OE_EFAIL);
         }
     }
 
     if (ino_out)
         *ino_out = ino;
 
-    result = OEFS_OK;
-
 done:
 
     if (file)
         oefs_close(file);
 
-    if (_flush(oefs) != OEFS_OK)
-        return OEFS_FAILED;
+    if (_flush(oefs) != 0)
+        return OE_EFAIL;
 
-    return result;
+    return err;
 }
 
-static oefs_result_t _truncate_file(oefs_file_t* file)
+static oe_errno_t _truncate_file(oefs_file_t* file)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
 
     if (!file)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Release all the data blocks. */
     for (size_t i = 0; i < file->blknos.size; i++)
@@ -796,22 +773,20 @@ static oefs_result_t _truncate_file(oefs_file_t* file)
     /* Sync the inode to disk. */
     CHECK(_write_block(file->oefs, file->ino, &file->inode));
 
-    result = OEFS_OK;
-
 done:
 
-    if (_flush(file->oefs) != OEFS_OK)
-        return OEFS_FAILED;
+    if (_flush(file->oefs) != 0)
+        return OE_EFAIL;
 
-    return result;
+    return err;
 }
 
-static oefs_result_t _load_file(
+static oe_errno_t _load_file(
     oefs_file_t* file,
     void** data_out,
     size_t* size_out)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     buf_t buf = BUF_INITIALIZER;
     char data[OEFS_BLOCK_SIZE];
     int32_t n;
@@ -827,51 +802,47 @@ static oefs_result_t _load_file(
             break;
 
         if (buf_append(&buf, data, n) != 0)
-            RAISE(OEFS_OUT_OF_MEMORY);
+            RAISE(OE_ENOMEM);
     }
 
     *data_out = buf.data;
     *size_out = buf.size;
     memset(&buf, 0, sizeof(buf));
 
-    result = OEFS_OK;
-
 done:
 
     buf_release(&buf);
 
-    return result;
+    return err;
 }
 
-static oefs_result_t _release_inode(oefs_t* oefs, uint32_t ino)
+static oe_errno_t _release_inode(oefs_t* oefs, uint32_t ino)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     oefs_file_t* file = NULL;
 
     CHECK(_open_file(oefs, ino, &file));
     CHECK(_truncate_file(file));
     CHECK(_unassign_blkno(oefs, file->ino));
 
-    result = OEFS_OK;
-
 done:
 
     if (file)
         oefs_close(file);
 
-    if (_flush(oefs) != OEFS_OK)
-        return OEFS_FAILED;
+    if (_flush(oefs) != 0)
+        return OE_EFAIL;
 
-    return result;
+    return err;
 }
 
-static oefs_result_t _unlink_file(
+static oe_errno_t _unlink_file(
     oefs_t* oefs,
     uint32_t dir_ino,
     uint32_t ino,
     const char* name)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     oefs_file_t* dir = NULL;
     oefs_file_t* file = NULL;
     void* data = NULL;
@@ -879,7 +850,7 @@ static oefs_result_t _unlink_file(
     oefs_inode_t inode;
 
     if (!oefs || !dir_ino || !ino)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Open the directory file. */
     CHECK(_open_file(oefs, dir_ino, &dir));
@@ -888,8 +859,12 @@ static oefs_result_t _unlink_file(
     CHECK(_load_file(dir, &data, &size));
 
     /* File must be a multiple of the entry size. */
-    if (size % sizeof(oefs_dirent_t))
-        RAISE(OEFS_SANITY);
+    {
+        assert((size % sizeof(oefs_dirent_t)) == 0);
+
+        if (size % sizeof(oefs_dirent_t))
+            RAISE(OE_EIO);
+    }
 
     /* Truncate the parent directory. */
     CHECK(_truncate_file(dir));
@@ -909,7 +884,7 @@ static oefs_result_t _unlink_file(
                 CHECK(oefs_write(dir, &entries[i], n, &nwritten));
 
                 if (nwritten != n)
-                    RAISE(OEFS_FAILED);
+                    RAISE(OE_EFAIL);
             }
         }
     }
@@ -931,8 +906,6 @@ static oefs_result_t _unlink_file(
         CHECK(_write_block(oefs, ino, &inode));
     }
 
-    result = OEFS_OK;
-
 done:
 
     if (dir)
@@ -944,16 +917,16 @@ done:
     if (data)
         free(data);
 
-    if (_flush(oefs) != OEFS_OK)
-        return OEFS_FAILED;
+    if (_flush(oefs) != 0)
+        return OE_EFAIL;
 
-    return result;
+    return err;
 }
 
-static oefs_result_t _opendir_by_ino(
+static oe_errno_t _opendir_by_ino(
     oefs_t* oefs, uint32_t ino, oefs_dir_t** dir_out)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     oefs_dir_t* dir = NULL;
     oefs_file_t* file = NULL;
 
@@ -961,12 +934,12 @@ static oefs_result_t _opendir_by_ino(
         *dir_out = NULL;
 
     if (!oefs || !ino || !dir_out)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(_open_file(oefs, ino, &file));
 
     if (!(dir = calloc(1, sizeof(oefs_dir_t))))
-        RAISE(OEFS_OUT_OF_MEMORY);
+        RAISE(OE_ENOMEM);
 
     dir->ino = ino;
     dir->file = file;
@@ -974,28 +947,26 @@ static oefs_result_t _opendir_by_ino(
 
     *dir_out = dir;
 
-    result = OEFS_OK;
-
 done:
 
     if (file)
         oefs_close(file);
 
-    return result;
+    return err;
 }
 
-static oefs_result_t _path_to_ino(
+static oe_errno_t _path_to_ino(
     oefs_t* oefs,
     const char* path,
     uint32_t* dir_ino_out,
     uint32_t* ino_out,
     uint8_t* type_out) /* oefs_dir_t.d_type */
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     char buf[OEFS_PATH_MAX];
-    const char* elements[128];
-    const uint8_t MAX_ELEMENTS = COUNTOF(elements);
-    uint8_t num_elements = 0;
+    const char* elements[OEFS_PATH_MAX];
+    const size_t MAX_ELEMENTS = COUNTOF(elements);
+    size_t num_elements = 0;
     uint8_t i;
     uint32_t current_ino = 0;
     uint32_t dir_ino = 0;
@@ -1012,18 +983,18 @@ static oefs_result_t _path_to_ino(
 
     /* Check for null parameters */
     if (!oefs || !path || !ino_out)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Check path length */
     if (strlen(path) >= OEFS_PATH_MAX)
-        RAISE(OEFS_BAD_PATH);
+        RAISE(OE_ENAMETOOLONG);
 
     /* Make copy of the path. */
     strlcpy(buf, path, sizeof(buf));
 
     /* Be sure path begins with "/" */
     if (path[0] != '/')
-        RAISE(OEFS_BAD_PATH);
+        RAISE(OE_EINVAL);
 
     elements[num_elements++] = "/";
 
@@ -1034,9 +1005,7 @@ static oefs_result_t _path_to_ino(
 
         for (p = strtok_r(buf, "/", &save); p; p = strtok_r(NULL, "/", &save))
         {
-            if (num_elements == MAX_ELEMENTS)
-                RAISE(OEFS_BUFFER_OVERFLOW);
-
+            assert(num_elements < MAX_ELEMENTS);
             elements[num_elements++] = p;
         }
     }
@@ -1091,7 +1060,7 @@ static oefs_result_t _path_to_ino(
             }
 
             if (!current_ino)
-                RAISE(OEFS_NOT_FOUND);
+                RAISE(OE_ENOENT);
 
             CHECK(oefs_closedir(dir));
             dir = NULL;
@@ -1103,14 +1072,12 @@ static oefs_result_t _path_to_ino(
 
     *ino_out = current_ino;
 
-    result = OEFS_OK;
-
 done:
 
     if (dir)
         oefs_closedir(dir);
 
-    return result;
+    return err;
 }
 
 /*
@@ -1121,19 +1088,19 @@ done:
 **==============================================================================
 */
 
-oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
+oe_errno_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     size_t num_bitmap_blocks;
     uint32_t blkno = 0;
     uint8_t empty_block[OEFS_BLOCK_SIZE];
 
     if (!dev || num_blocks < OEFS_BITS_PER_BLOCK)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Fail if num_blocks is not a multiple of the block size. */
     if (num_blocks % OEFS_BITS_PER_BLOCK)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Initialize an empty block. */
     memset(empty_block, 0, sizeof(empty_block));
@@ -1143,11 +1110,11 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
 
     /* Write empty block one. */
     if (dev->put(dev, blkno++, empty_block) != 0)
-        RAISE(OEFS_FAILED);
+        RAISE(OE_EFAIL);
 
     /* Write empty block two. */
     if (dev->put(dev, blkno++, empty_block) != 0)
-        RAISE(OEFS_FAILED);
+        RAISE(OE_EFAIL);
 
     /* Write the super block */
     {
@@ -1159,7 +1126,7 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
         sb.s_free_blocks = num_blocks - 3;
 
         if (dev->put(dev, blkno++, &sb) != 0)
-            RAISE(OEFS_FAILED);
+            RAISE(OE_EFAIL);
     }
 
     /* Write the first bitmap block. */
@@ -1177,14 +1144,14 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
 
         /* Write the block. */
         if (dev->put(dev, blkno++, &block) != 0)
-            RAISE(OEFS_FAILED);
+            RAISE(OE_EFAIL);
     }
 
     /* Write the subsequent (empty) bitmap blocks. */
     for (size_t i = 1; i < num_bitmap_blocks; i++)
     {
         if (dev->put(dev, blkno++, &empty_block) != 0)
-            RAISE(OEFS_FAILED);
+            RAISE(OE_EFAIL);
     }
 
     /* Write the root directory inode. */
@@ -1207,7 +1174,7 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
         };
 
         if (dev->put(dev, blkno++, &root_inode) != 0)
-            RAISE(OEFS_FAILED);
+            RAISE(OE_EFAIL);
     }
 
     /* Write the ".." and "." directory entries for the root directory.  */
@@ -1233,23 +1200,21 @@ oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
         memcpy(blocks, dir_entries, sizeof(dir_entries));
 
         if (dev->put(dev, blkno++, &blocks[0]) != 0)
-            RAISE(OEFS_FAILED);
+            RAISE(OE_EFAIL);
 
         if (dev->put(dev, blkno++, &blocks[1]) != 0)
-            RAISE(OEFS_FAILED);
+            RAISE(OE_EFAIL);
     }
 
     /* Write the remaining empty blocks. */
     for (size_t i = 0; i < num_blocks - 3; i++)
     {
         if (dev->put(dev, blkno++, &empty_block) != 0)
-            RAISE(OEFS_FAILED);
+            RAISE(OE_EFAIL);
     }
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
 typedef struct _block_dev
@@ -1275,9 +1240,9 @@ int _block_dev_put(oe_block_dev_t* dev, uint32_t blkno, const void* data)
     return 0;
 }
 
-oefs_result_t oefs_size(size_t num_blocks, size_t* size)
+oe_errno_t oefs_size(size_t num_blocks, size_t* size)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     block_dev_t dev;
 
     dev.base.close = _block_dev_close;
@@ -1299,22 +1264,20 @@ oefs_result_t oefs_size(size_t num_blocks, size_t* size)
         size_t size = (3 + num_bitmap_blocks + num_blocks) * OEFS_BLOCK_SIZE;
 
         if (size != dev.size)
-            RAISE(OEFS_SANITY);
+            RAISE(OE_EFAIL);
     }
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_read(
+oe_errno_t oefs_read(
     oefs_file_t* file,
     void* data,
     uint32_t size,
     int32_t* nread)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     uint32_t first;
     uint32_t i;
     uint32_t remaining;
@@ -1325,7 +1288,7 @@ oefs_result_t oefs_read(
 
     /* Check parameters */
     if (!file || !file->oefs || (!data && size))
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* The index of the first block to read. */
     first = file->offset / OEFS_BLOCK_SIZE;
@@ -1390,19 +1353,17 @@ oefs_result_t oefs_read(
     /* Calculate number of bytes read */
     *nread = size - remaining;
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_write(
+oe_errno_t oefs_write(
     oefs_file_t* file,
     const void* data,
     uint32_t size,
     int32_t* nwritten)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     uint32_t first;
     uint32_t i;
     uint32_t remaining;
@@ -1414,10 +1375,12 @@ oefs_result_t oefs_write(
 
     /* Check parameters */
     if (!file || !file->oefs || (!data && size) || !nwritten)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
+
+    assert(_sane_file(file));
 
     if (!_sane_file(file))
-        RAISE(OEFS_SANITY);
+        RAISE(OE_EINVAL);
 
     /* The index of the first block to write. */
     first = file->offset / OEFS_BLOCK_SIZE;
@@ -1504,7 +1467,7 @@ oefs_result_t oefs_write(
 
         /* Append these block numbers to the file. */
         if (buf_u32_append(&file->blknos, blknos.data, blknos.size) != 0)
-            RAISE(OEFS_OUT_OF_MEMORY);
+            RAISE(OE_ENOMEM);
 
         buf_u32_release(&blknos);
 
@@ -1518,35 +1481,31 @@ oefs_result_t oefs_write(
     /* Flush the inode to disk. */
     CHECK(_write_block(file->oefs, file->ino, &file->inode));
 
-    result = OEFS_OK;
-
     /* Calculate number of bytes written */
     *nwritten = size - remaining;
 
 done:
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_close(oefs_file_t* file)
+oe_errno_t oefs_close(oefs_file_t* file)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
 
     if (!file)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     buf_u32_release(&file->blknos);
     memset(file, 0, sizeof(oefs_file_t));
     free(file);
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
+oe_errno_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     size_t num_blocks;
     uint8_t* bitmap = NULL;
     uint8_t* bitmap_copy = NULL;
@@ -1556,21 +1515,21 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
         *oefs_out = NULL;
 
     if (!oefs_out || !dev)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     if (!(oefs = calloc(1, sizeof(oefs_t))))
-        RAISE(OEFS_OUT_OF_MEMORY);
+        RAISE(OE_ENOMEM);
 
     /* Save pointer to device (caller is responsible for releasing it). */
     oefs->dev = dev;
 
     /* Read the super block from the file system. */
     if (dev->get(dev, SUPER_BLOCK_PHYSICAL_BLKNO, &oefs->sb) != 0)
-        RAISE(OEFS_FAILED);
+        RAISE(OE_EFAIL);
 
     /* Check the superblock magic number. */
     if (oefs->sb.read.s_magic != OEFS_SUPER_BLOCK_MAGIC)
-        RAISE(OEFS_SANITY);
+        RAISE(OE_EIO);
 
     /* Make copy of super block. */
     memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs->sb_copy));
@@ -1580,7 +1539,7 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
 
     /* Check that the number of blocks is correct. */
     if (!num_blocks || (num_blocks % OEFS_BITS_PER_BLOCK))
-        RAISE(OEFS_SANITY);
+        RAISE(OE_EIO);
 
     /* Allocate space for the block bitmap. */
     {
@@ -1592,11 +1551,11 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
 
         /* Allocate the bitmap. */
         if (!(bitmap = calloc(1, bitmap_size)))
-            RAISE(OEFS_OUT_OF_MEMORY);
+            RAISE(OE_ENOMEM);
 
         /* Allocate the bitmap. */
         if (!(bitmap_copy = calloc(1, bitmap_size)))
-            RAISE(OEFS_OUT_OF_MEMORY);
+            RAISE(OE_ENOMEM);
 
         /* Read the bitset into memory */
         for (size_t i = 0; i < num_bitmap_blocks; i++)
@@ -1604,7 +1563,7 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
             uint8_t* ptr = bitmap + (i * OEFS_BLOCK_SIZE);
 
             if (dev->get(dev, BITMAP_PHYSICAL_BLKNO + i, ptr) != 0)
-                RAISE(OEFS_FAILED);
+                RAISE(OE_EFAIL);
         }
 
         /* Make copy of the bitmap. */
@@ -1619,7 +1578,7 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
             !_test_bit(bitmap, bitmap_size, 1) ||
             !_test_bit(bitmap, bitmap_size, 2))
         {
-            RAISE(OEFS_SANITY);
+            RAISE(OE_EIO);
         }
 
         oefs->bitmap.read = bitmap;
@@ -1636,13 +1595,11 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
         CHECK(_read_block(oefs, OEFS_ROOT_INO, &inode));
 
         if (inode.i_magic != OEFS_INODE_MAGIC)
-            RAISE(OEFS_SANITY);
+            RAISE(OE_EIO);
     }
 
     *oefs_out = oefs;
     oefs = NULL;
-
-    result = OEFS_OK;
 
 done:
 
@@ -1659,102 +1616,95 @@ done:
     if (bitmap_copy)
         free(bitmap_copy);
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_release(oefs_t* oefs)
+oe_errno_t oefs_release(oefs_t* oefs)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
 
     if (!oefs || !oefs->bitmap.read || !oefs->bitmap_copy)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     free(_bitmap_write(oefs));
     free(oefs->bitmap_copy);
     memset(oefs, 0, sizeof(oefs_t));
     free(oefs);
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_opendir(oefs_t* oefs, const char* path, oefs_dir_t** dir)
+oe_errno_t oefs_opendir(oefs_t* oefs, const char* path, oefs_dir_t** dir)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     uint32_t ino;
 
     if (dir)
         *dir = NULL;
 
     if (!oefs || !path || !dir)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(_path_to_ino(oefs, path, NULL, &ino, NULL));
     CHECK(_opendir_by_ino(oefs, ino, dir));
 
-    result = OEFS_OK;
-
 done:
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_readdir(oefs_dir_t* dir, oefs_dirent_t** ent)
+oe_errno_t oefs_readdir(oefs_dir_t* dir, oefs_dirent_t** ent)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     int32_t nread = 0;
 
     if (ent)
         *ent = NULL;
 
     if (!dir || !dir->file)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(oefs_read(dir->file, &dir->ent, sizeof(oefs_dirent_t), &nread));
 
     /* Check for end of file. */
     if (nread == 0)
-        RAISE(OEFS_OK);
+        RAISE(0);
 
     /* Check for an illegal read size. */
     if (nread != sizeof(oefs_dirent_t))
-        RAISE(OEFS_SANITY);
+        RAISE(OE_EBADF);
 
     *ent = &dir->ent;
-    result = OEFS_OK;
 
 done:
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_closedir(oefs_dir_t* dir)
+oe_errno_t oefs_closedir(oefs_dir_t* dir)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
 
     if (!dir || !dir->file)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     oefs_close(dir->file);
     dir->file = NULL;
     free(dir);
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_open(
+oe_errno_t oefs_open(
     oefs_t* oefs,
     const char* path,
     int flags,
     uint32_t mode,
     oefs_file_t** file_out)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     oefs_file_t* file = NULL;
     uint32_t ino = 0;
 
@@ -1762,27 +1712,25 @@ oefs_result_t oefs_open(
         *file_out = NULL;
 
     if (!oefs || !path || !file_out)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(_path_to_ino(oefs, path, NULL, &ino, NULL));
     CHECK(_open_file(oefs, ino, &file));
 
     *file_out = file;
 
-    result = OEFS_OK;
-
 done:
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_load(
+oe_errno_t oefs_load(
     oefs_t* oefs,
     const char* path,
     void** data_out,
     size_t* size_out)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     oefs_file_t* file = NULL;
     void* data = NULL;
     size_t size = 0;
@@ -1794,7 +1742,7 @@ oefs_result_t oefs_load(
         *size_out = 0;
 
     if (!oefs || !path || !data_out || !size_out)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(oefs_open(oefs, path, 0, 0, &file));
     CHECK(_load_file(file, &data, &size));
@@ -1804,8 +1752,6 @@ oefs_result_t oefs_load(
 
     data = NULL;
 
-    result = OEFS_OK;
-
 done:
 
     if (file)
@@ -1814,12 +1760,12 @@ done:
     if (data)
         free(data);
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode)
+oe_errno_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     char dirname[OEFS_PATH_MAX];
     char basename[OEFS_PATH_MAX];
     uint32_t dir_ino;
@@ -1827,7 +1773,7 @@ oefs_result_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode)
     oefs_file_t* file = NULL;
 
     if (!oefs || !path)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Split the path into parent path and final component. */
     CHECK(_split_path(path, dirname, basename));
@@ -1863,26 +1809,24 @@ oefs_result_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode)
         CHECK(oefs_write(file, &dirents, sizeof(dirents), &nwritten));
 
         if (nwritten != sizeof(dirents))
-            RAISE(OEFS_FAILED);
+            RAISE(OE_EFAIL);
     }
-
-    result = OEFS_OK;
 
 done:
 
     if (file)
         oefs_close(file);
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_create(
+oe_errno_t oefs_create(
     oefs_t* oefs,
     const char* path,
     uint32_t mode,
     oefs_file_t** file_out)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     char dirname[OEFS_PATH_MAX];
     char basename[OEFS_PATH_MAX];
     uint32_t dir_ino;
@@ -1893,7 +1837,7 @@ oefs_result_t oefs_create(
         *file_out = NULL;
 
     if (!oefs || !path || !file_out)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Split the path into parent directory and file name */
     CHECK(_split_path(path, dirname, basename));
@@ -1910,19 +1854,17 @@ oefs_result_t oefs_create(
     *file_out = file;
     file = NULL;
 
-    result = OEFS_OK;
-
 done:
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_link(
+oe_errno_t oefs_link(
     oefs_t* oefs,
     const char* old_path,
     const char* new_path)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     uint32_t ino;
     char dirname[OEFS_PATH_MAX];
     char basename[OEFS_PATH_MAX];
@@ -1931,7 +1873,7 @@ oefs_result_t oefs_link(
     uint32_t release_ino = 0;
 
     if (!old_path || !new_path)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     /* Get the inode number of the old path. */
     {
@@ -1941,7 +1883,7 @@ oefs_result_t oefs_link(
 
         /* Only regular files can be linked. */
         if (type != OEFS_DT_REG)
-            RAISE(OEFS_BAD_PARAMETER);
+            RAISE(OE_EINVAL);
     }
 
     /* Split the new path. */
@@ -1954,7 +1896,7 @@ oefs_result_t oefs_link(
         CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, &type));
 
         if (type != OEFS_DT_DIR)
-            RAISE(OEFS_BAD_PARAMETER);
+            RAISE(OE_EINVAL);
 
         CHECK(_open_file(oefs, dir_ino, &dir));
     }
@@ -1971,14 +1913,14 @@ oefs_result_t oefs_link(
             break;
 
         if (n != sizeof(ent))
-            RAISE(OEFS_SANITY);
+            RAISE(OE_EBADF);
 
         if (strcmp(ent.d_name, basename) == 0)
         {
             release_ino = ent.d_ino;
 
             if (ent.d_type != OEFS_DT_REG)
-                RAISE(OEFS_BAD_PARAMETER);
+                RAISE(OE_EINVAL);
 
             CHECK(oefs_lseek(dir, -sizeof(ent), OEFS_SEEK_CUR, NULL));
             ent.d_ino = ino;
@@ -2004,7 +1946,7 @@ oefs_result_t oefs_link(
         CHECK(oefs_write(dir, &ent, sizeof(ent), &n));
 
         if (n != sizeof(ent))
-            RAISE(OEFS_FAILED);
+            RAISE(OE_EIO);
     }
 
     /* Increment the number of links to this file. */
@@ -2020,39 +1962,35 @@ oefs_result_t oefs_link(
     if (release_ino)
         CHECK(_release_inode(oefs, release_ino));
 
-    result = OEFS_OK;
-
 done:
 
     if (dir)
         oefs_close(dir);
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_rename(
+oe_errno_t oefs_rename(
     oefs_t* oefs,
     const char* old_path,
     const char* new_path)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
 
     if (!old_path || !new_path)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(oefs_link(oefs, old_path, new_path));
     CHECK(oefs_unlink(oefs, old_path));
 
-    result = OEFS_OK;
-
 done:
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_unlink(oefs_t* oefs, const char* path)
+oe_errno_t oefs_unlink(oefs_t* oefs, const char* path)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     uint32_t dir_ino;
     uint32_t ino;
     uint8_t type;
@@ -2060,56 +1998,52 @@ oefs_result_t oefs_unlink(oefs_t* oefs, const char* path)
     char basename[OEFS_PATH_MAX];
 
     if (!oefs || !path)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(_path_to_ino(oefs, path, &dir_ino, &ino, &type));
 
     /* Only regular files can be removed. */
     if (type != OEFS_DT_REG)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(_split_path(path, dirname, basename));
     CHECK(_unlink_file(oefs, dir_ino, ino, basename));
 
-    result = OEFS_OK;
-
 done:
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_truncate(oefs_t* oefs, const char* path)
+oe_errno_t oefs_truncate(oefs_t* oefs, const char* path)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     oefs_file_t* file = NULL;
     uint32_t ino;
     uint8_t type;
 
     if (!oefs || !path)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(_path_to_ino(oefs, path, NULL, &ino, &type));
 
     /* Only regular files can be truncated. */
     if (type != OEFS_DT_REG)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(_open_file(oefs, ino, &file));
     CHECK(_truncate_file(file));
-
-    result = OEFS_OK;
 
 done:
 
     if (file)
         oefs_close(file);
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path)
+oe_errno_t oefs_rmdir(oefs_t* oefs, const char* path)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     uint32_t dir_ino;
     uint32_t ino;
     uint8_t type;
@@ -2117,13 +2051,13 @@ oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path)
     char basename[OEFS_PATH_MAX];
 
     if (!oefs || !path)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(_path_to_ino(oefs, path, &dir_ino, &ino, &type));
 
     /* The path must refer to a directory. */
     if (type != OEFS_DT_DIR)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_ENOTDIR);
 
     /* The inode must be a directory and the directory must be empty. */
     {
@@ -2132,26 +2066,24 @@ oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path)
         CHECK(_load_inode(oefs, ino, &inode));
 
         if (!(inode.i_mode & OEFS_S_IFDIR))
-            RAISE(OEFS_SANITY);
+            RAISE(OE_ENOTDIR);
 
         /* The directory must contain two entries: "." and ".." */
         if (inode.i_size != 2 * sizeof(oefs_dirent_t))
-            RAISE(OEFS_SANITY);
+            RAISE(OE_ENOTEMPTY);
     }
 
     CHECK(_split_path(path, dirname, basename));
     CHECK(_unlink_file(oefs, dir_ino, ino, basename));
 
-    result = OEFS_OK;
-
 done:
 
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat)
+oe_errno_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     oefs_inode_t inode;
     uint32_t ino;
     uint8_t type;
@@ -2160,7 +2092,7 @@ oefs_result_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat)
         memset(stat, 0, sizeof(oefs_stat_t));
 
     if (!oefs || !path || !stat)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     CHECK(_path_to_ino(oefs, path, NULL, &ino, &type));
     CHECK(_load_inode(oefs, ino, &inode));
@@ -2180,26 +2112,24 @@ oefs_result_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat)
     stat->st_mtime = inode.i_mtime;
     stat->st_ctime = inode.i_ctime;
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }
 
-oefs_result_t oefs_lseek(
+oe_errno_t oefs_lseek(
     oefs_file_t* file,
     ssize_t offset,
     int whence,
     ssize_t* offset_out)
 {
-    oefs_result_t result = OEFS_FAILED;
+    oe_errno_t err = OE_EOK;
     ssize_t new_offset;
 
     if (offset_out)
         *offset_out = 0;
 
     if (!file)
-        RAISE(OEFS_BAD_PARAMETER);
+        RAISE(OE_EINVAL);
 
     switch (whence)
     {
@@ -2220,21 +2150,19 @@ oefs_result_t oefs_lseek(
         }
         default:
         {
-            RAISE(OEFS_BAD_PARAMETER);
+            RAISE(OE_EINVAL);
         }
     }
 
     /* Check whether the new offset if out of range. */
     if (new_offset < 0 || new_offset > file->offset)
-        RAISE(OEFS_OUT_OF_BOUNDS);
+        RAISE(OE_EINVAL);
 
     file->offset = new_offset;
 
     if (offset_out)
         *offset_out = new_offset;
 
-    result = OEFS_OK;
-
 done:
-    return result;
+    return err;
 }

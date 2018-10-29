@@ -20,7 +20,7 @@ static ssize_t _file_read(oe_file_t* file, void* buf, size_t count)
     if (!file_impl || !file_impl->oefs_file)
         goto done;
 
-    if (oefs_read(file_impl->oefs_file, buf, count, &n) != OEFS_OK)
+    if (oefs_read(file_impl->oefs_file, buf, count, &n) != 0)
         goto done;
 
     ret = n;
@@ -38,7 +38,7 @@ static ssize_t _file_write(oe_file_t* file, const void* buf, size_t count)
     if (!file_impl || !file_impl->oefs_file)
         goto done;
 
-    if (oefs_write(file_impl->oefs_file, buf, count, &nwritten) != OEFS_OK)
+    if (oefs_write(file_impl->oefs_file, buf, count, &nwritten) != OE_EOK)
         goto done;
 
     ret = nwritten;
@@ -55,7 +55,7 @@ static int _file_close(oe_file_t* file)
     if (!file_impl || !file_impl->oefs_file)
         goto done;
 
-    if (oefs_close(file_impl->oefs_file) != OEFS_OK)
+    if (oefs_close(file_impl->oefs_file) != OE_EOK)
         goto done;
 
     memset(file_impl, 0, sizeof(file_impl_t));
@@ -139,7 +139,7 @@ oe_filesys_t* oefs_new_filesys(oe_block_dev_t* dev)
     oe_filesys_t* ret = NULL;
     oefs_t* oefs = NULL;
 
-    if (oefs_initialize(&oefs, dev) != OEFS_OK)
+    if (oefs_initialize(&oefs, dev) != OE_EOK)
         goto done;
 
     {

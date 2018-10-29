@@ -24,33 +24,33 @@
 
 static void _dump_dir(oefs_t* oefs, const char* dirname)
 {
-    oefs_result_t r;
+    oe_errno_t r;
     oefs_dir_t* dir;
     oefs_dirent_t* ent;
 
     r = oefs_opendir(oefs, dirname, &dir);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(dir != NULL);
 
     printf("<<<<<<<< _dump_dir(%s)\n", dirname);
 
-    while ((r = oefs_readdir(dir, &ent)) == OEFS_OK && ent)
+    while ((r = oefs_readdir(dir, &ent)) == OE_EOK && ent)
     {
         printf("name=%s\n", ent->d_name);
     }
 
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     printf(">>>>>>>>\n\n");
 
     r = oefs_closedir(dir);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 }
 
 static void _create_files(oefs_t* oefs)
 {
     const size_t NUM_FILES = 100;
-    oefs_result_t r;
+    oe_errno_t r;
     oefs_file_t* file;
 
     for (size_t i = 0; i < NUM_FILES; i++)
@@ -58,7 +58,7 @@ static void _create_files(oefs_t* oefs)
         char path[OEFS_PATH_MAX];
         snprintf(path, sizeof(path), "/filename-%04zu", i);
         r = oefs_create(oefs, path, 0, &file);
-        OE_TEST(r == OEFS_OK);
+        OE_TEST(r == OE_EOK);
         OE_TEST(file != NULL);
         oefs_close(file);
     }
@@ -67,21 +67,21 @@ static void _create_files(oefs_t* oefs)
 static void _remove_files_nnnn(oefs_t* oefs)
 {
     const size_t NUM_FILES = 100;
-    oefs_result_t r;
+    oe_errno_t r;
 
     for (size_t i = 0; i < NUM_FILES; i++)
     {
         char path[OEFS_PATH_MAX];
         snprintf(path, sizeof(path), "/filename-%04zu", i);
         r = oefs_unlink(oefs, path);
-        OE_TEST(r == OEFS_OK);
+        OE_TEST(r == OE_EOK);
     }
 }
 
 static void _create_dirs(oefs_t* oefs)
 {
     const size_t NUM_DIRS = 10;
-    oefs_result_t r;
+    oe_errno_t r;
 
     for (size_t i = 0; i < NUM_DIRS; i++)
     {
@@ -89,23 +89,23 @@ static void _create_dirs(oefs_t* oefs)
         snprintf(name, sizeof(name), "/dir-%04zu", i);
 
         r = oefs_mkdir(oefs, name, 0);
-        OE_TEST(r == OEFS_OK);
+        OE_TEST(r == OE_EOK);
     }
 
     r = oefs_mkdir(oefs, "/aaa", 0);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     r = oefs_mkdir(oefs, "/aaa/bbb", 0);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     r = oefs_mkdir(oefs, "/aaa/bbb/ccc", 0);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     /* Stat root directory and check expectations. */
     {
         oefs_stat_t stat;
         r = oefs_stat(oefs, "/", &stat);
-        OE_TEST(r == OEFS_OK);
+        OE_TEST(r == OE_EOK);
 
         OE_TEST(stat.st_dev == 0);
         OE_TEST(stat.st_ino != 0);
@@ -128,7 +128,7 @@ static void _create_dirs(oefs_t* oefs)
     {
         oefs_stat_t stat;
         r = oefs_stat(oefs, "/aaa/bbb/ccc", &stat);
-        OE_TEST(r == OEFS_OK);
+        OE_TEST(r == OE_EOK);
 
         OE_TEST(stat.st_dev == 0);
         OE_TEST(stat.st_ino != 0);
@@ -151,7 +151,7 @@ static void _create_dirs(oefs_t* oefs)
 static void _remove_dir_nnnn(oefs_t* oefs)
 {
     const size_t NUM_DIRS = 10;
-    oefs_result_t r;
+    oe_errno_t r;
 
     for (size_t i = 0; i < NUM_DIRS; i++)
     {
@@ -159,7 +159,7 @@ static void _remove_dir_nnnn(oefs_t* oefs)
         snprintf(name, sizeof(name), "/dir-%04zu", i);
 
         r = oefs_rmdir(oefs, name);
-        OE_TEST(r == OEFS_OK);
+        OE_TEST(r == OE_EOK);
     }
 }
 
@@ -167,10 +167,10 @@ static void _dump_file(oefs_t* oefs, const char* path)
 {
     void* data;
     size_t size;
-    oefs_result_t r;
+    oe_errno_t r;
 
     r = oefs_load(oefs, path, &data, &size);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     printf("<<<<<<<< _dump_file(%s): %zu bytes\n", path, size);
 
@@ -194,7 +194,7 @@ static void _dump_file(oefs_t* oefs, const char* path)
 
 static void _update_file(oefs_t* oefs, const char* path)
 {
-    oefs_result_t r;
+    oe_errno_t r;
     oefs_file_t* file = NULL;
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     const size_t FILE_SIZE = 1024;
@@ -202,7 +202,7 @@ static void _update_file(oefs_t* oefs, const char* path)
     int32_t n;
 
     r = oefs_open(oefs, path, 0, 0, &file);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     for (size_t i = 0; i < FILE_SIZE; i++)
     {
@@ -213,7 +213,7 @@ static void _update_file(oefs_t* oefs, const char* path)
     }
 
     r = oefs_write(file, buf.data, buf.size, &n);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(n == buf.size);
     oefs_close(file);
 
@@ -223,7 +223,7 @@ static void _update_file(oefs_t* oefs, const char* path)
         size_t size;
 
         r = oefs_load(oefs, path, &data, &size);
-        OE_TEST(r == OEFS_OK);
+        OE_TEST(r == OE_EOK);
         OE_TEST(size == buf.size);
         OE_TEST(memcmp(data, buf.data, size) == 0);
 
@@ -234,7 +234,7 @@ static void _update_file(oefs_t* oefs, const char* path)
     {
         oefs_stat_t stat;
         r = oefs_stat(oefs, path, &stat);
-        OE_TEST(r == OEFS_OK);
+        OE_TEST(r == OE_EOK);
 
         OE_TEST(stat.st_dev == 0);
         OE_TEST(stat.st_ino != 0);
@@ -259,18 +259,18 @@ static void _update_file(oefs_t* oefs, const char* path)
 
 static void _create_myfile(oefs_t* oefs)
 {
-    oefs_result_t r;
+    oe_errno_t r;
     oefs_file_t* file;
     const char path[] = "/aaa/bbb/ccc/myfile";
 
     r = oefs_create(oefs, path, 0, &file);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     const char message[] = "Hello World!";
 
     int32_t n;
     r = oefs_write(file, message, sizeof(message), &n);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(n == sizeof(message));
 
     oefs_close(file);
@@ -279,25 +279,25 @@ static void _create_myfile(oefs_t* oefs)
 
 static void _truncate_file(oefs_t* oefs, const char* path)
 {
-    oefs_result_t r = oefs_truncate(oefs, path);
-    OE_TEST(r == OEFS_OK);
+    oe_errno_t r = oefs_truncate(oefs, path);
+    OE_TEST(r == OE_EOK);
 }
 
 static void _remove_file(oefs_t* oefs, const char* path)
 {
-    oefs_result_t r = oefs_unlink(oefs, path);
-    OE_TEST(r == OEFS_OK);
+    oe_errno_t r = oefs_unlink(oefs, path);
+    OE_TEST(r == OE_EOK);
 }
 
 static void _remove_dir(oefs_t* oefs, const char* path)
 {
-    oefs_result_t r = oefs_rmdir(oefs, path);
-    OE_TEST(r == OEFS_OK);
+    oe_errno_t r = oefs_rmdir(oefs, path);
+    OE_TEST(r == OE_EOK);
 }
 
 static void _test_lseek(oefs_t* oefs)
 {
-    oefs_result_t r;
+    oe_errno_t r;
     oefs_file_t* file;
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     const size_t alphabet_length = OE_COUNTOF(alphabet) - 1;
@@ -307,26 +307,26 @@ static void _test_lseek(oefs_t* oefs)
     int32_t nwritten;
 
     r = oefs_create(oefs, "/somefile", 0, &file);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     for (size_t i = 0; i < alphabet_length; i++)
     {
         memset(buf, alphabet[i], sizeof(buf));
         r = oefs_write(file, buf, sizeof(buf), &nwritten);
-        OE_TEST(r == OEFS_OK);
+        OE_TEST(r == OE_EOK);
         OE_TEST(nwritten == sizeof(buf));
     }
 
     r = oefs_lseek(file, 0, OEFS_SEEK_CUR, &offset);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(offset == sizeof(buf) * 26);
 
     r = oefs_lseek(file, -2 * sizeof(buf), OEFS_SEEK_CUR, &offset);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     memset(buf, 0, sizeof(buf));
     r = oefs_read(file, buf, sizeof(buf), &nread);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(nread == sizeof(buf));
 
     {
@@ -336,118 +336,118 @@ static void _test_lseek(oefs_t* oefs)
     }
 
     r = oefs_close(file);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     //_dump_file(oefs, "/somefile");
 }
 
 static void _test_links(oefs_t* oefs)
 {
-    oefs_result_t r;
+    oe_errno_t r;
     oefs_file_t* file;
     int32_t n;
     char buf[1024];
     oefs_stat_t stat;
 
     r = oefs_mkdir(oefs, "/dir1", 0);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     r = oefs_mkdir(oefs, "/dir2", 0);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     r = oefs_create(oefs, "/dir1/file1", 0, &file);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     r = oefs_write(file, "abcdefghijklmnopqrstuvwxyz", 26, &n);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(n == 26);
     oefs_close(file);
 
     r = oefs_create(oefs, "/dir2/exists", 0, &file);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     oefs_close(file);
 
     r = oefs_link(oefs, "/dir1/file1", "/dir2/file2");
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     r = oefs_link(oefs, "/dir1/file1", "/dir2/exists");
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     r = oefs_open(oefs, "/dir2/file2", 0, 0, &file);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     r = oefs_read(file, buf, sizeof(buf), &n);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(n == 26);
     OE_TEST(strncmp(buf, "abcdefghijklmnopqrstuvwxyz", 26) == 0);
     oefs_close(file);
 
     r = oefs_open(oefs, "/dir2/exists", 0, 0, &file);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     r = oefs_read(file, buf, sizeof(buf), &n);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(n == 26);
     OE_TEST(strncmp(buf, "abcdefghijklmnopqrstuvwxyz", 26) == 0);
     oefs_close(file);
 
     r = oefs_stat(oefs, "/dir1/file1", &stat);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(stat.st_nlink == 3);
 
     r = oefs_unlink(oefs, "/dir2/file2");
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     r = oefs_stat(oefs, "/dir1/file1", &stat);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(stat.st_nlink == 2);
 
     r = oefs_unlink(oefs, "/dir2/exists");
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     r = oefs_stat(oefs, "/dir1/file1", &stat);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(stat.st_nlink == 1);
 
     r = oefs_unlink(oefs, "/dir1/file1");
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     oefs_rmdir(oefs, "/dir1");
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     oefs_rmdir(oefs, "/dir2");
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 }
 
 static void _test_rename(oefs_t* oefs)
 {
-    oefs_result_t r;
+    oe_errno_t r;
     oefs_file_t* file;
     int32_t n;
     char buf[1024];
 
     r = oefs_mkdir(oefs, "/dir1", 0);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     r = oefs_mkdir(oefs, "/dir2", 0);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     r = oefs_create(oefs, "/dir1/file1", 0, &file);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     r = oefs_write(file, "abcdefghijklmnopqrstuvwxyz", 26, &n);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(n == 26);
     oefs_close(file);
 
     r = oefs_rename(oefs, "/dir1/file1", "/dir2/file2");
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     r = oefs_open(oefs, "/dir2/file2", 0, 0, &file);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     r = oefs_read(file, buf, sizeof(buf), &n);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
     OE_TEST(n == 26);
     OE_TEST(strncmp(buf, "abcdefghijklmnopqrstuvwxyz", 26) == 0);
     oefs_close(file);
 
     oefs_stat_t stat;
     r = oefs_stat(oefs, "/dir1/file1", &stat);
-    OE_TEST(r != OEFS_OK);
+    OE_TEST(r != OE_EOK);
 }
 
 int test_oefs(const char* oefs_filename)
@@ -456,14 +456,14 @@ int test_oefs(const char* oefs_filename)
     size_t num_blocks = 4 * 4096;
     oefs_t* oefs;
     oe_result_t result;
-    oefs_result_t r;
+    oe_errno_t r;
     size_t size;
 
     (void)oefs;
 
     /* Compute the size of the OEFS file. */
     r = oefs_size(num_blocks, &size);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     /* Ask the host to open the OEFS file. */
     result = oe_open_host_block_dev(oefs_filename, &dev);
@@ -471,11 +471,11 @@ int test_oefs(const char* oefs_filename)
 
     /* Initialize the OEFS file. */
     r = oefs_mkfs(dev, num_blocks);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     /* Create an new OEFS object. */
     r = oefs_initialize(&oefs, dev);
-    OE_TEST(r == OEFS_OK);
+    OE_TEST(r == OE_EOK);
 
     /* Create some files. */
     _create_files(oefs);

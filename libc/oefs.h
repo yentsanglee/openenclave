@@ -7,6 +7,7 @@
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/types.h>
 #include "blockdev.h"
+#include "fs.h"
 
 #define OEFS_PATH_MAX 256
 #define OEFS_BLOCK_SIZE 512
@@ -199,94 +200,80 @@ typedef struct _oefs_block
     uint8_t data[OEFS_BLOCK_SIZE];
 } oefs_block_t;
 
-typedef enum _oefs_result {
-    OEFS_OK,
-    OEFS_BAD_PARAMETER,
-    OEFS_FAILED,
-    OEFS_NOT_FOUND,
-    OEFS_ALREADY_EXISTS,
-    OEFS_BUFFER_OVERFLOW,
-    OEFS_OUT_OF_BOUNDS,
-    OEFS_SANITY,
-    OEFS_OUT_OF_MEMORY,
-    OEFS_UNEXPECTED,
-    OEFS_BAD_PATH,
-} oefs_result_t;
-
 typedef struct _oefs_file oefs_file_t;
 
 /* Compute required size of a file system with the given block count. */
-oefs_result_t oefs_size(size_t nblocks, size_t* size);
+oe_errno_t oefs_size(size_t nblocks, size_t* size);
 
 /* Build an OE file system on the given device. */
-oefs_result_t oefs_mkfs(oe_block_dev_t* dev, size_t nblocks);
+oe_errno_t oefs_mkfs(oe_block_dev_t* dev, size_t nblocks);
 
 /* Initialize the oefs instance from the given device. */
-oefs_result_t oefs_initialize(oefs_t** oefs, oe_block_dev_t* dev);
+oe_errno_t oefs_initialize(oefs_t** oefs, oe_block_dev_t* dev);
 
 /* Release the oefs instance. */
-oefs_result_t oefs_release(oefs_t* oefs);
+oe_errno_t oefs_release(oefs_t* oefs);
 
-oefs_result_t oefs_read(
+oe_errno_t oefs_read(
     oefs_file_t* file,
     void* data,
     uint32_t size,
     int32_t* nread);
 
-oefs_result_t oefs_write(
+oe_errno_t oefs_write(
     oefs_file_t* file,
     const void* data,
     uint32_t size,
     int32_t* nwritten);
 
-oefs_result_t oefs_close(oefs_file_t* file);
+oe_errno_t oefs_close(oefs_file_t* file);
 
-oefs_result_t oefs_opendir(oefs_t* oefs, const char* path, oefs_dir_t** dir);
+oe_errno_t oefs_opendir(oefs_t* oefs, const char* path, oefs_dir_t** dir);
 
-oefs_result_t oefs_readdir(oefs_dir_t* dir, oefs_dirent_t** dirent);
+oe_errno_t oefs_readdir(oefs_dir_t* dir, oefs_dirent_t** dirent);
 
-oefs_result_t oefs_closedir(oefs_dir_t* dir);
+oe_errno_t oefs_closedir(oefs_dir_t* dir);
 
-oefs_result_t oefs_open(
+oe_errno_t oefs_open(
     oefs_t* oefs,
     const char* pathname,
     int flags,
     uint32_t mode,
     oefs_file_t** file_out);
 
-oefs_result_t oefs_load(
+oe_errno_t oefs_load(
     oefs_t* oefs,
     const char* path,
     void** data_out,
     size_t* size_out);
 
-oefs_result_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode);
+oe_errno_t oefs_mkdir(oefs_t* oefs, const char* path, uint32_t mode);
 
-oefs_result_t oefs_create(
+oe_errno_t oefs_create(
     oefs_t* oefs,
     const char* path,
     uint32_t mode,
     oefs_file_t** file);
 
-oefs_result_t oefs_link(
+oe_errno_t oefs_link(
     oefs_t* oefs,
     const char* old_path,
     const char* new_path);
 
-oefs_result_t oefs_rename(
+oe_errno_t oefs_rename(
     oefs_t* oefs,
     const char* old_path,
     const char* new_path);
 
-oefs_result_t oefs_unlink(oefs_t* oefs, const char* path);
+oe_errno_t oefs_unlink(oefs_t* oefs, const char* path);
 
-oefs_result_t oefs_truncate(oefs_t* oefs, const char* path);
+oe_errno_t oefs_truncate(oefs_t* oefs, const char* path);
 
-oefs_result_t oefs_rmdir(oefs_t* oefs, const char* path);
+oe_errno_t oefs_rmdir(oefs_t* oefs, const char* path);
 
-oefs_result_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat);
+oe_errno_t oefs_stat(oefs_t* oefs, const char* path, oefs_stat_t* stat);
 
-oefs_result_t oefs_lseek(
+oe_errno_t oefs_lseek(
     oefs_file_t* file,
     ssize_t offset,
     int whence,
