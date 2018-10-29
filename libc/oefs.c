@@ -842,15 +842,9 @@ static oefs_result_t _release_inode(oefs_t* oefs, uint32_t ino)
     oefs_result_t result = OEFS_FAILED;
     oefs_file_t* file = NULL;
 
-    if (_open_file(oefs, ino, &file) != OEFS_OK)
-        goto done;
-
-    if (_truncate_file(file) != OEFS_OK)
-        goto done;
-
-    /* Unassign the inode block. */
-    if (_unassign_blkno(oefs, file->ino) != OEFS_OK)
-        goto done;
+    CHECK(_open_file(oefs, ino, &file));
+    CHECK(_truncate_file(file));
+    CHECK(_unassign_blkno(oefs, file->ino));
 
     result = OEFS_OK;
 
@@ -879,26 +873,20 @@ static oefs_result_t _unlink_file(
     oefs_inode_t inode;
 
     if (!oefs || !dir_ino || !ino)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Open the directory file. */
-    if (_open_file(oefs, dir_ino, &dir) != OEFS_OK)
-        goto done;
+    CHECK(_open_file(oefs, dir_ino, &dir));
 
     /* Load the contents of the parent directory into memory. */
-    if (_load_file(dir, &data, &size) != 0)
-        goto done;
+    CHECK(_load_file(dir, &data, &size));
 
     /* File must be a multiple of the entry size. */
     if (size % sizeof(oefs_dirent_t))
-        goto done;
+        RAISE(OEFS_SANITY);
 
     /* Truncate the parent directory. */
-    if (_truncate_file(dir) != OEFS_OK)
-        goto done;
+    CHECK(_truncate_file(dir));
 
     /* Rewrite the directory entries but exclude the removed file. */
     {
@@ -910,26 +898,23 @@ static oefs_result_t _unlink_file(
             if (strcmp(entries[i].d_name, name) != 0)
             {
                 const uint32_t n = sizeof(oefs_dirent_t);
-                oefs_result_t r;
                 int32_t nwritten;
 
-                r = oefs_write(dir, &entries[i], n, &nwritten);
+                CHECK(oefs_write(dir, &entries[i], n, &nwritten));
 
-                if (r != OEFS_OK || nwritten != n)
-                    goto done;
+                if (nwritten != n)
+                    RAISE(OEFS_FAILED);
             }
         }
     }
 
     /* Load the inode into memory. */
-    if (_load_inode(oefs, ino, &inode) != OEFS_OK)
-        goto done;
+    CHECK(_load_inode(oefs, ino, &inode));
 
     /* If this is the only link to this file, then remove it. */
     if (inode.i_links == 1)
     {
-        if (_release_inode(oefs, ino) != OEFS_OK)
-            goto done;
+        CHECK(_release_inode(oefs, ino));
     }
     else
     {
@@ -959,30 +944,38 @@ done:
     return result;
 }
 
-static oefs_dir_t* _opendir_by_ino(oefs_t* oefs, uint32_t ino)
+static oefs_result_t _opendir_by_ino(
+    oefs_t* oefs, uint32_t ino, oefs_dir_t** dir_out)
 {
+    oefs_result_t result = OEFS_FAILED;
     oefs_dir_t* dir = NULL;
     oefs_file_t* file = NULL;
 
-    if (!oefs || !ino)
-        goto done;
+    if (dir_out)
+        *dir_out = NULL;
 
-    if (_open_file(oefs, ino, &file) != 0)
-        goto done;
+    if (!oefs || !ino || !dir_out)
+        RAISE(OEFS_BAD_PARAMETER);
+
+    CHECK(_open_file(oefs, ino, &file));
 
     if (!(dir = calloc(1, sizeof(oefs_dir_t))))
-        goto done;
+        RAISE(OEFS_OUT_OF_MEMORY);
 
     dir->ino = ino;
     dir->file = file;
     file = NULL;
+
+    *dir_out = dir;
+
+    result = OEFS_OK;
 
 done:
 
     if (file)
         oefs_close(file);
 
-    return dir;
+    return result;
 }
 
 static oefs_result_t _path_to_ino(
@@ -1013,27 +1006,18 @@ static oefs_result_t _path_to_ino(
 
     /* Check for null parameters */
     if (!oefs || !path || !ino_out)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PARAMETER);
 
     /* Check path length */
     if (strlen(path) >= OEFS_PATH_MAX)
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PATH);
 
     /* Make copy of the path. */
     strlcpy(buf, path, sizeof(buf));
 
     /* Be sure path begins with "/" */
     if (path[0] != '/')
-    {
-        result = OEFS_BAD_PARAMETER;
-        goto done;
-    }
+        RAISE(OEFS_BAD_PATH);
 
     elements[num_elements++] = "/";
 
@@ -1045,10 +1029,7 @@ static oefs_result_t _path_to_ino(
         for (p = strtok_r(buf, "/", &save); p; p = strtok_r(NULL, "/", &save))
         {
             if (num_elements == MAX_ELEMENTS)
-            {
-                result = OEFS_BUFFER_OVERFLOW;
-                goto done;
-            }
+                RAISE(OEFS_BUFFER_OVERFLOW);
 
             elements[num_elements++] = p;
         }
@@ -1075,8 +1056,7 @@ static oefs_result_t _path_to_ino(
             oefs_result_t r;
             oefs_dirent_t* ent;
 
-            if (!(dir = _opendir_by_ino(oefs, current_ino)))
-                goto done;
+            CHECK(_opendir_by_ino(oefs, current_ino, &dir));
 
             dir_ino = current_ino;
             current_ino = 0;
@@ -1731,8 +1711,7 @@ oefs_result_t oefs_opendir(oefs_t* oefs, const char* path, oefs_dir_t** dir)
     if (_path_to_ino(oefs, path, NULL, &ino, NULL) != OEFS_OK)
         goto done;
 
-    if (!(*dir = _opendir_by_ino(oefs, ino)))
-        goto done;
+    CHECK(_opendir_by_ino(oefs, ino, dir));
 
     result = OEFS_OK;
 
