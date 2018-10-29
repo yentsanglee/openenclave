@@ -271,10 +271,6 @@ done:
     return result;
 }
 
-/*
-BOOKMARK:
-*/
-
 static oefs_result_t _open_file(
     oefs_t* oefs,
     uint32_t ino,
@@ -296,18 +292,10 @@ static oefs_result_t _open_file(
     file->ino = ino;
 
     /* Read this inode into memory. */
-    if (_load_inode(oefs, ino, &file->inode) != OEFS_OK)
-        RAISE(OEFS_FAILED);
+    CHECK(_load_inode(oefs, ino, &file->inode));
 
     /* Load the block numbers into memory. */
-    if (_load_blknos(
-            oefs,
-            &file->inode,
-            &file->bnode_blknos,
-            &file->blknos) != OEFS_OK)
-    {
-        RAISE(OEFS_FAILED);
-    }
+    CHECK(_load_blknos(oefs, &file->inode, &file->bnode_blknos, &file->blknos));
 
     *file_out = file;
     file = NULL;
@@ -456,8 +444,7 @@ static oefs_result_t _write_data(
         uint32_t copy_size;
 
         /* Assign a new block number from the in-memory bitmap. */
-        if (_assign_blkno(oefs, &blkno) != OEFS_OK)
-            RAISE(OEFS_FAILED);
+        CHECK(_assign_blkno(oefs, &blkno));
 
         /* Append the new block number to the array of blocks numbers. */
         if (buf_u32_append(blknos, &blkno, 1) != 0)
@@ -1553,7 +1540,7 @@ oefs_result_t oefs_initialize(oefs_t** oefs_out, oe_block_dev_t* dev)
     if (oefs_out)
         *oefs_out = NULL;
 
-    if (!dev || !oefs_out)
+    if (!oefs_out || !dev)
         RAISE(OEFS_BAD_PARAMETER);
 
     if (!(oefs = calloc(1, sizeof(oefs_t))))
