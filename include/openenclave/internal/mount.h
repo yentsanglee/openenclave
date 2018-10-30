@@ -19,8 +19,6 @@ int oe_mount_oefs(
     uint32_t flags,
     size_t num_blocks);
 
-int oe_mount_ramfs(const char* target, uint32_t flags, size_t num_blocks);
-
 int oe_unmount(const char* target);
 
 OE_EXTERNC_END
