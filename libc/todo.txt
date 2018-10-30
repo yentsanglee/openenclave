@@ -1,7 +1,6 @@
 Todo:
 
 (A) Encryption
-(A) Integrate with mount function.
 (A) Integrate with libc.
 ---
 (B) Relative path handling

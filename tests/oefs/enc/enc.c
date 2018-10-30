@@ -573,26 +573,25 @@ void run_tests(oe_block_dev_t* dev, size_t num_blocks)
 int test_oefs(const char* oefs_filename)
 {
     size_t num_blocks = 4 * 4096;
+    oe_block_dev_t* host_dev;
+    oe_block_dev_t* ram_dev;
 
     /* Run tests on the host block device. */
     {
-        oe_block_dev_t* dev;
-
-        OE_TEST(oe_open_host_block_dev(oefs_filename, &dev) == 0);
-        run_tests(dev, num_blocks);
-        dev->close(dev);
+        OE_TEST(oe_open_host_block_dev(oefs_filename, &host_dev) == 0);
+        run_tests(host_dev, num_blocks);
     }
 
     /* Run tests on the RAM device. */
     {
-        oe_block_dev_t* dev;
         size_t size;
-
         OE_TEST(oefs_size(num_blocks, &size) == OE_EOK);
-        OE_TEST(oe_open_ram_block_dev(size, &dev) == 0);
-        run_tests(dev, num_blocks);
-        dev->close(dev);
+        OE_TEST(oe_open_ram_block_dev(size, &ram_dev) == 0);
+        run_tests(ram_dev, num_blocks);
     }
+
+    host_dev->close(host_dev);
+    ram_dev->close(ram_dev);
 
     return 0;
 }
