@@ -49,8 +49,6 @@ int oe_mount_oefs(
     if (oefs_initialize(&fs, dev) != 0)
         goto done;
 
-    dev = NULL;
-
     if (fs_bind(fs, target) != 0)
         goto done;
 
@@ -66,5 +64,21 @@ done:
     if (fs)
         fs->fs_release(fs);
 
+    return ret;
+}
+
+int oe_unmount(const char* target)
+{
+    int ret = -1;
+
+    if (!target)
+        goto done;
+
+    if (fs_unbind(target) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
     return ret;
 }

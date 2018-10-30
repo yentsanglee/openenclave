@@ -9,6 +9,7 @@
 #include <openenclave/internal/file.h>
 #include <openenclave/internal/mount.h>
 #include <openenclave/internal/tests.h>
+#include <openenclave/internal/mount.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -587,6 +588,7 @@ int test_oefs(const char* oefs_filename)
     size_t num_blocks = 4 * 4096;
     oe_block_dev_t* host_dev;
     oe_block_dev_t* ram_dev;
+    int rc;
 
     /* Run tests on the host block device. */
     {
@@ -601,6 +603,13 @@ int test_oefs(const char* oefs_filename)
         OE_TEST(oe_open_ram_block_dev(size, &ram_dev) == 0);
         run_tests(ram_dev, num_blocks);
     }
+
+    /* Test the host device. */
+    const uint32_t flags = OE_MOUNT_FLAG_MKFS;
+    rc = oe_mount_oefs(oefs_filename, "/mnt/mount1", flags, num_blocks);
+    OE_TEST(rc == 0);
+
+    rc = oe_unmount("/mnt/mount1");
 
     host_dev->release(host_dev);
     ram_dev->release(ram_dev);
