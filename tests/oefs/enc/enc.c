@@ -579,14 +579,14 @@ int test_oefs(const char* oefs_filename)
     const uint32_t flags = OE_MOUNT_FLAG_MKFS;
     size_t num_blocks = 4 * 4096;
     int rc;
-    const char target1[] = "/";
-    const char target2[] = "/mnt/target2";
 
     /* Mount host file. */
+    const char target1[] = "/";
     rc = oe_mount_oefs(oefs_filename, target1, flags, num_blocks);
     OE_TEST(rc == 0);
 
     /* Mount enclave memory. */
+    const char target2[] = "/mnt/ramfs";
     rc = oe_mount_oefs(NULL, target2, flags, num_blocks);
     OE_TEST(rc == 0);
 
