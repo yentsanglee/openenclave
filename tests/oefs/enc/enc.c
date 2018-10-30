@@ -579,7 +579,7 @@ void run_tests(oe_block_dev_t* dev, size_t num_blocks)
     _test_rename(fs);
 
     OE_TEST(fs_unbind("/mnt/oefs") == 0);
-    //fs->fs_release(fs);
+    // fs->fs_release(fs);
 }
 
 int test_oefs(const char* oefs_filename)
@@ -602,8 +602,8 @@ int test_oefs(const char* oefs_filename)
         run_tests(ram_dev, num_blocks);
     }
 
-    host_dev->close(host_dev);
-    ram_dev->close(ram_dev);
+    host_dev->release(host_dev);
+    ram_dev->release(ram_dev);
 
     return 0;
 }

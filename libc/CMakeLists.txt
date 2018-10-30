@@ -18,6 +18,7 @@ add_library(oelibc STATIC
     fs/fs.c
     fs/hostblockdev.c
     fs/oefs.c
+    fs/mount.c
     fs/ramblockdev.c
     libunwind_stubs.c
     link.c

@@ -9,16 +9,19 @@
 
 OE_EXTERNC_BEGIN
 
-typedef enum _oe_mount_type {
-    OE_MOUNT_TYPE_EXT2,
-} oe_mount_type_t;
+#define OE_MOUNT_FLAG_NONE 0
+#define OE_MOUNT_FLAG_MKFS 1
+#define OE_MOUNT_FLAG_CRYPTO 2
 
-oe_result_t oe_mount(
-    oe_mount_type_t type,
-    const char* device_name,
-    const char* path);
+int oe_mount_oefs(
+    const char* source,
+    const char* target,
+    uint32_t flags,
+    size_t num_blocks);
 
-oe_result_t oe_unmount(const char* path);
+int oe_mount_ramfs(const char* target, uint32_t flags, size_t num_blocks);
+
+int oe_unmount(const char* target);
 
 OE_EXTERNC_END
 

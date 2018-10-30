@@ -1,9 +1,12 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #define _GNU_SOURCE
 #include "fs.h"
-#include "oefs.h"
 #include <pthread.h>
 #include <stdbool.h>
 #include <string.h>
+#include "oefs.h"
 
 #define MAX_MOUNTS 64
 
@@ -111,7 +114,7 @@ int fs_unbind(const char* path)
             if (strcmp(_bindings[i].path, path) == 0)
             {
                 fs = _bindings[i].fs;
-                _bindings[i] = _bindings[_num_bindings-1];
+                _bindings[i] = _bindings[_num_bindings - 1];
                 _num_bindings--;
                 break;
             }
@@ -161,7 +164,6 @@ fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX])
     pthread_spin_unlock(&_lock);
 
 done:
-
 
     return ret;
 }

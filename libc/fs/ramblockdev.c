@@ -1,30 +1,41 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "blockdev.h"
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "blockdev.h"
 
 #define BLOCK_SIZE 512
 
 typedef struct _block_dev
 {
     oe_block_dev_t base;
+    size_t ref_count;
+    pthread_spinlock_t lock;
     uint8_t* mem;
     size_t size;
 } block_dev_t;
 
-static int _block_dev_close(oe_block_dev_t* dev)
+static int _block_dev_release(oe_block_dev_t* dev)
 {
     int ret = -1;
     block_dev_t* device = (block_dev_t*)dev;
+    size_t new_ref_count;
 
     if (!device)
         goto done;
 
-    free(device->mem);
-    free(device);
+    pthread_spin_lock(&device->lock);
+    new_ref_count = --device->ref_count;
+    pthread_spin_unlock(&device->lock);
+
+    if (new_ref_count == 0)
+    {
+        free(device->mem);
+        free(device);
+    }
 
     ret = 0;
 
@@ -76,6 +87,23 @@ done:
     return ret;
 }
 
+static int _block_dev_add_ref(oe_block_dev_t* dev)
+{
+    int ret = -1;
+    block_dev_t* device = (block_dev_t*)dev;
+
+    if (!device)
+        goto done;
+
+    pthread_spin_lock(&device->lock);
+    device->ref_count++;
+    pthread_spin_unlock(&device->lock);
+
+    ret = 0;
+
+done:
+    return ret;
+}
 int oe_open_ram_block_dev(size_t size, oe_block_dev_t** block_dev)
 {
     int ret = -1;
@@ -94,9 +122,11 @@ int oe_open_ram_block_dev(size_t size, oe_block_dev_t** block_dev)
     if (!(device = calloc(1, sizeof(block_dev_t))))
         goto done;
 
-    device->base.close = _block_dev_close;
     device->base.get = _block_dev_get;
     device->base.put = _block_dev_put;
+    device->base.add_ref = _block_dev_add_ref;
+    device->base.release = _block_dev_release;
+    device->ref_count = 1;
     device->size = size;
 
     if (!(device->mem = calloc(1, size)))

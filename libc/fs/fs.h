@@ -1,9 +1,12 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #ifndef _fs_h
 #define _fs_h
 
-#include "errno.h"
 #include <stdint.h>
 #include <stdio.h>
+#include "errno.h"
 
 #define FS_PATH_MAX 256
 #define FS_BLOCK_SIZE 512

@@ -1,47 +1,30 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "blockdev.h"
-#include <openenclave/internal/calls.h>
 #include <openenclave/enclave.h>
+#include <openenclave/internal/calls.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "blockdev.h"
 
 #if 0
 #define DUMP
 #endif
 
-typedef struct _host_block_dev
+typedef struct _block_dev
 {
     oe_block_dev_t base;
+    size_t ref_count;
+    pthread_spinlock_t lock;
     void* host_context;
-} host_block_dev_t;
+} block_dev_t;
 
-static int _host_block_dev_close(oe_block_dev_t* dev)
+static int _block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
 {
     int ret = -1;
-    const uint16_t func = OE_OCALL_CLOSE_BLOCK_DEVICE;
-    host_block_dev_t* device = (host_block_dev_t*)dev;
-
-    if (!device)
-        goto done;
-
-    if (oe_ocall(func, (uint64_t)device->host_context, NULL) != OE_OK)
-        goto done;
-
-    free(dev);
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
-static int _host_block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
-{
-    int ret = -1;
-    host_block_dev_t* device = (host_block_dev_t*)dev;
+    block_dev_t* device = (block_dev_t*)dev;
     typedef oe_ocall_block_dev_get_args_t args_t;
     args_t* args = NULL;
     const uint16_t func = OE_OCALL_BLOCK_DEVICE_GET;
@@ -78,13 +61,10 @@ done:
     return ret;
 }
 
-static int _host_block_dev_put(
-    oe_block_dev_t* dev,
-    uint32_t blkno,
-    const void* data)
+static int _block_dev_put(oe_block_dev_t* dev, uint32_t blkno, const void* data)
 {
     int ret = -1;
-    host_block_dev_t* device = (host_block_dev_t*)dev;
+    block_dev_t* device = (block_dev_t*)dev;
     typedef oe_ocall_block_dev_put_args_t args_t;
     args_t* args = NULL;
     const uint16_t func = OE_OCALL_BLOCK_DEVICE_PUT;
@@ -120,15 +100,59 @@ done:
     return ret;
 }
 
-int oe_open_host_block_dev(
-    const char* device_name,
-    oe_block_dev_t** block_dev)
+static int _block_dev_add_ref(oe_block_dev_t* dev)
+{
+    int ret = -1;
+    block_dev_t* device = (block_dev_t*)dev;
+
+    if (!device)
+        goto done;
+
+    pthread_spin_lock(&device->lock);
+    device->ref_count++;
+    pthread_spin_unlock(&device->lock);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int _block_dev_release(oe_block_dev_t* dev)
+{
+    int ret = -1;
+    const uint16_t func = OE_OCALL_CLOSE_BLOCK_DEVICE;
+    block_dev_t* device = (block_dev_t*)dev;
+    size_t new_ref_count;
+
+    if (!device)
+        goto done;
+
+    pthread_spin_lock(&device->lock);
+    new_ref_count = --device->ref_count;
+    pthread_spin_unlock(&device->lock);
+
+    if (new_ref_count == 0)
+    {
+        if (oe_ocall(func, (uint64_t)device->host_context, NULL) != OE_OK)
+            goto done;
+
+        free(dev);
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int oe_open_host_block_dev(const char* device_name, oe_block_dev_t** block_dev)
 {
     int ret = -1;
     char* name = NULL;
     void* host_context = NULL;
     const uint16_t func = OE_OCALL_OPEN_BLOCK_DEVICE;
-    host_block_dev_t* device = NULL;
+    block_dev_t* device = NULL;
 
     if (block_dev)
         *block_dev = NULL;
@@ -139,7 +163,7 @@ int oe_open_host_block_dev(
     if (!(name = oe_host_strndup(device_name, strlen(device_name))))
         goto done;
 
-    if (!(device = calloc(1, sizeof(host_block_dev_t))))
+    if (!(device = calloc(1, sizeof(block_dev_t))))
         goto done;
 
     if (oe_ocall(func, (uint64_t)name, (uint64_t*)&host_context) != OE_OK)
@@ -148,9 +172,11 @@ int oe_open_host_block_dev(
     if (!host_context)
         goto done;
 
-    device->base.close = _host_block_dev_close;
-    device->base.get = _host_block_dev_get;
-    device->base.put = _host_block_dev_put;
+    device->base.get = _block_dev_get;
+    device->base.put = _block_dev_put;
+    device->base.add_ref = _block_dev_add_ref;
+    device->base.release = _block_dev_release;
+    device->ref_count = 1;
     device->host_context = host_context;
 
     *block_dev = &device->base;
