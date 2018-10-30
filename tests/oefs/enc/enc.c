@@ -14,9 +14,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../../libc/fs/blockdev.h"
+#include "../../../libc/fs/fs.h"
 #include "../../../libc/fs/buf.h"
-#include "../../../libc/fs/oefs.h"
 
 #define INIT
 
@@ -496,21 +495,11 @@ static void _test_rename(fs_t* fs)
     OE_TEST(r != OE_EOK);
 }
 
-void run_tests(oe_block_dev_t* dev, size_t num_blocks)
+void run_tests(const char* target)
 {
-    fs_t* fs;
-    fs_errno_t r;
+    fs_t* fs = fs_lookup(target, NULL);
 
-    /* Initialize the OEFS file. */
-    r = oefs_mkfs(dev, num_blocks);
-    OE_TEST(r == OE_EOK);
-
-    /* Create an new OEFS object. */
-    r = oefs_initialize(&fs, dev);
-    OE_TEST(r == OE_EOK);
-
-    /* Mount this file system. */
-    OE_TEST(fs_bind(fs, "/mnt/oefs") == 0);
+    OE_TEST(fs != NULL);
 
     /* Create some files. */
     _create_files(fs);
@@ -542,7 +531,12 @@ void run_tests(oe_block_dev_t* dev, size_t num_blocks)
     /* Lookup "/aaa/bbb/ccc/myfile". */
     {
         char suffix[FS_PATH_MAX];
-        fs_t* tmp = fs_lookup("/mnt/oefs/aaa/bbb/ccc/myfile", suffix);
+        char path[FS_PATH_MAX];
+
+        strlcpy(path, target, sizeof(path));
+        strlcat(path, "/aaa/bbb/ccc/myfile", sizeof(path));
+
+        fs_t* tmp = fs_lookup(path, suffix);
         OE_TEST(tmp == fs);
         OE_TEST(strcmp(suffix, "/aaa/bbb/ccc/myfile") == 0);
     }
@@ -578,41 +572,27 @@ void run_tests(oe_block_dev_t* dev, size_t num_blocks)
 
     /* Test the rename function. */
     _test_rename(fs);
-
-    OE_TEST(fs_unbind("/mnt/oefs") == 0);
-    // fs->fs_release(fs);
 }
 
 int test_oefs(const char* oefs_filename)
 {
+    const uint32_t flags = OE_MOUNT_FLAG_MKFS;
     size_t num_blocks = 4 * 4096;
-    oe_block_dev_t* host_dev;
-    oe_block_dev_t* ram_dev;
     int rc;
 
-    /* Run tests on the host block device. */
-    {
-        OE_TEST(oe_open_host_block_dev(oefs_filename, &host_dev) == 0);
-        run_tests(host_dev, num_blocks);
-    }
-
-    /* Run tests on the RAM device. */
-    {
-        size_t size;
-        OE_TEST(oefs_size(num_blocks, &size) == OE_EOK);
-        OE_TEST(oe_open_ram_block_dev(size, &ram_dev) == 0);
-        run_tests(ram_dev, num_blocks);
-    }
-
-    /* Test the host device. */
-    const uint32_t flags = OE_MOUNT_FLAG_MKFS;
+    /* Mount host file. */
     rc = oe_mount_oefs(oefs_filename, "/mnt/mount1", flags, num_blocks);
     OE_TEST(rc == 0);
 
-    rc = oe_unmount("/mnt/mount1");
+    /* Mount enclave memory. */
+    rc = oe_mount_oefs(NULL, "/mnt/mount2", flags, num_blocks);
+    OE_TEST(rc == 0);
 
-    host_dev->release(host_dev);
-    ram_dev->release(ram_dev);
+    run_tests("/mnt/mount1");
+    run_tests("/mnt/mount2");
+
+    rc = oe_unmount("/mnt/mount1");
+    rc = oe_unmount("/mnt/mount2");
 
     return 0;
 }

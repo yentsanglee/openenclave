@@ -139,7 +139,7 @@ fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX])
     fs_t* ret = NULL;
     size_t match_len = 0;
 
-    if (!path || !suffix)
+    if (!path)
         goto done;
 
     pthread_spin_lock(&_lock);
@@ -154,7 +154,9 @@ fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX])
             {
                 if (len > match_len)
                 {
-                    strlcpy(suffix, path + len, FS_PATH_MAX);
+                    if (suffix)
+                        strlcpy(suffix, path + len, FS_PATH_MAX);
+
                     match_len = len;
                     ret = _bindings[i].fs;
                 }
