@@ -508,6 +508,9 @@ void run_tests(oe_block_dev_t* dev, size_t num_blocks)
     r = oefs_initialize(&fs, dev);
     OE_TEST(r == OE_EOK);
 
+    /* Mount this file system. */
+    OE_TEST(fs_mount(fs, "/mnt/oefs") == 0);
+
     /* Create some files. */
     _create_files(fs);
 
@@ -534,6 +537,14 @@ void run_tests(oe_block_dev_t* dev, size_t num_blocks)
     _dump_dir(fs, "/aaa/bbb/ccc");
     _remove_file(fs, "/aaa/bbb/ccc/myfile");
     _dump_dir(fs, "/aaa/bbb/ccc");
+
+    /* Lookup "/aaa/bbb/ccc/myfile". */
+    {
+        char suffix[FS_PATH_MAX];
+        fs_t* tmp = fs_lookup("/mnt/oefs/aaa/bbb/ccc/myfile", suffix);
+        OE_TEST(tmp == fs);
+        OE_TEST(strcmp(suffix, "/aaa/bbb/ccc/myfile") == 0);
+    }
 
     /* Remove some directories. */
     _dump_dir(fs, "/aaa/bbb");
@@ -567,7 +578,8 @@ void run_tests(oe_block_dev_t* dev, size_t num_blocks)
     /* Test the rename function. */
     _test_rename(fs);
 
-    fs->fs_release(fs);
+    OE_TEST(fs_unmount("/mnt/oefs") == 0);
+    //fs->fs_release(fs);
 }
 
 int test_oefs(const char* oefs_filename)

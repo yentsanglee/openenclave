@@ -2,6 +2,7 @@ Todo:
 
 (A) Encryption
 (A) Integrate with libc.
+(A) Reference counting (fs and dev)
 ---
 (B) Relative path handling
 (B) Implement ordinary (non-encrypted) host file I/O.
