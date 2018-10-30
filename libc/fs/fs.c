@@ -37,6 +37,13 @@ static bool _is_path_normalized(const char* path)
     if (buf[0] != '/')
         goto done;
 
+    /* If this is the root directory. */
+    if (buf[1] == '\0')
+    {
+        ret = true;
+        goto done;
+    }
+
     for (const char* p = buf; *p; p++)
     {
         /* The last character must not be a slash. */

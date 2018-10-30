@@ -579,20 +579,22 @@ int test_oefs(const char* oefs_filename)
     const uint32_t flags = OE_MOUNT_FLAG_MKFS;
     size_t num_blocks = 4 * 4096;
     int rc;
+    const char target1[] = "/";
+    const char target2[] = "/mnt/target2";
 
     /* Mount host file. */
-    rc = oe_mount_oefs(oefs_filename, "/mnt/mount1", flags, num_blocks);
+    rc = oe_mount_oefs(oefs_filename, target1, flags, num_blocks);
     OE_TEST(rc == 0);
 
     /* Mount enclave memory. */
-    rc = oe_mount_oefs(NULL, "/mnt/mount2", flags, num_blocks);
+    rc = oe_mount_oefs(NULL, target2, flags, num_blocks);
     OE_TEST(rc == 0);
 
-    run_tests("/mnt/mount1");
-    run_tests("/mnt/mount2");
+    run_tests(target1);
+    run_tests(target2);
 
-    rc = oe_unmount("/mnt/mount1");
-    rc = oe_unmount("/mnt/mount2");
+    rc = oe_unmount(target1);
+    rc = oe_unmount(target2);
 
     return 0;
 }
