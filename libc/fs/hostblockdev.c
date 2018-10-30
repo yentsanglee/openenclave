@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include "blockdev.h"
 #include <openenclave/internal/calls.h>
+#include <openenclave/enclave.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "blockdev.h"
 
 #if 0
 #define DUMP
@@ -119,11 +120,11 @@ done:
     return ret;
 }
 
-oe_result_t oe_open_host_block_dev(
+int oe_open_host_block_dev(
     const char* device_name,
     oe_block_dev_t** block_dev)
 {
-    oe_result_t result = OE_FAILURE;
+    int ret = -1;
     char* name = NULL;
     void* host_context = NULL;
     const uint16_t func = OE_OCALL_OPEN_BLOCK_DEVICE;
@@ -155,7 +156,7 @@ oe_result_t oe_open_host_block_dev(
     *block_dev = &device->base;
     device = NULL;
 
-    result = OE_OK;
+    ret = 0;
 
 done:
 
@@ -165,5 +166,5 @@ done:
     if (name)
         oe_host_free(name);
 
-    return result;
+    return ret;
 }

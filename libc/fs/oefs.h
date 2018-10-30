@@ -4,8 +4,6 @@
 #ifndef _oe_oefs_h
 #define _oe_oefs_h
 
-#include <openenclave/internal/defs.h>
-#include <openenclave/internal/types.h>
 #include "blockdev.h"
 #include "fs.h"
 

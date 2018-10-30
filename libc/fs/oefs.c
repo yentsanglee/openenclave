@@ -1,14 +1,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#define _GNU_SOURCE
 #include "oefs.h"
+#include <openenclave/internal/defs.h>
+#define _GNU_SOURCE
 #include <assert.h>
-#include <openenclave/internal/enclavelibc.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+#include <stdbool.h>
 #include "buf.h"
 
 /*
@@ -165,23 +166,19 @@ typedef struct _oefs
     /* ATTN: add magic number here. */
     oe_block_dev_t* dev;
 
-    union
-    {
+    union {
         const oefs_super_block_t read;
-        // This field should only be accessed with the _sb_write() method, 
+        // This field should only be accessed with the _sb_write() method,
         // which sets the oefs_t.dirty flag.
         oefs_super_block_t __write;
-    }
-    sb;
+    } sb;
 
-    union
-    {
+    union {
         // This field should only be accessed with the _bitmap_write() method,
         // which sets the oefs_t.dirty flag.
         uint8_t* __write;
         const uint8_t* read;
-    }
-    bitmap;
+    } bitmap;
 
     oefs_super_block_t sb_copy;
     uint8_t* bitmap_copy;
@@ -337,10 +334,7 @@ done:
     return err;
 }
 
-static oe_errno_t _load_inode(
-    oefs_t* oefs,
-    uint32_t ino,
-    oefs_inode_t* inode)
+static oe_errno_t _load_inode(oefs_t* oefs, uint32_t ino, oefs_inode_t* inode)
 {
     oe_errno_t err = OE_EOK;
 
@@ -407,10 +401,7 @@ done:
     return err;
 }
 
-static oe_errno_t _open_file(
-    oefs_t* oefs,
-    uint32_t ino,
-    fs_file_t** file_out)
+static oe_errno_t _open_file(oefs_t* oefs, uint32_t ino, fs_file_t** file_out)
 {
     oe_errno_t err = OE_EOK;
     fs_file_t* file = NULL;
@@ -641,9 +632,7 @@ static void _fill_slots(
     *rem_in_out = rem;
 }
 
-static oe_errno_t _append_block_chain(
-    fs_file_t* file,
-    const buf_u32_t* blknos)
+static oe_errno_t _append_block_chain(fs_file_t* file, const buf_u32_t* blknos)
 {
     oe_errno_t err = OE_EOK;
     const uint32_t* ptr = blknos->data;
@@ -671,7 +660,7 @@ static oe_errno_t _append_block_chain(
         if (file->bnode_blknos.size == 0)
             RAISE(OE_EIO);
 
-        blkno = file->bnode_blknos.data[file->bnode_blknos.size-1];
+        blkno = file->bnode_blknos.data[file->bnode_blknos.size - 1];
 
         CHECK(_read_block(file->oefs, blkno, &bnode));
 
@@ -924,10 +913,7 @@ done:
     return err;
 }
 
-static oe_errno_t _load_file(
-    fs_file_t* file,
-    void** data_out,
-    size_t* size_out)
+static oe_errno_t _load_file(fs_file_t* file, void** data_out, size_t* size_out)
 {
     oe_errno_t err = OE_EOK;
     buf_t buf = BUF_INITIALIZER;
@@ -939,7 +925,7 @@ static oe_errno_t _load_file(
 
     for (;;)
     {
-        CHECK(_fs_read(file, data, sizeof(data), &n)); 
+        CHECK(_fs_read(file, data, sizeof(data), &n));
 
         if (n == 0)
             break;
@@ -1067,7 +1053,9 @@ done:
 }
 
 static oe_errno_t _opendir_by_ino(
-    oefs_t* oefs, uint32_t ino, fs_dir_t** dir_out)
+    oefs_t* oefs,
+    uint32_t ino,
+    fs_dir_t** dir_out)
 {
     oe_errno_t err = OE_EOK;
     fs_dir_t* dir = NULL;
@@ -1669,10 +1657,7 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_link(
-    fs_t* fs,
-    const char* old_path,
-    const char* new_path)
+static oe_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
 {
     oefs_t* oefs = (oefs_t*)fs;
     oe_errno_t err = OE_EOK;
@@ -2235,7 +2220,7 @@ oe_errno_t oefs_initialize(fs_t** fs_out, oe_block_dev_t* dev)
          * (2) The first root directory block.
          * (3) The second root directory block.
          */
-        if (!_test_bit(bitmap, bitmap_size, 0) || 
+        if (!_test_bit(bitmap, bitmap_size, 0) ||
             !_test_bit(bitmap, bitmap_size, 1) ||
             !_test_bit(bitmap, bitmap_size, 2))
         {

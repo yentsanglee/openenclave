@@ -12,18 +12,18 @@ add_library(oelibc STATIC
     abort.S
     arc4random.c
     atexit.c
-    buf.c
     dladdr.c
     exp2l.S
-    cwd.c
-    hostblockdev.c
+    fs/buf.c
+    fs/fs.c
+    fs/hostblockdev.c
+    fs/oefs.c
+    fs/ramblockdev.c
     libunwind_stubs.c
     link.c
     locale.c
-    oefs.c
     malloc.c
     pthread.c
-    ramblockdev.c
     sched_yield.c
     stdlib.c
     strerror.c

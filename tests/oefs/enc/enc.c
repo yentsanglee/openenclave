@@ -13,19 +13,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../../libc/blockdev.h"
-#include "../../../libc/buf.h"
-#include "../../../libc/oefs.h"
+#include "../../../libc/fs/blockdev.h"
+#include "../../../libc/fs/buf.h"
+#include "../../../libc/fs/oefs.h"
 
 #define INIT
 
 #define BLOCK_SIZE 512
 
-static int _load(
-    fs_t* fs,
-    const char* path,
-    void** data_out,
-    size_t* size_out)
+static int _load(fs_t* fs, const char* path, void** data_out, size_t* size_out)
 {
     int ret = -1;
     fs_file_t* file = NULL;
@@ -499,24 +495,10 @@ static void _test_rename(fs_t* fs)
     OE_TEST(r != OE_EOK);
 }
 
-int test_oefs(const char* oefs_filename)
+void run_tests(oe_block_dev_t* dev, size_t num_blocks)
 {
-    oe_block_dev_t* dev;
-    size_t num_blocks = 4 * 4096;
     fs_t* fs;
-    oe_result_t result;
     oe_errno_t r;
-    size_t size;
-
-    (void)fs;
-
-    /* Compute the size of the OEFS file. */
-    r = oefs_size(num_blocks, &size);
-    OE_TEST(r == OE_EOK);
-
-    /* Ask the host to open the OEFS file. */
-    result = oe_open_host_block_dev(oefs_filename, &dev);
-    OE_TEST(result == OE_OK);
 
     /* Initialize the OEFS file. */
     r = oefs_mkfs(dev, num_blocks);
@@ -586,7 +568,31 @@ int test_oefs(const char* oefs_filename)
     _test_rename(fs);
 
     fs->fs_release(fs);
-    dev->close(dev);
+}
+
+int test_oefs(const char* oefs_filename)
+{
+    size_t num_blocks = 4 * 4096;
+
+    /* Run tests on the host block device. */
+    {
+        oe_block_dev_t* dev;
+
+        OE_TEST(oe_open_host_block_dev(oefs_filename, &dev) == 0);
+        run_tests(dev, num_blocks);
+        dev->close(dev);
+    }
+
+    /* Run tests on the RAM device. */
+    {
+        oe_block_dev_t* dev;
+        size_t size;
+
+        OE_TEST(oefs_size(num_blocks, &size) == OE_EOK);
+        OE_TEST(oe_open_ram_block_dev(size, &dev) == 0);
+        run_tests(dev, num_blocks);
+        dev->close(dev);
+    }
 
     return 0;
 }

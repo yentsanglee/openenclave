@@ -2,6 +2,8 @@
 #define _fs_h
 
 #include "errno.h"
+#include <stdint.h>
+#include <stdio.h>
 
 #define FS_PATH_MAX 256
 #define FS_BLOCK_SIZE 512
@@ -108,11 +110,8 @@ struct _fs
         int whence,
         ssize_t* offset_out);
 
-    oe_errno_t (*fs_read)(
-        fs_file_t* file,
-        void* data,
-        uint32_t size,
-        int32_t* nread);
+    oe_errno_t (
+        *fs_read)(fs_file_t* file, void* data, uint32_t size, int32_t* nread);
 
     oe_errno_t (*fs_write)(
         fs_file_t* file,
@@ -124,17 +123,12 @@ struct _fs
 
     oe_errno_t (*fs_stat)(fs_t* fs, const char* path, fs_stat_t* stat);
 
-    oe_errno_t (*fs_link)(
-        fs_t* fs,
-        const char* old_path,
-        const char* new_path);
+    oe_errno_t (*fs_link)(fs_t* fs, const char* old_path, const char* new_path);
 
     oe_errno_t (*fs_unlink)(fs_t* fs, const char* path);
 
-    oe_errno_t (*fs_rename)(
-        fs_t* fs,
-        const char* old_path,
-        const char* new_path);
+    oe_errno_t (
+        *fs_rename)(fs_t* fs, const char* old_path, const char* new_path);
 
     oe_errno_t (*fs_truncate)(fs_t* fs, const char* path);
 

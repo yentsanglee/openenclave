@@ -1,11 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <openenclave/internal/calls.h>
+#include "blockdev.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "blockdev.h"
 
 #define BLOCK_SIZE 512
 
@@ -77,9 +76,9 @@ done:
     return ret;
 }
 
-oe_result_t oe_open_ram_block_dev(size_t size, oe_block_dev_t** block_dev)
+int oe_open_ram_block_dev(size_t size, oe_block_dev_t** block_dev)
 {
-    oe_result_t result = OE_FAILURE;
+    int ret = -1;
     block_dev_t* device = NULL;
 
     if (block_dev)
@@ -106,12 +105,12 @@ oe_result_t oe_open_ram_block_dev(size_t size, oe_block_dev_t** block_dev)
     *block_dev = &device->base;
     device = NULL;
 
-    result = OE_OK;
+    ret = 0;
 
 done:
 
     if (device)
         free(device);
 
-    return result;
+    return ret;
 }
