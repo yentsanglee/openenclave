@@ -30,6 +30,6 @@ typedef enum _oe_errno {
     OE_EOVERFLOW = 75,    /* Value too large for defined data type */
     OE_EBADFD = 77,       /* File descriptor in bad state */
     OE_ENOTSOCK = 88,     /* Socket operation on nonsocket */
-} oe_errno_t;
+} fs_errno_t;
 
 #endif /* _oe_errno_h */

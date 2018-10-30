@@ -72,7 +72,7 @@ done:
 
 static void _dump_dir(fs_t* fs, const char* dirname)
 {
-    oe_errno_t r;
+    fs_errno_t r;
     fs_dir_t* dir;
     fs_dirent_t* ent;
 
@@ -98,7 +98,7 @@ static void _dump_dir(fs_t* fs, const char* dirname)
 static void _create_files(fs_t* fs)
 {
     const size_t NUM_FILES = 100;
-    oe_errno_t r;
+    fs_errno_t r;
     fs_file_t* file;
 
     for (size_t i = 0; i < NUM_FILES; i++)
@@ -115,7 +115,7 @@ static void _create_files(fs_t* fs)
 static void _remove_files_nnnn(fs_t* fs)
 {
     const size_t NUM_FILES = 100;
-    oe_errno_t r;
+    fs_errno_t r;
 
     for (size_t i = 0; i < NUM_FILES; i++)
     {
@@ -129,7 +129,7 @@ static void _remove_files_nnnn(fs_t* fs)
 static void _create_dirs(fs_t* fs)
 {
     const size_t NUM_DIRS = 10;
-    oe_errno_t r;
+    fs_errno_t r;
 
     for (size_t i = 0; i < NUM_DIRS; i++)
     {
@@ -199,7 +199,7 @@ static void _create_dirs(fs_t* fs)
 static void _remove_dir_nnnn(fs_t* fs)
 {
     const size_t NUM_DIRS = 10;
-    oe_errno_t r;
+    fs_errno_t r;
 
     for (size_t i = 0; i < NUM_DIRS; i++)
     {
@@ -240,7 +240,7 @@ static void _dump_file(fs_t* fs, const char* path)
 
 static void _update_file(fs_t* fs, const char* path)
 {
-    oe_errno_t r;
+    fs_errno_t r;
     fs_file_t* file = NULL;
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     const size_t FILE_SIZE = 1024;
@@ -304,7 +304,7 @@ static void _update_file(fs_t* fs, const char* path)
 
 static void _create_myfile(fs_t* fs)
 {
-    oe_errno_t r;
+    fs_errno_t r;
     fs_file_t* file;
     const char path[] = "/aaa/bbb/ccc/myfile";
 
@@ -324,25 +324,25 @@ static void _create_myfile(fs_t* fs)
 
 static void _truncate_file(fs_t* fs, const char* path)
 {
-    oe_errno_t r = fs->fs_truncate(fs, path);
+    fs_errno_t r = fs->fs_truncate(fs, path);
     OE_TEST(r == OE_EOK);
 }
 
 static void _remove_file(fs_t* fs, const char* path)
 {
-    oe_errno_t r = fs->fs_unlink(fs, path);
+    fs_errno_t r = fs->fs_unlink(fs, path);
     OE_TEST(r == OE_EOK);
 }
 
 static void _remove_dir(fs_t* fs, const char* path)
 {
-    oe_errno_t r = fs->fs_rmdir(fs, path);
+    fs_errno_t r = fs->fs_rmdir(fs, path);
     OE_TEST(r == OE_EOK);
 }
 
 static void _test_lseek(fs_t* fs)
 {
-    oe_errno_t r;
+    fs_errno_t r;
     fs_file_t* file;
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     const size_t alphabet_length = OE_COUNTOF(alphabet) - 1;
@@ -388,7 +388,7 @@ static void _test_lseek(fs_t* fs)
 
 static void _test_links(fs_t* fs)
 {
-    oe_errno_t r;
+    fs_errno_t r;
     fs_file_t* file;
     int32_t n;
     char buf[1024];
@@ -461,7 +461,7 @@ static void _test_links(fs_t* fs)
 
 static void _test_rename(fs_t* fs)
 {
-    oe_errno_t r;
+    fs_errno_t r;
     fs_file_t* file;
     int32_t n;
     char buf[1024];
@@ -498,7 +498,7 @@ static void _test_rename(fs_t* fs)
 void run_tests(oe_block_dev_t* dev, size_t num_blocks)
 {
     fs_t* fs;
-    oe_errno_t r;
+    fs_errno_t r;
 
     /* Initialize the OEFS file. */
     r = oefs_mkfs(dev, num_blocks);

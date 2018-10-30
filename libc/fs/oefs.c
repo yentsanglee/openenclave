@@ -51,7 +51,7 @@
 #define CHECK(ERR)                \
     do                            \
     {                             \
-        oe_errno_t __err__ = ERR; \
+        fs_errno_t __err__ = ERR; \
         if (__err__ != OE_EOK)    \
         {                         \
             err = __err__;        \
@@ -226,29 +226,29 @@ struct _fs_dir
     fs_dirent_t ent;
 };
 
-static oe_errno_t _fs_release(fs_t* fs);
+static fs_errno_t _fs_release(fs_t* fs);
 
-static oe_errno_t _fs_read(
+static fs_errno_t _fs_read(
     fs_file_t* file,
     void* data,
     uint32_t size,
     int32_t* nread);
 
-static oe_errno_t _fs_write(
+static fs_errno_t _fs_write(
     fs_file_t* file,
     const void* data,
     uint32_t size,
     int32_t* nwritten);
 
-static oe_errno_t _fs_close(fs_file_t* file);
+static fs_errno_t _fs_close(fs_file_t* file);
 
-static oe_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** dirent);
+static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** dirent);
 
-static oe_errno_t _fs_closedir(fs_dir_t* dir);
+static fs_errno_t _fs_closedir(fs_dir_t* dir);
 
-static oe_errno_t _fs_unlink(fs_t* fs, const char* path);
+static fs_errno_t _fs_unlink(fs_t* fs, const char* path);
 
-static oe_errno_t _fs_lseek(
+static fs_errno_t _fs_lseek(
     fs_file_t* file,
     ssize_t offset,
     int whence,
@@ -286,9 +286,9 @@ INLINE uint32_t _get_physical_blkno(oefs_t* oefs, uint32_t blkno)
     return blkno + (3 + num_bitmap_blocks) - 1;
 }
 
-static oe_errno_t _read_block(oefs_t* oefs, size_t blkno, void* block)
+static fs_errno_t _read_block(oefs_t* oefs, size_t blkno, void* block)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
@@ -310,9 +310,9 @@ done:
     return err;
 }
 
-static oe_errno_t _write_block(oefs_t* oefs, size_t blkno, const void* block)
+static fs_errno_t _write_block(oefs_t* oefs, size_t blkno, const void* block)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
@@ -334,9 +334,9 @@ done:
     return err;
 }
 
-static oe_errno_t _load_inode(oefs_t* oefs, uint32_t ino, oefs_inode_t* inode)
+static fs_errno_t _load_inode(oefs_t* oefs, uint32_t ino, oefs_inode_t* inode)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
 
     /* Read this inode into memory. */
     CHECK(_read_block(oefs, ino, inode));
@@ -349,13 +349,13 @@ done:
     return err;
 }
 
-static oe_errno_t _load_blknos(
+static fs_errno_t _load_blknos(
     oefs_t* oefs,
     oefs_inode_t* inode,
     buf_u32_t* bnode_blknos,
     buf_u32_t* blknos)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
 
     /* Collect direct block numbers from the inode. */
     {
@@ -401,9 +401,9 @@ done:
     return err;
 }
 
-static oe_errno_t _open_file(oefs_t* oefs, uint32_t ino, fs_file_t** file_out)
+static fs_errno_t _open_file(oefs_t* oefs, uint32_t ino, fs_file_t** file_out)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     fs_file_t* file = NULL;
 
     if (file_out)
@@ -450,9 +450,9 @@ static uint8_t* _bitmap_write(oefs_t* oefs)
     return oefs->bitmap.__write;
 }
 
-static oe_errno_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
+static fs_errno_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
 
     *blkno = 0;
 
@@ -473,9 +473,9 @@ done:
     return err;
 }
 
-static oe_errno_t _unassign_blkno(oefs_t* oefs, uint32_t blkno)
+static fs_errno_t _unassign_blkno(oefs_t* oefs, uint32_t blkno)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     uint32_t nbits = oefs->bitmap_size * 8;
     uint32_t index = blkno - 1;
 
@@ -491,9 +491,9 @@ done:
     return err;
 }
 
-static oe_errno_t _flush_super_block(oefs_t* oefs)
+static fs_errno_t _flush_super_block(oefs_t* oefs)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
 
     /* Flush the superblock if it changed. */
     if (memcmp(&oefs->sb, &oefs->sb_copy, sizeof(oefs_super_block_t)) != 0)
@@ -510,9 +510,9 @@ done:
     return err;
 }
 
-static oe_errno_t _flush_bitmap(oefs_t* oefs)
+static fs_errno_t _flush_bitmap(oefs_t* oefs)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     size_t num_bitmap_blocks;
 
     /* Calculate the number of bitmap blocks. */
@@ -542,9 +542,9 @@ done:
     return err;
 }
 
-static oe_errno_t _flush(oefs_t* oefs)
+static fs_errno_t _flush(oefs_t* oefs)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
 
     if (oefs->dirty)
     {
@@ -557,13 +557,13 @@ done:
     return err;
 }
 
-static oe_errno_t _write_data(
+static fs_errno_t _write_data(
     oefs_t* oefs,
     const void* data,
     uint32_t size,
     buf_u32_t* blknos)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     const uint8_t* ptr = (const uint8_t*)data;
     uint32_t remaining = size;
 
@@ -632,9 +632,9 @@ static void _fill_slots(
     *rem_in_out = rem;
 }
 
-static oe_errno_t _append_block_chain(fs_file_t* file, const buf_u32_t* blknos)
+static fs_errno_t _append_block_chain(fs_file_t* file, const buf_u32_t* blknos)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     const uint32_t* ptr = blknos->data;
     uint32_t rem = blknos->size;
 
@@ -727,12 +727,12 @@ static bool _sane_file(fs_file_t* file)
     return true;
 }
 
-static oe_errno_t _split_path(
+static fs_errno_t _split_path(
     const char* path,
     char dirname[FS_PATH_MAX],
     char basename[FS_PATH_MAX])
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     char* slash;
 
     /* Reject paths that are too long. */
@@ -783,14 +783,14 @@ done:
     return err;
 }
 
-static oe_errno_t _create_file(
+static fs_errno_t _create_file(
     oefs_t* oefs,
     uint32_t dir_ino,
     const char* name,
     uint8_t type,
     uint32_t* ino_out)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     uint32_t ino;
     fs_file_t* file = NULL;
 
@@ -876,9 +876,9 @@ done:
     return err;
 }
 
-static oe_errno_t _truncate_file(fs_file_t* file)
+static fs_errno_t _truncate_file(fs_file_t* file)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
 
     if (!file)
         RAISE(OE_EINVAL);
@@ -913,9 +913,9 @@ done:
     return err;
 }
 
-static oe_errno_t _load_file(fs_file_t* file, void** data_out, size_t* size_out)
+static fs_errno_t _load_file(fs_file_t* file, void** data_out, size_t* size_out)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     buf_t buf = BUF_INITIALIZER;
     char data[FS_BLOCK_SIZE];
     int32_t n;
@@ -945,9 +945,9 @@ done:
     return err;
 }
 
-static oe_errno_t _release_inode(oefs_t* oefs, uint32_t ino)
+static fs_errno_t _release_inode(oefs_t* oefs, uint32_t ino)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     fs_file_t* file = NULL;
 
     CHECK(_open_file(oefs, ino, &file));
@@ -965,13 +965,13 @@ done:
     return err;
 }
 
-static oe_errno_t _unlink_file(
+static fs_errno_t _unlink_file(
     oefs_t* oefs,
     uint32_t dir_ino,
     uint32_t ino,
     const char* name)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     fs_file_t* dir = NULL;
     fs_file_t* file = NULL;
     void* data = NULL;
@@ -1052,12 +1052,12 @@ done:
     return err;
 }
 
-static oe_errno_t _opendir_by_ino(
+static fs_errno_t _opendir_by_ino(
     oefs_t* oefs,
     uint32_t ino,
     fs_dir_t** dir_out)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     fs_dir_t* dir = NULL;
     fs_file_t* file = NULL;
 
@@ -1086,14 +1086,14 @@ done:
     return err;
 }
 
-static oe_errno_t _path_to_ino(
+static fs_errno_t _path_to_ino(
     oefs_t* oefs,
     const char* path,
     uint32_t* dir_ino_out,
     uint32_t* ino_out,
     uint8_t* type_out) /* fs_dir_t.d_type */
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     char buf[FS_PATH_MAX];
     const char* elements[FS_PATH_MAX];
     const size_t MAX_ELEMENTS = COUNTOF(elements);
@@ -1219,13 +1219,13 @@ done:
 **==============================================================================
 */
 
-static oe_errno_t _fs_read(
+static fs_errno_t _fs_read(
     fs_file_t* file,
     void* data,
     uint32_t size,
     int32_t* nread)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     uint32_t first;
     uint32_t i;
     uint32_t remaining;
@@ -1305,13 +1305,13 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_write(
+static fs_errno_t _fs_write(
     fs_file_t* file,
     const void* data,
     uint32_t size,
     int32_t* nwritten)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     uint32_t first;
     uint32_t i;
     uint32_t remaining;
@@ -1436,9 +1436,9 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_close(fs_file_t* file)
+static fs_errno_t _fs_close(fs_file_t* file)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
 
     if (!file)
         RAISE(OE_EINVAL);
@@ -1451,9 +1451,9 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_release(fs_t* fs)
+static fs_errno_t _fs_release(fs_t* fs)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     oefs_t* oefs = (oefs_t*)fs;
 
     if (!oefs || !oefs->bitmap.read || !oefs->bitmap_copy)
@@ -1468,9 +1468,9 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir)
+static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     oefs_t* oefs = (oefs_t*)fs;
     uint32_t ino;
 
@@ -1488,9 +1488,9 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
+static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     int32_t nread = 0;
 
     if (ent)
@@ -1516,9 +1516,9 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_closedir(fs_dir_t* dir)
+static fs_errno_t _fs_closedir(fs_dir_t* dir)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
 
     if (!dir || !dir->file)
         RAISE(OE_EINVAL);
@@ -1531,7 +1531,7 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_open(
+static fs_errno_t _fs_open(
     fs_t* fs,
     const char* path,
     int flags,
@@ -1539,7 +1539,7 @@ static oe_errno_t _fs_open(
     fs_file_t** file_out)
 {
     oefs_t* oefs = (oefs_t*)fs;
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     fs_file_t* file = NULL;
     uint32_t ino = 0;
 
@@ -1559,10 +1559,10 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
+static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
 {
     oefs_t* oefs = (oefs_t*)fs;
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     char dirname[FS_PATH_MAX];
     char basename[FS_PATH_MAX];
     uint32_t dir_ino;
@@ -1617,14 +1617,14 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_create(
+static fs_errno_t _fs_create(
     fs_t* fs,
     const char* path,
     uint32_t mode,
     fs_file_t** file_out)
 {
     oefs_t* oefs = (oefs_t*)fs;
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     char dirname[FS_PATH_MAX];
     char basename[FS_PATH_MAX];
     uint32_t dir_ino;
@@ -1657,10 +1657,10 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
+static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
 {
     oefs_t* oefs = (oefs_t*)fs;
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     uint32_t ino;
     char dirname[FS_PATH_MAX];
     char basename[FS_PATH_MAX];
@@ -1766,12 +1766,12 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_rename(
+static fs_errno_t _fs_rename(
     fs_t* fs,
     const char* old_path,
     const char* new_path)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
 
     if (!old_path || !new_path)
         RAISE(OE_EINVAL);
@@ -1784,10 +1784,10 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_unlink(fs_t* fs, const char* path)
+static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
 {
     oefs_t* oefs = (oefs_t*)fs;
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     uint32_t dir_ino;
     uint32_t ino;
     uint8_t type;
@@ -1811,10 +1811,10 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_truncate(fs_t* fs, const char* path)
+static fs_errno_t _fs_truncate(fs_t* fs, const char* path)
 {
     oefs_t* oefs = (oefs_t*)fs;
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     fs_file_t* file = NULL;
     uint32_t ino;
     uint8_t type;
@@ -1839,10 +1839,10 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_rmdir(fs_t* fs, const char* path)
+static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
 {
     oefs_t* oefs = (oefs_t*)fs;
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     uint32_t dir_ino;
     uint32_t ino;
     uint8_t type;
@@ -1880,10 +1880,10 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
+static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
 {
     oefs_t* oefs = (oefs_t*)fs;
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     oefs_inode_t inode;
     uint32_t ino;
     uint8_t type;
@@ -1916,13 +1916,13 @@ done:
     return err;
 }
 
-static oe_errno_t _fs_lseek(
+static fs_errno_t _fs_lseek(
     fs_file_t* file,
     ssize_t offset,
     int whence,
     ssize_t* offset_out)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     ssize_t new_offset;
 
     if (offset_out)
@@ -1975,9 +1975,9 @@ done:
 **==============================================================================
 */
 
-oe_errno_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
+fs_errno_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     size_t num_bitmap_blocks;
     uint32_t blkno = 0;
     uint8_t empty_block[FS_BLOCK_SIZE];
@@ -2127,9 +2127,9 @@ int _block_dev_put(oe_block_dev_t* dev, uint32_t blkno, const void* data)
     return 0;
 }
 
-oe_errno_t oefs_size(size_t num_blocks, size_t* size)
+fs_errno_t oefs_size(size_t num_blocks, size_t* size)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     block_dev_t dev;
 
     dev.base.close = _block_dev_close;
@@ -2149,9 +2149,9 @@ done:
     return err;
 }
 
-oe_errno_t oefs_initialize(fs_t** fs_out, oe_block_dev_t* dev)
+fs_errno_t oefs_initialize(fs_t** fs_out, oe_block_dev_t* dev)
 {
-    oe_errno_t err = OE_EOK;
+    fs_errno_t err = OE_EOK;
     size_t num_blocks;
     uint8_t* bitmap = NULL;
     uint8_t* bitmap_copy = NULL;
