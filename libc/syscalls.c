@@ -24,6 +24,7 @@
 #include <time.h>
 #include <time.h>
 #include <unistd.h>
+#include "fs/fs.h"
 
 static oe_syscall_hook_t _hook;
 static oe_spinlock_t _lock;
@@ -32,16 +33,61 @@ static const uint64_t _SEC_TO_MSEC = 1000UL;
 static const uint64_t _MSEC_TO_USEC = 1000UL;
 static const uint64_t _MSEC_TO_NSEC = 1000000UL;
 
+#define MAX_FILES 1024
+
+/* Offset to account for stdin=0, stdout=1, stderr=2. */
+#define FD_OFFSET 3
+
+typedef struct _file_entry
+{
+    fs_t* fs;
+    fs_file_t* file;
+}
+file_entry_t;
+
+static file_entry_t _file_entries[MAX_FILES];
+
+static size_t _assign_file_entry()
+{
+    for (size_t i = 0; i < MAX_FILES; i++)
+    {
+        if (_file_entries[i].fs == NULL && _file_entries[i].file == NULL)
+            return i;
+    }
+
+    return (size_t)-1;
+}
+
 static long
 _syscall_open(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
     const char* filename = (const char*)x1;
     int flags = (int)x2;
     int mode = (int)x3;
+    fs_t* fs = NULL;
 
-    (void)filename;
-    (void)flags;
-    (void)mode;
+    /* Open the file. */
+    {
+        char suffix[FS_PATH_MAX];
+
+        if ((fs = fs_lookup(filename, suffix)))
+        {
+            fs_file_t* file;
+            fs_errno_t err;
+            size_t index;
+
+            if ((index = _assign_file_entry()) == (size_t)-1)
+                return -1;
+
+            if ((err = fs->fs_open(fs, suffix, flags, mode, &file)) != 0)
+                return -1;
+
+            _file_entries[index].fs = fs;
+            _file_entries[index].file = file;
+
+            return index + FD_OFFSET;
+        }
+    }
 
     if (flags == O_WRONLY)
         return STDOUT_FILENO;
@@ -49,8 +95,28 @@ _syscall_open(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     return -1;
 }
 
-static long _syscall_close(long n, ...)
+static long _syscall_close(long n, long x1, ...)
 {
+    int fd = (int)x1;
+
+    if (fd >= FD_OFFSET)
+    {
+        const size_t index = fd - FD_OFFSET;
+        int ret = 0;
+
+        file_entry_t* entry = &_file_entries[index];
+
+        if (!entry->fs || !entry->file)
+            return -1;
+
+        if (entry->fs->fs_close(entry->file) != 0)
+            ret = -1;
+
+        memset(&_file_entries[index], 0, sizeof(_file_entries));
+
+        return ret;
+    }
+
     /* required by mbedtls */
     return 0;
 }

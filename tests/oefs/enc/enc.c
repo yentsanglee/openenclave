@@ -8,14 +8,14 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/file.h>
 #include <openenclave/internal/mount.h>
-#include <openenclave/internal/tests.h>
 #include <openenclave/internal/mount.h>
+#include <openenclave/internal/tests.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../../libc/fs/fs.h"
 #include "../../../libc/fs/buf.h"
+#include "../../../libc/fs/fs.h"
 
 #define INIT
 
@@ -525,7 +525,6 @@ void run_tests(const char* target)
     _dump_dir(fs, "/aaa/bbb/ccc");
     _create_myfile(fs);
     _dump_dir(fs, "/aaa/bbb/ccc");
-    _remove_file(fs, "/aaa/bbb/ccc/myfile");
     _dump_dir(fs, "/aaa/bbb/ccc");
 
     /* Lookup "/aaa/bbb/ccc/myfile". */
@@ -540,6 +539,21 @@ void run_tests(const char* target)
         OE_TEST(tmp == fs);
         OE_TEST(strcmp(suffix, "/aaa/bbb/ccc/myfile") == 0);
     }
+
+    /* Try fopen() */
+    {
+        char path[FS_PATH_MAX];
+        strlcpy(path, target, sizeof(path));
+        strlcat(path, "/aaa/bbb/ccc/myfile", sizeof(path));
+
+        printf("path=%s\n", path);
+        FILE* is = fopen(path, "rb");
+        OE_TEST(is != NULL);
+
+        fclose(is);
+    }
+
+    _remove_file(fs, "/aaa/bbb/ccc/myfile");
 
     /* Remove some directories. */
     _dump_dir(fs, "/aaa/bbb");
@@ -581,7 +595,7 @@ int test_oefs(const char* oefs_filename)
     int rc;
 
     /* Mount host file. */
-    const char target1[] = "/";
+    const char target1[] = "/mnt/oefs";
     rc = oe_mount_oefs(oefs_filename, target1, flags, num_blocks);
     OE_TEST(rc == 0);
 
