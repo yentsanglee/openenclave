@@ -44,6 +44,16 @@ void oe_exit(uint64_t arg1, uint64_t arg2);
 #endif
 
 #ifndef __ASSEMBLER__
+
+typedef struct _oe_ecall_enc_args_t {
+    uint64_t cssa;
+    void*    tcs;
+    uint64_t arg1;
+    uint64_t arg2;
+    uint64_t arg1_out;
+    uint64_t arg2_out;
+} _oe_ecall_enc_args_t;
+
 void __oe_handle_main(
     uint64_t arg1,
     uint64_t arg2,
@@ -52,8 +62,12 @@ void __oe_handle_main(
     uint64_t* output_arg1,
     uint64_t* output_arg2);
 
+void __oe_handle_main_wrap(
+    _oe_ecall_enc_args_t* ecall_args);
+
 void oe_exception_dispatcher(void* context);
-#endif
+
+#endif /* __ASSEMBLER__ */
 
 #ifndef __ASSEMBLER__
 void _oe_notify_nested_exit_start(
