@@ -306,24 +306,4 @@ NESTED_ENTRY oe_issue_sgx_ereport, _TEXT$00
 
 NESTED_END oe_issue_sgx_ereport, _TEXT$00
 
-;;==============================================================================
-;;
-;; oe_get_thread_data()
-;;
-;;     Returns a pointer to the thread data structure for the current thread.
-;;     This structure resides in the GS segment. Offset zero of this segment
-;;     contains the oe_thread_data_t.self_addr field (a back pointer to the
-;;     structure itself). This field is zero until the structure is initialized
-;;     by __oe_handle_main (which happens immediately an EENTER).
-;;
-;;==============================================================================
-
-LEAF_ENTRY oe_get_thread_data, _TEXT$00
-
-    mov     rax, qword ptr gs:[0];
-    ret
-
-LEAF_END oe_get_thread_data, _TEXT$00
-
-
 END

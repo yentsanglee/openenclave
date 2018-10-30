@@ -155,7 +155,11 @@ OE_INLINE void oe_pause(void)
     __asm__ volatile("pause\n\t");
 }
 
-#elif defined(_WIN32)
+/*
+ * OE_WIN32 is used for compiling 3rd party code as we need to undefine
+ * both _WIN32 and WIN32.
+ */
+#elif defined(_WIN32) || defined(OE_WIN32)
 
 #define OE_ATOMIC_MEMORY_BARRIER_ACQUIRE()
 #define OE_ATOMIC_MEMORY_BARRIER_RELEASE()
