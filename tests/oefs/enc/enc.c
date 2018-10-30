@@ -509,7 +509,7 @@ void run_tests(oe_block_dev_t* dev, size_t num_blocks)
     OE_TEST(r == OE_EOK);
 
     /* Mount this file system. */
-    OE_TEST(fs_mount(fs, "/mnt/oefs") == 0);
+    OE_TEST(fs_bind(fs, "/mnt/oefs") == 0);
 
     /* Create some files. */
     _create_files(fs);
@@ -578,7 +578,7 @@ void run_tests(oe_block_dev_t* dev, size_t num_blocks)
     /* Test the rename function. */
     _test_rename(fs);
 
-    OE_TEST(fs_unmount("/mnt/oefs") == 0);
+    OE_TEST(fs_unbind("/mnt/oefs") == 0);
     //fs->fs_release(fs);
 }
 

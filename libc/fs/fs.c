@@ -7,14 +7,14 @@
 
 #define MAX_MOUNTS 64
 
-typedef struct _mount
+typedef struct _binding
 {
     fs_t* fs;
     char path[FS_PATH_MAX];
-} mount_t;
+} binding_t;
 
-static mount_t _mounts[MAX_MOUNTS];
-static size_t _num_mounts;
+static binding_t _bindings[MAX_MOUNTS];
+static size_t _num_bindings;
 static pthread_spinlock_t _lock;
 
 /* Check that the path is normalized (see notes in function). */
@@ -58,44 +58,44 @@ done:
     return ret;
 }
 
-int fs_mount(fs_t* fs, const char* path)
+int fs_bind(fs_t* fs, const char* path)
 {
     int ret = -1;
-    bool locked = false;
-    mount_t mount;
+    binding_t binding;
 
     if (!fs || !path || !_is_path_normalized(path))
         goto done;
 
     pthread_spin_lock(&_lock);
-    locked = true;
-
-    if (_num_mounts == MAX_MOUNTS)
-        goto done;
-
-    /* Check whether path is already in use. */
-    for (size_t i = 0; i < _num_mounts; i++)
     {
-        if (strcmp(_mounts[i].path, path) == 0)
+        if (_num_bindings == MAX_MOUNTS)
             goto done;
-    }
 
-    /* Add the new mount. */
-    strlcpy(mount.path, path, FS_PATH_MAX);
-    mount.fs = fs;
-    _mounts[_num_mounts++] = mount;
+        /* Check whether path is already in use. */
+        for (size_t i = 0; i < _num_bindings; i++)
+        {
+            if (strcmp(_bindings[i].path, path) == 0)
+            {
+                pthread_spin_unlock(&_lock);
+                goto done;
+            }
+        }
+
+        /* Add the new binding. */
+        strlcpy(binding.path, path, FS_PATH_MAX);
+        binding.fs = fs;
+        _bindings[_num_bindings++] = binding;
+    }
+    pthread_spin_unlock(&_lock);
 
     ret = 0;
 
 done:
 
-    if (locked)
-        pthread_spin_unlock(&_lock);
-
     return ret;
 }
 
-int fs_unmount(const char* path)
+int fs_unbind(const char* path)
 {
     int ret = -1;
     fs_t* fs = NULL;
@@ -105,14 +105,14 @@ int fs_unmount(const char* path)
 
     pthread_spin_lock(&_lock);
     {
-        /* Find the mount for this path. */
-        for (size_t i = 0; i < _num_mounts; i++)
+        /* Find the binding for this path. */
+        for (size_t i = 0; i < _num_bindings; i++)
         {
-            if (strcmp(_mounts[i].path, path) == 0)
+            if (strcmp(_bindings[i].path, path) == 0)
             {
-                fs = _mounts[i].fs;
-                _mounts[i] = _mounts[_num_mounts-1];
-                _num_mounts--;
+                fs = _bindings[i].fs;
+                _bindings[i] = _bindings[_num_bindings-1];
+                _num_bindings--;
                 break;
             }
         }
@@ -141,19 +141,19 @@ fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX])
 
     pthread_spin_lock(&_lock);
     {
-        /* Find the longest mount point that contains this path. */
-        for (size_t i = 0; i < _num_mounts; i++)
+        /* Find the longest binding point that contains this path. */
+        for (size_t i = 0; i < _num_bindings; i++)
         {
-            size_t len = strlen(_mounts[i].path);
+            size_t len = strlen(_bindings[i].path);
 
-            if (strncmp(_mounts[i].path, path, len) == 0 &&
+            if (strncmp(_bindings[i].path, path, len) == 0 &&
                 (path[len] == '/' || path[len] == '\0'))
             {
                 if (len > match_len)
                 {
                     strlcpy(suffix, path + len, FS_PATH_MAX);
                     match_len = len;
-                    ret = _mounts[i].fs;
+                    ret = _bindings[i].fs;
                 }
             }
         }

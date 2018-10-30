@@ -143,9 +143,9 @@ struct _fs
     fs_errno_t (*fs_closedir)(fs_dir_t* dir);
 };
 
-int fs_mount(fs_t* fs, const char* path);
+int fs_bind(fs_t* fs, const char* path);
 
-int fs_unmount(const char* path);
+int fs_unbind(const char* path);
 
 fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX]);
 
