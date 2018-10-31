@@ -495,6 +495,39 @@ static void _test_rename(fs_t* fs)
     OE_TEST(r != OE_EOK);
 }
 
+static void _read_file(const char* target, const char* path)
+{
+    char filename[FS_PATH_MAX];
+    const size_t FILE_SIZE = 1024;
+
+    strlcpy(filename, target, sizeof(filename));
+    strlcat(filename, path, sizeof(filename));
+
+    FILE* is = fopen(filename, "rb");
+    OE_TEST(is != NULL);
+    ssize_t m = 0;
+
+    for (;;)
+    {
+        char buf[26];
+        ssize_t n = fread(buf, 1, sizeof(buf), is);
+        const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+
+        OE_TEST(n >= 0);
+
+        if (n == 0)
+            break;
+
+        OE_TEST(memcmp(buf, alphabet, n) == 0);
+
+        m += n;
+    }
+
+    OE_TEST(m == FILE_SIZE);
+
+    fclose(is);
+}
+
 void run_tests(const char* target)
 {
     fs_t* fs = fs_lookup(target, NULL);
@@ -517,6 +550,7 @@ void run_tests(const char* target)
         const char path[] = "/filename-0001";
         _update_file(fs, path);
         _dump_file(fs, path);
+        _read_file(target, path);
         _truncate_file(fs, path);
         _dump_file(fs, path);
     }
@@ -543,12 +577,18 @@ void run_tests(const char* target)
     /* Try fopen() */
     {
         char path[FS_PATH_MAX];
+        char buf[512];
+
         strlcpy(path, target, sizeof(path));
         strlcat(path, "/aaa/bbb/ccc/myfile", sizeof(path));
 
         printf("path=%s\n", path);
         FILE* is = fopen(path, "rb");
         OE_TEST(is != NULL);
+
+        ssize_t n = fread(buf, 1, sizeof(buf), is);
+        OE_TEST(n == 13);
+        OE_TEST(strcmp(buf, "Hello World!") == 0);
 
         fclose(is);
     }

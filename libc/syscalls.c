@@ -127,8 +127,44 @@ static long _syscall_mmap(long n, ...)
     return EPERM;
 }
 
-static long _syscall_readv(long n, ...)
+static long _syscall_readv(long num, long x1, long x2, long  x3, ...)
 {
+    int fd = (int)x1;
+    const struct iovec* iov = (const struct iovec*)x2;
+    int iovcnt = (int)x3;
+
+    (void)fd;
+    (void)iov;
+    (void)iovcnt;
+
+    if (fd >= FD_OFFSET)
+    {
+        const size_t index = fd - FD_OFFSET;
+        fs_t* fs = _file_entries[index].fs;
+        fs_file_t* file = _file_entries[index].file;
+        int32_t ret = 0;
+
+        if (!fs || !file)
+            return -1;
+
+        for (int i = 0; i < iovcnt; i++)
+        {
+            const struct iovec* p = &iov[i];
+            int32_t n;
+            fs_errno_t err = fs->fs_read(file, p->iov_base, p->iov_len, &n);
+
+            if (err != OE_EOK)
+                break;
+
+            ret += n;
+
+            if (n < iov->iov_len)
+                break;
+        }
+
+        return ret;
+    }
+
     /* required by mbedtls */
 
     /* return zero-bytes read */
