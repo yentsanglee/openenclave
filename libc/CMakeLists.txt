@@ -653,7 +653,8 @@ add_library(oelibc STATIC
     ${MUSLSRC}/time/__year_to_secs.c
     ${MUSLSRC}/unistd/close.c
     ${MUSLSRC}/unistd/dup.c
-    ${MUSLSRC}/unistd/dup3.c)
+    ${MUSLSRC}/unistd/dup3.c
+    ${MUSLSRC}/unistd/link.c)
 
 add_target_compile_flags(oelibc PRIVATE C
     -std=c99

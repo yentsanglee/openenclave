@@ -204,8 +204,8 @@ done:
 fs_errno_t fs_syscall_stat(const char* pathname, fs_stat_t* buf, int* ret)
 {
     fs_errno_t err = 0;
-    char suffix[FS_PATH_MAX];
     fs_t* fs;
+    char suffix[FS_PATH_MAX];
     fs_stat_t stat;
 
     if (buf)
@@ -254,6 +254,38 @@ fs_errno_t fs_syscall_lseek(int fd, ssize_t off, int whence, ssize_t* ret)
         RAISE(FS_EINVAL);
 
     CHECK(h.fs->fs_lseek(h.file, off, whence, ret));
+
+done:
+    return err;
+}
+
+fs_errno_t fs_syscall_link(const char* oldpath, const char* newpath, int* ret)
+{
+    fs_errno_t err = 0;
+    fs_t* old_fs;
+    fs_t* new_fs;
+    char old_suffix[FS_PATH_MAX];
+    char new_suffix[FS_PATH_MAX];
+
+    if (ret)
+        *ret = -1;
+
+    if (!oldpath || !newpath)
+        RAISE(FS_EINVAL);
+
+    if (!(old_fs = fs_lookup(oldpath, old_suffix)))
+        RAISE(FS_ENOENT);
+
+    if (!(new_fs = fs_lookup(newpath, new_suffix)))
+        RAISE(FS_ENOENT);
+
+    /* Disallow linking across different file systems. */
+    if (old_fs != new_fs)
+        RAISE(FS_ENOENT);
+
+    CHECK(old_fs->fs_link(old_fs, old_suffix, new_suffix));
+
+    *ret = 0;
 
 done:
     return err;

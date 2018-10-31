@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include "../../../libc/fs/buf.h"
 #include "../../../libc/fs/fs.h"
+#include <unistd.h>
 
 #define INIT
 
@@ -463,12 +464,13 @@ static void _test_links(fs_t* fs)
     OE_TEST(r == FS_EOK);
 }
 
-static void _test_rename(fs_t* fs)
+static void _test_rename(fs_t* fs, const char* target)
 {
     fs_errno_t r;
     fs_file_t* file;
     int32_t n;
     char buf[1024];
+    fs_stat_t stat;
 
     r = fs->fs_mkdir(fs, "/dir1", 0);
     OE_TEST(r == FS_EOK);
@@ -483,7 +485,13 @@ static void _test_rename(fs_t* fs)
     OE_TEST(n == 26);
     fs->fs_close(file);
 
+    r = fs->fs_stat(fs, "/dir1/file1", &stat);
+    OE_TEST(r == FS_EOK);
+
     r = fs->fs_rename(fs, "/dir1/file1", "/dir2/file2");
+    OE_TEST(r == FS_EOK);
+
+    r = fs->fs_stat(fs, "/dir2/file2", &stat);
     OE_TEST(r == FS_EOK);
 
     r = fs->fs_open(fs, "/dir2/file2", 0, 0, &file);
@@ -494,9 +502,25 @@ static void _test_rename(fs_t* fs)
     OE_TEST(strncmp(buf, "abcdefghijklmnopqrstuvwxyz", 26) == 0);
     fs->fs_close(file);
 
-    fs_stat_t stat;
     r = fs->fs_stat(fs, "/dir1/file1", &stat);
     OE_TEST(r != FS_EOK);
+
+    /* Test renaming back to original name. */
+    {
+        char oldpath[FS_PATH_MAX];
+        char newpath[FS_PATH_MAX];
+
+        strlcpy(oldpath, target, sizeof(oldpath));
+        strlcat(oldpath, "/dir2/file2", sizeof(oldpath));
+
+        strlcpy(newpath, target, sizeof(newpath));
+        strlcat(newpath, "/dir1/file1", sizeof(newpath));
+
+        OE_TEST(link(oldpath, newpath) == 0);
+
+        r = fs->fs_stat(fs, "/dir1/file1", &stat);
+        OE_TEST(r == FS_EOK);
+    }
 }
 
 static void _read_alphabet_file(const char* target, const char* path)
@@ -667,7 +691,7 @@ void run_tests(const char* target)
     _test_links(fs);
 
     /* Test the rename function. */
-    _test_rename(fs);
+    _test_rename(fs, target);
 
     /* Read posix read and write functions. */
     _write_alphabet_file(target, "/alphabet");

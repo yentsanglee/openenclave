@@ -12,6 +12,7 @@
 #include <string.h>
 #include "buf.h"
 #include "raise.h"
+#include "trace.h"
 
 /*
 **==============================================================================
@@ -1753,7 +1754,9 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
             break;
 
         if (n != sizeof(ent))
+        {
             RAISE(FS_EBADF);
+        }
 
         if (strcmp(ent.d_name, basename) == 0)
         {
@@ -1800,7 +1803,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
 
     /* Remove the destination file if it existed above. */
     if (release_ino)
-        CHECK(_release_inode(oefs, release_ino));
+       CHECK(_release_inode(oefs, release_ino));
 
 done:
 
