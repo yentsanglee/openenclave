@@ -499,7 +499,7 @@ static void _test_rename(fs_t* fs)
     OE_TEST(r != FS_EOK);
 }
 
-static void _read_file(const char* target, const char* path)
+static void _read_alphabet_file(const char* target, const char* path)
 {
     char filename[FS_PATH_MAX];
     const size_t FILE_SIZE = 1024;
@@ -540,6 +540,36 @@ static void _read_file(const char* target, const char* path)
     }
 }
 
+static void _write_alphabet_file(const char* target, const char* path)
+{
+    char filename[FS_PATH_MAX];
+    const size_t FILE_SIZE = 1024;
+    buf_t buf = BUF_INITIALIZER;
+    const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+    FILE* is;
+
+    strlcpy(filename, target, sizeof(filename));
+    strlcat(filename, path, sizeof(filename));
+
+    is = fopen(filename, "w");
+    OE_TEST(is != NULL);
+
+    /* Create buffer to write to file. */
+    for (size_t i = 0; i < FILE_SIZE; i++)
+    {
+        char c = alphabet[i % (sizeof(alphabet) - 1)];
+
+        if (buf_append(&buf, &c, 1) != 0)
+            OE_TEST(false);
+    }
+
+    ssize_t n = fwrite(buf.data, 1, buf.size, is);
+    OE_TEST(n == buf.size);
+
+    fclose(is);
+    buf_release(&buf);
+}
+
 void run_tests(const char* target)
 {
     fs_t* fs = fs_lookup(target, NULL);
@@ -562,7 +592,7 @@ void run_tests(const char* target)
         const char path[] = "/filename-0001";
         _update_file(fs, path);
         _dump_file(fs, path);
-        _read_file(target, path);
+        _read_alphabet_file(target, path);
         _truncate_file(fs, path);
         _dump_file(fs, path);
     }
@@ -638,6 +668,10 @@ void run_tests(const char* target)
 
     /* Test the rename function. */
     _test_rename(fs);
+
+    /* Read posix read and write functions. */
+    _write_alphabet_file(target, "/alphabet");
+    _read_alphabet_file(target, "/alphabet");
 }
 
 int test_oefs(const char* oefs_filename)

@@ -46,10 +46,7 @@ _syscall_open(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     err = fs_syscall_open(filename, flags, mode, &ret);
 
     if (err != FS_ENOENT)
-    {
-        errno = err;
         return ret;
-    }
 
     if (flags == O_WRONLY)
         return STDOUT_FILENO;
@@ -130,12 +127,7 @@ static long _syscall_stat(long num, long x1, long x2, long x3, ...)
 static long
 _syscall_ioctl(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
-    int fd = (int)x1;
-
-    /* only allow ioctl() on these descriptors */
-    if (fd != STDIN_FILENO && fd != STDOUT_FILENO && fd != STDERR_FILENO)
-        abort();
-
+    /* Silently ignore ioctl's */
     return 0;
 }
 
