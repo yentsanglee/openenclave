@@ -148,6 +148,54 @@ done:
     return err;
 }
 
+fs_errno_t fs_syscall_writev(
+    int fd,
+    const fs_iovec_t* iov,
+    int iovcnt,
+    ssize_t* ret)
+{
+    fs_errno_t err = 0;
+    int index;
+    fs_t* fs;
+    fs_file_t* file;
+    ssize_t nwritten = 0;
+
+    if (ret)
+        *ret = -1;
+
+    if (!iov || !ret)
+        RAISE(OE_EINVAL);
+
+    index = fd - FD_OFFSET;
+
+    if (index < 0 || index >= MAX_FILES)
+        RAISE(OE_EBADF);
+
+    fs = _file_entries[index].fs;
+    file = _file_entries[index].file;
+
+    if (!fs || !file)
+        RAISE(OE_EINVAL);
+
+    for (int i = 0; i < iovcnt; i++)
+    {
+        const fs_iovec_t* p = &iov[i];
+        int32_t n;
+
+        CHECK(fs->fs_write(file, p->iov_base, p->iov_len, &n));
+
+        if (n != iov->iov_len)
+            RAISE(OE_EIO);
+
+        nwritten += n;
+    }
+
+    *ret = nwritten;
+
+done:
+    return err;
+}
+
 fs_errno_t fs_syscall_stat(const char* pathname, fs_stat_t* buf, int* ret)
 {
     fs_errno_t err = 0;
