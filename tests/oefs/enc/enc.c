@@ -535,7 +535,7 @@ static void _read_file(const char* target, const char* path)
     {
         struct stat st;
         OE_TEST(stat(filename, &st) == 0);
-printf("size=%zu\n", st.st_size);
+        printf("size=%zu\n", st.st_size);
         OE_TEST(st.st_size == FILE_SIZE);
     }
 }

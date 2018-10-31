@@ -3,6 +3,7 @@
 
 #define __OE_NEED_TIME_CALLS
 #define _GNU_SOURCE
+#include "fs/syscall.h"
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -17,15 +18,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/time.h>
-#include <sys/stat.h>
 #include <sys/uio.h>
 #include <time.h>
 #include <time.h>
 #include <unistd.h>
-#include "fs/syscall.h"
 
 static oe_syscall_hook_t _hook;
 static oe_spinlock_t _lock;
@@ -78,13 +78,13 @@ static long _syscall_mmap(long n, ...)
     return EPERM;
 }
 
-static long _syscall_readv(long num, long x1, long x2, long  x3, ...)
+static long _syscall_readv(long num, long x1, long x2, long x3, ...)
 {
     int fd = (int)x1;
     const struct iovec* iov = (const struct iovec*)x2;
     int iovcnt = (int)x3;
     ssize_t ret;
-    
+
     if (fd >= 3)
     {
         errno = fs_syscall_readv(fd, (fs_iovec_t*)iov, iovcnt, &ret);
@@ -95,10 +95,10 @@ static long _syscall_readv(long num, long x1, long x2, long  x3, ...)
     return 0;
 }
 
-static long _syscall_stat(long num, long x1, long x2, long  x3, ...)
+static long _syscall_stat(long num, long x1, long x2, long x3, ...)
 {
-    const char *pathname = (const char*)x1;
-    struct stat *buf = (struct stat*)x2;
+    const char* pathname = (const char*)x1;
+    struct stat* buf = (struct stat*)x2;
     int ret = -1;
     fs_stat_t stat;
 

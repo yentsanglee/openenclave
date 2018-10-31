@@ -140,7 +140,7 @@ OE_STATIC_ASSERT(sizeof(oefs_bnode_t) == FS_BLOCK_SIZE);
 OE_STATIC_ASSERT(sizeof(fs_dirent_t) == 268);
 
 OE_STATIC_ASSERT(sizeof(fs_timespec_t) == 16);
-OE_STATIC_ASSERT(sizeof(fs_stat_t) == (10*4 + 3*16));
+OE_STATIC_ASSERT(sizeof(fs_stat_t) == (10 * 4 + 3 * 16));
 
 typedef struct _oefs
 {
@@ -1562,7 +1562,7 @@ static fs_errno_t _fs_open(
 
     /* Reject unsupported flags. */
     {
-        int supported_flags =0;
+        int supported_flags = 0;
 
         supported_flags |= FS_O_RDONLY;
         supported_flags |= FS_O_RDWR;

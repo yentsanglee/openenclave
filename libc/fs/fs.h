@@ -55,23 +55,23 @@
 
 /* File accessa and creation flags. */
 #define FS_O_LARGEFILE 0
-#define FS_O_RDONLY    00
-#define FS_O_WRONLY    01
-#define FS_O_RDWR      02
-#define FS_O_CREAT     0100
-#define FS_O_EXCL      0200
-#define FS_O_NOCTTY    0400
-#define FS_O_TRUNC     01000
-#define FS_O_APPEND    02000
-#define FS_O_NONBLOCK  04000
-#define FS_O_DSYNC     010000
-#define FS_O_ASYNC     020000
-#define FS_O_DIRECT    040000
-#define FS_O_SYNC      04010000
-#define FS_O_RSYNC     04010000
+#define FS_O_RDONLY 00
+#define FS_O_WRONLY 01
+#define FS_O_RDWR 02
+#define FS_O_CREAT 0100
+#define FS_O_EXCL 0200
+#define FS_O_NOCTTY 0400
+#define FS_O_TRUNC 01000
+#define FS_O_APPEND 02000
+#define FS_O_NONBLOCK 04000
+#define FS_O_DSYNC 010000
+#define FS_O_ASYNC 020000
+#define FS_O_DIRECT 040000
+#define FS_O_SYNC 04010000
+#define FS_O_RSYNC 04010000
 #define FS_O_DIRECTORY 0200000
-#define FS_O_NOFOLLOW  0400000
-#define FS_O_CLOEXEC   02000000
+#define FS_O_NOFOLLOW 0400000
+#define FS_O_CLOEXEC 02000000
 
 /* whence parameter for fs_lseek(). */
 #define FS_SEEK_SET 0
@@ -96,8 +96,7 @@ typedef struct _fs_timespec
 {
     long tv_sec;
     long tv_nsec;
-}
-fs_timespec_t;
+} fs_timespec_t;
 
 typedef struct _fs_stat
 {
@@ -122,8 +121,7 @@ typedef struct _fs_iovec
 {
     void* iov_base;
     size_t iov_len;
-}
-fs_iovec_t;
+} fs_iovec_t;
 
 struct _fs
 {
