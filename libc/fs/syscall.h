@@ -31,4 +31,6 @@ fs_errno_t fs_syscall_writev(
 
 fs_errno_t fs_syscall_stat(const char* pathname, fs_stat_t* buf, int* ret);
 
+fs_errno_t fs_syscall_lseek(int fd, ssize_t off, int whence, ssize_t* ret);
+
 #endif /* _fs_syscall_h */

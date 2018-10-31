@@ -279,6 +279,15 @@ done:
     return ret;
 }
 
+static ssize_t _syscall_lseek(int fd, ssize_t off, int whence)
+{
+    ssize_t ret;
+
+    errno = fs_syscall_lseek(fd, off, whence, &ret);
+
+    return ret;
+}
+
 /* Intercept __syscalls() from MUSL */
 long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
@@ -324,7 +333,8 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
             return _syscall_readv(n, x1, x2, x3, x4, x5, x6);
         case SYS_stat:
             return _syscall_stat(n, x1, x2, x3, x4, x5, x6);
-            break;
+        case SYS_lseek:
+            return _syscall_lseek(x1, x2, x3);
         default:
         {
             /* All other MUSL-initiated syscalls are aborted. */

@@ -127,6 +127,10 @@ struct _fs
 {
     fs_errno_t (*fs_release)(fs_t* fs);
 
+    /*****************************/
+    /*** File handle functions ***/
+    /*****************************/
+
     fs_errno_t (*fs_creat)(
         fs_t* fs,
         const char* path,
@@ -157,26 +161,43 @@ struct _fs
 
     fs_errno_t (*fs_close)(fs_file_t* file);
 
+    /**********************************/
+    /*** Directory handle functions ***/
+    /**********************************/
+
+    /* TODO: add syscall handler. */
+    fs_errno_t (*fs_opendir)(fs_t* fs, const char* path, fs_dir_t** dir);
+
+    /* TODO: add syscall handler. */
+    fs_errno_t (*fs_readdir)(fs_dir_t* dir, fs_dirent_t** dirent);
+
+    /* TODO: add syscall handler. */
+    fs_errno_t (*fs_closedir)(fs_dir_t* dir);
+
+    /*******************************/
+    /*** Path-oriented functions ***/
+    /*******************************/
+
     fs_errno_t (*fs_stat)(fs_t* fs, const char* path, fs_stat_t* stat);
 
+    /* TODO: add syscall handler. */
     fs_errno_t (*fs_link)(fs_t* fs, const char* old_path, const char* new_path);
 
+    /* TODO: add syscall handler. */
     fs_errno_t (*fs_unlink)(fs_t* fs, const char* path);
 
+    /* TODO: add syscall handler. */
     fs_errno_t (
         *fs_rename)(fs_t* fs, const char* old_path, const char* new_path);
 
+    /* TODO: add syscall handler. */
     fs_errno_t (*fs_truncate)(fs_t* fs, const char* path);
 
+    /* TODO: add syscall handler. */
     fs_errno_t (*fs_mkdir)(fs_t* fs, const char* path, uint32_t mode);
 
+    /* TODO: add syscall handler. */
     fs_errno_t (*fs_rmdir)(fs_t* fs, const char* path);
-
-    fs_errno_t (*fs_opendir)(fs_t* fs, const char* path, fs_dir_t** dir);
-
-    fs_errno_t (*fs_readdir)(fs_dir_t* dir, fs_dirent_t** dirent);
-
-    fs_errno_t (*fs_closedir)(fs_dir_t* dir);
 };
 
 int fs_bind(fs_t* fs, const char* path);
