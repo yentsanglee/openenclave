@@ -49,13 +49,13 @@ fs_errno_t fs_syscall_open(
         *ret = -1;
 
     if (!ret)
-        RAISE(OE_EINVAL);
+        RAISE(FS_EINVAL);
 
     if (!(fs = fs_lookup(pathname, suffix)))
-        RAISE(OE_ENOENT);
+        RAISE(FS_ENOENT);
 
     if ((index = _assign_file_entry()) == (size_t)-1)
-        RAISE(OE_EMFILE);
+        RAISE(FS_EMFILE);
 
     CHECK(fs->fs_open(fs, suffix, flags, mode, &file));
 
@@ -79,17 +79,17 @@ fs_errno_t fs_syscall_close(int fd, int* ret)
         *ret = -1;
 
     if (!ret)
-        RAISE(OE_EINVAL);
+        RAISE(FS_EINVAL);
 
     index = fd - FD_OFFSET;
 
     if (index < 0 || index >= MAX_FILES)
-        RAISE(OE_EBADF);
+        RAISE(FS_EBADF);
 
     entry = &_file_entries[index];
 
     if (!entry->fs || !entry->file)
-        RAISE(OE_EINVAL);
+        RAISE(FS_EINVAL);
 
     CHECK(entry->fs->fs_close(entry->file));
 
@@ -117,18 +117,18 @@ fs_errno_t fs_syscall_readv(
         *ret = -1;
 
     if (!iov || !ret)
-        RAISE(OE_EINVAL);
+        RAISE(FS_EINVAL);
 
     index = fd - FD_OFFSET;
 
     if (index < 0 || index >= MAX_FILES)
-        RAISE(OE_EBADF);
+        RAISE(FS_EBADF);
 
     fs = _file_entries[index].fs;
     file = _file_entries[index].file;
 
     if (!fs || !file)
-        RAISE(OE_EINVAL);
+        RAISE(FS_EINVAL);
 
     for (int i = 0; i < iovcnt; i++)
     {
@@ -164,18 +164,18 @@ fs_errno_t fs_syscall_writev(
         *ret = -1;
 
     if (!iov || !ret)
-        RAISE(OE_EINVAL);
+        RAISE(FS_EINVAL);
 
     index = fd - FD_OFFSET;
 
     if (index < 0 || index >= MAX_FILES)
-        RAISE(OE_EBADF);
+        RAISE(FS_EBADF);
 
     fs = _file_entries[index].fs;
     file = _file_entries[index].file;
 
     if (!fs || !file)
-        RAISE(OE_EINVAL);
+        RAISE(FS_EINVAL);
 
     for (int i = 0; i < iovcnt; i++)
     {
@@ -185,7 +185,7 @@ fs_errno_t fs_syscall_writev(
         CHECK(fs->fs_write(file, p->iov_base, p->iov_len, &n));
 
         if (n != iov->iov_len)
-            RAISE(OE_EIO);
+            RAISE(FS_EIO);
 
         nwritten += n;
     }
@@ -212,10 +212,10 @@ fs_errno_t fs_syscall_stat(const char* pathname, fs_stat_t* buf, int* ret)
     memset(&stat, 0, sizeof(stat));
 
     if (!pathname || !buf || !ret)
-        RAISE(OE_EINVAL);
+        RAISE(FS_EINVAL);
 
     if (!(fs = fs_lookup(pathname, suffix)))
-        RAISE(OE_ENOENT);
+        RAISE(FS_ENOENT);
 
     CHECK(fs->fs_stat(fs, suffix, &stat));
 

@@ -45,7 +45,7 @@ _syscall_open(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 
     err = fs_syscall_open(filename, flags, mode, &ret);
 
-    if (err != OE_ENOENT)
+    if (err != FS_ENOENT)
     {
         errno = err;
         return ret;

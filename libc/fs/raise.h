@@ -9,7 +9,7 @@
     do                            \
     {                             \
         fs_errno_t __err__ = ERR; \
-        if (__err__ != OE_EOK)    \
+        if (__err__ != FS_EOK)    \
         {                         \
             err = __err__;        \
             goto done;            \
