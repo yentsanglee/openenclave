@@ -1,11 +1,11 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _oe_errno_h
-#define _oe_errno_h
+#ifndef _fs_errno_h
+#define _fs_errno_h
 
 /* Subset of supported errno's. */
-typedef enum _oe_errno {
+typedef enum _fs_errno {
     OE_EOK = 0,           /* Success */
     OE_EPERM = 1,         /* Operation not permitted */
     OE_ENOENT = 2,        /* No such file or directory */
@@ -35,4 +35,4 @@ typedef enum _oe_errno {
     OE_ENOTSOCK = 88,     /* Socket operation on nonsocket */
 } fs_errno_t;
 
-#endif /* _oe_errno_h */
+#endif /* _fs_errno_h */

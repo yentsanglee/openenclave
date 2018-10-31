@@ -25,7 +25,7 @@
 #include <time.h>
 #include <time.h>
 #include <unistd.h>
-#include "fs/fs.h"
+#include "fs/syscall.h"
 
 static oe_syscall_hook_t _hook;
 static oe_spinlock_t _lock;
@@ -34,60 +34,21 @@ static const uint64_t _SEC_TO_MSEC = 1000UL;
 static const uint64_t _MSEC_TO_USEC = 1000UL;
 static const uint64_t _MSEC_TO_NSEC = 1000000UL;
 
-#define MAX_FILES 1024
-
-/* Offset to account for stdin=0, stdout=1, stderr=2. */
-#define FD_OFFSET 3
-
-typedef struct _file_entry
-{
-    fs_t* fs;
-    fs_file_t* file;
-}
-file_entry_t;
-
-static file_entry_t _file_entries[MAX_FILES];
-
-static size_t _assign_file_entry()
-{
-    for (size_t i = 0; i < MAX_FILES; i++)
-    {
-        if (_file_entries[i].fs == NULL && _file_entries[i].file == NULL)
-            return i;
-    }
-
-    return (size_t)-1;
-}
-
 static long
 _syscall_open(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
     const char* filename = (const char*)x1;
     int flags = (int)x2;
     int mode = (int)x3;
-    fs_t* fs = NULL;
+    fs_errno_t err;
+    int ret;
 
-    /* Open the file. */
+    err = fs_syscall_open(filename, flags, mode, &ret);
+
+    if (err != OE_ENOENT)
     {
-        char suffix[FS_PATH_MAX];
-
-        if ((fs = fs_lookup(filename, suffix)))
-        {
-            fs_file_t* file;
-            fs_errno_t err;
-            size_t index;
-
-            if ((index = _assign_file_entry()) == (size_t)-1)
-                return -1;
-
-            if ((err = fs->fs_open(fs, suffix, flags, mode, &file)) != 0)
-                return -1;
-
-            _file_entries[index].fs = fs;
-            _file_entries[index].file = file;
-
-            return index + FD_OFFSET;
-        }
+        errno = err;
+        return ret;
     }
 
     if (flags == O_WRONLY)
@@ -99,22 +60,11 @@ _syscall_open(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 static long _syscall_close(long n, long x1, ...)
 {
     int fd = (int)x1;
+    int ret;
 
-    if (fd >= FD_OFFSET)
+    if (fd >= 3)
     {
-        const size_t index = fd - FD_OFFSET;
-        int ret = 0;
-
-        file_entry_t* entry = &_file_entries[index];
-
-        if (!entry->fs || !entry->file)
-            return -1;
-
-        if (entry->fs->fs_close(entry->file) != 0)
-            ret = -1;
-
-        memset(&_file_entries[index], 0, sizeof(_file_entries));
-
+        errno = fs_syscall_close(fd, &ret);
         return ret;
     }
 
@@ -133,40 +83,13 @@ static long _syscall_readv(long num, long x1, long x2, long  x3, ...)
     int fd = (int)x1;
     const struct iovec* iov = (const struct iovec*)x2;
     int iovcnt = (int)x3;
-
-    (void)fd;
-    (void)iov;
-    (void)iovcnt;
-
-    if (fd >= FD_OFFSET)
+    ssize_t ret;
+    
+    if (fd >= 3)
     {
-        const size_t index = fd - FD_OFFSET;
-        fs_t* fs = _file_entries[index].fs;
-        fs_file_t* file = _file_entries[index].file;
-        int32_t ret = 0;
-
-        if (!fs || !file)
-            return -1;
-
-        for (int i = 0; i < iovcnt; i++)
-        {
-            const struct iovec* p = &iov[i];
-            int32_t n;
-            fs_errno_t err = fs->fs_read(file, p->iov_base, p->iov_len, &n);
-
-            if (err != OE_EOK)
-                break;
-
-            ret += n;
-
-            if (n < iov->iov_len)
-                break;
-        }
-
+        errno = fs_syscall_readv(fd, (fs_iovec_t*)iov, iovcnt, &ret);
         return ret;
     }
-
-    /* required by mbedtls */
 
     /* return zero-bytes read */
     return 0;
@@ -176,42 +99,32 @@ static long _syscall_stat(long num, long x1, long x2, long  x3, ...)
 {
     const char *pathname = (const char*)x1;
     struct stat *buf = (struct stat*)x2;
-    fs_t* fs = NULL;
+    int ret = -1;
+    fs_stat_t stat;
 
+    errno = fs_syscall_stat(pathname, &stat, &ret);
+
+    if (errno == 0)
     {
-        char suffix[FS_PATH_MAX];
-
-        if ((fs = fs_lookup(pathname, suffix)))
-        {
-            fs_stat_t stat;
-            fs_errno_t err;
-
-            if ((err = fs->fs_stat(fs, suffix, &stat)) != 0)
-                return -1;
-
-            buf->st_dev = stat.st_dev;
-            buf->st_ino = stat.st_ino;
-            buf->st_mode = stat.st_mode;
-            buf->st_nlink = stat.st_nlink;
-            buf->st_uid = stat.st_uid;
-            buf->st_gid = stat.st_gid;
-            buf->st_rdev = stat.st_rdev;
-            buf->st_size = stat.st_size;
-            buf->st_blksize = stat.st_blksize;
-            buf->st_blocks = stat.st_blocks;
-            buf->st_atim.tv_sec = stat.st_atim.tv_sec;
-            buf->st_atim.tv_nsec = stat.st_atim.tv_nsec;
-            buf->st_mtim.tv_sec = stat.st_mtim.tv_sec;
-            buf->st_mtim.tv_nsec = stat.st_mtim.tv_nsec;
-            buf->st_ctim.tv_sec = stat.st_ctim.tv_sec;
-            buf->st_ctim.tv_nsec = stat.st_ctim.tv_nsec;
-
-            return 0;
-        }
+        buf->st_dev = stat.st_dev;
+        buf->st_ino = stat.st_ino;
+        buf->st_mode = stat.st_mode;
+        buf->st_nlink = stat.st_nlink;
+        buf->st_uid = stat.st_uid;
+        buf->st_gid = stat.st_gid;
+        buf->st_rdev = stat.st_rdev;
+        buf->st_size = stat.st_size;
+        buf->st_blksize = stat.st_blksize;
+        buf->st_blocks = stat.st_blocks;
+        buf->st_atim.tv_sec = stat.st_atim.tv_sec;
+        buf->st_atim.tv_nsec = stat.st_atim.tv_nsec;
+        buf->st_mtim.tv_sec = stat.st_mtim.tv_sec;
+        buf->st_mtim.tv_nsec = stat.st_mtim.tv_nsec;
+        buf->st_ctim.tv_sec = stat.st_ctim.tv_sec;
+        buf->st_ctim.tv_nsec = stat.st_ctim.tv_nsec;
     }
 
-
-    return -1;
+    return ret;
 }
 
 static long

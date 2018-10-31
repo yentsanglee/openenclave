@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "buf.h"
+#include "raise.h"
 
 /*
 **==============================================================================
@@ -41,35 +42,9 @@
 **==============================================================================
 */
 
-#define TRACE printf("%s(%u): %s()\n", __FILE__, __LINE__, __FUNCTION__)
-
 #define INLINE static __inline
 
 #define COUNTOF(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
-
-// clang-format off
-#define CHECK(ERR)                \
-    do                            \
-    {                             \
-        fs_errno_t __err__ = ERR; \
-        if (__err__ != OE_EOK)    \
-        {                         \
-            err = __err__;        \
-            goto done;            \
-        }                         \
-    }                             \
-    while (0)
-// clang-format on
-
-// clang-format off
-#define RAISE(ERR) \
-    do             \
-    {              \
-        err = ERR; \
-        goto done; \
-    }              \
-    while (0)
-// clang-format on
 
 #define BITS_PER_BLOCK (FS_BLOCK_SIZE * 8)
 
@@ -226,6 +201,9 @@ struct _fs_file
 
     /* The file offset (or current position). */
     uint32_t offset;
+
+    /* Access flags: FS_O_RDONLY FS_O_RDWR, FS_O_WRONLY */
+    int access;
 
     bool eof;
 };
@@ -1571,8 +1549,10 @@ static fs_errno_t _fs_open(
 {
     oefs_t* oefs = (oefs_t*)fs;
     fs_errno_t err = OE_EOK;
+    fs_errno_t tmp_err;
     fs_file_t* file = NULL;
     uint32_t ino = 0;
+    uint8_t type;
 
     if (file_out)
         *file_out = NULL;
@@ -1580,8 +1560,71 @@ static fs_errno_t _fs_open(
     if (!_valid_oefs(fs) || !path || !file_out)
         RAISE(OE_EINVAL);
 
-    CHECK(_path_to_ino(oefs, path, NULL, &ino, NULL));
-    CHECK(_open_file(oefs, ino, &file));
+    /* Reject unsupported flags. */
+    {
+        int supported_flags =0;
+
+        supported_flags |= FS_O_RDONLY;
+        supported_flags |= FS_O_RDWR;
+        supported_flags |= FS_O_WRONLY;
+        supported_flags |= FS_O_CREAT;
+        supported_flags |= FS_O_EXCL;
+        supported_flags |= FS_O_TRUNC;
+        supported_flags |= FS_O_APPEND;
+        supported_flags |= FS_O_DIRECTORY;
+
+        if (flags & ~supported_flags)
+            RAISE(OE_EINVAL);
+    }
+
+    /* Get the file's inode (only if it exists). */
+    tmp_err = _path_to_ino(oefs, path, NULL, &ino, &type);
+
+    /* If the file already exists. */
+    if (tmp_err == 0)
+    {
+        if ((flags & FS_O_CREAT && flags & FS_O_EXCL))
+            RAISE(OE_EEXIST);
+
+        if ((flags & FS_O_DIRECTORY) && (type != FS_DT_DIR))
+            RAISE(OE_ENOTDIR);
+
+        CHECK(_open_file(oefs, ino, &file));
+
+        if (flags & FS_O_TRUNC)
+            CHECK(_truncate_file(file));
+
+        if (flags & FS_O_APPEND)
+            file->offset = file->inode.i_size;
+    }
+    else if (tmp_err = OE_ENOENT)
+    {
+        char dirname[FS_PATH_MAX];
+        char basename[FS_PATH_MAX];
+        uint32_t dir_ino;
+
+        if (!(flags & FS_O_CREAT))
+            RAISE(OE_ENOENT);
+
+        /* Split the path into parent directory and file name */
+        CHECK(_split_path(path, dirname, basename));
+
+        /* Get the inode of the parent directory. */
+        CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL));
+
+        /* Create the new file. */
+        CHECK(_create_file(oefs, dir_ino, basename, FS_DT_REG, &ino));
+
+        /* Open the new file. */
+        CHECK(_open_file(oefs, ino, &file));
+    }
+    else
+    {
+        RAISE(tmp_err);
+    }
+
+    /* Save the access flags. */
+    file->access = (flags & (FS_O_RDONLY | FS_O_RDWR | FS_O_WRONLY));
 
     *file_out = file;
 
@@ -1654,38 +1697,8 @@ static fs_errno_t _fs_create(
     uint32_t mode,
     fs_file_t** file_out)
 {
-    oefs_t* oefs = (oefs_t*)fs;
-    fs_errno_t err = OE_EOK;
-    char dirname[FS_PATH_MAX];
-    char basename[FS_PATH_MAX];
-    uint32_t dir_ino;
-    uint32_t ino;
-    fs_file_t* file = NULL;
-
-    if (file_out)
-        *file_out = NULL;
-
-    if (!_valid_oefs(fs) || !path || !file_out)
-        RAISE(OE_EINVAL);
-
-    /* Split the path into parent directory and file name */
-    CHECK(_split_path(path, dirname, basename));
-
-    /* Get the inode of the parent directory. */
-    CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL));
-
-    /* Create the new file. */
-    CHECK(_create_file(oefs, dir_ino, basename, FS_DT_REG, &ino));
-
-    /* Open the new file. */
-    CHECK(_open_file(oefs, ino, &file));
-
-    *file_out = file;
-    file = NULL;
-
-done:
-
-    return err;
+    int flags = FS_O_CREAT | FS_O_WRONLY | FS_O_TRUNC;
+    return _fs_open(fs, path, flags, mode, file_out);
 }
 
 static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
