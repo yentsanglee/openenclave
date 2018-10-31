@@ -407,7 +407,7 @@ done:
     return err;
 }
 
-static fs_errno_t _open_file(oefs_t* oefs, uint32_t ino, fs_file_t** file_out)
+static fs_errno_t _open(oefs_t* oefs, uint32_t ino, fs_file_t** file_out)
 {
     fs_errno_t err = FS_EOK;
     fs_file_t* file = NULL;
@@ -790,7 +790,7 @@ done:
     return err;
 }
 
-static fs_errno_t _create_file(
+static fs_errno_t _creat(
     oefs_t* oefs,
     uint32_t dir_ino,
     const char* name,
@@ -834,7 +834,7 @@ static fs_errno_t _create_file(
         fs_dirent_t ent;
         int32_t n;
 
-        CHECK(_open_file(oefs, dir_ino, &file));
+        CHECK(_open(oefs, dir_ino, &file));
 
         /* Check for duplicates. */
         for (;;)
@@ -883,7 +883,7 @@ done:
     return err;
 }
 
-static fs_errno_t _truncate_file(fs_file_t* file)
+static fs_errno_t _truncate(fs_file_t* file)
 {
     fs_errno_t err = FS_EOK;
 
@@ -957,8 +957,8 @@ static fs_errno_t _release_inode(oefs_t* oefs, uint32_t ino)
     fs_errno_t err = FS_EOK;
     fs_file_t* file = NULL;
 
-    CHECK(_open_file(oefs, ino, &file));
-    CHECK(_truncate_file(file));
+    CHECK(_open(oefs, ino, &file));
+    CHECK(_truncate(file));
     CHECK(_unassign_blkno(oefs, file->ino));
 
 done:
@@ -972,7 +972,7 @@ done:
     return err;
 }
 
-static fs_errno_t _unlink_file(
+static fs_errno_t _unlink(
     oefs_t* oefs,
     uint32_t dir_ino,
     uint32_t ino,
@@ -989,7 +989,7 @@ static fs_errno_t _unlink_file(
         RAISE(FS_EINVAL);
 
     /* Open the directory file. */
-    CHECK(_open_file(oefs, dir_ino, &dir));
+    CHECK(_open(oefs, dir_ino, &dir));
 
     /* Load the contents of the parent directory into memory. */
     CHECK(_load_file(dir, &data, &size));
@@ -1003,7 +1003,7 @@ static fs_errno_t _unlink_file(
     }
 
     /* Truncate the parent directory. */
-    CHECK(_truncate_file(dir));
+    CHECK(_truncate(dir));
 
     /* Rewrite the directory entries but exclude the removed file. */
     {
@@ -1074,7 +1074,7 @@ static fs_errno_t _opendir_by_ino(
     if (!oefs || !ino || !dir_out)
         RAISE(FS_EINVAL);
 
-    CHECK(_open_file(oefs, ino, &file));
+    CHECK(_open(oefs, ino, &file));
 
     if (!(dir = calloc(1, sizeof(fs_dir_t))))
         RAISE(FS_ENOMEM);
@@ -1589,10 +1589,10 @@ static fs_errno_t _fs_open(
         if ((flags & FS_O_DIRECTORY) && (type != FS_DT_DIR))
             RAISE(FS_ENOTDIR);
 
-        CHECK(_open_file(oefs, ino, &file));
+        CHECK(_open(oefs, ino, &file));
 
         if (flags & FS_O_TRUNC)
-            CHECK(_truncate_file(file));
+            CHECK(_truncate(file));
 
         if (flags & FS_O_APPEND)
             file->offset = file->inode.i_size;
@@ -1613,10 +1613,10 @@ static fs_errno_t _fs_open(
         CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL));
 
         /* Create the new file. */
-        CHECK(_create_file(oefs, dir_ino, basename, FS_DT_REG, &ino));
+        CHECK(_creat(oefs, dir_ino, basename, FS_DT_REG, &ino));
 
         /* Open the new file. */
-        CHECK(_open_file(oefs, ino, &file));
+        CHECK(_open(oefs, ino, &file));
     }
     else
     {
@@ -1653,10 +1653,10 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
     CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL));
 
     /* Create the new directory file. */
-    CHECK(_create_file(oefs, dir_ino, basename, FS_DT_DIR, &ino));
+    CHECK(_creat(oefs, dir_ino, basename, FS_DT_DIR, &ino));
 
     /* Open the newly created directory */
-    CHECK(_open_file(oefs, ino, &file));
+    CHECK(_open(oefs, ino, &file));
 
     /* Write the empty directory contents. */
     {
@@ -1691,7 +1691,7 @@ done:
     return err;
 }
 
-static fs_errno_t _fs_create(
+static fs_errno_t _fs_creat(
     fs_t* fs,
     const char* path,
     uint32_t mode,
@@ -1738,7 +1738,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
         if (type != FS_DT_DIR)
             RAISE(FS_EINVAL);
 
-        CHECK(_open_file(oefs, dir_ino, &dir));
+        CHECK(_open(oefs, dir_ino, &dir));
     }
 
     /* Replace the destination file if it already exists. */
@@ -1848,7 +1848,7 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
         RAISE(FS_EINVAL);
 
     CHECK(_split_path(path, dirname, basename));
-    CHECK(_unlink_file(oefs, dir_ino, ino, basename));
+    CHECK(_unlink(oefs, dir_ino, ino, basename));
 
 done:
 
@@ -1872,8 +1872,8 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path)
     if (type != FS_DT_REG)
         RAISE(FS_EINVAL);
 
-    CHECK(_open_file(oefs, ino, &file));
-    CHECK(_truncate_file(file));
+    CHECK(_open(oefs, ino, &file));
+    CHECK(_truncate(file));
 
 done:
 
@@ -1917,7 +1917,7 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
     }
 
     CHECK(_split_path(path, dirname, basename));
-    CHECK(_unlink_file(oefs, dir_ino, ino, basename));
+    CHECK(_unlink(oefs, dir_ino, ino, basename));
 
 done:
 
@@ -2301,7 +2301,7 @@ fs_errno_t oefs_initialize(fs_t** fs_out, oe_block_dev_t* dev)
     oefs->base.fs_release = _fs_release;
 
     /* File handle methods. */
-    oefs->base.fs_create = _fs_create;
+    oefs->base.fs_creat = _fs_creat;
     oefs->base.fs_open = _fs_open;
     oefs->base.fs_lseek = _fs_lseek;
     oefs->base.fs_read = _fs_read;

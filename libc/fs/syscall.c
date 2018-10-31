@@ -69,6 +69,15 @@ done:
     return err;
 }
 
+fs_errno_t fs_syscall_creat(
+    const char* pathname,
+    uint32_t mode,
+    int* ret)
+{
+    int flags = FS_O_CREAT | FS_O_WRONLY | FS_O_TRUNC;
+    return fs_syscall_open(pathname, flags, mode, ret);
+}
+
 fs_errno_t fs_syscall_close(int fd, int* ret)
 {
     fs_errno_t err = 0;

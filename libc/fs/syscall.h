@@ -13,6 +13,8 @@ fs_errno_t fs_syscall_open(
     uint32_t mode,
     int* ret);
 
+fs_errno_t fs_syscall_creat(const char* pathname, uint32_t mode, int* ret);
+
 fs_errno_t fs_syscall_close(int fd, int* ret);
 
 fs_errno_t fs_syscall_readv(

@@ -46,10 +46,32 @@ _syscall_open(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     err = fs_syscall_open(filename, flags, mode, &ret);
 
     if (err != FS_ENOENT)
+    {
+        errno = err;
         return ret;
+    }
 
     if (flags == O_WRONLY)
         return STDOUT_FILENO;
+
+    return -1;
+}
+
+static long
+_syscall_creat(long n, long x1, long x2, long x3, long x4, long x5, long x6)
+{
+    const char* pathname = (const char*)x1;
+    int mode = (int)x2;
+    fs_errno_t err;
+    int ret;
+
+    err = fs_syscall_creat(pathname, mode, &ret);
+
+    if (err != FS_ENOENT)
+    {
+        errno = err;
+        return ret;
+    }
 
     return -1;
 }
@@ -292,6 +314,8 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
             return _syscall_ioctl(n, x1, x2, x3, x4, x5, x6);
         case SYS_open:
             return _syscall_open(n, x1, x2, x3, x4, x5, x6);
+        case SYS_creat:
+            return _syscall_creat(n, x1, x2, x3, x4, x5, x6);
         case SYS_close:
             return _syscall_close(n, x1, x2, x3, x4, x5, x6);
         case SYS_mmap:

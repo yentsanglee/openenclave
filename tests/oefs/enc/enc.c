@@ -106,7 +106,7 @@ static void _create_files(fs_t* fs)
     {
         char path[FS_PATH_MAX];
         snprintf(path, sizeof(path), "/filename-%04zu", i);
-        r = fs->fs_create(fs, path, 0, &file);
+        r = fs->fs_creat(fs, path, 0, &file);
         OE_TEST(r == FS_EOK);
         OE_TEST(file != NULL);
         fs->fs_close(file);
@@ -312,7 +312,7 @@ static void _create_myfile(fs_t* fs)
     fs_file_t* file;
     const char path[] = "/aaa/bbb/ccc/myfile";
 
-    r = fs->fs_create(fs, path, 0, &file);
+    r = fs->fs_creat(fs, path, 0, &file);
     OE_TEST(r == FS_EOK);
 
     const char message[] = "Hello World!";
@@ -355,7 +355,7 @@ static void _test_lseek(fs_t* fs)
     int32_t nread;
     int32_t nwritten;
 
-    r = fs->fs_create(fs, "/somefile", 0, &file);
+    r = fs->fs_creat(fs, "/somefile", 0, &file);
     OE_TEST(r == FS_EOK);
 
     for (size_t i = 0; i < alphabet_length; i++)
@@ -404,14 +404,14 @@ static void _test_links(fs_t* fs)
     r = fs->fs_mkdir(fs, "/dir2", 0);
     OE_TEST(r == FS_EOK);
 
-    r = fs->fs_create(fs, "/dir1/file1", 0, &file);
+    r = fs->fs_creat(fs, "/dir1/file1", 0, &file);
     OE_TEST(r == FS_EOK);
     r = fs->fs_write(file, "abcdefghijklmnopqrstuvwxyz", 26, &n);
     OE_TEST(r == FS_EOK);
     OE_TEST(n == 26);
     fs->fs_close(file);
 
-    r = fs->fs_create(fs, "/dir2/exists", 0, &file);
+    r = fs->fs_creat(fs, "/dir2/exists", 0, &file);
     OE_TEST(r == FS_EOK);
     fs->fs_close(file);
 
@@ -476,7 +476,7 @@ static void _test_rename(fs_t* fs)
     r = fs->fs_mkdir(fs, "/dir2", 0);
     OE_TEST(r == FS_EOK);
 
-    r = fs->fs_create(fs, "/dir1/file1", 0, &file);
+    r = fs->fs_creat(fs, "/dir1/file1", 0, &file);
     OE_TEST(r == FS_EOK);
     r = fs->fs_write(file, "abcdefghijklmnopqrstuvwxyz", 26, &n);
     OE_TEST(r == FS_EOK);

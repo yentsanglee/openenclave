@@ -127,7 +127,7 @@ struct _fs
 {
     fs_errno_t (*fs_release)(fs_t* fs);
 
-    fs_errno_t (*fs_create)(
+    fs_errno_t (*fs_creat)(
         fs_t* fs,
         const char* path,
         uint32_t mode,
