@@ -10,7 +10,7 @@
 fs_errno_t fs_syscall_open(
     const char* pathname,
     int flags,
-    mode_t mode,
+    uint32_t mode,
     int* ret);
 
 fs_errno_t fs_syscall_close(int fd, int* ret);
