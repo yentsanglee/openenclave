@@ -21,6 +21,12 @@ fs_errno_t fs_syscall_readv(
     int iovcnt,
     ssize_t* ret);
 
+fs_errno_t fs_syscall_writev(
+    int fd,
+    const fs_iovec_t* iov,
+    int iovcnt,
+    ssize_t* ret);
+
 fs_errno_t fs_syscall_stat(const char* pathname, fs_stat_t* buf, int* ret);
 
 #endif /* _fs_syscall_h */

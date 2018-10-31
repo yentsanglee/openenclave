@@ -148,6 +148,12 @@ _syscall_writev(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     long ret = 0;
     int device;
 
+    if (fd >= 3)
+    {
+        errno = fs_syscall_writev(fd, (fs_iovec_t*)iov, iovcnt, &ret);
+        return ret;
+    }
+
     /* Allow writing only to stdout and stderr */
     switch (fd)
     {
