@@ -164,7 +164,8 @@ OE_STATIC_ASSERT(sizeof(oefs_bnode_t) == FS_BLOCK_SIZE);
 
 OE_STATIC_ASSERT(sizeof(fs_dirent_t) == 268);
 
-OE_STATIC_ASSERT(sizeof(fs_stat_t) == 48);
+OE_STATIC_ASSERT(sizeof(fs_timespec_t) == 16);
+OE_STATIC_ASSERT(sizeof(fs_stat_t) == (10*4 + 3*16));
 
 typedef struct _oefs
 {
@@ -1930,7 +1931,7 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
     stat->st_dev = 0;
     stat->st_ino = ino;
     stat->st_mode = inode.i_mode;
-    stat->__st_padding = 0;
+    stat->__st_padding1 = 0;
     stat->st_nlink = inode.i_links;
     stat->st_uid = inode.i_uid;
     stat->st_gid = inode.i_gid;
@@ -1938,9 +1939,13 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
     stat->st_size = inode.i_size;
     stat->st_blksize = FS_BLOCK_SIZE;
     stat->st_blocks = inode.i_nblocks;
-    stat->st_atime = inode.i_atime;
-    stat->st_mtime = inode.i_mtime;
-    stat->st_ctime = inode.i_ctime;
+    stat->__st_padding2 = 0;
+    stat->st_atim.tv_sec = inode.i_atime;
+    stat->st_atim.tv_nsec = 0;
+    stat->st_mtim.tv_sec = inode.i_mtime;
+    stat->st_mtim.tv_nsec = 0;
+    stat->st_ctim.tv_sec = inode.i_ctime;
+    stat->st_ctim.tv_nsec = 0;
 
 done:
     return err;

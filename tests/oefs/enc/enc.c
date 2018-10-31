@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "../../../libc/fs/buf.h"
 #include "../../../libc/fs/fs.h"
 
@@ -159,7 +160,7 @@ static void _create_dirs(fs_t* fs)
         OE_TEST(stat.st_ino != 0);
         OE_TEST(stat.st_mode == FS_S_DIR_DEFAULT);
         OE_TEST(stat.st_mode & FS_S_IFDIR);
-        OE_TEST(stat.__st_padding == 0);
+        OE_TEST(stat.__st_padding1 == 0);
         OE_TEST(stat.st_nlink == 1);
         OE_TEST(stat.st_uid == 0);
         OE_TEST(stat.st_gid == 0);
@@ -167,9 +168,10 @@ static void _create_dirs(fs_t* fs)
         OE_TEST(stat.st_size > sizeof(fs_dirent_t) * 2);
         OE_TEST(stat.st_blksize == FS_BLOCK_SIZE);
         OE_TEST(stat.st_blocks > 2);
-        OE_TEST(stat.st_atime == 0);
-        OE_TEST(stat.st_mtime == 0);
-        OE_TEST(stat.st_ctime == 0);
+        OE_TEST(stat.__st_padding2 == 0);
+        OE_TEST(stat.st_atim.tv_sec == 0);
+        OE_TEST(stat.st_mtim.tv_sec == 0);
+        OE_TEST(stat.st_ctim.tv_sec == 0);
     }
 
     /* Stat the directory and check expectations. */
@@ -182,7 +184,7 @@ static void _create_dirs(fs_t* fs)
         OE_TEST(stat.st_ino != 0);
         OE_TEST(stat.st_mode == FS_S_DIR_DEFAULT);
         OE_TEST(stat.st_mode & FS_S_IFDIR);
-        OE_TEST(stat.__st_padding == 0);
+        OE_TEST(stat.__st_padding1 == 0);
         OE_TEST(stat.st_nlink == 1);
         OE_TEST(stat.st_uid == 0);
         OE_TEST(stat.st_gid == 0);
@@ -190,9 +192,10 @@ static void _create_dirs(fs_t* fs)
         OE_TEST(stat.st_size == sizeof(fs_dirent_t) * 2);
         OE_TEST(stat.st_blksize == FS_BLOCK_SIZE);
         OE_TEST(stat.st_blocks == 2);
-        OE_TEST(stat.st_atime == 0);
-        OE_TEST(stat.st_mtime == 0);
-        OE_TEST(stat.st_ctime == 0);
+        OE_TEST(stat.__st_padding1 == 0);
+        OE_TEST(stat.st_atim.tv_sec == 0);
+        OE_TEST(stat.st_mtim.tv_sec == 0);
+        OE_TEST(stat.st_ctim.tv_sec == 0);
     }
 }
 
@@ -285,7 +288,7 @@ static void _update_file(fs_t* fs, const char* path)
         OE_TEST(stat.st_ino != 0);
         OE_TEST(stat.st_mode == FS_S_REG_DEFAULT);
         OE_TEST(stat.st_mode & FS_S_IFREG);
-        OE_TEST(stat.__st_padding == 0);
+        OE_TEST(stat.__st_padding1 == 0);
         OE_TEST(stat.st_nlink == 1);
         OE_TEST(stat.st_uid == 0);
         OE_TEST(stat.st_gid == 0);
@@ -294,9 +297,10 @@ static void _update_file(fs_t* fs, const char* path)
         OE_TEST(stat.st_blksize == FS_BLOCK_SIZE);
         uint32_t n = (buf.size + FS_BLOCK_SIZE - 1) / FS_BLOCK_SIZE;
         OE_TEST(stat.st_blocks == n);
-        OE_TEST(stat.st_atime == 0);
-        OE_TEST(stat.st_mtime == 0);
-        OE_TEST(stat.st_ctime == 0);
+        OE_TEST(stat.__st_padding2 == 0);
+        OE_TEST(stat.st_atim.tv_sec == 0);
+        OE_TEST(stat.st_mtim.tv_sec == 0);
+        OE_TEST(stat.st_ctim.tv_sec == 0);
     }
 
     buf_release(&buf);
@@ -526,6 +530,13 @@ static void _read_file(const char* target, const char* path)
     OE_TEST(m == FILE_SIZE);
 
     fclose(is);
+
+    /* Stat the file. */
+    {
+        struct stat st;
+        OE_TEST(stat(filename, &st) == 0);
+        OE_TEST(st.st_size == FILE_SIZE);
+    }
 }
 
 void run_tests(const char* target)

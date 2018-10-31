@@ -72,12 +72,19 @@ typedef struct _fs_dirent
     uint8_t __d_reserved;
 } fs_dirent_t;
 
+typedef struct _fs_timespec
+{
+    long tv_sec;
+    long tv_nsec;
+}
+fs_timespec_t;
+
 typedef struct _fs_stat
 {
     uint32_t st_dev;
     uint32_t st_ino;
     uint16_t st_mode;
-    uint16_t __st_padding;
+    uint16_t __st_padding1;
     uint32_t st_nlink;
     uint16_t st_uid;
     uint16_t st_gid;
@@ -85,9 +92,10 @@ typedef struct _fs_stat
     uint32_t st_size;
     uint32_t st_blksize;
     uint32_t st_blocks;
-    uint32_t st_atime;
-    uint32_t st_mtime;
-    uint32_t st_ctime;
+    uint32_t __st_padding2;
+    fs_timespec_t st_atim;
+    fs_timespec_t st_mtim;
+    fs_timespec_t st_ctim;
 } fs_stat_t;
 
 struct _fs

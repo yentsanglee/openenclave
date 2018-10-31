@@ -20,6 +20,7 @@
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 #include <sys/uio.h>
 #include <time.h>
 #include <time.h>
@@ -169,6 +170,48 @@ static long _syscall_readv(long num, long x1, long x2, long  x3, ...)
 
     /* return zero-bytes read */
     return 0;
+}
+
+static long _syscall_stat(long num, long x1, long x2, long  x3, ...)
+{
+    const char *pathname = (const char*)x1;
+    struct stat *buf = (struct stat*)x2;
+    fs_t* fs = NULL;
+
+    {
+        char suffix[FS_PATH_MAX];
+
+        if ((fs = fs_lookup(pathname, suffix)))
+        {
+            fs_stat_t stat;
+            fs_errno_t err;
+
+            if ((err = fs->fs_stat(fs, suffix, &stat)) != 0)
+                return -1;
+
+            buf->st_dev = stat.st_dev;
+            buf->st_ino = stat.st_ino;
+            buf->st_mode = stat.st_mode;
+            buf->st_nlink = stat.st_nlink;
+            buf->st_uid = stat.st_uid;
+            buf->st_gid = stat.st_gid;
+            buf->st_rdev = stat.st_rdev;
+            buf->st_size = stat.st_size;
+            buf->st_blksize = stat.st_blksize;
+            buf->st_blocks = stat.st_blocks;
+            buf->st_atim.tv_sec = stat.st_atim.tv_sec;
+            buf->st_atim.tv_nsec = stat.st_atim.tv_nsec;
+            buf->st_mtim.tv_sec = stat.st_mtim.tv_sec;
+            buf->st_mtim.tv_nsec = stat.st_mtim.tv_nsec;
+            buf->st_ctim.tv_sec = stat.st_ctim.tv_sec;
+            buf->st_ctim.tv_nsec = stat.st_ctim.tv_nsec;
+
+            return 0;
+        }
+    }
+
+
+    return -1;
 }
 
 static long
@@ -344,6 +387,9 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
             return _syscall_mmap(n, x1, x2, x3, x4, x5, x6);
         case SYS_readv:
             return _syscall_readv(n, x1, x2, x3, x4, x5, x6);
+        case SYS_stat:
+            return _syscall_stat(n, x1, x2, x3, x4, x5, x6);
+            break;
         default:
         {
             /* All other MUSL-initiated syscalls are aborted. */
