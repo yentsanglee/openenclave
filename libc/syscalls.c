@@ -333,6 +333,15 @@ static int _syscall_mkdir(const char *pathname, uint32_t mode)
     return ret;
 }
 
+static int _syscall_rmdir(const char *pathname)
+{
+    int ret;
+
+    errno = fs_syscall_rmdir(pathname, &ret);
+
+    return ret;
+}
+
 /* Intercept __syscalls() from MUSL */
 long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
@@ -390,6 +399,8 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
             return _syscall_truncate((const char*)x1, (ssize_t)x2);
         case SYS_mkdir:
             return _syscall_mkdir((const char*)x1, (uint32_t)x2);
+        case SYS_rmdir:
+            return _syscall_rmdir((const char*)x1);
         default:
         {
             /* All other MUSL-initiated syscalls are aborted. */

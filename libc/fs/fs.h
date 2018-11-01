@@ -189,10 +189,8 @@ struct _fs
 
     fs_errno_t (*fs_truncate)(fs_t* fs, const char* path, ssize_t length);
 
-    /* TODO: add syscall handler. */
     fs_errno_t (*fs_mkdir)(fs_t* fs, const char* path, uint32_t mode);
 
-    /* TODO: add syscall handler. */
     fs_errno_t (*fs_rmdir)(fs_t* fs, const char* path);
 };
 

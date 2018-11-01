@@ -391,3 +391,26 @@ fs_errno_t fs_syscall_mkdir(const char *pathname, uint32_t mode, int* ret)
 done:
     return err;
 }
+
+fs_errno_t fs_syscall_rmdir(const char *pathname, int* ret)
+{
+    fs_errno_t err = 0;
+    fs_t* fs;
+    char suffix[FS_PATH_MAX];
+
+    if (ret)
+        *ret = -1;
+
+    if (!pathname || !ret)
+        RAISE(FS_EINVAL);
+
+    if (!(fs = fs_lookup(pathname, suffix)))
+        RAISE(FS_ENOENT);
+
+    CHECK(fs->fs_rmdir(fs, suffix));
+
+    *ret = 0;
+
+done:
+    return err;
+}

@@ -43,4 +43,6 @@ fs_errno_t fs_syscall_truncate(const char* path, ssize_t length, int* ret);
 
 fs_errno_t fs_syscall_mkdir(const char *pathname, uint32_t mode, int* ret);
 
+fs_errno_t fs_syscall_rmdir(const char *pathname, int* ret);
+
 #endif /* _fs_syscall_h */

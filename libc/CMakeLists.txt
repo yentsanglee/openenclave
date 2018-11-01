@@ -654,6 +654,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/time/__year_to_secs.c
     ${MUSLSRC}/unistd/close.c
     ${MUSLSRC}/unistd/dup.c
+    ${MUSLSRC}/unistd/rmdir.c
     ${MUSLSRC}/unistd/dup3.c
     ${MUSLSRC}/unistd/truncate.c
     ${MUSLSRC}/unistd/link.c)

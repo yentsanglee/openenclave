@@ -696,6 +696,40 @@ static void _test_truncate(const char* target)
     OE_TEST(st.st_size == 0);
 }
 
+static void _test_mkdir(const char* target)
+{
+    char path1[FS_PATH_MAX];
+    char path2[FS_PATH_MAX];
+    struct stat st;
+
+    strlcpy(path1, target, sizeof(path1));
+    strlcat(path1, "/mydir1", sizeof(path1));
+
+    if (mkdir(path1, 0) != 0)
+        OE_TEST(false);
+
+    OE_TEST(stat(path1, &st) == 0);
+    OE_TEST(st.st_mode & S_IFDIR);
+    OE_TEST(!(st.st_mode & S_IFREG));
+
+    strlcpy(path2, target, sizeof(path2));
+    strlcat(path2, "/mydir1/mydir2", sizeof(path2));
+
+    if (mkdir(path2, 0) != 0)
+        OE_TEST(false);
+
+    OE_TEST(stat(path2, &st) == 0);
+    OE_TEST(st.st_mode & S_IFDIR);
+    OE_TEST(!(st.st_mode & S_IFREG));
+
+    OE_TEST(rmdir(path1) != 0);
+    OE_TEST(rmdir(path2) == 0);
+    OE_TEST(rmdir(path1) == 0);
+
+    OE_TEST(stat(path1, &st) != 0);
+    OE_TEST(stat(path2, &st) != 0);
+}
+
 void run_tests(const char* target)
 {
     fs_t* fs = fs_lookup(target, NULL);
@@ -800,6 +834,8 @@ void run_tests(const char* target)
     _read_alphabet_file(target, "/alphabet");
 
     _test_truncate(target);
+
+    _test_mkdir(target);
 }
 
 int test_oefs(const char* oefs_filename)
