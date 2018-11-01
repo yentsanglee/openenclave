@@ -621,7 +621,7 @@ static void _dump_load_enclave_data(
     )
 
 {
-    printf("========== load_enclave_data offset=%llx, flags=%llx, extend=%d ============\n", offset, flags, extend);
+    printf("========== load_enclave_data offset=%x, flags=%x, extend=%d ============\n", (uint32_t)offset, (uint32_t)flags, extend);
     _dump_page(src);
 }
 
