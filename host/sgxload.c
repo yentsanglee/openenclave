@@ -619,7 +619,7 @@ static void _dump_load_enclave_data(
     )
 
 {
-    printf("========== load_enclave_data %p, %p, %p, %d ============\n", (void*)offset, (void*)flags, (void*)src, extend);
+    printf("========== load_enclave_data offset=%p, flags=%p, extend=%d ============\n", (void*)offset, (void*)flags, extend);
     _dump_page(src);
 }
 
