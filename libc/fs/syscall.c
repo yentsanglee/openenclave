@@ -10,6 +10,7 @@
 #include "fs.h"
 #include "raise.h"
 #include "trace.h"
+#include <pthread.h>
 
 #define MAX_FILES 1024
 
@@ -17,6 +18,7 @@
 #define FD_OFFSET 3
 
 static char _cwd[FS_PATH_MAX] = "/";
+static pthread_spinlock_t lock;
 
 typedef struct _handle
 {
@@ -613,12 +615,41 @@ fs_errno_t fs_syscall_getcwd(char* buf, unsigned long size, int* ret)
     if (!buf || !ret)
         RAISE(FS_EINVAL);
 
+    pthread_spin_lock(&lock);
     n = strlcpy(buf, _cwd, size);
+    pthread_spin_unlock(&lock);
 
     if (n >= size)
         RAISE(FS_ERANGE);
 
     *ret = n + 1;
+
+done:
+    return err;
+}
+
+fs_errno_t fs_syscall_chdir(const char* path, int* ret)
+{
+    fs_errno_t err = 0;
+    size_t n;
+
+    if (ret)
+        *ret = -1;
+
+    if (!path || !ret)
+        RAISE(FS_EINVAL);
+
+    pthread_spin_lock(&lock);
+    n = strlcpy(_cwd, path, FS_PATH_MAX);
+    pthread_spin_unlock(&lock);
+
+    if (n >= FS_PATH_MAX)
+    {
+        pthread_spin_unlock(&lock);
+        RAISE(FS_ENAMETOOLONG);
+    }
+
+    *ret = 0;
 
 done:
     return err;

@@ -60,4 +60,6 @@ fs_errno_t fs_syscall_access(const char *pathname, int mode, int* ret);
 
 fs_errno_t fs_syscall_getcwd(char* buf, unsigned long size, int* ret);
 
+fs_errno_t fs_syscall_chdir(const char* path, int* ret);
+
 #endif /* _fs_syscall_h */

@@ -395,6 +395,15 @@ static int _syscall_getcwd(char *buf, unsigned long size)
     return ret;
 }
 
+static int _syscall_chdir(const char* path)
+{
+    int ret;
+
+    errno = fs_syscall_chdir(path, &ret);
+
+    return ret;
+}
+
 /* Intercept __syscalls() from MUSL */
 long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
@@ -460,6 +469,8 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
             return _syscall_access((const char*)x1, (int)x2);
         case SYS_getcwd:
             return _syscall_getcwd((char*)x1, (unsigned long)x2);
+        case SYS_chdir:
+            return _syscall_chdir((char*)x1);
         case SYS_getdents:
         case SYS_getdents64:
         {

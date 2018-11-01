@@ -801,9 +801,18 @@ static void _test_opendir(const char* target)
     }
 }
 
+static const char* _mkpath(char* buf, const char* target, const char* path)
+{
+    strlcpy(buf, target, FS_PATH_MAX);
+    strlcat(buf, path, FS_PATH_MAX);
+    return buf;
+}
+
 static void _test_cwd(const char* target)
 {
     char cwd[PATH_MAX];
+    char buf[PATH_MAX];
+
     OE_TEST(getcwd(cwd, sizeof(cwd)) != NULL);
     getcwd(cwd, sizeof(cwd));
     OE_TEST(strcmp(cwd, "/") == 0);
@@ -826,6 +835,21 @@ static void _test_cwd(const char* target)
     OE_TEST(realpath(path, real) != NULL);
     printf("real=%s\n", real);
     OE_TEST(strcmp(real, expected) == 0);
+
+    OE_TEST(mkdir(_mkpath(buf, target, "/ddd1"), 0) == 0);
+    OE_TEST(mkdir(_mkpath(buf, target, "/ddd1/ddd2"), 0) == 0);
+    OE_TEST(mkdir(_mkpath(buf, target, "/ddd1/ddd2/ddd3"), 0) == 0);
+
+    OE_TEST(chdir(_mkpath(buf, target, "/ddd1")) == 0);
+    OE_TEST(chdir(_mkpath(buf, target, "/ddd1/ddd2")) == 0);
+    OE_TEST(chdir(_mkpath(buf, target, "/ddd1/ddd2/ddd3")) == 0);
+
+    getcwd(cwd, sizeof(cwd));
+    OE_TEST(strcmp(cwd, _mkpath(buf, target, "/ddd1/ddd2/ddd3")) == 0);
+
+    OE_TEST(chdir("/") == 0);
+    getcwd(cwd, sizeof(cwd));
+    OE_TEST(strcmp(cwd, "/") == 0);
 }
 
 void run_tests(const char* target)

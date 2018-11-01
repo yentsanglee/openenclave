@@ -657,6 +657,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/unistd/close.c
     ${MUSLSRC}/unistd/dup.c
     ${MUSLSRC}/unistd/getcwd.c
+    ${MUSLSRC}/unistd/chdir.c
     ${MUSLSRC}/unistd/rmdir.c
     ${MUSLSRC}/unistd/dup3.c
     ${MUSLSRC}/unistd/truncate.c
