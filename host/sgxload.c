@@ -529,6 +529,8 @@ done:
     return result;
 }
 
+#if defined(OE_TRACE_MEASURE)
+
 const char *hex_map = "0123456789abcdef";
 
 #define hexof(x)    hex_map[((x) >> 4)&0xf],hex_map[(x)&0xf]
@@ -619,9 +621,11 @@ static void _dump_load_enclave_data(
     )
 
 {
-    printf("========== load_enclave_data offset=%p, flags=%p, extend=%d ============\n", (void*)offset, (void*)flags, extend);
+    printf("========== load_enclave_data offset=%llx, flags=%llx, extend=%d ============\n", offset, flags, extend);
     _dump_page(src);
 }
+
+#endif /* defined(OE_TRACE_MEASURE) */
 
 oe_result_t oe_sgx_load_enclave_data(
     oe_sgx_load_context_t* context,
@@ -643,12 +647,16 @@ oe_result_t oe_sgx_load_enclave_data(
     if (addr % OE_PAGE_SIZE)
         OE_RAISE(OE_INVALID_PARAMETER);
 
+#if defined(OE_TRACE_MEASURE)
+
     _dump_load_enclave_data(
         addr - base,
         flags,
         src,
         extend
         );
+
+#endif /* defined(OE_TRACE_MEASURE) */
 
     /* Measure this operation */
     OE_CHECK(
