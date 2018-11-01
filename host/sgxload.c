@@ -532,7 +532,7 @@ done:
 const char hex_map[] = "0123456789abcdef";
 
 #define hexof(x)    hex_map[((x) >> 4)&0xf],hex_map[(x)&0xf]
-void _dump_page(
+static void _dump_page(
     uint64_t src
     )
 
@@ -611,7 +611,7 @@ void _dump_page(
     }
 }
 
-void _dump_load_enclave_data(
+static void _dump_load_enclave_data(
     uint64_t offset,
     uint64_t flags,
     uint64_t src,
