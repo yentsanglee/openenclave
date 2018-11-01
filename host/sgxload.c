@@ -529,7 +529,7 @@ done:
     return result;
 }
 
-const char hex_map[] = "0123456789abcdef";
+const char *hex_map = "0123456789abcdef";
 
 #define hexof(x)    hex_map[((x) >> 4)&0xf],hex_map[(x)&0xf]
 static void _dump_page(
