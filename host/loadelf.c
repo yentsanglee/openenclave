@@ -212,8 +212,8 @@ static oe_result_t _oe_load_elf_image(
     }
 
     /* allocate segments */
-    image->u.elf.segments = (oe_elf_segment_t*)malloc(
-        image->u.elf.num_segments * sizeof(oe_elf_segment_t));
+    image->u.elf.segments = (oe_elf_segment_t*)calloc(
+        image->u.elf.num_segments, sizeof(oe_elf_segment_t));
     if (!image->u.elf.segments)
     {
         OE_RAISE(OE_OUT_OF_MEMORY);
