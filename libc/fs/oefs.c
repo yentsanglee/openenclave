@@ -68,6 +68,12 @@
 /* The first physical block number of the block bitmap. */
 #define BITMAP_PHYSICAL_BLKNO 3
 
+#define BLKNOS_PER_INODE \
+    (sizeof(((oefs_inode_t*)0)->i_blocks) / sizeof(uint32_t))
+
+#define BLKNOS_PER_BNODE \
+    (sizeof(((oefs_bnode_t*)0)->b_blocks) / sizeof(uint32_t))
+
 typedef struct _oefs_super_block
 {
     /* Magic number: SUPER_BLOCK_MAGIC. */
@@ -884,36 +890,117 @@ done:
     return err;
 }
 
-static fs_errno_t _truncate(fs_file_t* file)
+static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
 {
     fs_errno_t err = FS_EOK;
+    oefs_t* oefs;
+    size_t block_index;
+    size_t bnode_index;
 
     if (!file)
         RAISE(FS_EINVAL);
 
-    /* Release all the data blocks. */
-    for (size_t i = 0; i < file->blknos.size; i++)
-        CHECK(_unassign_blkno(file->oefs, file->blknos.data[i]));
+    assert(_sane_file(file));
 
-    /* Release all the bnode blocks. */
-    for (size_t i = 0; i < file->bnode_blknos.size; i++)
-        CHECK(_unassign_blkno(file->oefs, file->bnode_blknos.data[i]));
+    oefs = file->oefs;
+
+    /* Fail if length is greater than the size of the file. */
+    if (length > file->inode.i_size)
+        RAISE(FS_EFBIG);
+
+    /* Calculate the index of the first block to be freed. */
+    block_index = (length + FS_BLOCK_SIZE - 1) / FS_BLOCK_SIZE;
+
+    /* Release the truncated data blocks. */
+    {
+        for (size_t i = block_index; i < file->blknos.size; i++)
+        {
+            CHECK(_unassign_blkno(oefs, file->blknos.data[i]));
+            file->inode.i_nblocks--;
+        }
+
+        if (buf_u32_resize(&file->blknos, block_index) != 0)
+            RAISE(FS_ENOMEM);
+    }
+
+    if (block_index <= BLKNOS_PER_INODE)
+    {
+        file->inode.i_next = 0;
+
+        /* Clear any inode slots. */
+        for (size_t i = block_index; i < BLKNOS_PER_INODE; i++)
+            file->inode.i_blocks[i] = 0;
+
+        /* Release all the bnode blocks. */
+        for (size_t i = 0; i < file->bnode_blknos.size; i++)
+        {
+            CHECK(_unassign_blkno(oefs, file->bnode_blknos.data[i]));
+        }
+
+        if (buf_u32_resize(&file->bnode_blknos, 0) != 0)
+            RAISE(FS_ENOMEM);
+    }
+    else
+    {
+        size_t slot_index;
+        oefs_bnode_t bnode;
+        uint32_t bnode_blkno;
+
+        /* Adjust the block index relative to the bnodes. */
+        block_index -= BLKNOS_PER_INODE;
+
+        /* Find the index of the associated bnode. */
+        bnode_index = block_index / BLKNOS_PER_BNODE;
+
+        /* Find the slot index within this bnode. */
+        slot_index = block_index % BLKNOS_PER_BNODE;
+
+        /* Adjust the indices if this is the first slot. */
+        if (slot_index == 0)
+        {
+            if (bnode_index == 0)
+                RAISE(FS_EOVERFLOW);
+
+            bnode_index--;
+            slot_index = BLKNOS_PER_BNODE;
+        }
+
+        /* Load the bnode into memory. */
+        bnode_blkno = file->bnode_blknos.data[bnode_index];
+        CHECK(_read_block(oefs, bnode_blkno, &bnode));
+
+        /* Clear any slots in the bnode. */
+        for (size_t i = slot_index; i < BLKNOS_PER_BNODE; i++)
+            bnode.b_blocks[i] = 0;
+
+        /* Unlink this bnode from next bnode. */
+        bnode.b_next = 0;
+
+        /* Release unused bnode blocks. */
+        for (size_t i = bnode_index + 1; i < file->bnode_blknos.size; i++)
+        {
+            CHECK(_unassign_blkno(oefs, file->bnode_blknos.data[i]));
+        }
+
+        if (buf_u32_resize(&file->bnode_blknos, bnode_index + 1) != 0)
+            RAISE(FS_ENOMEM);
+
+        /* Rewrite the bnode. */
+        CHECK(_write_block(oefs, bnode_blkno, &bnode));
+    }
 
     /* Update the inode. */
-    file->inode.i_size = 0;
-    file->inode.i_next = 0;
-    file->inode.i_nblocks = 0;
-    memset(file->inode.i_blocks, 0, sizeof(file->inode.i_blocks));
+    file->inode.i_size = length;
 
-    /* Update the file struct. */
-    buf_u32_clear(&file->blknos);
-    buf_u32_clear(&file->bnode_blknos);
+    /* Update the file offset. */
     file->offset = 0;
 
     /* Sync the inode to disk. */
     CHECK(_write_block(file->oefs, file->ino, &file->inode));
 
 done:
+
+    assert(_sane_file(file));
 
     if (_flush(file->oefs) != 0)
         return FS_EIO;
@@ -959,7 +1046,7 @@ static fs_errno_t _release_inode(oefs_t* oefs, uint32_t ino)
     fs_file_t* file = NULL;
 
     CHECK(_open(oefs, ino, &file));
-    CHECK(_truncate(file));
+    CHECK(_truncate(file, 0));
     CHECK(_unassign_blkno(oefs, file->ino));
 
 done:
@@ -1004,7 +1091,7 @@ static fs_errno_t _unlink(
     }
 
     /* Truncate the parent directory. */
-    CHECK(_truncate(dir));
+    CHECK(_truncate(dir, 0));
 
     /* Rewrite the directory entries but exclude the removed file. */
     {
@@ -1453,6 +1540,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
         RAISE(FS_EINVAL);
 
     buf_u32_release(&file->blknos);
+    buf_u32_release(&file->bnode_blknos);
     memset(file, 0, sizeof(fs_file_t));
     free(file);
 
@@ -1593,7 +1681,7 @@ static fs_errno_t _fs_open(
         CHECK(_open(oefs, ino, &file));
 
         if (flags & FS_O_TRUNC)
-            CHECK(_truncate(file));
+            CHECK(_truncate(file, 0));
 
         if (flags & FS_O_APPEND)
             file->offset = file->inode.i_size;
@@ -1858,7 +1946,7 @@ done:
     return err;
 }
 
-static fs_errno_t _fs_truncate(fs_t* fs, const char* path)
+static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
 {
     oefs_t* oefs = (oefs_t*)fs;
     fs_errno_t err = FS_EOK;
@@ -1876,7 +1964,7 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path)
         RAISE(FS_EINVAL);
 
     CHECK(_open(oefs, ino, &file));
-    CHECK(_truncate(file));
+    CHECK(_truncate(file, length));
 
 done:
 

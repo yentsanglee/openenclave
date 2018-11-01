@@ -180,18 +180,14 @@ struct _fs
 
     fs_errno_t (*fs_stat)(fs_t* fs, const char* path, fs_stat_t* stat);
 
-    /* TODO: add syscall handler. */
     fs_errno_t (*fs_link)(fs_t* fs, const char* old_path, const char* new_path);
 
-    /* TODO: add syscall handler. */
     fs_errno_t (*fs_unlink)(fs_t* fs, const char* path);
 
-    /* TODO: add syscall handler. */
     fs_errno_t (
         *fs_rename)(fs_t* fs, const char* old_path, const char* new_path);
 
-    /* TODO: add syscall handler. */
-    fs_errno_t (*fs_truncate)(fs_t* fs, const char* path);
+    fs_errno_t (*fs_truncate)(fs_t* fs, const char* path, ssize_t length);
 
     /* TODO: add syscall handler. */
     fs_errno_t (*fs_mkdir)(fs_t* fs, const char* path, uint32_t mode);

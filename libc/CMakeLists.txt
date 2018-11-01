@@ -437,6 +437,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/setjmp/x86_64/longjmp.s
     ${MUSLSRC}/setjmp/x86_64/setjmp.s
     ${MUSLSRC}/stat/stat.c
+    ${MUSLSRC}/stat/mkdir.c
     ${MUSLSRC}/stdio/asprintf.c
     ${MUSLSRC}/stdio/asprintf.c
     ${MUSLSRC}/stdio/clearerr.c
@@ -654,6 +655,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/unistd/close.c
     ${MUSLSRC}/unistd/dup.c
     ${MUSLSRC}/unistd/dup3.c
+    ${MUSLSRC}/unistd/truncate.c
     ${MUSLSRC}/unistd/link.c)
 
 add_target_compile_flags(oelibc PRIVATE C

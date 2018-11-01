@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <limits.h>
+#include <errno.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/file.h>
 #include <openenclave/internal/mount.h>
@@ -329,7 +330,7 @@ static void _create_myfile(fs_t* fs)
 
 static void _truncate_file(fs_t* fs, const char* path)
 {
-    fs_errno_t r = fs->fs_truncate(fs, path);
+    fs_errno_t r = fs->fs_truncate(fs, path, 0);
     OE_TEST(r == FS_EOK);
 }
 
@@ -594,6 +595,107 @@ static void _write_alphabet_file(const char* target, const char* path)
     buf_release(&buf);
 }
 
+static void _test_truncate(const char* target)
+{
+    const size_t file_size = 188416;
+    FILE* os;
+    char path[FS_PATH_MAX];
+    struct stat st;
+
+    strlcpy(path, target, sizeof(path));
+    strlcat(path, "/bigfile", sizeof(path));
+
+    /* Write the file */
+    {
+        OE_TEST((os = fopen(path, "w")) != NULL);
+
+        for (size_t i = 0; i < file_size; i++)
+        {
+            uint8_t byte = i % 256;
+
+            if (fwrite(&byte, 1, 1, os) != 1)
+                OE_TEST(false);
+        }
+
+        fclose(os);
+    }
+
+    /* Check the file size. */
+    OE_TEST(stat(path, &st) == 0);
+    OE_TEST(st.st_size = file_size);
+
+    /* Read the file */
+    {
+        size_t n = 0;
+
+        OE_TEST((os = fopen(path, "r")) != NULL);
+
+        for (size_t i = 0; i < file_size; i++)
+        {
+            const uint8_t expect = i % 256;
+            uint8_t byte;
+
+            if (fread(&byte, 1, 1, os) != 1)
+                OE_TEST(false);
+
+            OE_TEST(byte == expect);
+            n++;
+        }
+
+        fclose(os);
+
+        OE_TEST(n == file_size);
+    }
+
+    /* Truncate the file. */
+    {
+        OE_TEST(truncate(path, file_size / 2) == 0);
+        OE_TEST(stat(path, &st) == 0);
+        OE_TEST(st.st_size == file_size / 2);
+
+        OE_TEST(truncate(path, file_size / 4) == 0);
+        OE_TEST(stat(path, &st) == 0);
+        OE_TEST(st.st_size == file_size / 4);
+
+        OE_TEST(truncate(path, file_size / 8) == 0);
+        OE_TEST(stat(path, &st) == 0);
+        OE_TEST(st.st_size == file_size / 8);
+    }
+
+    /* Read the file */
+    {
+        size_t n = 0;
+        uint8_t byte;
+
+        OE_TEST((os = fopen(path, "r")) != NULL);
+
+        for (size_t i = 0; i < file_size / 8; i++)
+        {
+            const uint8_t expect = i % 256;
+
+            if (fread(&byte, 1, 1, os) != 1)
+                OE_TEST(false);
+
+            OE_TEST(byte == expect);
+            n++;
+        }
+
+        OE_TEST(fread(&byte, 1, 1, os) == 0);
+        OE_TEST(feof(os));
+        fclose(os);
+
+        OE_TEST(n == file_size / 8);
+    }
+
+    OE_TEST(truncate(path, 2) == 0);
+    OE_TEST(stat(path, &st) == 0);
+    OE_TEST(st.st_size == 2);
+
+    OE_TEST(truncate(path, 0) == 0);
+    OE_TEST(stat(path, &st) == 0);
+    OE_TEST(st.st_size == 0);
+}
+
 void run_tests(const char* target)
 {
     fs_t* fs = fs_lookup(target, NULL);
@@ -696,6 +798,8 @@ void run_tests(const char* target)
     /* Read posix read and write functions. */
     _write_alphabet_file(target, "/alphabet");
     _read_alphabet_file(target, "/alphabet");
+
+    _test_truncate(target);
 }
 
 int test_oefs(const char* oefs_filename)

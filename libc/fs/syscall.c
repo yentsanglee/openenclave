@@ -145,7 +145,7 @@ fs_errno_t fs_syscall_readv(
         CHECK(h.fs->fs_read(h.file, p->iov_base, p->iov_len, &n));
         nread += n;
 
-        if (n < iov->iov_len)
+        if (n < p->iov_len)
             break;
     }
 
@@ -189,7 +189,7 @@ fs_errno_t fs_syscall_writev(
 
         CHECK(h.fs->fs_write(h.file, p->iov_base, p->iov_len, &n));
 
-        if (n != iov->iov_len)
+        if (n != p->iov_len)
             RAISE(FS_EIO);
 
         nwritten += n;
@@ -270,7 +270,7 @@ fs_errno_t fs_syscall_link(const char* oldpath, const char* newpath, int* ret)
     if (ret)
         *ret = -1;
 
-    if (!oldpath || !newpath)
+    if (!oldpath || !newpath || !ret)
         RAISE(FS_EINVAL);
 
     if (!(old_fs = fs_lookup(oldpath, old_suffix)))
@@ -284,6 +284,107 @@ fs_errno_t fs_syscall_link(const char* oldpath, const char* newpath, int* ret)
         RAISE(FS_ENOENT);
 
     CHECK(old_fs->fs_link(old_fs, old_suffix, new_suffix));
+
+    *ret = 0;
+
+done:
+    return err;
+}
+
+fs_errno_t fs_syscall_unlink(const char* pathname, int* ret)
+{
+    fs_errno_t err = 0;
+    fs_t* fs;
+    char suffix[FS_PATH_MAX];
+
+    if (ret)
+        *ret = -1;
+
+    if (!pathname || !ret)
+        RAISE(FS_EINVAL);
+
+    if (!(fs = fs_lookup(pathname, suffix)))
+        RAISE(FS_ENOENT);
+
+    CHECK(fs->fs_unlink(fs, suffix));
+
+    *ret = 0;
+
+done:
+    return err;
+}
+
+fs_errno_t fs_syscall_rename(const char* oldpath, const char* newpath, int* ret)
+{
+    fs_errno_t err = 0;
+    fs_t* old_fs;
+    fs_t* new_fs;
+    char old_suffix[FS_PATH_MAX];
+    char new_suffix[FS_PATH_MAX];
+
+    if (ret)
+        *ret = -1;
+
+    if (!oldpath || !newpath || !ret)
+        RAISE(FS_EINVAL);
+
+    if (!(old_fs = fs_lookup(oldpath, old_suffix)))
+        RAISE(FS_ENOENT);
+
+    if (!(new_fs = fs_lookup(newpath, new_suffix)))
+        RAISE(FS_ENOENT);
+
+    /* Disallow renaming across different file systems. */
+    if (old_fs != new_fs)
+        RAISE(FS_ENOENT);
+
+    CHECK(old_fs->fs_rename(old_fs, old_suffix, new_suffix));
+
+    *ret = 0;
+
+done:
+    return err;
+}
+
+fs_errno_t fs_syscall_truncate(const char* path, ssize_t length, int* ret)
+{
+    fs_errno_t err = 0;
+    fs_t* fs;
+    char suffix[FS_PATH_MAX];
+
+    if (ret)
+        *ret = -1;
+
+    if (!path || !ret)
+        RAISE(FS_EINVAL);
+
+    if (!(fs = fs_lookup(path, suffix)))
+        RAISE(FS_ENOENT);
+
+    CHECK(fs->fs_truncate(fs, suffix, length));
+
+    *ret = 0;
+
+done:
+    return err;
+}
+
+fs_errno_t fs_syscall_mkdir(const char *pathname, uint32_t mode, int* ret)
+{
+    fs_errno_t err = 0;
+    fs_t* fs;
+    char suffix[FS_PATH_MAX];
+
+    if (ret)
+        *ret = -1;
+
+    if (!pathname || !ret)
+        RAISE(FS_EINVAL);
+
+    if (!(fs = fs_lookup(pathname, suffix)))
+        RAISE(FS_ENOENT);
+
+    CHECK(fs->fs_mkdir(fs, suffix, mode));
 
     *ret = 0;
 

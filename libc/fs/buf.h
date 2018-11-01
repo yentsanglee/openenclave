@@ -33,6 +33,8 @@ int buf_clear(buf_t* buf);
 
 int buf_reserve(buf_t* buf, uint32_t cap);
 
+int buf_resize(buf_t* buf, uint32_t new_size);
+
 int buf_append(buf_t* buf, const void* data, uint32_t size);
 
 /*
@@ -58,6 +60,8 @@ typedef struct _buf_u32
 void buf_u32_release(buf_u32_t* buf);
 
 void buf_u32_clear(buf_u32_t* buf);
+
+int buf_u32_resize(buf_u32_t* buf, uint32_t new_size);
 
 int buf_u32_append(buf_u32_t* buf, const uint32_t* data, uint32_t size);
 

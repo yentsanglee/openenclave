@@ -35,4 +35,12 @@ fs_errno_t fs_syscall_lseek(int fd, ssize_t off, int whence, ssize_t* ret);
 
 fs_errno_t fs_syscall_link(const char* oldpath, const char* newpath, int* ret);
 
+fs_errno_t fs_syscall_unlink(const char* pathname, int* ret);
+
+fs_errno_t fs_syscall_rename(const char* oldpath, const char* newpath, int* ret);
+
+fs_errno_t fs_syscall_truncate(const char* path, ssize_t length, int* ret);
+
+fs_errno_t fs_syscall_mkdir(const char *pathname, uint32_t mode, int* ret);
+
 #endif /* _fs_syscall_h */

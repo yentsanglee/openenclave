@@ -297,6 +297,42 @@ static int _syscall_link(const char* oldpath, const char* newpath)
     return ret;
 }
 
+static int _syscall_unlink(const char* pathname)
+{
+    int ret;
+
+    errno = fs_syscall_unlink(pathname, &ret);
+
+    return ret;
+}
+
+static int _syscall_rename(const char* oldpath, const char* newpath)
+{
+    int ret;
+
+    errno = fs_syscall_rename(oldpath, newpath, &ret);
+
+    return ret;
+}
+
+static int _syscall_truncate(const char* path, ssize_t length)
+{
+    int ret;
+
+    errno = fs_syscall_truncate(path, length, &ret);
+
+    return ret;
+}
+
+static int _syscall_mkdir(const char *pathname, uint32_t mode)
+{
+    int ret;
+
+    errno = fs_syscall_mkdir(pathname, mode, &ret);
+
+    return ret;
+}
+
 /* Intercept __syscalls() from MUSL */
 long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
@@ -346,6 +382,14 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
             return _syscall_lseek(x1, x2, x3);
         case SYS_link:
             return _syscall_link((const char*)x1, (const char*)x2);
+        case SYS_unlink:
+            return _syscall_unlink((const char*)x1);
+        case SYS_rename:
+            return _syscall_rename((const char*)x1, (const char*)x2);
+        case SYS_truncate:
+            return _syscall_truncate((const char*)x1, (ssize_t)x2);
+        case SYS_mkdir:
+            return _syscall_mkdir((const char*)x1, (uint32_t)x2);
         default:
         {
             /* All other MUSL-initiated syscalls are aborted. */

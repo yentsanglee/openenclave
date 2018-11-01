@@ -69,6 +69,33 @@ int buf_reserve(buf_t* buf, uint32_t cap)
     return 0;
 }
 
+int buf_resize(buf_t* buf, uint32_t new_size)
+{
+    uint8_t* data;
+
+    if (!buf)
+        return -1;
+
+    if (new_size == 0)
+    {
+        buf_release(buf);
+        memset(buf, 0, sizeof(buf_t));
+        return 0;
+    }
+
+    if (!(data = realloc(buf->data, new_size)))
+        return -1;
+
+    if (new_size > buf->size)
+        memset(data + buf->size, 0, new_size - buf->size);
+
+    buf->data = data;
+    buf->size = new_size;
+    buf->cap = new_size;
+
+    return 0;
+}
+
 int buf_append(buf_t* buf, const void* data, uint32_t size)
 {
     uint32_t new_size;
@@ -138,6 +165,24 @@ int buf_u32_append(buf_u32_t* buf, const uint32_t* data, uint32_t size)
     {
         return -1;
     }
+
+    buf->data = tmp.data;
+    buf->size = tmp.size / sizeof(uint32_t);
+    buf->cap = tmp.cap / sizeof(uint32_t);
+
+    return 0;
+}
+
+int buf_u32_resize(buf_u32_t* buf, uint32_t new_size)
+{
+    buf_t tmp;
+
+    tmp.data = buf->data;
+    tmp.size = buf->size * sizeof(uint32_t);
+    tmp.cap = buf->cap * sizeof(uint32_t);
+
+    if (buf_resize(&tmp, new_size * sizeof(uint32_t)) != 0)
+        return -1;
 
     buf->data = tmp.data;
     buf->size = tmp.size / sizeof(uint32_t);
