@@ -4,7 +4,7 @@ Todo:
 ---
 (B) Implement ordinary (non-encrypted) host file I/O.
 ---
+(C) Support directory enumeration below mount points.
 (C) Switchless calls.
 (C) blockdev->flush() protocol.
 (C) Block caching
-
