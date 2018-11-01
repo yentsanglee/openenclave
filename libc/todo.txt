@@ -1,14 +1,10 @@
 Todo:
 
 (A) Encryption
-(A) Integrate with libc.
-(A) Reference counting (fs and dev)
 ---
-(B) Relative path handling
 (B) Implement ordinary (non-encrypted) host file I/O.
-(B) Switchless calls.
 ---
+(C) Switchless calls.
 (C) blockdev->flush() protocol.
 (C) Block caching
-(C) Refine error naming and handling.
-(C) Handle mode parameters.
+
