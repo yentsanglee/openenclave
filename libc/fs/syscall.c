@@ -153,14 +153,17 @@ fs_errno_t fs_syscall_open(
     char suffix[FS_PATH_MAX];
     fs_file_t* file;
     size_t index;
+    char real_path[FS_PATH_MAX];
 
     if (ret)
         *ret = -1;
 
-    if (!ret)
+    if (!pathname || !ret)
         RAISE(FS_EINVAL);
 
-    if (!(fs = fs_lookup(pathname, suffix)))
+    CHECK(_realpath(pathname, real_path));
+
+    if (!(fs = fs_lookup(real_path, suffix)))
         RAISE(FS_ENOENT);
 
     if ((index = _assign_handle()) == (size_t)-1)
@@ -289,6 +292,7 @@ fs_errno_t fs_syscall_stat(const char* pathname, fs_stat_t* buf, int* ret)
     fs_t* fs;
     char suffix[FS_PATH_MAX];
     fs_stat_t stat;
+    char real_path[FS_PATH_MAX];
 
     if (buf)
         memset(buf, 0, sizeof(fs_stat_t));
@@ -301,7 +305,9 @@ fs_errno_t fs_syscall_stat(const char* pathname, fs_stat_t* buf, int* ret)
     if (!pathname || !buf || !ret)
         RAISE(FS_EINVAL);
 
-    if (!(fs = fs_lookup(pathname, suffix)))
+    CHECK(_realpath(pathname, real_path));
+
+    if (!(fs = fs_lookup(real_path, suffix)))
         RAISE(FS_ENOENT);
 
     CHECK(fs->fs_stat(fs, suffix, &stat));
@@ -340,6 +346,8 @@ fs_errno_t fs_syscall_link(const char* oldpath, const char* newpath, int* ret)
     fs_t* new_fs;
     char old_suffix[FS_PATH_MAX];
     char new_suffix[FS_PATH_MAX];
+    char old_real_path[FS_PATH_MAX];
+    char new_real_path[FS_PATH_MAX];
 
     if (ret)
         *ret = -1;
@@ -347,10 +355,13 @@ fs_errno_t fs_syscall_link(const char* oldpath, const char* newpath, int* ret)
     if (!oldpath || !newpath || !ret)
         RAISE(FS_EINVAL);
 
-    if (!(old_fs = fs_lookup(oldpath, old_suffix)))
+    CHECK(_realpath(oldpath, old_real_path));
+    CHECK(_realpath(newpath, new_real_path));
+
+    if (!(old_fs = fs_lookup(old_real_path, old_suffix)))
         RAISE(FS_ENOENT);
 
-    if (!(new_fs = fs_lookup(newpath, new_suffix)))
+    if (!(new_fs = fs_lookup(new_real_path, new_suffix)))
         RAISE(FS_ENOENT);
 
     /* Disallow linking across different file systems. */
@@ -370,6 +381,7 @@ fs_errno_t fs_syscall_unlink(const char* pathname, int* ret)
     fs_errno_t err = 0;
     fs_t* fs;
     char suffix[FS_PATH_MAX];
+    char real_path[FS_PATH_MAX];
 
     if (ret)
         *ret = -1;
@@ -377,7 +389,9 @@ fs_errno_t fs_syscall_unlink(const char* pathname, int* ret)
     if (!pathname || !ret)
         RAISE(FS_EINVAL);
 
-    if (!(fs = fs_lookup(pathname, suffix)))
+    CHECK(_realpath(pathname, real_path));
+
+    if (!(fs = fs_lookup(real_path, suffix)))
         RAISE(FS_ENOENT);
 
     CHECK(fs->fs_unlink(fs, suffix));
@@ -395,6 +409,8 @@ fs_errno_t fs_syscall_rename(const char* oldpath, const char* newpath, int* ret)
     fs_t* new_fs;
     char old_suffix[FS_PATH_MAX];
     char new_suffix[FS_PATH_MAX];
+    char old_real_path[FS_PATH_MAX];
+    char new_real_path[FS_PATH_MAX];
 
     if (ret)
         *ret = -1;
@@ -402,10 +418,13 @@ fs_errno_t fs_syscall_rename(const char* oldpath, const char* newpath, int* ret)
     if (!oldpath || !newpath || !ret)
         RAISE(FS_EINVAL);
 
-    if (!(old_fs = fs_lookup(oldpath, old_suffix)))
+    CHECK(_realpath(oldpath, old_real_path));
+    CHECK(_realpath(newpath, new_real_path));
+
+    if (!(old_fs = fs_lookup(old_real_path, old_suffix)))
         RAISE(FS_ENOENT);
 
-    if (!(new_fs = fs_lookup(newpath, new_suffix)))
+    if (!(new_fs = fs_lookup(new_real_path, new_suffix)))
         RAISE(FS_ENOENT);
 
     /* Disallow renaming across different file systems. */
@@ -425,6 +444,7 @@ fs_errno_t fs_syscall_truncate(const char* path, ssize_t length, int* ret)
     fs_errno_t err = 0;
     fs_t* fs;
     char suffix[FS_PATH_MAX];
+    char real_path[FS_PATH_MAX];
 
     if (ret)
         *ret = -1;
@@ -432,7 +452,9 @@ fs_errno_t fs_syscall_truncate(const char* path, ssize_t length, int* ret)
     if (!path || !ret)
         RAISE(FS_EINVAL);
 
-    if (!(fs = fs_lookup(path, suffix)))
+    CHECK(_realpath(path, real_path));
+
+    if (!(fs = fs_lookup(real_path, suffix)))
         RAISE(FS_ENOENT);
 
     CHECK(fs->fs_truncate(fs, suffix, length));
@@ -448,6 +470,7 @@ fs_errno_t fs_syscall_mkdir(const char* pathname, uint32_t mode, int* ret)
     fs_errno_t err = 0;
     fs_t* fs;
     char suffix[FS_PATH_MAX];
+    char real_path[FS_PATH_MAX];
 
     if (ret)
         *ret = -1;
@@ -455,7 +478,9 @@ fs_errno_t fs_syscall_mkdir(const char* pathname, uint32_t mode, int* ret)
     if (!pathname || !ret)
         RAISE(FS_EINVAL);
 
-    if (!(fs = fs_lookup(pathname, suffix)))
+    CHECK(_realpath(pathname, real_path));
+
+    if (!(fs = fs_lookup(real_path, suffix)))
         RAISE(FS_ENOENT);
 
     CHECK(fs->fs_mkdir(fs, suffix, mode));
@@ -471,6 +496,7 @@ fs_errno_t fs_syscall_rmdir(const char* pathname, int* ret)
     fs_errno_t err = 0;
     fs_t* fs;
     char suffix[FS_PATH_MAX];
+    char real_path[FS_PATH_MAX];
 
     if (ret)
         *ret = -1;
@@ -478,7 +504,9 @@ fs_errno_t fs_syscall_rmdir(const char* pathname, int* ret)
     if (!pathname || !ret)
         RAISE(FS_EINVAL);
 
-    if (!(fs = fs_lookup(pathname, suffix)))
+    CHECK(_realpath(pathname, real_path));
+
+    if (!(fs = fs_lookup(real_path, suffix)))
         RAISE(FS_ENOENT);
 
     CHECK(fs->fs_rmdir(fs, suffix));
@@ -549,6 +577,7 @@ fs_errno_t fs_syscall_access(const char *pathname, int mode, int* ret)
     fs_t* fs;
     char suffix[FS_PATH_MAX];
     fs_stat_t stat;
+    char real_path[FS_PATH_MAX];
 
     if (ret)
         *ret = -1;
@@ -558,7 +587,9 @@ fs_errno_t fs_syscall_access(const char *pathname, int mode, int* ret)
     if (!pathname || !ret)
         RAISE(FS_EINVAL);
 
-    if (!(fs = fs_lookup(pathname, suffix)))
+    CHECK(_realpath(pathname, real_path));
+
+    if (!(fs = fs_lookup(real_path, suffix)))
         RAISE(FS_ENOENT);
 
     CHECK(fs->fs_stat(fs, suffix, &stat));
