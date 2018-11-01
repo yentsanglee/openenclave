@@ -1,7 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#define _GNU_SOURCE
 #include "syscall.h"
+#include <dirent.h>
 #include <fcntl.h>
 #include <string.h>
 #include "errno.h"
@@ -31,6 +33,22 @@ static size_t _assign_handle()
     }
 
     return (size_t)-1;
+}
+
+static handle_t* _fd_to_handle(int fd)
+{
+    handle_t* h;
+    size_t index = fd - FD_OFFSET;
+
+    if (index < 0 || index >= MAX_FILES)
+        return NULL;
+
+    h = &_handles[index];
+
+    if (!h->fs || !h->file)
+        return NULL;
+
+    return h;
 }
 
 fs_errno_t fs_syscall_open(
@@ -69,10 +87,7 @@ done:
     return err;
 }
 
-fs_errno_t fs_syscall_creat(
-    const char* pathname,
-    uint32_t mode,
-    int* ret)
+fs_errno_t fs_syscall_creat(const char* pathname, uint32_t mode, int* ret)
 {
     int flags = FS_O_CREAT | FS_O_WRONLY | FS_O_TRUNC;
     return fs_syscall_open(pathname, flags, mode, ret);
@@ -81,8 +96,7 @@ fs_errno_t fs_syscall_creat(
 fs_errno_t fs_syscall_close(int fd, int* ret)
 {
     fs_errno_t err = 0;
-    handle_t h;
-    ssize_t index;
+    handle_t* h;
 
     if (ret)
         *ret = -1;
@@ -90,19 +104,12 @@ fs_errno_t fs_syscall_close(int fd, int* ret)
     if (!ret)
         RAISE(FS_EINVAL);
 
-    index = fd - FD_OFFSET;
-
-    if (index < 0 || index >= MAX_FILES)
+    if (!(h = _fd_to_handle(fd)))
         RAISE(FS_EBADF);
 
-    h = _handles[index];
+    CHECK(h->fs->fs_close(h->file));
 
-    if (!h.fs || !h.file)
-        RAISE(FS_EINVAL);
-
-    CHECK(h.fs->fs_close(h.file));
-
-    memset(&_handles[index], 0, sizeof(_handles));
+    memset(h, 0, sizeof(handle_t));
 
     *ret = 0;
 
@@ -117,8 +124,7 @@ fs_errno_t fs_syscall_readv(
     ssize_t* ret)
 {
     fs_errno_t err = 0;
-    ssize_t index;
-    handle_t h;
+    handle_t* h;
     ssize_t nread = 0;
 
     if (ret)
@@ -127,22 +133,15 @@ fs_errno_t fs_syscall_readv(
     if (!iov || !ret)
         RAISE(FS_EINVAL);
 
-    index = fd - FD_OFFSET;
-
-    if (index < 0 || index >= MAX_FILES)
+    if (!(h = _fd_to_handle(fd)))
         RAISE(FS_EBADF);
-
-    h = _handles[index];
-
-    if (!h.fs || !h.file)
-        RAISE(FS_EINVAL);
 
     for (int i = 0; i < iovcnt; i++)
     {
         const fs_iovec_t* p = &iov[i];
         int32_t n;
 
-        CHECK(h.fs->fs_read(h.file, p->iov_base, p->iov_len, &n));
+        CHECK(h->fs->fs_read(h->file, p->iov_base, p->iov_len, &n));
         nread += n;
 
         if (n < p->iov_len)
@@ -162,8 +161,7 @@ fs_errno_t fs_syscall_writev(
     ssize_t* ret)
 {
     fs_errno_t err = 0;
-    int index;
-    handle_t h;
+    handle_t* h;
     ssize_t nwritten = 0;
 
     if (ret)
@@ -172,22 +170,15 @@ fs_errno_t fs_syscall_writev(
     if (!iov || !ret)
         RAISE(FS_EINVAL);
 
-    index = fd - FD_OFFSET;
-
-    if (index < 0 || index >= MAX_FILES)
+    if (!(h = _fd_to_handle(fd)))
         RAISE(FS_EBADF);
-
-    h = _handles[index];
-
-    if (!h.fs || !h.file)
-        RAISE(FS_EINVAL);
 
     for (int i = 0; i < iovcnt; i++)
     {
         const fs_iovec_t* p = &iov[i];
         int32_t n;
 
-        CHECK(h.fs->fs_write(h.file, p->iov_base, p->iov_len, &n));
+        CHECK(h->fs->fs_write(h->file, p->iov_base, p->iov_len, &n));
 
         if (n != p->iov_len)
             RAISE(FS_EIO);
@@ -234,8 +225,7 @@ done:
 fs_errno_t fs_syscall_lseek(int fd, ssize_t off, int whence, ssize_t* ret)
 {
     fs_errno_t err = 0;
-    ssize_t index;
-    handle_t h;
+    handle_t* h;
 
     if (ret)
         *ret = -1;
@@ -243,17 +233,10 @@ fs_errno_t fs_syscall_lseek(int fd, ssize_t off, int whence, ssize_t* ret)
     if (!ret)
         RAISE(FS_EINVAL);
 
-    index = fd - FD_OFFSET;
-
-    if (index < 0 || index >= MAX_FILES)
-        RAISE(FS_EBADF);
-
-    h = _handles[index];
-
-    if (!h.fs || !h.file)
+    if (!(h = _fd_to_handle(fd)))
         RAISE(FS_EINVAL);
 
-    CHECK(h.fs->fs_lseek(h.file, off, whence, ret));
+    CHECK(h->fs->fs_lseek(h->file, off, whence, ret));
 
 done:
     return err;
@@ -369,7 +352,7 @@ done:
     return err;
 }
 
-fs_errno_t fs_syscall_mkdir(const char *pathname, uint32_t mode, int* ret)
+fs_errno_t fs_syscall_mkdir(const char* pathname, uint32_t mode, int* ret)
 {
     fs_errno_t err = 0;
     fs_t* fs;
@@ -392,7 +375,7 @@ done:
     return err;
 }
 
-fs_errno_t fs_syscall_rmdir(const char *pathname, int* ret)
+fs_errno_t fs_syscall_rmdir(const char* pathname, int* ret)
 {
     fs_errno_t err = 0;
     fs_t* fs;
@@ -410,6 +393,60 @@ fs_errno_t fs_syscall_rmdir(const char *pathname, int* ret)
     CHECK(fs->fs_rmdir(fs, suffix));
 
     *ret = 0;
+
+done:
+    return err;
+}
+
+fs_errno_t fs_syscall_getdents(
+    unsigned int fd,
+    struct dirent* dirp,
+    unsigned int count,
+    int* ret)
+{
+    fs_errno_t err = 0;
+    handle_t* h;
+    unsigned int off = 0;
+    unsigned int remaining = count;
+
+    if (ret)
+        *ret = -1;
+
+    if (!dirp || !ret)
+        RAISE(FS_EINVAL);
+
+    if (!(h = _fd_to_handle(fd)))
+        RAISE(FS_EBADF);
+
+    while (remaining >= sizeof(struct dirent))
+    {
+        fs_dirent_t ent;
+        int32_t nread;
+
+        CHECK(h->fs->fs_read(h->file, &ent, sizeof(ent), &nread));
+
+        /* Handle end of file. */
+        if (nread == 0)
+            break;
+
+        /* The file size should be a multiple of the entry size. */
+        if (nread != sizeof(ent))
+            RAISE(FS_EIO);
+
+        /* Copy entry into caller buffer. */
+        dirp->d_ino = ent.d_ino;
+        dirp->d_off = off;
+        dirp->d_reclen = sizeof(struct dirent);
+        dirp->d_type = ent.d_type;
+        strlcpy(dirp->d_name, ent.d_name, sizeof(dirp->d_name));
+
+        off += sizeof(struct dirent);
+        remaining -= sizeof(struct dirent);
+
+        dirp++;
+    }
+
+    *ret = off;
 
 done:
     return err;

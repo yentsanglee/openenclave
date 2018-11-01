@@ -53,25 +53,30 @@
 #define FS_S_REG_DEFAULT (FS_S_IFREG | FS_S_IRWALL)
 #define FS_S_DIR_DEFAULT (FS_S_IFDIR | FS_S_IRWXALL)
 
-/* File accessa and creation flags. */
-#define FS_O_LARGEFILE 0
-#define FS_O_RDONLY 00
-#define FS_O_WRONLY 01
-#define FS_O_RDWR 02
-#define FS_O_CREAT 0100
-#define FS_O_EXCL 0200
-#define FS_O_NOCTTY 0400
-#define FS_O_TRUNC 01000
-#define FS_O_APPEND 02000
-#define FS_O_NONBLOCK 04000
-#define FS_O_DSYNC 010000
-#define FS_O_ASYNC 020000
-#define FS_O_DIRECT 040000
-#define FS_O_SYNC 04010000
-#define FS_O_RSYNC 04010000
-#define FS_O_DIRECTORY 0200000
-#define FS_O_NOFOLLOW 0400000
-#define FS_O_CLOEXEC 02000000
+// clang-format on
+#define FS_O_RDONLY    000000000
+#define FS_O_WRONLY    000000001
+#define FS_O_RDWR      000000002
+#define FS_O_CREAT     000000100
+#define FS_O_EXCL      000000200
+#define FS_O_NOCTTY    000000400
+#define FS_O_TRUNC     000001000
+#define FS_O_APPEND    000002000
+#define FS_O_NONBLOCK  000004000
+#define FS_O_DSYNC     000010000
+#define FS_O_SYNC      004010000
+#define FS_O_RSYNC     004010000
+#define FS_O_DIRECTORY 000200000
+#define FS_O_NOFOLLOW  000400000
+#define FS_O_CLOEXEC   002000000
+#define FS_O_ASYNC     000020000
+#define FS_O_DIRECT    000040000
+#define FS_O_LARGEFILE 000000000
+#define FS_O_NOATIME   001000000
+#define FS_O_PATH      010000000
+#define FS_O_TMPFILE   020200000
+#define FS_O_NDELAY    O_NONBLOCK
+// clang-format off
 
 /* whence parameter for fs_lseek(). */
 #define FS_SEEK_SET 0
@@ -131,11 +136,8 @@ struct _fs
     /*** File handle functions ***/
     /*****************************/
 
-    fs_errno_t (*fs_creat)(
-        fs_t* fs,
-        const char* path,
-        uint32_t mode,
-        fs_file_t** file);
+    fs_errno_t (
+        *fs_creat)(fs_t* fs, const char* path, uint32_t mode, fs_file_t** file);
 
     fs_errno_t (*fs_open)(
         fs_t* fs,
@@ -165,13 +167,10 @@ struct _fs
     /*** Directory handle functions ***/
     /**********************************/
 
-    /* TODO: add syscall handler. */
     fs_errno_t (*fs_opendir)(fs_t* fs, const char* path, fs_dir_t** dir);
 
-    /* TODO: add syscall handler. */
     fs_errno_t (*fs_readdir)(fs_dir_t* dir, fs_dirent_t** dirent);
 
-    /* TODO: add syscall handler. */
     fs_errno_t (*fs_closedir)(fs_dir_t* dir);
 
     /*******************************/

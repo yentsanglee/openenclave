@@ -7,6 +7,8 @@
 #include "errno.h"
 #include "fs.h"
 
+struct dirent;
+
 fs_errno_t fs_syscall_open(
     const char* pathname,
     int flags,
@@ -37,12 +39,21 @@ fs_errno_t fs_syscall_link(const char* oldpath, const char* newpath, int* ret);
 
 fs_errno_t fs_syscall_unlink(const char* pathname, int* ret);
 
-fs_errno_t fs_syscall_rename(const char* oldpath, const char* newpath, int* ret);
+fs_errno_t fs_syscall_rename(
+    const char* oldpath,
+    const char* newpath,
+    int* ret);
 
 fs_errno_t fs_syscall_truncate(const char* path, ssize_t length, int* ret);
 
-fs_errno_t fs_syscall_mkdir(const char *pathname, uint32_t mode, int* ret);
+fs_errno_t fs_syscall_mkdir(const char* pathname, uint32_t mode, int* ret);
 
-fs_errno_t fs_syscall_rmdir(const char *pathname, int* ret);
+fs_errno_t fs_syscall_rmdir(const char* pathname, int* ret);
+
+fs_errno_t fs_syscall_getdents(
+    unsigned int fd,
+    struct dirent* dirp,
+    unsigned int count,
+    int* ret);
 
 #endif /* _fs_syscall_h */

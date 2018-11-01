@@ -5,6 +5,7 @@
 #define _GNU_SOURCE
 #include "fs/syscall.h"
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <openenclave/enclave.h>
@@ -324,7 +325,7 @@ static int _syscall_truncate(const char* path, ssize_t length)
     return ret;
 }
 
-static int _syscall_mkdir(const char *pathname, uint32_t mode)
+static int _syscall_mkdir(const char* pathname, uint32_t mode)
 {
     int ret;
 
@@ -333,13 +334,47 @@ static int _syscall_mkdir(const char *pathname, uint32_t mode)
     return ret;
 }
 
-static int _syscall_rmdir(const char *pathname)
+static int _syscall_rmdir(const char* pathname)
 {
     int ret;
 
     errno = fs_syscall_rmdir(pathname, &ret);
 
     return ret;
+}
+
+int _syscall_getdents(unsigned int fd, struct dirent* dirp, unsigned int count)
+{
+    int ret;
+
+    errno = fs_syscall_getdents(fd, dirp, count, &ret);
+
+    return ret;
+}
+
+static int _syscall_fcntl(int fd, int cmd, ...)
+{
+    switch (cmd)
+    {
+        case F_SETFD:
+        {
+            va_list ap;
+            va_start(ap, cmd);
+
+            int flags = va_arg(ap, int);
+
+            /* Ignore O_CLOEXEC in enclaves since exec is unsupported. */
+            if (flags == O_CLOEXEC)
+                return 0;
+
+            va_end(ap);
+            return -1;
+        }
+        default:
+        {
+            return -1;
+        }
+    }
 }
 
 /* Intercept __syscalls() from MUSL */
@@ -401,6 +436,14 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
             return _syscall_mkdir((const char*)x1, (uint32_t)x2);
         case SYS_rmdir:
             return _syscall_rmdir((const char*)x1);
+        case SYS_fcntl:
+            return _syscall_fcntl((int)x1, (int)x2);
+        case SYS_getdents:
+        case SYS_getdents64:
+        {
+            return _syscall_getdents(
+                (unsigned int)x1, (struct dirent*)x2, (unsigned int)x3);
+        }
         default:
         {
             /* All other MUSL-initiated syscalls are aborted. */

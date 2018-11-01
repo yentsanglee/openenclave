@@ -4,8 +4,9 @@
 #define _GNU_SOURCE
 #include <assert.h>
 #include <ctype.h>
-#include <limits.h>
+#include <dirent.h>
 #include <errno.h>
+#include <limits.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/file.h>
 #include <openenclave/internal/mount.h>
@@ -16,9 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include "../../../libc/fs/buf.h"
 #include "../../../libc/fs/fs.h"
-#include <unistd.h>
 
 #define INIT
 
@@ -560,7 +561,6 @@ static void _read_alphabet_file(const char* target, const char* path)
     {
         struct stat st;
         OE_TEST(stat(filename, &st) == 0);
-        printf("size=%zu\n", st.st_size);
         OE_TEST(st.st_size == FILE_SIZE);
     }
 }
@@ -730,6 +730,77 @@ static void _test_mkdir(const char* target)
     OE_TEST(stat(path2, &st) != 0);
 }
 
+static void _test_opendir(const char* target)
+{
+    char path[FS_PATH_MAX];
+    char child_path[FS_PATH_MAX];
+    struct stat st;
+    DIR* dir;
+
+    strlcpy(path, target, sizeof(path));
+    strlcat(path, "/parent", sizeof(path));
+
+    if (mkdir(path, 0) != 0)
+        OE_TEST(false);
+
+    OE_TEST(stat(path, &st) == 0);
+    OE_TEST(st.st_mode & S_IFDIR);
+    OE_TEST(!(st.st_mode & S_IFREG));
+
+    strlcpy(child_path, path, sizeof(child_path));
+    strlcat(child_path, "/child1", sizeof(child_path));
+    OE_TEST(mkdir(child_path, 0) == 0);
+
+    strlcpy(child_path, path, sizeof(child_path));
+    strlcat(child_path, "/child2", sizeof(child_path));
+    OE_TEST(mkdir(child_path, 0) == 0);
+
+    strlcpy(child_path, path, sizeof(child_path));
+    strlcat(child_path, "/child3", sizeof(child_path));
+    OE_TEST(mkdir(child_path, 0) == 0);
+
+    /* Enumerate the directory entries. */
+    {
+        OE_TEST((dir = opendir(path)) != NULL);
+
+        int n = 0;
+        {
+            struct dirent* ent;
+
+            while ((ent = readdir(dir)))
+            {
+                printf("d_name{%s}\n", ent->d_name);
+
+                switch (n)
+                {
+                    case 0:
+                        OE_TEST(strcmp(ent->d_name, "..") == 0);
+                        break;
+                    case 1:
+                        OE_TEST(strcmp(ent->d_name, ".") == 0);
+                        break;
+                    case 2:
+                        OE_TEST(strcmp(ent->d_name, "child1") == 0);
+                        break;
+                    case 3:
+                        OE_TEST(strcmp(ent->d_name, "child2") == 0);
+                        break;
+                    case 4:
+                        OE_TEST(strcmp(ent->d_name, "child3") == 0);
+                        break;
+                    default:
+                        OE_TEST(false);
+                }
+
+                n++;
+            }
+        }
+
+        OE_TEST(n == 5);
+        OE_TEST(closedir(dir) == 0);
+    }
+}
+
 void run_tests(const char* target)
 {
     fs_t* fs = fs_lookup(target, NULL);
@@ -836,6 +907,7 @@ void run_tests(const char* target)
     _test_truncate(target);
 
     _test_mkdir(target);
+    _test_opendir(target);
 }
 
 int test_oefs(const char* oefs_filename)

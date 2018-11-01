@@ -1661,6 +1661,7 @@ static fs_errno_t _fs_open(
         supported_flags |= FS_O_TRUNC;
         supported_flags |= FS_O_APPEND;
         supported_flags |= FS_O_DIRECTORY;
+        supported_flags |= FS_O_CLOEXEC;
 
         if (flags & ~supported_flags)
             RAISE(FS_EINVAL);
@@ -1891,7 +1892,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
 
     /* Remove the destination file if it existed above. */
     if (release_ino)
-       CHECK(_release_inode(oefs, release_ino));
+        CHECK(_release_inode(oefs, release_ino));
 
 done:
 
