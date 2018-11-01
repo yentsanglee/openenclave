@@ -35,7 +35,7 @@ static oe_result_t _oe_free_elf_image(oe_enclave_image_t* image)
 
     if (image->image_base)
     {
-        free(image->image_base);
+        oe_memalign_free(image->image_base);
     }
 
     if (image->u.elf.segments)
