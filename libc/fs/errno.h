@@ -26,6 +26,7 @@ typedef enum _fs_errno {
     FS_ESPIPE = 29,       /* Illegal seek */
     FS_EROFS = 30,        /* Readonly file system */
     FS_EMLINK = 31,       /* Too many links */
+    FS_ERANGE = 34,       /* Numerical result of out range */
     FS_ENAMETOOLONG = 36, /* File name too long */
     FS_ENOSYS = 38,       /* Function not implemented */
     FS_ENOTEMPTY = 39,    /* Directory not empty */

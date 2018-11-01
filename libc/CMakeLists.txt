@@ -26,6 +26,7 @@ add_library(oelibc STATIC
     locale.c
     malloc.c
     pthread.c
+    realpath.c
     sched_yield.c
     stdlib.c
     strerror.c
@@ -652,8 +653,10 @@ add_library(oelibc STATIC
     ${MUSLSRC}/time/time.c
     ${MUSLSRC}/time/__tm_to_secs.c
     ${MUSLSRC}/time/__year_to_secs.c
+    ${MUSLSRC}/unistd/access.c
     ${MUSLSRC}/unistd/close.c
     ${MUSLSRC}/unistd/dup.c
+    ${MUSLSRC}/unistd/getcwd.c
     ${MUSLSRC}/unistd/rmdir.c
     ${MUSLSRC}/unistd/dup3.c
     ${MUSLSRC}/unistd/truncate.c

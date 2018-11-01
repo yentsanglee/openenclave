@@ -377,6 +377,24 @@ static int _syscall_fcntl(int fd, int cmd, ...)
     }
 }
 
+static int _syscall_access(const char *pathname, int mode)
+{
+    int ret;
+
+    errno = fs_syscall_access(pathname, mode, &ret);
+
+    return ret;
+}
+
+static int _syscall_getcwd(char *buf, unsigned long size)
+{
+    int ret;
+
+    errno = fs_syscall_getcwd(buf, size, &ret);
+
+    return ret;
+}
+
 /* Intercept __syscalls() from MUSL */
 long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
@@ -438,6 +456,10 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
             return _syscall_rmdir((const char*)x1);
         case SYS_fcntl:
             return _syscall_fcntl((int)x1, (int)x2);
+        case SYS_access:
+            return _syscall_access((const char*)x1, (int)x2);
+        case SYS_getcwd:
+            return _syscall_getcwd((char*)x1, (unsigned long)x2);
         case SYS_getdents:
         case SYS_getdents64:
         {

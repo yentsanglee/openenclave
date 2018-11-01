@@ -16,6 +16,8 @@
 /* Offset to account for stdin=0, stdout=1, stderr=2. */
 #define FD_OFFSET 3
 
+static char _cwd[FS_PATH_MAX] = "/";
+
 typedef struct _handle
 {
     fs_t* fs;
@@ -49,6 +51,95 @@ static handle_t* _fd_to_handle(int fd)
         return NULL;
 
     return h;
+}
+
+static fs_errno_t _realpath(const char* path, char real_path[FS_PATH_MAX])
+{
+    fs_errno_t err = 0;
+    char buf[FS_PATH_MAX];
+    const char* in[FS_PATH_MAX];
+    size_t nin = 0;
+    const char* out[FS_PATH_MAX];
+    size_t nout = 0;
+    char resolved[FS_PATH_MAX];
+
+    if (!path || !real_path)
+        RAISE(FS_EINVAL);
+
+    if (path[0] == '/')
+    {
+        if (strlcpy(buf, path, sizeof(buf)) >= sizeof(buf))
+            RAISE(FS_ENAMETOOLONG);
+    }
+    else
+    {
+        char cwd[FS_PATH_MAX];
+        int r;
+
+        if (fs_syscall_getcwd(cwd, sizeof(cwd), &r) != 0 || r != 0)
+            RAISE(FS_ENAMETOOLONG);
+
+        if (strlcpy(buf, cwd, sizeof(buf)) >= sizeof(buf))
+            RAISE(FS_ENAMETOOLONG);
+
+        if (strlcat(buf, "/", sizeof(buf)) >= sizeof(buf))
+            RAISE(FS_ENAMETOOLONG);
+
+        if (strlcat(buf, path, sizeof(buf)) >= sizeof(buf))
+            RAISE(FS_ENAMETOOLONG);
+    }
+
+    /* Split the path into elements. */
+    {
+        char* p;
+        char* save;
+
+        in[nin++] = "/";
+
+        for (p = strtok_r(buf, "/", &save); p; p = strtok_r(NULL, "/", &save))
+            in[nin++] = p;
+    }
+
+    /* Normalize the path. */
+    for (size_t i = 0; i < nin; i++)
+    {
+        /* Skip "." elements. */
+        if (strcmp(in[i], ".") == 0)
+            continue;
+
+        /* If "..", remove previous element. */
+        if (strcmp(in[i], "..") == 0)
+        {
+            if (nout)
+                nout--;
+            continue;
+        }
+
+        out[nout++] = in[i];
+    }
+
+    /* Build the resolved path. */
+    {
+        *resolved = '\0';
+
+        for (size_t i = 0; i < nout; i++)
+        {
+            if (strlcat(resolved, out[i], FS_PATH_MAX) >= FS_PATH_MAX)
+                RAISE(FS_ENAMETOOLONG);
+
+            if (i != 0 && i + 1 != nout)
+            {
+                if (strlcat(resolved, "/", FS_PATH_MAX) >= FS_PATH_MAX)
+                    RAISE(FS_ENAMETOOLONG);
+            }
+        }
+    }
+
+    if (strlcpy(real_path, resolved, FS_PATH_MAX) >= FS_PATH_MAX)
+        RAISE(FS_ENAMETOOLONG);
+
+done:
+    return err;
 }
 
 fs_errno_t fs_syscall_open(
@@ -447,6 +538,56 @@ fs_errno_t fs_syscall_getdents(
     }
 
     *ret = off;
+
+done:
+    return err;
+}
+
+fs_errno_t fs_syscall_access(const char *pathname, int mode, int* ret)
+{
+    fs_errno_t err = 0;
+    fs_t* fs;
+    char suffix[FS_PATH_MAX];
+    fs_stat_t stat;
+
+    if (ret)
+        *ret = -1;
+
+    memset(&stat, 0, sizeof(stat));
+
+    if (!pathname || !ret)
+        RAISE(FS_EINVAL);
+
+    if (!(fs = fs_lookup(pathname, suffix)))
+        RAISE(FS_ENOENT);
+
+    CHECK(fs->fs_stat(fs, suffix, &stat));
+
+    /* ATTN: all accesses possible currently. */
+
+    *ret = 0;
+
+done:
+    return err;
+}
+
+fs_errno_t fs_syscall_getcwd(char* buf, unsigned long size, int* ret)
+{
+    fs_errno_t err = 0;
+    size_t n;
+
+    if (ret)
+        *ret = -1;
+
+    if (!buf || !ret)
+        RAISE(FS_EINVAL);
+
+    n = strlcpy(buf, _cwd, size);
+
+    if (n >= size)
+        RAISE(FS_ERANGE);
+
+    *ret = n + 1;
 
 done:
     return err;

@@ -56,4 +56,8 @@ fs_errno_t fs_syscall_getdents(
     unsigned int count,
     int* ret);
 
+fs_errno_t fs_syscall_access(const char *pathname, int mode, int* ret);
+
+fs_errno_t fs_syscall_getcwd(char* buf, unsigned long size, int* ret);
+
 #endif /* _fs_syscall_h */

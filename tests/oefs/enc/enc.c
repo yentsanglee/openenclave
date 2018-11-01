@@ -801,6 +801,33 @@ static void _test_opendir(const char* target)
     }
 }
 
+static void _test_cwd(const char* target)
+{
+    char cwd[PATH_MAX];
+    OE_TEST(getcwd(cwd, sizeof(cwd)) != NULL);
+    getcwd(cwd, sizeof(cwd));
+    OE_TEST(strcmp(cwd, "/") == 0);
+
+    char path[PATH_MAX];
+    strlcpy(path, target, sizeof(path));
+    strlcat(path, "/./././delete/../home/./delete/./..", sizeof(path));
+
+    char expected[PATH_MAX];
+    strlcpy(expected, target, sizeof(expected));
+    strlcat(expected, "/home", sizeof(expected));
+
+    printf("expected=%s\n", expected);
+
+    OE_TEST(access(expected, F_OK) != 0);
+    OE_TEST(mkdir(expected, 0) == 0);
+    OE_TEST(access(expected, F_OK) == 0);
+
+    char real[PATH_MAX];
+    OE_TEST(realpath(path, real) != NULL);
+    printf("real=%s\n", real);
+    OE_TEST(strcmp(real, expected) == 0);
+}
+
 void run_tests(const char* target)
 {
     fs_t* fs = fs_lookup(target, NULL);
@@ -908,6 +935,8 @@ void run_tests(const char* target)
 
     _test_mkdir(target);
     _test_opendir(target);
+
+    _test_cwd(target);
 }
 
 int test_oefs(const char* oefs_filename)
