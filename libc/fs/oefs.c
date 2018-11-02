@@ -2391,21 +2391,15 @@ fs_errno_t oefs_initialize(fs_t** fs_out, oe_block_dev_t* dev)
     }
 
     oefs->base.fs_release = _fs_release;
-
-    /* File handle functions. */
     oefs->base.fs_creat = _fs_creat;
     oefs->base.fs_open = _fs_open;
     oefs->base.fs_lseek = _fs_lseek;
     oefs->base.fs_read = _fs_read;
     oefs->base.fs_write = _fs_write;
     oefs->base.fs_close = _fs_close;
-
-    /* Directory handle functions. */
     oefs->base.fs_opendir = _fs_opendir;
     oefs->base.fs_readdir = _fs_readdir;
     oefs->base.fs_closedir = _fs_closedir;
-
-    /* Path-oriented functions. */
     oefs->base.fs_stat = _fs_stat;
     oefs->base.fs_link = _fs_link;
     oefs->base.fs_unlink = _fs_unlink;
