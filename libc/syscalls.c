@@ -3,7 +3,7 @@
 
 #define __OE_NEED_TIME_CALLS
 #define _GNU_SOURCE
-#include "fs/syscall.h"
+#include "fs/fs.h"
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
@@ -44,7 +44,7 @@ _syscall_open(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     fs_errno_t err;
     int ret;
 
-    err = fs_syscall_open(filename, flags, mode, &ret);
+    err = fs_open(filename, flags, mode, &ret);
 
     if (err != FS_ENOENT)
     {
@@ -66,7 +66,7 @@ _syscall_creat(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     fs_errno_t err;
     int ret;
 
-    err = fs_syscall_creat(pathname, mode, &ret);
+    err = fs_creat(pathname, mode, &ret);
 
     if (err != FS_ENOENT)
     {
@@ -84,7 +84,7 @@ static long _syscall_close(long n, long x1, ...)
 
     if (fd >= 3)
     {
-        errno = fs_syscall_close(fd, &ret);
+        errno = fs_close(fd, &ret);
         return ret;
     }
 
@@ -107,7 +107,7 @@ static long _syscall_readv(long num, long x1, long x2, long x3, ...)
 
     if (fd >= 3)
     {
-        errno = fs_syscall_readv(fd, (fs_iovec_t*)iov, iovcnt, &ret);
+        errno = fs_readv(fd, (fs_iovec_t*)iov, iovcnt, &ret);
         return ret;
     }
 
@@ -122,7 +122,7 @@ static long _syscall_stat(long num, long x1, long x2, long x3, ...)
     int ret = -1;
     fs_stat_t stat;
 
-    errno = fs_syscall_stat(pathname, &stat, &ret);
+    errno = fs_stat(pathname, &stat, &ret);
 
     if (errno == 0)
     {
@@ -165,7 +165,7 @@ _syscall_writev(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 
     if (fd >= 3)
     {
-        errno = fs_syscall_writev(fd, (fs_iovec_t*)iov, iovcnt, &ret);
+        errno = fs_writev(fd, (fs_iovec_t*)iov, iovcnt, &ret);
         return ret;
     }
 
@@ -284,7 +284,7 @@ static ssize_t _syscall_lseek(int fd, ssize_t off, int whence)
 {
     ssize_t ret;
 
-    errno = fs_syscall_lseek(fd, off, whence, &ret);
+    errno = fs_lseek(fd, off, whence, &ret);
 
     return ret;
 }
@@ -293,7 +293,7 @@ static int _syscall_link(const char* oldpath, const char* newpath)
 {
     int ret;
 
-    errno = fs_syscall_link(oldpath, newpath, &ret);
+    errno = fs_link(oldpath, newpath, &ret);
 
     return ret;
 }
@@ -302,7 +302,7 @@ static int _syscall_unlink(const char* pathname)
 {
     int ret;
 
-    errno = fs_syscall_unlink(pathname, &ret);
+    errno = fs_unlink(pathname, &ret);
 
     return ret;
 }
@@ -311,7 +311,7 @@ static int _syscall_rename(const char* oldpath, const char* newpath)
 {
     int ret;
 
-    errno = fs_syscall_rename(oldpath, newpath, &ret);
+    errno = fs_rename(oldpath, newpath, &ret);
 
     return ret;
 }
@@ -320,7 +320,7 @@ static int _syscall_truncate(const char* path, ssize_t length)
 {
     int ret;
 
-    errno = fs_syscall_truncate(path, length, &ret);
+    errno = fs_truncate(path, length, &ret);
 
     return ret;
 }
@@ -329,7 +329,7 @@ static int _syscall_mkdir(const char* pathname, uint32_t mode)
 {
     int ret;
 
-    errno = fs_syscall_mkdir(pathname, mode, &ret);
+    errno = fs_mkdir(pathname, mode, &ret);
 
     return ret;
 }
@@ -338,7 +338,7 @@ static int _syscall_rmdir(const char* pathname)
 {
     int ret;
 
-    errno = fs_syscall_rmdir(pathname, &ret);
+    errno = fs_rmdir(pathname, &ret);
 
     return ret;
 }
@@ -347,7 +347,7 @@ int _syscall_getdents(unsigned int fd, struct dirent* dirp, unsigned int count)
 {
     int ret;
 
-    errno = fs_syscall_getdents(fd, dirp, count, &ret);
+    errno = fs_getdents(fd, dirp, count, &ret);
 
     return ret;
 }
@@ -381,7 +381,7 @@ static int _syscall_access(const char* pathname, int mode)
 {
     int ret;
 
-    errno = fs_syscall_access(pathname, mode, &ret);
+    errno = fs_access(pathname, mode, &ret);
 
     return ret;
 }
@@ -390,7 +390,7 @@ static int _syscall_getcwd(char* buf, unsigned long size)
 {
     int ret;
 
-    errno = fs_syscall_getcwd(buf, size, &ret);
+    errno = fs_getcwd(buf, size, &ret);
 
     return ret;
 }
@@ -399,7 +399,7 @@ static int _syscall_chdir(const char* path)
 {
     int ret;
 
-    errno = fs_syscall_chdir(path, &ret);
+    errno = fs_chdir(path, &ret);
 
     return ret;
 }

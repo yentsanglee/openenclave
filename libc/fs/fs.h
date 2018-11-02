@@ -187,4 +187,59 @@ int fs_unbind(const char* path);
 
 fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX]);
 
+struct dirent;
+
+fs_errno_t fs_open(
+    const char* pathname,
+    int flags,
+    uint32_t mode,
+    int* ret);
+
+fs_errno_t fs_creat(const char* pathname, uint32_t mode, int* ret);
+
+fs_errno_t fs_close(int fd, int* ret);
+
+fs_errno_t fs_readv(
+    int fd,
+    const fs_iovec_t* iov,
+    int iovcnt,
+    ssize_t* ret);
+
+fs_errno_t fs_writev(
+    int fd,
+    const fs_iovec_t* iov,
+    int iovcnt,
+    ssize_t* ret);
+
+fs_errno_t fs_stat(const char* pathname, fs_stat_t* buf, int* ret);
+
+fs_errno_t fs_lseek(int fd, ssize_t off, int whence, ssize_t* ret);
+
+fs_errno_t fs_link(const char* oldpath, const char* newpath, int* ret);
+
+fs_errno_t fs_unlink(const char* pathname, int* ret);
+
+fs_errno_t fs_rename(
+    const char* oldpath,
+    const char* newpath,
+    int* ret);
+
+fs_errno_t fs_truncate(const char* path, ssize_t length, int* ret);
+
+fs_errno_t fs_mkdir(const char* pathname, uint32_t mode, int* ret);
+
+fs_errno_t fs_rmdir(const char* pathname, int* ret);
+
+fs_errno_t fs_getdents(
+    unsigned int fd,
+    struct dirent* dirp,
+    unsigned int count,
+    int* ret);
+
+fs_errno_t fs_access(const char* pathname, int mode, int* ret);
+
+fs_errno_t fs_getcwd(char* buf, unsigned long size, int* ret);
+
+fs_errno_t fs_chdir(const char* path, int* ret);
+
 #endif /* _fs_h */
