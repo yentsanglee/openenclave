@@ -369,6 +369,12 @@ typedef struct _oe_host_syscall_args
         struct
         {
             long fd;
+            void* buf;
+            long count;
+        } read;
+        struct
+        {
+            long fd;
         } close;
     } u;
 } oe_host_syscall_args_t;

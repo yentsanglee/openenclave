@@ -37,6 +37,12 @@ void oe_handle_host_syscall(oe_enclave_t* enclave, uint64_t arg)
                 write(args->u.write.fd, args->u.write.buf, args->u.write.count);
             break;
         }
+        case OE_SYSCALL_read:
+        {
+            args->ret =
+                read(args->u.read.fd, args->u.read.buf, args->u.read.count);
+            break;
+        }
         default:
         {
             args->ret = -1;

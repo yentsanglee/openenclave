@@ -196,6 +196,25 @@ void* fs_host_batch_calloc(fs_host_batch_t* batch, size_t size)
     return memset(ptr, 0, size);
 }
 
+char* fs_host_batch_strdup(fs_host_batch_t* batch, const char* str)
+{
+    char* ret = NULL;
+    size_t len;
+
+    if (!batch || !str)
+        goto done;
+
+    len = strlen(str);
+
+    if (!(ret = fs_host_batch_calloc(batch, len + 1)))
+        goto done;
+
+    memcpy(ret, str, len + 1);
+
+done:
+    return ret;
+}
+
 int fs_host_batch_free(fs_host_batch_t* batch)
 {
     int ret = -1;
@@ -226,25 +245,6 @@ int fs_host_batch_free(fs_host_batch_t* batch)
     }
 
     ret = 0;
-
-done:
-    return ret;
-}
-
-char* fs_host_batch_strdup(fs_host_batch_t* batch, const char* str)
-{
-    char* ret = NULL;
-    size_t len;
-
-    if (!batch || !str)
-        goto done;
-
-    len = strlen(str);
-
-    if (!(ret = fs_host_batch_calloc(batch, len + 1)))
-        goto done;
-
-    memcpy(ret, str, len + 1);
 
 done:
     return ret;

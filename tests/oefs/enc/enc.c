@@ -965,17 +965,32 @@ void run_tests(const char* target)
 
 static void _test_hostfs()
 {
-    FILE* os;
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
 
+    /* Mount the file system. */
     OE_TEST(oe_mount_hostfs("/mnt/hostfs") == 0);
 
-    OE_TEST((os = fopen("/mnt/hostfs/tmp/myfile", "wb")) != NULL);
+    /* Create a file with alphabet characters terminated by zero. */
+    {
+        FILE* os;
 
-    OE_TEST(fwrite(alphabet, 1, sizeof(alphabet), os) == sizeof(alphabet));
+        OE_TEST((os = fopen("/mnt/hostfs/tmp/myfile", "wb")) != NULL);
+        OE_TEST(fwrite(alphabet, 1, sizeof(alphabet), os) == sizeof(alphabet));
+        OE_TEST(fclose(os) == 0);
+    }
 
-    fclose(os);
+    /* Read the file and make sure the contents are the same. */
+    {
+        FILE* is;
+        char buf[sizeof(alphabet)];
 
+        OE_TEST((is = fopen("/mnt/hostfs/tmp/myfile", "rb")) != NULL);
+        OE_TEST(fread(buf, 1, sizeof(buf), is) == sizeof(buf));
+        OE_TEST(memcmp(buf, alphabet, sizeof(buf)) == 0);
+        OE_TEST(fclose(is) == 0);
+    }
+
+    /* Unmount the file system. */
     OE_TEST(oe_unmount("/mnt/hostfs") == 0);
 }
 

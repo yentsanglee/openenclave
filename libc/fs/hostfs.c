@@ -53,14 +53,58 @@ static fs_errno_t _fs_read(
     int32_t* nread)
 {
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_host_syscall_args_t args_t;
+    args_t* args;
 
     if (nread)
         *nread = 0;
 
-    if (!_valid_file(file) || !data || !nread)
+    /* Check parameters */
+    if (!_valid_file(file) || (!data && size) || !nread)
         RAISE(FS_EINVAL);
 
+    batch = file->hostfs->batch;
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->num = OE_SYSCALL_read;
+        args->ret = -1;
+        args->err = 0;
+        args->u.read.fd = file->fd;
+
+        if (size)
+        {
+            if (!(args->u.read.buf = fs_host_batch_malloc(batch, size)))
+                goto done;
+        }
+
+        args->u.read.count = size;
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+
+        if (args->ret < 0)
+            RAISE(args->err);
+    }
+
+    /* Copy data onto caller's buffer. */
+    if (args->ret <= size)
+        memcpy(data, args->u.read.buf, args->ret);
+
+    *nread = args->ret;
+
 done:
+
+    if (batch)
+        fs_host_batch_free(batch);
+
     return err;
 }
 
@@ -92,7 +136,7 @@ static fs_errno_t _fs_write(
         args->num = OE_SYSCALL_write;
         args->ret = -1;
         args->err = 0;
-        args->u.close.fd = file->fd;
+        args->u.write.fd = file->fd;
 
         if (size)
         {
