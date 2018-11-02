@@ -1000,6 +1000,15 @@ static void _test_hostfs()
         OE_TEST(fclose(is) == 0);
     }
 
+    /* Scan some directories. */
+    {
+        DIR* dir;
+
+        OE_TEST((dir = opendir("/mnt/hostfs/tmp")) != NULL);
+
+        OE_TEST(closedir(dir) == 0);
+    }
+
     /* Unmount the file system. */
     OE_TEST(oe_unmount("/mnt/hostfs") == 0);
 }

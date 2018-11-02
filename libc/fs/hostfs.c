@@ -150,7 +150,6 @@ done:
     return err;
 }
 
-/* TODO */
 static fs_errno_t _fs_lseek(
     fs_file_t* file,
     ssize_t offset,
@@ -185,10 +184,9 @@ static fs_errno_t _fs_lseek(
 
     /* Perform the OCALL. */
     {
-printf("BEFORE: offset=%ld whence=%d\n", offset, whence);
         if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
             goto done;
-printf("AFTER: ret=%ld\n", args->ret);
+
         if (args->ret < 0)
             RAISE(args->err);
     }
@@ -410,15 +408,17 @@ done:
 }
 
 /* TODO */
-static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
+static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
 {
     fs_errno_t err = FS_EOK;
 
-    if (!_valid_fs(fs) || !path)
+    if (stat)
+        memset(stat, 0, sizeof(fs_stat_t));
+
+    if (!_valid_fs(fs) || !path || !stat)
         RAISE(FS_EINVAL);
 
 done:
-
     return err;
 }
 
@@ -428,6 +428,19 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
     fs_errno_t err = FS_EOK;
 
     if (!old_path || !new_path)
+        RAISE(FS_EINVAL);
+
+done:
+
+    return err;
+}
+
+/* TODO */
+static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
+{
+    fs_errno_t err = FS_EOK;
+
+    if (!_valid_fs(fs) || !path)
         RAISE(FS_EINVAL);
 
 done:
@@ -452,7 +465,7 @@ done:
 }
 
 /* TODO */
-static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
+static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
 {
     fs_errno_t err = FS_EOK;
 
@@ -465,7 +478,7 @@ done:
 }
 
 /* TODO */
-static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
+static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
 {
     fs_errno_t err = FS_EOK;
 
@@ -487,21 +500,6 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
 
 done:
 
-    return err;
-}
-
-/* TODO */
-static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
-{
-    fs_errno_t err = FS_EOK;
-
-    if (stat)
-        memset(stat, 0, sizeof(fs_stat_t));
-
-    if (!_valid_fs(fs) || !path || !stat)
-        RAISE(FS_EINVAL);
-
-done:
     return err;
 }
 

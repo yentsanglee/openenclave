@@ -26,15 +26,10 @@ void oe_handle_host_syscall(oe_enclave_t* enclave, uint64_t arg)
                 args->u.open.pathname, args->u.open.flags, args->u.open.mode);
             break;
         }
-        case OE_SYSCALL_close:
+        case OE_SYSCALL_lseek:
         {
-            args->ret = close(args->u.close.fd);
-            break;
-        }
-        case OE_SYSCALL_write:
-        {
-            args->ret =
-                write(args->u.write.fd, args->u.write.buf, args->u.write.count);
+            args->ret = lseek(
+                args->u.lseek.fd, args->u.lseek.offset, args->u.lseek.whence);
             break;
         }
         case OE_SYSCALL_read:
@@ -43,14 +38,20 @@ void oe_handle_host_syscall(oe_enclave_t* enclave, uint64_t arg)
                 read(args->u.read.fd, args->u.read.buf, args->u.read.count);
             break;
         }
-        case OE_SYSCALL_lseek:
+        case OE_SYSCALL_write:
         {
             args->ret =
-                lseek(args->u.lseek.fd, args->u.lseek.offset, args->u.lseek.whence);
+                write(args->u.write.fd, args->u.write.buf, args->u.write.count);
+            break;
+        }
+        case OE_SYSCALL_close:
+        {
+            args->ret = close(args->u.close.fd);
             break;
         }
         default:
         {
+            errno = EINVAL;
             args->ret = -1;
             break;
         }
