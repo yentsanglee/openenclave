@@ -98,6 +98,7 @@ typedef enum _oe_func {
     OE_OCALL_CLOSE_BLOCK_DEVICE,
     OE_OCALL_BLOCK_DEVICE_GET,
     OE_OCALL_BLOCK_DEVICE_PUT,
+    OE_OCALL_HOST_SYSCALL,
     /* Caution: always add new OCALL function numbers here */
 
     __OE_FUNC_MAX = OE_ENUM_MAX,

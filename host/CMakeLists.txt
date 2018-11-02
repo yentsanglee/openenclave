@@ -13,6 +13,7 @@ set(PLATFORM_SRC
     crypto/key.c
     crypto/random.c
     crypto/rsa.c
+    hostsyscall.c
     linux/aep.S
     linux/aesm.c
     linux/cpuid.c
