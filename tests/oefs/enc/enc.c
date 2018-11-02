@@ -987,6 +987,16 @@ static void _test_hostfs()
         OE_TEST((is = fopen("/mnt/hostfs/tmp/myfile", "rb")) != NULL);
         OE_TEST(fread(buf, 1, sizeof(buf), is) == sizeof(buf));
         OE_TEST(memcmp(buf, alphabet, sizeof(buf)) == 0);
+
+        rewind(is);
+        OE_TEST(ftell(is) == 0);
+
+        OE_TEST(fseek(is, 7, SEEK_SET) == 0);
+        OE_TEST(ftell(is) == 7);
+        OE_TEST(fread(buf, 1, 4, is) == 4);
+        OE_TEST(ftell(is) == 7 + 4);
+        OE_TEST(memcmp(buf, "hijk", 4) == 0);
+
         OE_TEST(fclose(is) == 0);
     }
 

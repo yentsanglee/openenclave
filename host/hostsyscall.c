@@ -43,6 +43,12 @@ void oe_handle_host_syscall(oe_enclave_t* enclave, uint64_t arg)
                 read(args->u.read.fd, args->u.read.buf, args->u.read.count);
             break;
         }
+        case OE_SYSCALL_lseek:
+        {
+            args->ret =
+                lseek(args->u.lseek.fd, args->u.lseek.offset, args->u.lseek.whence);
+            break;
+        }
         default:
         {
             args->ret = -1;

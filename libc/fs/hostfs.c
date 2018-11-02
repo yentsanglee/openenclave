@@ -46,6 +46,159 @@ static bool _valid_dir(fs_dir_t* dir)
     return dir != NULL;
 }
 
+static fs_errno_t _fs_release(fs_t* fs)
+{
+    hostfs_t* hostfs = (hostfs_t*)fs;
+    fs_errno_t err = FS_EOK;
+
+    if (!_valid_fs(fs))
+        RAISE(FS_EINVAL);
+
+    fs_host_batch_delete(hostfs->batch);
+
+    free(fs);
+
+done:
+    return err;
+}
+
+static fs_errno_t _fs_open(
+    fs_t* fs,
+    const char* path,
+    int flags,
+    uint32_t mode,
+    fs_file_t** file_out);
+
+static fs_errno_t _fs_creat(
+    fs_t* fs,
+    const char* path,
+    uint32_t mode,
+    fs_file_t** file_out)
+{
+    int flags = FS_O_CREAT | FS_O_WRONLY | FS_O_TRUNC;
+    return _fs_open(fs, path, flags, mode, file_out);
+}
+
+static fs_errno_t _fs_open(
+    fs_t* fs,
+    const char* path,
+    int flags,
+    uint32_t mode,
+    fs_file_t** file_out)
+{
+    hostfs_t* hostfs = (hostfs_t*)fs;
+    fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_host_syscall_args_t args_t;
+    args_t* args;
+    fs_file_t* file = NULL;
+
+    if (file_out)
+        *file_out = NULL;
+
+    if (!_valid_fs(fs) || !path || !file_out)
+        RAISE(FS_EINVAL);
+
+    batch = hostfs->batch;
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->num = OE_SYSCALL_open;
+        args->ret = -1;
+        args->err = 0;
+
+        if (!(args->u.open.pathname = fs_host_batch_strdup(batch, path)))
+            goto done;
+
+        args->u.open.flags = flags;
+        args->u.open.mode = mode;
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+
+        if (args->ret < 0)
+            RAISE(args->err);
+    }
+
+    /* Create the file struct. */
+    {
+        if (!(file = calloc(1, sizeof(fs_file_t))))
+            goto done;
+
+        file->magic = FILE_MAGIC;
+        file->hostfs = hostfs;
+        file->fd = args->ret;
+    }
+
+    *file_out = file;
+    file = NULL;
+
+done:
+
+    if (file)
+        free(file);
+
+    if (batch)
+        fs_host_batch_free(batch);
+
+    return err;
+}
+
+/* TODO */
+static fs_errno_t _fs_lseek(
+    fs_file_t* file,
+    ssize_t offset,
+    int whence,
+    ssize_t* offset_out)
+{
+    fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_host_syscall_args_t args_t;
+    args_t* args;
+
+    if (offset_out)
+        *offset_out = 0;
+
+    if (!_valid_file(file))
+        RAISE(FS_EINVAL);
+
+    batch = file->hostfs->batch;
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->num = OE_SYSCALL_lseek;
+        args->ret = -1;
+        args->err = 0;
+        args->u.lseek.fd = file->fd;
+        args->u.lseek.offset = offset;
+        args->u.lseek.whence = whence;
+    }
+
+    /* Perform the OCALL. */
+    {
+printf("BEFORE: offset=%ld whence=%d\n", offset, whence);
+        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+printf("AFTER: ret=%ld\n", args->ret);
+        if (args->ret < 0)
+            RAISE(args->err);
+    }
+
+    *offset_out = args->ret;
+
+done:
+    return err;
+}
+
 static fs_errno_t _fs_read(
     fs_file_t* file,
     void* data,
@@ -212,22 +365,7 @@ done:
     return err;
 }
 
-static fs_errno_t _fs_release(fs_t* fs)
-{
-    hostfs_t* hostfs = (hostfs_t*)fs;
-    fs_errno_t err = FS_EOK;
-
-    if (!_valid_fs(fs))
-        RAISE(FS_EINVAL);
-
-    fs_host_batch_delete(hostfs->batch);
-
-    free(fs);
-
-done:
-    return err;
-}
-
+/* TODO */
 static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir)
 {
     fs_errno_t err = FS_EOK;
@@ -243,6 +381,7 @@ done:
     return err;
 }
 
+/* TODO */
 static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
 {
     fs_errno_t err = FS_EOK;
@@ -258,6 +397,7 @@ done:
     return err;
 }
 
+/* TODO */
 static fs_errno_t _fs_closedir(fs_dir_t* dir)
 {
     fs_errno_t err = FS_EOK;
@@ -269,77 +409,7 @@ done:
     return err;
 }
 
-static fs_errno_t _fs_open(
-    fs_t* fs,
-    const char* path,
-    int flags,
-    uint32_t mode,
-    fs_file_t** file_out)
-{
-    hostfs_t* hostfs = (hostfs_t*)fs;
-    fs_errno_t err = FS_EOK;
-    fs_host_batch_t* batch = NULL;
-    typedef oe_host_syscall_args_t args_t;
-    args_t* args;
-    fs_file_t* file = NULL;
-
-    if (file_out)
-        *file_out = NULL;
-
-    if (!_valid_fs(fs) || !path || !file_out)
-        RAISE(FS_EINVAL);
-
-    batch = hostfs->batch;
-
-    /* Create the arguments. */
-    {
-        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
-            goto done;
-
-        args->num = OE_SYSCALL_open;
-        args->ret = -1;
-        args->err = 0;
-
-        if (!(args->u.open.pathname = fs_host_batch_strdup(batch, path)))
-            goto done;
-
-        args->u.open.flags = flags;
-        args->u.open.mode = mode;
-    }
-
-    /* Perform the OCALL. */
-    {
-        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
-            goto done;
-
-        if (args->ret < 0)
-            RAISE(args->err);
-    }
-
-    /* Create the file struct. */
-    {
-        if (!(file = calloc(1, sizeof(fs_file_t))))
-            goto done;
-
-        file->magic = FILE_MAGIC;
-        file->hostfs = hostfs;
-        file->fd = args->ret;
-    }
-
-    *file_out = file;
-    file = NULL;
-
-done:
-
-    if (file)
-        free(file);
-
-    if (batch)
-        fs_host_batch_free(batch);
-
-    return err;
-}
-
+/* TODO */
 static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
 {
     fs_errno_t err = FS_EOK;
@@ -352,16 +422,7 @@ done:
     return err;
 }
 
-static fs_errno_t _fs_creat(
-    fs_t* fs,
-    const char* path,
-    uint32_t mode,
-    fs_file_t** file_out)
-{
-    int flags = FS_O_CREAT | FS_O_WRONLY | FS_O_TRUNC;
-    return _fs_open(fs, path, flags, mode, file_out);
-}
-
+/* TODO */
 static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
 {
     fs_errno_t err = FS_EOK;
@@ -374,6 +435,7 @@ done:
     return err;
 }
 
+/* TODO */
 static fs_errno_t _fs_rename(
     fs_t* fs,
     const char* old_path,
@@ -389,6 +451,7 @@ done:
     return err;
 }
 
+/* TODO */
 static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
 {
     fs_errno_t err = FS_EOK;
@@ -401,6 +464,7 @@ done:
     return err;
 }
 
+/* TODO */
 static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
 {
     fs_errno_t err = FS_EOK;
@@ -413,6 +477,7 @@ done:
     return err;
 }
 
+/* TODO */
 static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
 {
     fs_errno_t err = FS_EOK;
@@ -425,6 +490,7 @@ done:
     return err;
 }
 
+/* TODO */
 static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
 {
     fs_errno_t err = FS_EOK;
@@ -433,24 +499,6 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
         memset(stat, 0, sizeof(fs_stat_t));
 
     if (!_valid_fs(fs) || !path || !stat)
-        RAISE(FS_EINVAL);
-
-done:
-    return err;
-}
-
-static fs_errno_t _fs_lseek(
-    fs_file_t* file,
-    ssize_t offset,
-    int whence,
-    ssize_t* offset_out)
-{
-    fs_errno_t err = FS_EOK;
-
-    if (offset_out)
-        *offset_out = 0;
-
-    if (!_valid_file(file))
         RAISE(FS_EINVAL);
 
 done:

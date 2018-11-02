@@ -375,6 +375,12 @@ typedef struct _oe_host_syscall_args
         struct
         {
             long fd;
+            long offset;
+            long whence;
+        } lseek;
+        struct
+        {
+            long fd;
         } close;
     } u;
 } oe_host_syscall_args_t;
