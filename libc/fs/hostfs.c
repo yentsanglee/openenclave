@@ -20,7 +20,7 @@ typedef struct _hostfs
 
 static bool _valid_fs(fs_t* fs)
 {
-    return fs != NULL;
+    return fs != NULL && ((hostfs_t*)fs)->magic == HOSTFS_MAGIC;
 }
 
 static bool _valid_file(fs_file_t* file)
