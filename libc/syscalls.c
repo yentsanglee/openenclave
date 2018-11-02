@@ -377,7 +377,7 @@ static int _syscall_fcntl(int fd, int cmd, ...)
     }
 }
 
-static int _syscall_access(const char *pathname, int mode)
+static int _syscall_access(const char* pathname, int mode)
 {
     int ret;
 
@@ -386,7 +386,7 @@ static int _syscall_access(const char *pathname, int mode)
     return ret;
 }
 
-static int _syscall_getcwd(char *buf, unsigned long size)
+static int _syscall_getcwd(char* buf, unsigned long size)
 {
     int ret;
 

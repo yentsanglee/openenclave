@@ -3,8 +3,8 @@
 
 #include "hostfs.h"
 #include <stdbool.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include "raise.h"
 
 #define HOSTFS_MAGIC 0xff646572

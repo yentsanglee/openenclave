@@ -2,11 +2,11 @@
 // Licensed under the MIT License.
 
 #define _GNU_SOURCE
-#include <limits.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
 #include <errno.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 char* realpath(const char* path, char resolved_path[PATH_MAX])
 {

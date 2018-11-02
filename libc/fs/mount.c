@@ -6,8 +6,8 @@
 #include <string.h>
 #include "blockdev.h"
 #include "fs.h"
-#include "oefs.h"
 #include "hostfs.h"
+#include "oefs.h"
 
 int oe_mount_oefs(
     const char* source,

@@ -1,7 +1,12 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include "hostbatch.h"
-#include <pthread.h>
-#include <stdlib.h>
 #include <openenclave/enclave.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define ALIGNMENT sizeof(uint64_t)
 
@@ -70,7 +75,7 @@ void _delete_thread_data(thread_data_t* td)
     oe_host_free(td->data);
 
     /* Free the host blocks. */
-    for (host_block_t* p = td->blocks; p; )
+    for (host_block_t* p = td->blocks; p;)
     {
         host_block_t* next = p->next;
         oe_host_free(p);
@@ -113,7 +118,7 @@ void fs_host_batch_delete(fs_host_batch_t* batch)
     {
         pthread_key_delete(batch->key);
 
-        for (thread_data_t* p = batch->tds; p; )
+        for (thread_data_t* p = batch->tds; p;)
         {
             thread_data_t* next = p->next;
             _delete_thread_data(p);
@@ -124,11 +129,12 @@ void fs_host_batch_delete(fs_host_batch_t* batch)
     }
 }
 
-void* fs_host_batch_alloc(fs_host_batch_t* batch, size_t size)
+void* fs_host_batch_malloc(fs_host_batch_t* batch, size_t size)
 {
     void* ret = NULL;
     thread_data_t* td;
     void* ptr = NULL;
+    size_t total_size;
 
     if (!batch)
         goto done;
@@ -140,18 +146,18 @@ void* fs_host_batch_alloc(fs_host_batch_t* batch, size_t size)
     }
 
     /* Round up to the nearest alignment size. */
-    size = (size + ALIGNMENT - 1) / ALIGNMENT;
+    total_size = (size + ALIGNMENT - 1) / ALIGNMENT * ALIGNMENT;
 
-    if (size <= td->capacity - td->offset)
+    if (total_size <= td->capacity - td->offset)
     {
         ptr = td->data + td->offset;
-        td->offset += size;
+        td->offset += total_size;
     }
-    else 
+    else
     {
         host_block_t* block;
 
-        if (!(block = oe_host_calloc(1, sizeof(host_block_t) + size)))
+        if (!(block = oe_host_calloc(1, sizeof(host_block_t) + total_size)))
             goto done;
 
         block->next = td->blocks;
@@ -163,6 +169,16 @@ void* fs_host_batch_alloc(fs_host_batch_t* batch, size_t size)
 
 done:
     return ret;
+}
+
+void* fs_host_batch_calloc(fs_host_batch_t* batch, size_t size)
+{
+    void* ptr;
+
+    if (!(ptr = fs_host_batch_malloc(batch, size)))
+        return NULL;
+
+    return memset(ptr, 0, size);
 }
 
 int fs_host_batch_free(fs_host_batch_t* batch)
@@ -184,7 +200,7 @@ int fs_host_batch_free(fs_host_batch_t* batch)
 
     /* Free the host blocks. */
     {
-        for (host_block_t* p = td->blocks; p; )
+        for (host_block_t* p = td->blocks; p;)
         {
             host_block_t* next = p->next;
             oe_host_free(p);
@@ -193,8 +209,27 @@ int fs_host_batch_free(fs_host_batch_t* batch)
 
         td->blocks = NULL;
     }
-    
+
     ret = 0;
+
+done:
+    return ret;
+}
+
+char* fs_host_batch_strdup(fs_host_batch_t* batch, const char* str)
+{
+    char* ret = NULL;
+    size_t len;
+
+    if (!batch || !str)
+        goto done;
+
+    len = strlen(str);
+
+    if (!(ret = fs_host_batch_calloc(batch, len + 1)))
+        goto done;
+
+    memcpy(ret, str, len + 1);
 
 done:
     return ret;

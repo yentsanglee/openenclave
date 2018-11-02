@@ -5,12 +5,12 @@
 #include "syscall.h"
 #include <dirent.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <string.h>
 #include "errno.h"
 #include "fs.h"
 #include "raise.h"
 #include "trace.h"
-#include <pthread.h>
 
 #define MAX_FILES 1024
 
@@ -573,7 +573,7 @@ done:
     return err;
 }
 
-fs_errno_t fs_syscall_access(const char *pathname, int mode, int* ret)
+fs_errno_t fs_syscall_access(const char* pathname, int mode, int* ret)
 {
     fs_errno_t err = 0;
     fs_t* fs;

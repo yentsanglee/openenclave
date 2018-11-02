@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blockdev.h"
+#include "hostbatch.h"
 
 #if 0
 #define DUMP
@@ -18,8 +19,22 @@ typedef struct _block_dev
     oe_block_dev_t base;
     size_t ref_count;
     pthread_spinlock_t lock;
+    fs_host_batch_t* batch;
     void* host_context;
 } block_dev_t;
+
+static size_t _get_batch_capacity()
+{
+    size_t capacity = 0;
+
+    if (sizeof(oe_ocall_block_dev_get_args_t) > capacity)
+        capacity = sizeof(oe_ocall_block_dev_get_args_t);
+
+    if (sizeof(oe_ocall_block_dev_put_args_t) > capacity)
+        capacity = sizeof(oe_ocall_block_dev_put_args_t);
+
+    return capacity;
+}
 
 static int _block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
 {
@@ -36,7 +51,7 @@ static int _block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
     if (!device || !data)
         goto done;
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t))))
+    if (!(args = fs_host_batch_calloc(device->batch, sizeof(args_t))))
         goto done;
 
     args->ret = -1;
@@ -55,8 +70,8 @@ static int _block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
 
 done:
 
-    if (args)
-        oe_host_free(args);
+    if (args && device)
+        fs_host_batch_free(device->batch);
 
     return ret;
 }
@@ -76,7 +91,7 @@ static int _block_dev_put(oe_block_dev_t* dev, uint32_t blkno, const void* data)
     if (!device || !data)
         goto done;
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t))))
+    if (!(args = fs_host_batch_calloc(device->batch, sizeof(args_t))))
         goto done;
 
     args->ret = -1;
@@ -94,8 +109,8 @@ static int _block_dev_put(oe_block_dev_t* dev, uint32_t blkno, const void* data)
 
 done:
 
-    if (args)
-        oe_host_free(args);
+    if (args && device)
+        fs_host_batch_free(device->batch);
 
     return ret;
 }
@@ -137,6 +152,8 @@ static int _block_dev_release(oe_block_dev_t* dev)
         if (oe_ocall(func, (uint64_t)device->host_context, NULL) != OE_OK)
             goto done;
 
+        fs_host_batch_delete(device->batch);
+
         free(dev);
     }
 
@@ -153,6 +170,7 @@ int oe_open_host_block_dev(const char* device_name, oe_block_dev_t** block_dev)
     void* host_context = NULL;
     const uint16_t func = OE_OCALL_OPEN_BLOCK_DEVICE;
     block_dev_t* device = NULL;
+    fs_host_batch_t* batch = NULL;
 
     if (block_dev)
         *block_dev = NULL;
@@ -172,15 +190,20 @@ int oe_open_host_block_dev(const char* device_name, oe_block_dev_t** block_dev)
     if (!host_context)
         goto done;
 
+    if (!(batch = fs_host_batch_new(_get_batch_capacity())))
+        goto done;
+
     device->base.get = _block_dev_get;
     device->base.put = _block_dev_put;
     device->base.add_ref = _block_dev_add_ref;
     device->base.release = _block_dev_release;
+    device->batch = batch;
     device->ref_count = 1;
     device->host_context = host_context;
 
     *block_dev = &device->base;
     device = NULL;
+    batch = NULL;
 
     ret = 0;
 
@@ -191,6 +214,9 @@ done:
 
     if (name)
         oe_host_free(name);
+
+    if (batch)
+        fs_host_batch_delete(batch);
 
     return ret;
 }
