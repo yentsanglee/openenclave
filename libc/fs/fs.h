@@ -132,10 +132,6 @@ struct _fs
 {
     fs_errno_t (*fs_release)(fs_t* fs);
 
-    /*****************************/
-    /*** File handle functions ***/
-    /*****************************/
-
     fs_errno_t (
         *fs_creat)(fs_t* fs, const char* path, uint32_t mode, fs_file_t** file);
 
@@ -163,19 +159,11 @@ struct _fs
 
     fs_errno_t (*fs_close)(fs_file_t* file);
 
-    /**********************************/
-    /*** Directory handle functions ***/
-    /**********************************/
-
     fs_errno_t (*fs_opendir)(fs_t* fs, const char* path, fs_dir_t** dir);
 
     fs_errno_t (*fs_readdir)(fs_dir_t* dir, fs_dirent_t** dirent);
 
     fs_errno_t (*fs_closedir)(fs_dir_t* dir);
-
-    /*******************************/
-    /*** Path-oriented functions ***/
-    /*******************************/
 
     fs_errno_t (*fs_stat)(fs_t* fs, const char* path, fs_stat_t* stat);
 
