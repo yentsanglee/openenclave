@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "trace.h"
 
 #define ALIGNMENT sizeof(uint64_t)
 
@@ -22,6 +23,7 @@ struct _host_block
 struct _thread_data
 {
     thread_data_t* next;
+    pthread_t thread;
     uint8_t* data;
     size_t offset;
     size_t capacity;
@@ -31,12 +33,11 @@ struct _thread_data
 struct _fs_host_batch
 {
     size_t capacity;
-    pthread_key_t key;
     thread_data_t* tds;
     pthread_spinlock_t lock;
 };
 
-thread_data_t* _new_thread_data(fs_host_batch_t* batch)
+static thread_data_t* _new_thread_data(fs_host_batch_t* batch)
 {
     thread_data_t* ret = NULL;
     thread_data_t* td = NULL;
@@ -47,11 +48,9 @@ thread_data_t* _new_thread_data(fs_host_batch_t* batch)
     if (!(td->data = oe_host_calloc(1, batch->capacity)))
         goto done;
 
+    td->thread = pthread_self();
     td->offset = 0;
     td->capacity = batch->capacity;
-
-    if (pthread_setspecific(batch->key, td) != 0)
-        goto done;
 
     /* Add new thread data to the list. */
     pthread_spin_lock(&batch->lock);
@@ -68,6 +67,27 @@ done:
         free(td);
 
     return ret;
+}
+
+static thread_data_t* _get_thread_data(fs_host_batch_t* batch)
+{
+    thread_data_t* td = NULL;
+
+    /* Find the thread data for the current thread. */
+    pthread_spin_lock(&batch->lock);
+    {
+        for (thread_data_t* p = batch->tds; p; p = p->next)
+        {
+            if (pthread_equal(p->thread, pthread_self()))
+            {
+                td = p;
+                break;
+            }
+        }
+    }
+    pthread_spin_unlock(&batch->lock);
+
+    return td;
 }
 
 void _delete_thread_data(thread_data_t* td)
@@ -98,9 +118,6 @@ fs_host_batch_t* fs_host_batch_new(size_t capacity)
 
     batch->capacity = capacity;
 
-    if (pthread_key_create(&batch->key, NULL) != 0)
-        goto done;
-
     ret = batch;
     batch = NULL;
 
@@ -116,8 +133,6 @@ void fs_host_batch_delete(fs_host_batch_t* batch)
 {
     if (batch)
     {
-        pthread_key_delete(batch->key);
-
         for (thread_data_t* p = batch->tds; p;)
         {
             thread_data_t* next = p->next;
@@ -139,7 +154,7 @@ void* fs_host_batch_malloc(fs_host_batch_t* batch, size_t size)
     if (!batch)
         goto done;
 
-    if (!(td = pthread_getspecific(batch->key)))
+    if (!(td = _get_thread_data(batch)))
     {
         if (!(td = _new_thread_data(batch)))
             goto done;
@@ -189,7 +204,7 @@ int fs_host_batch_free(fs_host_batch_t* batch)
     if (!batch)
         goto done;
 
-    if (!(td = pthread_getspecific(batch->key)))
+    if (!(td = _get_thread_data(batch)))
     {
         if (!(td = _new_thread_data(batch)))
             goto done;

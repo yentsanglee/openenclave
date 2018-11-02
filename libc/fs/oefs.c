@@ -2407,7 +2407,6 @@ fs_errno_t oefs_initialize(fs_t** fs_out, oe_block_dev_t* dev)
     oefs->base.fs_truncate = _fs_truncate;
     oefs->base.fs_mkdir = _fs_mkdir;
     oefs->base.fs_rmdir = _fs_rmdir;
-
     oefs->magic = OEFS_MAGIC;
     oefs->dev->add_ref(dev);
 

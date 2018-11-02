@@ -2,21 +2,34 @@
 // Licensed under the MIT License.
 
 #include "hostfs.h"
+#include <openenclave/internal/calls.h>
+#include <openenclave/internal/hostsyscall.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hostbatch.h"
 #include "raise.h"
+#include "trace.h"
 
 #define HOSTFS_MAGIC 0xff646572
+
+#define BATCH_CAPACITY 4096
+
+#define FILE_MAGIC 0xb5c3c9db
 
 typedef struct _hostfs
 {
     fs_t base;
-
-    /* Should contain the value of the HOSTFS_MAGIC macro. */
     uint32_t magic;
-
+    fs_host_batch_t* batch;
 } hostfs_t;
+
+struct _fs_file
+{
+    uint32_t magic;
+    hostfs_t* hostfs;
+    long fd;
+};
 
 static bool _valid_fs(fs_t* fs)
 {
@@ -25,7 +38,7 @@ static bool _valid_fs(fs_t* fs)
 
 static bool _valid_file(fs_file_t* file)
 {
-    return file != NULL;
+    return file != NULL && file->magic == FILE_MAGIC;
 }
 
 static bool _valid_dir(fs_dir_t* dir)
@@ -58,6 +71,9 @@ static fs_errno_t _fs_write(
     int32_t* nwritten)
 {
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_host_syscall_args_t args_t;
+    args_t* args;
 
     if (nwritten)
         *nwritten = 0;
@@ -66,27 +82,103 @@ static fs_errno_t _fs_write(
     if (!_valid_file(file) || (!data && size) || !nwritten)
         RAISE(FS_EINVAL);
 
+    batch = file->hostfs->batch;
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->num = OE_SYSCALL_write;
+        args->ret = -1;
+        args->err = 0;
+        args->u.close.fd = file->fd;
+
+        if (size)
+        {
+            if (!(args->u.write.buf = fs_host_batch_malloc(batch, size)))
+                goto done;
+
+            memcpy(args->u.write.buf, data, size);
+        }
+
+        args->u.write.count = size;
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+
+        if (args->ret < 0)
+            RAISE(args->err);
+    }
+
+    *nwritten = args->ret;
+
 done:
+
+    if (batch)
+        fs_host_batch_free(batch);
+
     return err;
 }
 
 static fs_errno_t _fs_close(fs_file_t* file)
 {
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_host_syscall_args_t args_t;
+    args_t* args;
 
     if (!_valid_file(file))
         RAISE(FS_EINVAL);
 
+    batch = file->hostfs->batch;
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->num = OE_SYSCALL_close;
+        args->ret = -1;
+        args->err = 0;
+        args->u.close.fd = file->fd;
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+
+        if (args->ret != 0)
+            RAISE(args->err);
+    }
+
+    /* Release the file struct. */
+    memset(file, 0, sizeof(fs_file_t));
+    free(file);
+
 done:
+
+    if (batch)
+        fs_host_batch_free(batch);
+
     return err;
 }
 
 static fs_errno_t _fs_release(fs_t* fs)
 {
+    hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
 
     if (!_valid_fs(fs))
         RAISE(FS_EINVAL);
+
+    fs_host_batch_delete(hostfs->batch);
+
+    free(fs);
 
 done:
     return err;
@@ -140,14 +232,66 @@ static fs_errno_t _fs_open(
     uint32_t mode,
     fs_file_t** file_out)
 {
+    hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_host_syscall_args_t args_t;
+    args_t* args;
+    fs_file_t* file = NULL;
 
     if (file_out)
         *file_out = NULL;
 
     if (!_valid_fs(fs) || !path || !file_out)
         RAISE(FS_EINVAL);
+
+    batch = hostfs->batch;
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->num = OE_SYSCALL_open;
+        args->ret = -1;
+        args->err = 0;
+
+        if (!(args->u.open.pathname = fs_host_batch_strdup(batch, path)))
+            goto done;
+
+        args->u.open.flags = flags;
+        args->u.open.mode = mode;
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+
+        if (args->ret < 0)
+            RAISE(args->err);
+    }
+
+    /* Create the file struct. */
+    {
+        if (!(file = calloc(1, sizeof(fs_file_t))))
+            goto done;
+
+        file->magic = FILE_MAGIC;
+        file->hostfs = hostfs;
+        file->fd = args->ret;
+    }
+
+    *file_out = file;
+    file = NULL;
+
 done:
+
+    if (file)
+        free(file);
+
+    if (batch)
+        fs_host_batch_free(batch);
 
     return err;
 }
@@ -273,6 +417,7 @@ fs_errno_t hostfs_initialize(fs_t** fs_out)
 {
     fs_errno_t err = FS_EOK;
     hostfs_t* hostfs = NULL;
+    fs_host_batch_t* batch = NULL;
 
     if (fs_out)
         *fs_out = NULL;
@@ -282,6 +427,9 @@ fs_errno_t hostfs_initialize(fs_t** fs_out)
 
     if (!(hostfs = calloc(1, sizeof(hostfs_t))))
         RAISE(FS_ENOMEM);
+
+    if (!(batch = fs_host_batch_new(BATCH_CAPACITY)))
+        goto done;
 
     hostfs->base.fs_release = _fs_release;
     hostfs->base.fs_creat = _fs_creat;
@@ -300,16 +448,20 @@ fs_errno_t hostfs_initialize(fs_t** fs_out)
     hostfs->base.fs_truncate = _fs_truncate;
     hostfs->base.fs_mkdir = _fs_mkdir;
     hostfs->base.fs_rmdir = _fs_rmdir;
-
     hostfs->magic = HOSTFS_MAGIC;
+    hostfs->batch = batch;
 
     *fs_out = &hostfs->base;
     hostfs = NULL;
+    batch = NULL;
 
 done:
 
     if (hostfs)
         free(hostfs);
+
+    if (batch)
+        fs_host_batch_delete(batch);
 
     return err;
 }

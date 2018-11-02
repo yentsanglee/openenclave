@@ -963,6 +963,22 @@ void run_tests(const char* target)
     _test_cwd(target);
 }
 
+static void _test_hostfs()
+{
+    FILE* os;
+    const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+
+    OE_TEST(oe_mount_hostfs("/mnt/hostfs") == 0);
+
+    OE_TEST((os = fopen("/mnt/hostfs/tmp/myfile", "wb")) != NULL);
+
+    OE_TEST(fwrite(alphabet, 1, sizeof(alphabet), os) == sizeof(alphabet));
+
+    fclose(os);
+
+    OE_TEST(oe_unmount("/mnt/hostfs") == 0);
+}
+
 int test_oefs(const char* oefs_filename)
 {
     const uint32_t flags = OE_MOUNT_FLAG_MKFS;
@@ -984,6 +1000,8 @@ int test_oefs(const char* oefs_filename)
 
     rc = oe_unmount(target1);
     rc = oe_unmount(target2);
+
+    _test_hostfs();
 
     return 0;
 }
