@@ -3,7 +3,7 @@
 
 #include "hostfs.h"
 #include <openenclave/internal/calls.h>
-#include <openenclave/internal/hostsyscall.h>
+#include <openenclave/internal/hostfs.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -89,7 +89,7 @@ static fs_errno_t _fs_open(
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_host_syscall_args_t args_t;
+    typedef oe_hostfs_args_t args_t;
     args_t* args;
     fs_file_t* file = NULL;
 
@@ -106,7 +106,7 @@ static fs_errno_t _fs_open(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             goto done;
 
-        args->num = OE_SYSCALL_open;
+        args->op = OE_HOSTFS_OPEN;
         args->ret = -1;
         args->err = 0;
 
@@ -119,7 +119,7 @@ static fs_errno_t _fs_open(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
             goto done;
 
         if (args->ret < 0)
@@ -158,7 +158,7 @@ static fs_errno_t _fs_lseek(
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_host_syscall_args_t args_t;
+    typedef oe_hostfs_args_t args_t;
     args_t* args;
 
     if (offset_out)
@@ -174,7 +174,7 @@ static fs_errno_t _fs_lseek(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             goto done;
 
-        args->num = OE_SYSCALL_lseek;
+        args->op = OE_HOSTFS_LSEEK;
         args->ret = -1;
         args->err = 0;
         args->u.lseek.fd = file->fd;
@@ -184,7 +184,7 @@ static fs_errno_t _fs_lseek(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
             goto done;
 
         if (args->ret < 0)
@@ -205,7 +205,7 @@ static fs_errno_t _fs_read(
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_host_syscall_args_t args_t;
+    typedef oe_hostfs_args_t args_t;
     args_t* args;
 
     if (nread)
@@ -222,7 +222,7 @@ static fs_errno_t _fs_read(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             goto done;
 
-        args->num = OE_SYSCALL_read;
+        args->op = OE_HOSTFS_READ;
         args->ret = -1;
         args->err = 0;
         args->u.read.fd = file->fd;
@@ -238,7 +238,7 @@ static fs_errno_t _fs_read(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
             goto done;
 
         if (args->ret < 0)
@@ -267,7 +267,7 @@ static fs_errno_t _fs_write(
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_host_syscall_args_t args_t;
+    typedef oe_hostfs_args_t args_t;
     args_t* args;
 
     if (nwritten)
@@ -284,7 +284,7 @@ static fs_errno_t _fs_write(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             goto done;
 
-        args->num = OE_SYSCALL_write;
+        args->op = OE_HOSTFS_WRITE;
         args->ret = -1;
         args->err = 0;
         args->u.write.fd = file->fd;
@@ -302,7 +302,7 @@ static fs_errno_t _fs_write(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
             goto done;
 
         if (args->ret < 0)
@@ -323,7 +323,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_host_syscall_args_t args_t;
+    typedef oe_hostfs_args_t args_t;
     args_t* args;
 
     if (!_valid_file(file))
@@ -336,7 +336,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             goto done;
 
-        args->num = OE_SYSCALL_close;
+        args->op = OE_HOSTFS_CLOSE;
         args->ret = -1;
         args->err = 0;
         args->u.close.fd = file->fd;
@@ -344,7 +344,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOST_SYSCALL, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
             goto done;
 
         if (args->ret != 0)

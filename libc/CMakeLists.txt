@@ -23,7 +23,7 @@ add_library(oelibc STATIC
     fs/mount.c
     fs/ramblockdev.c
     fs/syscall.c
-    hostsyscall.c
+    hostfsocall.c
     libunwind_stubs.c
     link.c
     locale.c

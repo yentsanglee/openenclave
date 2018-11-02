@@ -487,8 +487,8 @@ static oe_result_t _handle_ocall(
             oe_handle_block_dev_put(enclave, arg_in);
             break;
 
-        case OE_OCALL_HOST_SYSCALL:
-            oe_handle_host_syscall(enclave, arg_in);
+        case OE_OCALL_HOSTFS:
+            oe_handle_hostfs(enclave, arg_in);
             break;
 
         default:
