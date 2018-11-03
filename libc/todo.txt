@@ -2,15 +2,16 @@ Todo:
 
 (A) Encryption
 ---
-(B) oefs shell?
 (B) Fix truncate() to extend files.
 (B) Change fs interface parameter types from 4 to 8 bytes integers.
+(B) Memory resident/sync'd file system.
 ---
 (C) Support directory enumeration below mount points.
 (C) Switchless calls.
 (C) blockdev->flush() protocol.
 (C) Block caching.
 (C) Read ahead.
+(C) oefs shell?
 
 Unsupported:
     telldir()
