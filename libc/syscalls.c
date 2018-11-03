@@ -3,7 +3,6 @@
 
 #define __OE_NEED_TIME_CALLS
 #define _GNU_SOURCE
-#include "fs/fs.h"
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
@@ -27,6 +26,7 @@
 #include <time.h>
 #include <time.h>
 #include <unistd.h>
+#include "fs/fs.h"
 
 static oe_syscall_hook_t _hook;
 static oe_spinlock_t _lock;

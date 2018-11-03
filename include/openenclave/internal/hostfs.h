@@ -5,14 +5,13 @@
 #define _OE_HOSTFS_H
 
 #include <limits.h>
-#include <stdint.h>
 #include <openenclave/bits/defs.h>
 #include <openenclave/internal/defs.h>
+#include <stdint.h>
 
 #define HOSTFS_PATH_MAX 256
 
-typedef enum _oe_hostfs_op
-{
+typedef enum _oe_hostfs_op {
     OE_HOSTFS_OPEN,
     OE_HOSTFS_LSEEK,
     OE_HOSTFS_READ,
@@ -25,8 +24,7 @@ typedef enum _oe_hostfs_op
     OE_HOSTFS_LINK,
     OE_HOSTFS_UNLINK,
     __OE_HOSTFS_MAX = OE_ENUM_MAX,
-}
-oe_hostfs_op_t;
+} oe_hostfs_op_t;
 
 typedef struct _oe_hostfs_args
 {
@@ -81,8 +79,7 @@ typedef struct _oe_hostfs_args
                 uint16_t d_reclen;
                 uint8_t d_type;
                 char d_name[256];
-            }
-            buf;
+            } buf;
             void* entry;
             void* dir;
         } readdir;
@@ -111,37 +108,30 @@ typedef struct _oe_hostfs_args
                 {
                     uint64_t tv_sec;
                     uint64_t tv_nsec;
-                }
-                st_atim;
+                } st_atim;
                 struct
                 {
                     uint64_t tv_sec;
                     uint64_t tv_nsec;
-                }
-                st_mtim;
+                } st_mtim;
                 struct
                 {
                     uint64_t tv_sec;
                     uint64_t tv_nsec;
-                }
-                st_ctim;
-            }
-            buf;
-        }
-        stat;
+                } st_ctim;
+            } buf;
+        } stat;
         struct
         {
             int ret;
             char oldpath[HOSTFS_PATH_MAX];
             char newpath[HOSTFS_PATH_MAX];
-        }
-        link;
+        } link;
         struct
         {
             int ret;
             char path[HOSTFS_PATH_MAX];
-        }
-        unlink;
+        } unlink;
     } u;
 } oe_hostfs_args_t;
 

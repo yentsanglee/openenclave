@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <dirent.h>
 #include <openenclave/host.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/hostfs.h>
@@ -69,8 +69,10 @@ void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
 
                 *args->u.readdir.buf.d_name = '\0';
 
-                strncat(args->u.readdir.buf.d_name, entry->d_name,
-                    sizeof(args->u.readdir.buf.d_name)-1);
+                strncat(
+                    args->u.readdir.buf.d_name,
+                    entry->d_name,
+                    sizeof(args->u.readdir.buf.d_name) - 1);
 
                 args->u.readdir.entry = &args->u.readdir.buf;
             }

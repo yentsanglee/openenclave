@@ -542,7 +542,7 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
 
     if (strlen(path) >= FS_PATH_MAX)
         RAISE(FS_EINVAL);
-        
+
     /* Create the arguments. */
     {
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))

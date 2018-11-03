@@ -3,10 +3,10 @@
 
 #define _GNU_SOURCE
 #include "fs.h"
+#include <dirent.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <string.h>
-#include <dirent.h>
 #include "oefs.h"
 #include "raise.h"
 #include "syscall.h"
@@ -321,11 +321,7 @@ done:
     return err;
 }
 
-fs_errno_t fs_open(
-    const char* pathname,
-    int flags,
-    uint32_t mode,
-    int* ret)
+fs_errno_t fs_open(const char* pathname, int flags, uint32_t mode, int* ret)
 {
     fs_errno_t err = 0;
     fs_t* fs = NULL;
@@ -390,11 +386,7 @@ done:
     return err;
 }
 
-fs_errno_t fs_readv(
-    int fd,
-    const fs_iovec_t* iov,
-    int iovcnt,
-    ssize_t* ret)
+fs_errno_t fs_readv(int fd, const fs_iovec_t* iov, int iovcnt, ssize_t* ret)
 {
     fs_errno_t err = 0;
     handle_t* h;
@@ -427,11 +419,7 @@ done:
     return err;
 }
 
-fs_errno_t fs_writev(
-    int fd,
-    const fs_iovec_t* iov,
-    int iovcnt,
-    ssize_t* ret)
+fs_errno_t fs_writev(int fd, const fs_iovec_t* iov, int iovcnt, ssize_t* ret)
 {
     fs_errno_t err = 0;
     handle_t* h;
@@ -872,7 +860,7 @@ done:
     return err;
 }
 
-fs_errno_t fs_readdir(DIR *dirp, struct dirent** entry_out)
+fs_errno_t fs_readdir(DIR* dirp, struct dirent** entry_out)
 {
     fs_errno_t err = 0;
     dir_handle_t* h = (dir_handle_t*)dirp;
@@ -903,7 +891,7 @@ done:
     return err;
 }
 
-fs_errno_t fs_closedir(DIR *dirp, int* ret)
+fs_errno_t fs_closedir(DIR* dirp, int* ret)
 {
     fs_errno_t err = 0;
     dir_handle_t* h = (dir_handle_t*)dirp;

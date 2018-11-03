@@ -4,9 +4,9 @@
 #ifndef _fs_h
 #define _fs_h
 
+#include <dirent.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <dirent.h>
 #include "errno.h"
 
 #define FS_PATH_MAX 256
@@ -190,33 +190,21 @@ fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX]);
 
 fs_errno_t fs_creat(const char* pathname, uint32_t mode, int* ret);
 
-fs_errno_t fs_open(
-    const char* pathname,
-    int flags,
-    uint32_t mode,
-    int* ret);
+fs_errno_t fs_open(const char* pathname, int flags, uint32_t mode, int* ret);
 
 fs_errno_t fs_lseek(int fd, ssize_t off, int whence, ssize_t* ret);
 
-fs_errno_t fs_readv(
-    int fd,
-    const fs_iovec_t* iov,
-    int iovcnt,
-    ssize_t* ret);
+fs_errno_t fs_readv(int fd, const fs_iovec_t* iov, int iovcnt, ssize_t* ret);
 
-fs_errno_t fs_writev(
-    int fd,
-    const fs_iovec_t* iov,
-    int iovcnt,
-    ssize_t* ret);
+fs_errno_t fs_writev(int fd, const fs_iovec_t* iov, int iovcnt, ssize_t* ret);
 
 fs_errno_t fs_close(int fd, int* ret);
 
 fs_errno_t fs_opendir(const char* name, DIR** dir_out);
 
-fs_errno_t fs_readdir(DIR *dirp, struct dirent** entry);
+fs_errno_t fs_readdir(DIR* dirp, struct dirent** entry);
 
-fs_errno_t fs_closedir(DIR *dirp, int* ret);
+fs_errno_t fs_closedir(DIR* dirp, int* ret);
 
 fs_errno_t fs_stat(const char* pathname, fs_stat_t* buf, int* ret);
 
@@ -224,10 +212,7 @@ fs_errno_t fs_link(const char* oldpath, const char* newpath, int* ret);
 
 fs_errno_t fs_unlink(const char* pathname, int* ret);
 
-fs_errno_t fs_rename(
-    const char* oldpath,
-    const char* newpath,
-    int* ret);
+fs_errno_t fs_rename(const char* oldpath, const char* newpath, int* ret);
 
 fs_errno_t fs_truncate(const char* path, ssize_t length, int* ret);
 

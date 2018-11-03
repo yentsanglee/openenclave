@@ -1,11 +1,14 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include <dirent.h>
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 #include "fs/fs.h"
 #include "fs/trace.h"
 
-DIR* opendir(const char *name)
+DIR* opendir(const char* name)
 {
     fs_errno_t err;
     DIR* dirp;
@@ -19,7 +22,7 @@ DIR* opendir(const char *name)
     return dirp;
 }
 
-struct dirent *readdir(DIR *dirp)
+struct dirent* readdir(DIR* dirp)
 {
     fs_errno_t err;
     struct dirent* entry;
@@ -33,7 +36,7 @@ struct dirent *readdir(DIR *dirp)
     return entry;
 }
 
-int readdir_r(DIR *dirp, struct dirent *entry_out, struct dirent **result_out)
+int readdir_r(DIR* dirp, struct dirent* entry_out, struct dirent** result_out)
 {
     fs_errno_t err;
     struct dirent* entry;
@@ -65,7 +68,7 @@ int readdir_r(DIR *dirp, struct dirent *entry_out, struct dirent **result_out)
     return 0;
 }
 
-int closedir(DIR *dirp)
+int closedir(DIR* dirp)
 {
     fs_errno_t err;
     int ret;
