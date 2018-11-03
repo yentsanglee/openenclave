@@ -132,7 +132,7 @@ void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
         }
         case OE_HOSTFS_TRUNCATE:
         {
-            args->u.truncate.ret = 
+            args->u.truncate.ret =
                 truncate(args->u.truncate.path, args->u.truncate.length);
             break;
         }
