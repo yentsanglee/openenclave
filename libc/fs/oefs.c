@@ -4,9 +4,9 @@
 #define _GNU_SOURCE
 
 #include "oefs.h"
+#include <assert.h>
+#include <assert.h>
 #include <openenclave/internal/defs.h>
-#include <assert.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

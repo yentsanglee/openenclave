@@ -7,8 +7,8 @@
 #include <dirent.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "errno.h"
 #include "common.h"
+#include "errno.h"
 
 /* fs_dirent_t.d_type -- the file type. */
 #define FS_DT_UNKNOWN 0

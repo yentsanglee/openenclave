@@ -104,7 +104,7 @@ static int _block_dev_add_ref(fs_block_dev_t* dev)
 done:
     return ret;
 }
-int oe_open_ram_block_dev(size_t size, fs_block_dev_t** block_dev)
+int oe_open_ram_block_dev(fs_block_dev_t** block_dev, size_t size)
 {
     int ret = -1;
     block_dev_t* device = NULL;

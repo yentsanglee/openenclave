@@ -163,7 +163,7 @@ done:
     return ret;
 }
 
-int oe_open_host_block_dev(const char* device_name, fs_block_dev_t** block_dev)
+int oe_open_host_block_dev(fs_block_dev_t** block_dev, const char* device_name)
 {
     int ret = -1;
     char* name = NULL;

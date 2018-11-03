@@ -98,7 +98,7 @@ static long _syscall_mmap(long n, ...)
     return EPERM;
 }
 
-ssize_t _syscall_readv(int fd, const struct iovec *iov, int iovcnt)
+ssize_t _syscall_readv(int fd, const struct iovec* iov, int iovcnt)
 {
     ssize_t ret;
 
@@ -112,7 +112,7 @@ ssize_t _syscall_readv(int fd, const struct iovec *iov, int iovcnt)
     return 0;
 }
 
-static ssize_t _syscall_read(int fd, void *buf, size_t count)
+static ssize_t _syscall_read(int fd, void* buf, size_t count)
 {
     struct iovec iov;
     iov.iov_base = (void*)buf;
@@ -159,7 +159,7 @@ _syscall_ioctl(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     return 0;
 }
 
-ssize_t _syscall_writev(int fd, const struct iovec *iov, int iovcnt)
+ssize_t _syscall_writev(int fd, const struct iovec* iov, int iovcnt)
 {
     long ret = 0;
     int device;
@@ -198,7 +198,7 @@ ssize_t _syscall_writev(int fd, const struct iovec *iov, int iovcnt)
     return ret;
 }
 
-static ssize_t _syscall_write(int fd, const void *buf, size_t count)
+static ssize_t _syscall_write(int fd, const void* buf, size_t count)
 {
     struct iovec iov;
     iov.iov_base = (void*)buf;

@@ -1,11 +1,11 @@
 #ifndef _FS_DEFS_H
 #define _FS_DEFS_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define FS_PATH_MAX 256

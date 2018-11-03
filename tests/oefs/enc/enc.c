@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/file.h>
@@ -18,7 +19,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include "../../../libc/fs/buf.h"
 #include "../../../libc/fs/fs.h"
 

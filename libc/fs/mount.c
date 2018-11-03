@@ -25,7 +25,7 @@ int oe_mount_oefs(
     if (source)
     {
         /* Open a host device. */
-        if (oe_open_host_block_dev(source, &dev) != 0)
+        if (oe_open_host_block_dev(&dev, source) != 0)
             goto done;
     }
     else
@@ -40,7 +40,7 @@ int oe_mount_oefs(
         if (oefs_size(num_blocks, &size) != 0)
             goto done;
 
-        if (oe_open_ram_block_dev(size, &dev) != 0)
+        if (oe_open_ram_block_dev(&dev, size) != 0)
             goto done;
     }
 

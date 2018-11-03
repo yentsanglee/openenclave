@@ -16,8 +16,9 @@ add_library(oelibc STATIC
     dirent.c
     exp2l.S
     fs/buf.c
-    fs/fs.c
     fs/blockdev.c
+    fs/cryptoblockdev.c
+    fs/fs.c
     fs/hostbatch.c
     fs/hostblockdev.c
     fs/oefs.c
@@ -713,7 +714,7 @@ if(USE_DEBUG_MALLOC)
 endif()
 
 # this project (and is dependents) require the enclave headers+lib
-target_link_libraries(oelibc oecore)
+target_link_libraries(oelibc PUBLIC oecore)
 
 # as a pre-build step, place the musl LIBC headers
 add_dependencies(oelibc oelibc_includes)
@@ -721,6 +722,9 @@ add_dependencies(oelibc oelibc_includes)
 target_include_directories(oelibc PRIVATE
     ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/internal
     ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/arch/x86_64)
+
+target_include_directories(oelibc PRIVATE
+    ${PROJECT_BINARY_DIR}/output/include/openenclave)
 
 # this project and its dependents require include/libc in the include path.
 # Note the difference between build time (absolute in build tree) and install
