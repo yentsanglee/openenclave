@@ -1000,22 +1000,20 @@ static void _test_hostfs()
         OE_TEST(fclose(is) == 0);
     }
 
-#if 0
     /* Scan some directories. */
     {
         DIR* dir;
         struct dirent* ent;
+        size_t count = 0;
 
         OE_TEST((dir = opendir("/mnt/hostfs/tmp")) != NULL);
 
         while ((ent = readdir(dir)))
-        {
-            printf("d_name=%s\n", ent->d_name);
-        }
+            count++;
 
+        OE_TEST(count > 0);
         OE_TEST(closedir(dir) == 0);
     }
-#endif
 
     /* Unmount the file system. */
     OE_TEST(oe_unmount("/mnt/hostfs") == 0);
