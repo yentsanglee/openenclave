@@ -2,9 +2,10 @@ Todo:
 
 (A) Encryption
 ---
-(B) Implement ordinary (non-encrypted) host file I/O.
----
+(C) Change fs interface parameter types from 4 to 8 bytes integers.
+(C) Fix truncate() to extend files.
 (C) Support directory enumeration below mount points.
 (C) Switchless calls.
 (C) blockdev->flush() protocol.
-(C) Block caching
+(C) Block caching.
+(C) Read ahead.

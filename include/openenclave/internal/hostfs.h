@@ -32,42 +32,42 @@ typedef enum _oe_hostfs_op {
 
 typedef struct _oe_hostfs_args
 {
-    long op;
-    long err; /* errno value */
+    oe_hostfs_op_t op;
+    int err; /* errno value */
 
     union {
         struct
         {
-            long ret;
+            int ret;
             const char* pathname;
-            long flags;
-            long mode;
+            int flags;
+            uint32_t mode;
         } open;
         struct
         {
-            long ret;
-            long fd;
-            long offset;
-            long whence;
+            int64_t ret;
+            int fd;
+            int64_t offset;
+            int whence;
         } lseek;
         struct
         {
-            long ret;
-            long fd;
+            int64_t ret;
+            int fd;
             void* buf;
-            long count;
+            uint64_t count;
         } read;
         struct
         {
-            long ret;
-            long fd;
+            int64_t ret;
+            int fd;
             void* buf;
-            long count;
+            uint64_t count;
         } write;
         struct
         {
-            long ret;
-            long fd;
+            int ret;
+            int fd;
         } close;
         struct
         {
@@ -89,7 +89,7 @@ typedef struct _oe_hostfs_args
         } readdir;
         struct
         {
-            long ret;
+            int ret;
             void* dir;
         } closedir;
         struct
