@@ -8,6 +8,7 @@
 #include "fs.h"
 #include "hostfs.h"
 #include "oefs.h"
+#include "trace.h"
 
 int oe_mount_oefs(
     const char* source,
@@ -38,6 +39,7 @@ int oe_mount_oefs(
             if (oe_open_crypto_block_dev(&crypto_dev, key, dev) != 0)
                 goto done;
 
+            dev->release(dev);
             dev = crypto_dev;
         }
     }

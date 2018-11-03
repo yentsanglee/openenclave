@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blockdev.h"
+#include "trace.h"
 
 #define SHA256_SIZE 32
 
@@ -50,9 +51,19 @@ done:
     return ret;
 }
 
+#if 0
+static void _hexdump(const uint8_t* data, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+        printf("%02x ", data[i]);
+
+    printf("\n");
+}
+#endif
+
 static int _generate_initialization_vector(
     const uint8_t key[FS_KEY_SIZE],
-    uint32_t blkno,
+    uint64_t blkno,
     uint8_t iv[IV_SIZE])
 {
     int ret = -1;
@@ -61,9 +72,10 @@ static int _generate_initialization_vector(
     mbedtls_aes_context aes;
 
     mbedtls_aes_init(&aes);
+    memset(iv, 0, sizeof(IV_SIZE));
 
     /* The input buffer contains the block number followed by zeros. */
-    memcpy(buf, 0, sizeof(buf));
+    memset(buf, 0, sizeof(buf));
     memcpy(buf, &blkno, sizeof(blkno));
 
     /* Compute the hash of the key. */
@@ -77,6 +89,8 @@ static int _generate_initialization_vector(
     /* Encrypt the buffer with the hash of the key, yielding the IV. */
     if (mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, buf, iv) != 0)
         goto done;
+
+    ret = 0;
 
 done:
 
@@ -93,18 +107,34 @@ static int _crypt(
 {
     int rc = -1;
     uint8_t iv[IV_SIZE];
+    mbedtls_aes_context aes;
+
+    mbedtls_aes_init(&aes);
 
     /* Generate an initialization vector for this block number. */
     if (_generate_initialization_vector(dev->key, blkno, iv) != 0)
         goto done;
 
-    /* Encrypt the block */
-    if (mbedtls_aes_crypt_cbc(&dev->aes, mode, FS_BLOCK_SIZE, iv, in, out) != 0)
+    if (mode == MBEDTLS_AES_ENCRYPT)
+    {
+        if (mbedtls_aes_setkey_enc(&aes, dev->key, FS_KEY_SIZE * 8) != 0)
+            goto done;
+    }
+    else
+    {
+        if (mbedtls_aes_setkey_dec(&aes, dev->key, FS_KEY_SIZE * 8) != 0)
+            goto done;
+    }
+
+    /* Encrypt or decrypt the block. */
+    if (mbedtls_aes_crypt_cbc(&aes, mode, FS_BLOCK_SIZE, iv, in, out) != 0)
         goto done;
 
     rc = 0;
 
 done:
+
+    mbedtls_aes_free(&aes);
     return rc;
 }
 
@@ -153,6 +183,9 @@ static int _block_dev_get(fs_block_dev_t* dev, uint32_t blkno, void* data)
 
     if (memcmp(encrypted, data, FS_BLOCK_SIZE) == 0)
         goto done;
+
+    ret = 0;
+
 done:
 
     return ret;

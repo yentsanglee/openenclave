@@ -1115,10 +1115,17 @@ int test_oefs(const char* oefs_filename)
     const uint32_t flags = OE_MOUNT_FLAG_MKFS;
     size_t num_blocks = 4 * 4096;
     int rc;
+    uint8_t key[OE_MOUNT_KEY_SIZE] =
+    {
+        0x0f, 0xf0, 0x31, 0xe3, 0x93, 0xdf, 0x46, 0x7b, 
+        0x9a, 0x33, 0xe8, 0x3c, 0x55, 0x11, 0xac, 0x52,
+        0x9e, 0xd4, 0xb1, 0xad, 0x10, 0x16, 0x4f, 0xd9, 
+        0x92, 0x19, 0x93, 0xcc, 0xa9, 0x0e, 0xcb, 0xed,
+    };
 
     /* Mount host file. */
     const char target1[] = "/mnt/oefs";
-    rc = oe_mount_oefs(oefs_filename, target1, flags, num_blocks, NULL);
+    rc = oe_mount_oefs(oefs_filename, target1, flags, num_blocks, key);
     OE_TEST(rc == 0);
 
     /* Mount enclave memory. */
