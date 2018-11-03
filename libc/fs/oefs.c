@@ -216,7 +216,15 @@ struct _fs_file
 
 static bool _valid_file(fs_file_t* file)
 {
-    return file && file->magic == FILE_MAGIC;
+    return file && file->magic == FILE_MAGIC && file->oefs;
+}
+
+static oefs_t* _oefs_from_file(fs_file_t* file)
+{
+    if (!_valid_file(file))
+        return NULL;
+
+    return file->oefs;
 }
 
 struct _fs_dir
@@ -235,7 +243,15 @@ struct _fs_dir
 
 static bool _valid_dir(fs_dir_t* dir)
 {
-    return dir && dir->magic == DIR_MAGIC;
+    return dir && dir->magic == DIR_MAGIC && dir->file && dir->file->oefs;
+}
+
+static oefs_t* _oefs_from_dir(fs_dir_t* dir)
+{
+    if (!_valid_dir(dir))
+        return NULL;
+
+    return dir->file->oefs;
 }
 
 static fs_errno_t _fs_release(fs_t* fs);
@@ -558,6 +574,9 @@ done:
 static fs_errno_t _flush(oefs_t* oefs)
 {
     fs_errno_t err = FS_EOK;
+
+    if (!oefs)
+        RAISE(FS_EINVAL);
 
     if (oefs->dirty)
     {
@@ -1321,6 +1340,7 @@ static fs_errno_t _fs_read(
     int32_t* nread)
 {
     fs_errno_t err = FS_EOK;
+    oefs_t* oefs = _oefs_from_file(file);
     uint32_t first;
     uint32_t i;
     uint32_t remaining;
@@ -1397,6 +1417,10 @@ static fs_errno_t _fs_read(
     *nread = size - remaining;
 
 done:
+
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
@@ -1407,6 +1431,7 @@ static fs_errno_t _fs_write(
     int32_t* nwritten)
 {
     fs_errno_t err = FS_EOK;
+    oefs_t* oefs = _oefs_from_file(file);
     uint32_t first;
     uint32_t i;
     uint32_t remaining;
@@ -1424,6 +1449,8 @@ static fs_errno_t _fs_write(
 
     if (!_sane_file(file))
         RAISE(FS_EINVAL);
+
+    oefs = file->oefs;
 
     /* The index of the first block to write. */
     first = file->offset / FS_BLOCK_SIZE;
@@ -1528,12 +1555,17 @@ static fs_errno_t _fs_write(
     *nwritten = size - remaining;
 
 done:
+
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
 static fs_errno_t _fs_close(fs_file_t* file)
 {
     fs_errno_t err = FS_EOK;
+    oefs_t* oefs = _oefs_from_file(file);
 
     if (!_valid_file(file))
         RAISE(FS_EINVAL);
@@ -1544,6 +1576,10 @@ static fs_errno_t _fs_close(fs_file_t* file)
     free(file);
 
 done:
+
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
@@ -1562,6 +1598,7 @@ static fs_errno_t _fs_release(fs_t* fs)
     free(oefs);
 
 done:
+
     return err;
 }
 
@@ -1582,12 +1619,16 @@ static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir)
 
 done:
 
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
 static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
 {
     fs_errno_t err = FS_EOK;
+    oefs_t* oefs = _oefs_from_dir(dir);
     int32_t nread = 0;
 
     if (ent)
@@ -1610,12 +1651,16 @@ static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
 
 done:
 
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
 static fs_errno_t _fs_closedir(fs_dir_t* dir)
 {
     fs_errno_t err = FS_EOK;
+    oefs_t* oefs = _oefs_from_dir(dir);
 
     if (!_valid_dir(dir) || !dir->file)
         RAISE(FS_EINVAL);
@@ -1625,6 +1670,10 @@ static fs_errno_t _fs_closedir(fs_dir_t* dir)
     free(dir);
 
 done:
+
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
@@ -1719,6 +1768,9 @@ static fs_errno_t _fs_open(
 
 done:
 
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
@@ -1776,6 +1828,9 @@ done:
 
     if (file)
         _fs_close(file);
+
+    if (_flush(oefs) != 0)
+        return FS_EIO;
 
     return err;
 }
@@ -1898,6 +1953,9 @@ done:
     if (dir)
         _fs_close(dir);
 
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
@@ -1907,6 +1965,7 @@ static fs_errno_t _fs_rename(
     const char* new_path)
 {
     fs_errno_t err = FS_EOK;
+    oefs_t* oefs = (oefs_t*)fs;
 
     if (!_valid_oefs(fs) || !old_path || !new_path)
         RAISE(FS_EINVAL);
@@ -1916,13 +1975,16 @@ static fs_errno_t _fs_rename(
 
 done:
 
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
 static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
 {
-    oefs_t* oefs = (oefs_t*)fs;
     fs_errno_t err = FS_EOK;
+    oefs_t* oefs = (oefs_t*)fs;
     uint32_t dir_ino;
     uint32_t ino;
     uint8_t type;
@@ -1943,13 +2005,16 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
 
 done:
 
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
 static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
 {
-    oefs_t* oefs = (oefs_t*)fs;
     fs_errno_t err = FS_EOK;
+    oefs_t* oefs = (oefs_t*)fs;
     fs_file_t* file = NULL;
     uint32_t ino;
     uint8_t type;
@@ -1971,13 +2036,16 @@ done:
     if (file)
         _fs_close(file);
 
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
 static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
 {
-    oefs_t* oefs = (oefs_t*)fs;
     fs_errno_t err = FS_EOK;
+    oefs_t* oefs = (oefs_t*)fs;
     uint32_t dir_ino;
     uint32_t ino;
     uint8_t type;
@@ -2011,6 +2079,9 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
     CHECK(_unlink(oefs, dir_ino, ino, basename));
 
 done:
+
+    if (_flush(oefs) != 0)
+        return FS_EIO;
 
     return err;
 }
@@ -2052,6 +2123,10 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
     stat->st_ctim.tv_nsec = 0;
 
 done:
+
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 
@@ -2061,6 +2136,7 @@ static fs_errno_t _fs_lseek(
     int whence,
     ssize_t* offset_out)
 {
+    oefs_t* oefs = _oefs_from_file(file);
     fs_errno_t err = FS_EOK;
     ssize_t new_offset;
 
@@ -2103,6 +2179,10 @@ static fs_errno_t _fs_lseek(
         *offset_out = new_offset;
 
 done:
+
+    if (_flush(oefs) != 0)
+        return FS_EIO;
+
     return err;
 }
 

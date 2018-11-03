@@ -11,6 +11,7 @@ Todo:
 (C) blockdev->flush() protocol.
 (C) Block caching.
 (C) Read ahead.
+(C) bnode trees?
 (C) oefs shell?
 
 Unsupported:
