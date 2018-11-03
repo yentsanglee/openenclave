@@ -98,11 +98,8 @@ static long _syscall_mmap(long n, ...)
     return EPERM;
 }
 
-static long _syscall_readv(long num, long x1, long x2, long x3, ...)
+ssize_t _syscall_readv(int fd, const struct iovec *iov, int iovcnt)
 {
-    int fd = (int)x1;
-    const struct iovec* iov = (const struct iovec*)x2;
-    int iovcnt = (int)x3;
     ssize_t ret;
 
     if (fd >= 3)
@@ -113,6 +110,14 @@ static long _syscall_readv(long num, long x1, long x2, long x3, ...)
 
     /* return zero-bytes read */
     return 0;
+}
+
+static ssize_t _syscall_read(int fd, void *buf, size_t count)
+{
+    struct iovec iov;
+    iov.iov_base = (void*)buf;
+    iov.iov_len = count;
+    return _syscall_readv(fd, &iov, 1);
 }
 
 static long _syscall_stat(long num, long x1, long x2, long x3, ...)
@@ -154,12 +159,8 @@ _syscall_ioctl(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     return 0;
 }
 
-static long
-_syscall_writev(long n, long x1, long x2, long x3, long x4, long x5, long x6)
+ssize_t _syscall_writev(int fd, const struct iovec *iov, int iovcnt)
 {
-    int fd = (int)x1;
-    const struct iovec* iov = (const struct iovec*)x2;
-    unsigned long iovcnt = (unsigned long)x3;
     long ret = 0;
     int device;
 
@@ -195,6 +196,14 @@ _syscall_writev(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     }
 
     return ret;
+}
+
+static ssize_t _syscall_write(int fd, const void *buf, size_t count)
+{
+    struct iovec iov;
+    iov.iov_base = (void*)buf;
+    iov.iov_len = count;
+    return _syscall_writev(fd, &iov, 1);
 }
 
 static long _syscall_clock_gettime(long n, long x1, long x2)
@@ -434,7 +443,9 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         case SYS_clock_gettime:
             return _syscall_clock_gettime(n, x1, x2);
         case SYS_writev:
-            return _syscall_writev(n, x1, x2, x3, x4, x5, x6);
+            return _syscall_writev((int)x1, (const struct iovec*)x2, (int)x3);
+        case SYS_write:
+            return _syscall_write((int)x1, (const void*)x2, (size_t)x3);
         case SYS_ioctl:
             return _syscall_ioctl(n, x1, x2, x3, x4, x5, x6);
         case SYS_open:
@@ -446,7 +457,9 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         case SYS_mmap:
             return _syscall_mmap(n, x1, x2, x3, x4, x5, x6);
         case SYS_readv:
-            return _syscall_readv(n, x1, x2, x3, x4, x5, x6);
+            return _syscall_readv((int)x1, (const struct iovec*)x2, (int)x3);
+        case SYS_read:
+            return _syscall_read((int)x1, (void*)x2, (size_t)x3);
         case SYS_stat:
             return _syscall_stat(n, x1, x2, x3, x4, x5, x6);
         case SYS_lseek:

@@ -11,3 +11,10 @@ Todo:
 (C) blockdev->flush() protocol.
 (C) Block caching.
 (C) Read ahead.
+
+Unsupported:
+    telldir()
+    seekdir()
+    rewinddir()
+    fdopen()
+    dirfd()

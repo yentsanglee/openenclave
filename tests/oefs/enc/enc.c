@@ -18,6 +18,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include "../../../libc/fs/buf.h"
 #include "../../../libc/fs/fs.h"
 
@@ -852,6 +853,53 @@ static void _test_cwd(const char* target)
     OE_TEST(strcmp(cwd, "/") == 0);
 }
 
+static void _test_fcntl(const char* target)
+{
+    char path[PATH_MAX];
+    const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+    const size_t N = 100;
+
+    /* Create the file. */
+    {
+        int fd;
+
+        fd = creat(_mkpath(path, target, "/create"), 0);
+        OE_TEST(fd >= 0);
+
+        for (size_t i = 0; i < N; i++)
+        {
+            size_t n = sizeof(alphabet) - 1;
+            OE_TEST(write(fd, alphabet, n) == n);
+        }
+
+        OE_TEST(close(fd) == 0);
+    }
+
+    /* Read the file. */
+    {
+        int fd;
+        char buf[sizeof(alphabet)];
+        size_t m = 0;
+
+        fd = open(_mkpath(path, target, "/create"), O_RDONLY, 0);
+        OE_TEST(fd >= 0);
+
+        for (size_t i = 0; i < N; i++)
+        {
+            size_t n = sizeof(alphabet) - 1;
+            OE_TEST(read(fd, buf, sizeof(buf) - 1) == n);
+            OE_TEST(memcmp(buf, alphabet, sizeof(buf) - 1) == 0);
+            m++;
+        }
+
+        OE_TEST(m == N);
+        OE_TEST(close(fd) == 0);
+    }
+
+    /* Remove the file. */
+    OE_TEST(unlink(_mkpath(path, target, "/create")) == 0);
+}
+
 void run_tests(const char* target)
 {
     fs_t* fs = fs_lookup(target, NULL);
@@ -961,6 +1009,8 @@ void run_tests(const char* target)
     _test_opendir(target);
 
     _test_cwd(target);
+
+    _test_fcntl(target);
 }
 
 static void _test_hostfs()

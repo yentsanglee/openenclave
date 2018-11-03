@@ -131,10 +131,9 @@ add_library(oelibc STATIC
     ${MUSLSRC}/ctype/wcswidth.c
     ${MUSLSRC}/ctype/wctrans.c
     ${MUSLSRC}/ctype/wcwidth.c
-    #${MUSLSRC}/dirent/opendir.c
-    #${MUSLSRC}/dirent/closedir.c
-    #${MUSLSRC}/dirent/readdir.c
-    #${MUSLSRC}/dirent/readdir_r.c
+    ${MUSLSRC}/dirent/alphasort.c
+    ${MUSLSRC}/dirent/scandir.c
+    ${MUSLSRC}/fcntl/creat.c
     ${MUSLSRC}/fcntl/open.c
     ${MUSLSRC}/env/clearenv.c
     ${MUSLSRC}/env/__environ.c
@@ -657,6 +656,8 @@ add_library(oelibc STATIC
     ${MUSLSRC}/time/__year_to_secs.c
     ${MUSLSRC}/unistd/access.c
     ${MUSLSRC}/unistd/close.c
+    ${MUSLSRC}/unistd/read.c
+    ${MUSLSRC}/unistd/write.c
     ${MUSLSRC}/unistd/dup.c
     ${MUSLSRC}/unistd/getcwd.c
     ${MUSLSRC}/unistd/chdir.c
