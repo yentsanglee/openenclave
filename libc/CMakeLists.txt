@@ -717,7 +717,7 @@ endif()
 target_link_libraries(oelibc PUBLIC oecore)
 
 # as a pre-build step, place the musl LIBC headers
-add_dependencies(oelibc oelibc_includes)
+add_dependencies(oelibc oelibc_includes mbedcrypto)
 
 target_include_directories(oelibc PRIVATE
     ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/internal

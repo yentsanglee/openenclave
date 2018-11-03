@@ -1118,12 +1118,12 @@ int test_oefs(const char* oefs_filename)
 
     /* Mount host file. */
     const char target1[] = "/mnt/oefs";
-    rc = oe_mount_oefs(oefs_filename, target1, flags, num_blocks);
+    rc = oe_mount_oefs(oefs_filename, target1, flags, num_blocks, NULL);
     OE_TEST(rc == 0);
 
     /* Mount enclave memory. */
     const char target2[] = "/mnt/ramfs";
-    rc = oe_mount_oefs(NULL, target2, flags, num_blocks);
+    rc = oe_mount_oefs(NULL, target2, flags, num_blocks, NULL);
     OE_TEST(rc == 0);
 
     run_tests(target1);

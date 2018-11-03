@@ -13,7 +13,8 @@ int oe_mount_oefs(
     const char* source,
     const char* target,
     uint32_t flags,
-    size_t num_blocks)
+    size_t num_blocks,
+    const uint8_t key[OE_MOUNT_KEY_SIZE])
 {
     int ret = -1;
     fs_block_dev_t* dev = NULL;
@@ -24,9 +25,21 @@ int oe_mount_oefs(
 
     if (source)
     {
+
         /* Open a host device. */
         if (oe_open_host_block_dev(&dev, source) != 0)
             goto done;
+
+        /* If a key was provided, then open a crypto device. */
+        if (key)
+        {
+            fs_block_dev_t* crypto_dev = NULL;
+
+            if (oe_open_crypto_block_dev(&crypto_dev, key, dev) != 0)
+                goto done;
+
+            dev = crypto_dev;
+        }
     }
     else
     {
