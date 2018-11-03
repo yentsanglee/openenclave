@@ -2,8 +2,10 @@ Todo:
 
 (A) Encryption
 ---
-(C) Change fs interface parameter types from 4 to 8 bytes integers.
-(C) Fix truncate() to extend files.
+(B) oefs shell?
+(B) Fix truncate() to extend files.
+(B) Change fs interface parameter types from 4 to 8 bytes integers.
+---
 (C) Support directory enumeration below mount points.
 (C) Switchless calls.
 (C) blockdev->flush() protocol.
