@@ -524,10 +524,15 @@ done:
     return err;
 }
 
-/* TODO */
 static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
 {
+    hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_hostfs_args_t args_t;
+    args_t* args;
+
+    batch = hostfs->batch;
 
     if (stat)
         memset(stat, 0, sizeof(fs_stat_t));
@@ -535,30 +540,128 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
     if (!_valid_fs(fs) || !path || !stat)
         RAISE(FS_EINVAL);
 
+    if (strlen(path) >= FS_PATH_MAX)
+        RAISE(FS_EINVAL);
+        
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            RAISE(FS_ENOMEM);
+
+        args->op = OE_HOSTFS_STAT;
+        args->u.stat.ret = -1;
+        strlcpy(args->u.stat.pathname, path, sizeof(args->u.stat.pathname));
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            RAISE(FS_EIO);
+
+        if (args->u.stat.ret != 0)
+            RAISE(args->err);
+    }
+
+    /* Copy to user buffer. */
+    stat->st_dev = args->u.stat.buf.st_dev;
+    stat->st_ino = args->u.stat.buf.st_ino;
+    stat->st_mode = args->u.stat.buf.st_mode;
+    stat->st_nlink = args->u.stat.buf.st_nlink;
+    stat->st_uid = args->u.stat.buf.st_uid;
+    stat->st_gid = args->u.stat.buf.st_gid;
+    stat->st_rdev = args->u.stat.buf.st_rdev;
+    stat->st_size = args->u.stat.buf.st_size;
+    stat->st_blksize = args->u.stat.buf.st_blksize;
+    stat->st_blocks = args->u.stat.buf.st_blocks;
+    stat->st_atim.tv_sec = args->u.stat.buf.st_atim.tv_sec;
+    stat->st_atim.tv_nsec = args->u.stat.buf.st_atim.tv_nsec;
+    stat->st_mtim.tv_sec = args->u.stat.buf.st_mtim.tv_sec;
+    stat->st_mtim.tv_nsec = args->u.stat.buf.st_mtim.tv_nsec;
+    stat->st_ctim.tv_sec = args->u.stat.buf.st_ctim.tv_sec;
+    stat->st_ctim.tv_nsec = args->u.stat.buf.st_ctim.tv_nsec;
+
 done:
     return err;
 }
 
-/* TODO */
 static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
 {
+    hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_hostfs_args_t args_t;
+    args_t* args;
+
+    batch = hostfs->batch;
 
     if (!old_path || !new_path)
         RAISE(FS_EINVAL);
 
+    if (strlen(old_path) >= FS_PATH_MAX)
+        RAISE(FS_EINVAL);
+
+    if (strlen(new_path) >= FS_PATH_MAX)
+        RAISE(FS_EINVAL);
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            RAISE(FS_ENOMEM);
+
+        args->op = OE_HOSTFS_LINK;
+        args->u.link.ret = -1;
+        strlcpy(args->u.link.oldpath, old_path, sizeof(args->u.link.oldpath));
+        strlcpy(args->u.link.newpath, new_path, sizeof(args->u.link.newpath));
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            RAISE(FS_EIO);
+
+        if (args->u.link.ret != 0)
+            RAISE(args->err);
+    }
+
 done:
 
     return err;
 }
 
-/* TODO */
 static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
 {
+    hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_hostfs_args_t args_t;
+    args_t* args;
 
     if (!_valid_fs(fs) || !path)
         RAISE(FS_EINVAL);
+
+    if (strlen(path) >= FS_PATH_MAX)
+        RAISE(FS_EINVAL);
+
+    batch = hostfs->batch;
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            RAISE(FS_ENOMEM);
+
+        args->op = OE_HOSTFS_UNLINK;
+        args->u.unlink.ret = -1;
+        strlcpy(args->u.unlink.path, path, sizeof(args->u.unlink.path));
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            RAISE(FS_EIO);
+
+        if (args->u.unlink.ret != 0)
+            RAISE(args->err);
+    }
 
 done:
 

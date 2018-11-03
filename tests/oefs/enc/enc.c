@@ -970,6 +970,10 @@ static void _test_hostfs()
     /* Mount the file system. */
     OE_TEST(oe_mount_hostfs("/mnt/hostfs") == 0);
 
+    /* Remove the file if it exists. */
+    unlink("/mnt/hostfs/tmp/myfile");
+    unlink("/mnt/hostfs/tmp/myfile2");
+
     /* Create a file with alphabet characters terminated by zero. */
     {
         FILE* os;
@@ -1000,7 +1004,28 @@ static void _test_hostfs()
         OE_TEST(fclose(is) == 0);
     }
 
-    /* Scan some directories. */
+    /* Test stat() */
+    {
+        struct stat buf;
+        OE_TEST(stat("/mnt/hostfs/tmp/myfile", &buf) == 0);
+        OE_TEST(buf.st_size == sizeof(alphabet));
+        OE_TEST(buf.st_nlink == 1);
+        OE_TEST(S_ISREG(buf.st_mode));
+    }
+
+    /* Test link() */
+    OE_TEST(link("/mnt/hostfs/tmp/myfile", "/mnt/hostfs/tmp/myfile2") == 0);
+
+    /* Test stat() */
+    {
+        struct stat buf;
+        OE_TEST(stat("/mnt/hostfs/tmp/myfile2", &buf) == 0);
+        OE_TEST(buf.st_size == sizeof(alphabet));
+        OE_TEST(buf.st_nlink == 2);
+        OE_TEST(S_ISREG(buf.st_mode));
+    }
+
+    /* Scan the /tmp directory. */
     {
         DIR* dir;
         struct dirent* ent;

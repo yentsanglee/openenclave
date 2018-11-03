@@ -7,6 +7,7 @@
 #include <openenclave/host.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/hostfs.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include "ocalls.h"
 
@@ -83,6 +84,42 @@ void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
         case OE_HOSTFS_CLOSEDIR:
         {
             args->u.closedir.ret = closedir((DIR*)args->u.closedir.dir);
+            break;
+        }
+        case OE_HOSTFS_STAT:
+        {
+            struct stat buf;
+
+            if ((args->u.stat.ret = stat(args->u.stat.pathname, &buf)) == 0)
+            {
+                args->u.stat.buf.st_dev = buf.st_dev;
+                args->u.stat.buf.st_ino = buf.st_ino;
+                args->u.stat.buf.st_mode = buf.st_mode;
+                args->u.stat.buf.st_nlink = buf.st_nlink;
+                args->u.stat.buf.st_uid = buf.st_uid;
+                args->u.stat.buf.st_gid = buf.st_gid;
+                args->u.stat.buf.st_rdev = buf.st_rdev;
+                args->u.stat.buf.st_size = buf.st_size;
+                args->u.stat.buf.st_blksize = buf.st_blksize;
+                args->u.stat.buf.st_blocks = buf.st_blocks;
+                args->u.stat.buf.st_atim.tv_sec = buf.st_atim.tv_sec;
+                args->u.stat.buf.st_atim.tv_nsec = buf.st_atim.tv_nsec;
+                args->u.stat.buf.st_mtim.tv_sec = buf.st_mtim.tv_sec;
+                args->u.stat.buf.st_mtim.tv_nsec = buf.st_mtim.tv_nsec;
+                args->u.stat.buf.st_ctim.tv_sec = buf.st_ctim.tv_sec;
+                args->u.stat.buf.st_ctim.tv_nsec = buf.st_ctim.tv_nsec;
+            }
+
+            break;
+        }
+        case OE_HOSTFS_LINK:
+        {
+            args->u.link.ret = link(args->u.link.oldpath, args->u.link.newpath);
+            break;
+        }
+        case OE_HOSTFS_UNLINK:
+        {
+            args->u.unlink.ret = unlink(args->u.unlink.path);
             break;
         }
         default:

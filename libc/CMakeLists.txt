@@ -663,7 +663,8 @@ add_library(oelibc STATIC
     ${MUSLSRC}/unistd/rmdir.c
     ${MUSLSRC}/unistd/dup3.c
     ${MUSLSRC}/unistd/truncate.c
-    ${MUSLSRC}/unistd/link.c)
+    ${MUSLSRC}/unistd/link.c
+    ${MUSLSRC}/unistd/unlink.c)
 
 add_target_compile_flags(oelibc PRIVATE C
     -std=c99

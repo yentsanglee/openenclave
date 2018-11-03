@@ -4,6 +4,13 @@
 #ifndef _OE_HOSTFS_H
 #define _OE_HOSTFS_H
 
+#include <limits.h>
+#include <stdint.h>
+#include <openenclave/bits/defs.h>
+#include <openenclave/internal/defs.h>
+
+#define HOSTFS_PATH_MAX 256
+
 typedef enum _oe_hostfs_op
 {
     OE_HOSTFS_OPEN,
@@ -14,6 +21,9 @@ typedef enum _oe_hostfs_op
     OE_HOSTFS_OPENDIR,
     OE_HOSTFS_READDIR,
     OE_HOSTFS_CLOSEDIR,
+    OE_HOSTFS_STAT,
+    OE_HOSTFS_LINK,
+    OE_HOSTFS_UNLINK,
     __OE_HOSTFS_MAX = OE_ENUM_MAX,
 }
 oe_hostfs_op_t;
@@ -24,15 +34,6 @@ typedef struct _oe_hostfs_args
     long err; /* errno value */
 
     union {
-        struct
-        {
-            long arg1;
-            long arg2;
-            long arg3;
-            long arg4;
-            long arg5;
-            long arg6;
-        } generic;
         struct
         {
             long ret;
@@ -75,11 +76,10 @@ typedef struct _oe_hostfs_args
         {
             struct
             {
-                unsigned long d_ino;
-                unsigned long d_off;
-                unsigned short d_reclen;
-                unsigned char d_type;
-                unsigned char __d_reserved;
+                uint64_t d_ino;
+                uint64_t d_off;
+                uint16_t d_reclen;
+                uint8_t d_type;
                 char d_name[256];
             }
             buf;
@@ -91,6 +91,57 @@ typedef struct _oe_hostfs_args
             long ret;
             void* dir;
         } closedir;
+        struct
+        {
+            int ret;
+            char pathname[HOSTFS_PATH_MAX];
+            struct
+            {
+                uint32_t st_dev;
+                uint32_t st_ino;
+                uint16_t st_mode;
+                uint32_t st_nlink;
+                uint16_t st_uid;
+                uint16_t st_gid;
+                uint32_t st_rdev;
+                uint32_t st_size;
+                uint32_t st_blksize;
+                uint32_t st_blocks;
+                struct
+                {
+                    uint64_t tv_sec;
+                    uint64_t tv_nsec;
+                }
+                st_atim;
+                struct
+                {
+                    uint64_t tv_sec;
+                    uint64_t tv_nsec;
+                }
+                st_mtim;
+                struct
+                {
+                    uint64_t tv_sec;
+                    uint64_t tv_nsec;
+                }
+                st_ctim;
+            }
+            buf;
+        }
+        stat;
+        struct
+        {
+            int ret;
+            char oldpath[HOSTFS_PATH_MAX];
+            char newpath[HOSTFS_PATH_MAX];
+        }
+        link;
+        struct
+        {
+            int ret;
+            char path[HOSTFS_PATH_MAX];
+        }
+        unlink;
     } u;
 } oe_hostfs_args_t;
 
