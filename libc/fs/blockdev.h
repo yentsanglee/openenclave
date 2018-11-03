@@ -22,13 +22,9 @@ struct _fs_block_dev
     int (*release)(fs_block_dev_t* dev);
 };
 
-int oe_open_host_block_dev(
-    fs_block_dev_t** block_dev,
-    const char* device_name);
+int oe_open_host_block_dev(fs_block_dev_t** block_dev, const char* device_name);
 
-int oe_open_ram_block_dev(
-    fs_block_dev_t** block_dev,
-    size_t size);
+int oe_open_ram_block_dev(fs_block_dev_t** block_dev, size_t size);
 
 int oe_open_crypto_block_dev(
     fs_block_dev_t** block_dev,

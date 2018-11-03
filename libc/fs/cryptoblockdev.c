@@ -20,7 +20,8 @@ typedef struct _block_dev
     size_t ref_count;
     pthread_spinlock_t lock;
     uint8_t key[FS_KEY_SIZE];
-    mbedtls_aes_context aes;
+    mbedtls_aes_context enc_aes;
+    mbedtls_aes_context dec_aes;
     fs_block_dev_t* next;
 } block_dev_t;
 
@@ -50,16 +51,6 @@ done:
     mbedtls_sha256_free(&ctx);
     return ret;
 }
-
-#if 0
-static void _hexdump(const uint8_t* data, size_t size)
-{
-    for (size_t i = 0; i < size; i++)
-        printf("%02x ", data[i]);
-
-    printf("\n");
-}
-#endif
 
 static int _generate_initialization_vector(
     const uint8_t key[FS_KEY_SIZE],
@@ -99,42 +90,28 @@ done:
 }
 
 static int _crypt(
-    block_dev_t* dev,
-    int mode, /* MBEDTLS_AES_ENCRYPT | MBEDTLS_AES_DECRYPT */
+    mbedtls_aes_context* aes,
+    int mode, /* MBEDTLS_AES_ENCRYPT or MBEDTLS_AES_DECRYPT */
+    const uint8_t key[FS_KEY_SIZE],
     uint32_t blkno,
     const uint8_t in[FS_BLOCK_SIZE],
     uint8_t out[FS_BLOCK_SIZE])
 {
     int rc = -1;
     uint8_t iv[IV_SIZE];
-    mbedtls_aes_context aes;
-
-    mbedtls_aes_init(&aes);
 
     /* Generate an initialization vector for this block number. */
-    if (_generate_initialization_vector(dev->key, blkno, iv) != 0)
+    if (_generate_initialization_vector(key, blkno, iv) != 0)
         goto done;
 
-    if (mode == MBEDTLS_AES_ENCRYPT)
-    {
-        if (mbedtls_aes_setkey_enc(&aes, dev->key, FS_KEY_SIZE * 8) != 0)
-            goto done;
-    }
-    else
-    {
-        if (mbedtls_aes_setkey_dec(&aes, dev->key, FS_KEY_SIZE * 8) != 0)
-            goto done;
-    }
-
-    /* Encrypt or decrypt the block. */
-    if (mbedtls_aes_crypt_cbc(&aes, mode, FS_BLOCK_SIZE, iv, in, out) != 0)
+    /* Encypt the data. */
+    if (mbedtls_aes_crypt_cbc(aes, mode, FS_BLOCK_SIZE, iv, in, out) != 0)
         goto done;
 
     rc = 0;
 
 done:
 
-    mbedtls_aes_free(&aes);
     return rc;
 }
 
@@ -153,7 +130,8 @@ static int _block_dev_release(fs_block_dev_t* dev)
 
     if (new_ref_count == 0)
     {
-        mbedtls_aes_free(&device->aes);
+        mbedtls_aes_free(&device->enc_aes);
+        mbedtls_aes_free(&device->dec_aes);
         device->next->release(device->next);
         free(device);
     }
@@ -178,11 +156,16 @@ static int _block_dev_get(fs_block_dev_t* dev, uint32_t blkno, void* data)
         goto done;
 
     /* Decrypt the block */
-    if (_crypt(device, MBEDTLS_AES_DECRYPT, blkno, encrypted, data) != 0)
+    if (_crypt(
+            &device->dec_aes,
+            MBEDTLS_AES_DECRYPT,
+            device->key,
+            blkno,
+            encrypted,
+            data) != 0)
+    {
         goto done;
-
-    if (memcmp(encrypted, data, FS_BLOCK_SIZE) == 0)
-        goto done;
+    }
 
     ret = 0;
 
@@ -201,14 +184,19 @@ static int _block_dev_put(fs_block_dev_t* dev, uint32_t blkno, const void* data)
         goto done;
 
     /* Encrypt the block */
-    if (_crypt(device, MBEDTLS_AES_ENCRYPT, blkno, data, encrypted) != 0)
+    if (_crypt(
+            &device->enc_aes,
+            MBEDTLS_AES_ENCRYPT,
+            device->key,
+            blkno,
+            data,
+            encrypted) != 0)
+    {
         goto done;
+    }
 
     /* Delegate to the next block device in the chain. */
     if (device->next->put(device->next, blkno, encrypted) != 0)
-        goto done;
-
-    if (memcmp(encrypted, data, FS_BLOCK_SIZE) == 0)
         goto done;
 
     ret = 0;
@@ -260,12 +248,21 @@ int oe_open_crypto_block_dev(
     device->ref_count = 1;
     device->next = next;
     memcpy(device->key, key, FS_KEY_SIZE);
-    mbedtls_aes_init(&device->aes);
+    mbedtls_aes_init(&device->enc_aes);
+    mbedtls_aes_init(&device->dec_aes);
 
-    /* Set the key into the AES context. */
-    if (mbedtls_aes_setkey_enc(&device->aes, key, FS_KEY_SIZE * 8) != 0)
+    /* Initialize an AES context for encrypting. */
+    if (mbedtls_aes_setkey_enc(&device->enc_aes, key, FS_KEY_SIZE * 8) != 0)
     {
-        mbedtls_aes_free(&device->aes);
+        mbedtls_aes_free(&device->enc_aes);
+        goto done;
+    }
+
+    /* Initialize an AES context for decrypting. */
+    if (mbedtls_aes_setkey_dec(&device->dec_aes, key, FS_KEY_SIZE * 8) != 0)
+    {
+        mbedtls_aes_free(&device->enc_aes);
+        mbedtls_aes_free(&device->dec_aes);
         goto done;
     }
 

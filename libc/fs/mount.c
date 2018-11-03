@@ -26,7 +26,6 @@ int oe_mount_oefs(
 
     if (source)
     {
-
         /* Open a host device. */
         if (oe_open_host_block_dev(&dev, source) != 0)
             goto done;
