@@ -966,6 +966,7 @@ void run_tests(const char* target)
 static void _test_hostfs()
 {
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+    struct stat buf;
 
     /* Mount the file system. */
     OE_TEST(oe_mount_hostfs("/mnt/hostfs") == 0);
@@ -1005,25 +1006,19 @@ static void _test_hostfs()
     }
 
     /* Test stat() */
-    {
-        struct stat buf;
-        OE_TEST(stat("/mnt/hostfs/tmp/myfile", &buf) == 0);
-        OE_TEST(buf.st_size == sizeof(alphabet));
-        OE_TEST(buf.st_nlink == 1);
-        OE_TEST(S_ISREG(buf.st_mode));
-    }
+    OE_TEST(stat("/mnt/hostfs/tmp/myfile", &buf) == 0);
+    OE_TEST(buf.st_size == sizeof(alphabet));
+    OE_TEST(buf.st_nlink == 1);
+    OE_TEST(S_ISREG(buf.st_mode));
 
     /* Test link() */
     OE_TEST(link("/mnt/hostfs/tmp/myfile", "/mnt/hostfs/tmp/myfile2") == 0);
 
     /* Test stat() */
-    {
-        struct stat buf;
-        OE_TEST(stat("/mnt/hostfs/tmp/myfile2", &buf) == 0);
-        OE_TEST(buf.st_size == sizeof(alphabet));
-        OE_TEST(buf.st_nlink == 2);
-        OE_TEST(S_ISREG(buf.st_mode));
-    }
+    OE_TEST(stat("/mnt/hostfs/tmp/myfile2", &buf) == 0);
+    OE_TEST(buf.st_size == sizeof(alphabet));
+    OE_TEST(buf.st_nlink == 2);
+    OE_TEST(S_ISREG(buf.st_mode));
 
     /* Scan the /tmp directory. */
     {
@@ -1039,6 +1034,16 @@ static void _test_hostfs()
         OE_TEST(count > 0);
         OE_TEST(closedir(dir) == 0);
     }
+
+    OE_TEST(rename("/mnt/hostfs/tmp/myfile", "/mnt/hostfs/tmp/myfile3") == 0);
+    OE_TEST(stat("/mnt/hostfs/tmp/myfile3", &buf) == 0);
+    OE_TEST(buf.st_size == sizeof(alphabet));
+    OE_TEST(buf.st_nlink == 2);
+    OE_TEST(S_ISREG(buf.st_mode));
+
+    /* Remove the file if it exists. */
+    OE_TEST(unlink("/mnt/hostfs/tmp/myfile3") == 0);
+    OE_TEST(unlink("/mnt/hostfs/tmp/myfile2") == 0);
 
     /* Unmount the file system. */
     OE_TEST(oe_unmount("/mnt/hostfs") == 0);

@@ -124,6 +124,12 @@ void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
             args->u.unlink.ret = unlink(args->u.unlink.path);
             break;
         }
+        case OE_HOSTFS_RENAME:
+        {
+            args->u.rename.ret =
+                rename(args->u.rename.oldpath, args->u.rename.newpath);
+            break;
+        }
         default:
         {
             errno = EINVAL;

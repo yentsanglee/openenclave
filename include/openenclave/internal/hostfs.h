@@ -23,6 +23,7 @@ typedef enum _oe_hostfs_op {
     OE_HOSTFS_STAT,
     OE_HOSTFS_LINK,
     OE_HOSTFS_UNLINK,
+    OE_HOSTFS_RENAME,
     __OE_HOSTFS_MAX = OE_ENUM_MAX,
 } oe_hostfs_op_t;
 
@@ -127,6 +128,12 @@ typedef struct _oe_hostfs_args
             char oldpath[HOSTFS_PATH_MAX];
             char newpath[HOSTFS_PATH_MAX];
         } link;
+        struct
+        {
+            int ret;
+            char oldpath[HOSTFS_PATH_MAX];
+            char newpath[HOSTFS_PATH_MAX];
+        } rename;
         struct
         {
             int ret;

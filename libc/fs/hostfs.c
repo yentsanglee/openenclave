@@ -668,16 +668,49 @@ done:
     return err;
 }
 
-/* TODO */
 static fs_errno_t _fs_rename(
     fs_t* fs,
     const char* old_path,
     const char* new_path)
 {
+    hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_hostfs_args_t args_t;
+    args_t* args;
 
-    if (!_valid_fs(fs) || !old_path || !new_path)
+    batch = hostfs->batch;
+
+    if (!old_path || !new_path)
         RAISE(FS_EINVAL);
+
+    if (strlen(old_path) >= FS_PATH_MAX)
+        RAISE(FS_EINVAL);
+
+    if (strlen(new_path) >= FS_PATH_MAX)
+        RAISE(FS_EINVAL);
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            RAISE(FS_ENOMEM);
+
+        args->op = OE_HOSTFS_RENAME;
+        args->u.rename.ret = -1;
+        strlcpy(
+            args->u.rename.oldpath, old_path, sizeof(args->u.rename.oldpath));
+        strlcpy(
+            args->u.rename.newpath, new_path, sizeof(args->u.rename.newpath));
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            RAISE(FS_EIO);
+
+        if (args->u.rename.ret != 0)
+            RAISE(args->err);
+    }
 
 done:
 
