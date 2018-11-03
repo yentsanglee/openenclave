@@ -17,6 +17,8 @@
 /* Offset to account for stdin=0, stdout=1, stderr=2. */
 #define FD_OFFSET 3
 
+#define DIR_HANDLE_MAGIC 0x173df89e
+
 typedef struct _binding
 {
     fs_t* fs;
@@ -28,6 +30,14 @@ typedef struct _handle
     fs_t* fs;
     fs_file_t* file;
 } handle_t;
+
+typedef struct _dir
+{
+    uint32_t magic;
+    fs_t* fs;
+    fs_dir_t* dir;
+    struct dirent entry;
+} dir_handle_t;
 
 static binding_t _bindings[MAX_MOUNTS];
 static size_t _num_bindings;
@@ -815,6 +825,99 @@ fs_errno_t fs_chdir(const char* path, int* ret)
         pthread_spin_unlock(&lock);
         RAISE(FS_ENAMETOOLONG);
     }
+
+    *ret = 0;
+
+done:
+    return err;
+}
+
+fs_errno_t fs_opendir(const char* name, DIR** dir_out)
+{
+    fs_errno_t err = 0;
+    fs_t* fs = NULL;
+    fs_dir_t* dir = NULL;
+    char suffix[FS_PATH_MAX];
+    char real_path[FS_PATH_MAX];
+    dir_handle_t* h = NULL;
+
+    if (dir_out)
+        *dir_out = NULL;
+
+    if (!name || !dir_out)
+        RAISE(FS_EINVAL);
+
+    CHECK(_realpath(name, real_path));
+
+    if (!(fs = fs_lookup(real_path, suffix)))
+        RAISE(FS_ENOENT);
+
+    if (!(h = calloc(1, sizeof(dir_handle_t))))
+        RAISE(FS_ENOMEM);
+
+    CHECK(fs->fs_opendir(fs, suffix, &dir));
+
+    h->magic = DIR_HANDLE_MAGIC;
+    h->fs = fs;
+    h->dir = dir;
+
+    *dir_out = (DIR*)h;
+    h = NULL;
+
+done:
+
+    if (h)
+        free(h);
+
+    return err;
+}
+
+fs_errno_t fs_readdir(DIR *dirp, struct dirent** entry_out)
+{
+    fs_errno_t err = 0;
+    dir_handle_t* h = (dir_handle_t*)dirp;
+    fs_dirent_t* dirent;
+    struct dirent* entry;
+
+    if (entry_out)
+        *entry_out = NULL;
+
+    if (!dirp || !entry_out || h->magic != DIR_HANDLE_MAGIC)
+        RAISE(FS_EINVAL);
+
+    CHECK(h->fs->fs_readdir(h->dir, &dirent));
+
+    if (!dirent)
+        goto done;
+
+    entry = &h->entry;
+    entry->d_ino = dirent->d_ino;
+    entry->d_off = dirent->d_off;
+    entry->d_reclen = dirent->d_reclen;
+    entry->d_type = dirent->d_type;
+    strlcpy(entry->d_name, dirent->d_name, sizeof(entry->d_name));
+
+    *entry_out = entry;
+
+done:
+    return err;
+}
+
+fs_errno_t fs_closedir(DIR *dirp, int* ret)
+{
+    fs_errno_t err = 0;
+    dir_handle_t* h = (dir_handle_t*)dirp;
+
+    if (ret)
+        *ret = -1;
+
+    if (!dirp || !ret || h->magic != DIR_HANDLE_MAGIC)
+        RAISE(FS_EINVAL);
+
+    CHECK(h->fs->fs_closedir(h->dir));
+
+    memset(h, 0, sizeof(dir_handle_t));
+    free(h);
 
     *ret = 0;
 

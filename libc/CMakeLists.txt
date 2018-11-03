@@ -13,6 +13,7 @@ add_library(oelibc STATIC
     arc4random.c
     atexit.c
     dladdr.c
+    dirent.c
     exp2l.S
     fs/buf.c
     fs/fs.c
@@ -38,7 +39,6 @@ add_library(oelibc STATIC
     __stack_chk_fail.c
     __printf_chk.c
     __vfprintf_chk.c
-
     ${MUSLSRC}/complex/cabs.c
     ${MUSLSRC}/complex/cabsf.c
     ${MUSLSRC}/complex/cabsl.c
@@ -131,10 +131,10 @@ add_library(oelibc STATIC
     ${MUSLSRC}/ctype/wcswidth.c
     ${MUSLSRC}/ctype/wctrans.c
     ${MUSLSRC}/ctype/wcwidth.c
-    ${MUSLSRC}/dirent/opendir.c
-    ${MUSLSRC}/dirent/closedir.c
-    ${MUSLSRC}/dirent/readdir.c
-    ${MUSLSRC}/dirent/readdir_r.c
+    #${MUSLSRC}/dirent/opendir.c
+    #${MUSLSRC}/dirent/closedir.c
+    #${MUSLSRC}/dirent/readdir.c
+    #${MUSLSRC}/dirent/readdir_r.c
     ${MUSLSRC}/fcntl/open.c
     ${MUSLSRC}/env/clearenv.c
     ${MUSLSRC}/env/__environ.c
