@@ -717,39 +717,122 @@ done:
     return err;
 }
 
-/* TODO */
 static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
 {
+    hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_hostfs_args_t args_t;
+    args_t* args;
 
     if (!_valid_fs(fs) || !path)
         RAISE(FS_EINVAL);
+
+    if (strlen(path) >= FS_PATH_MAX)
+        RAISE(FS_EINVAL);
+
+    batch = hostfs->batch;
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            RAISE(FS_ENOMEM);
+
+        args->op = OE_HOSTFS_TRUNCATE;
+        args->u.truncate.ret = -1;
+        args->u.truncate.length = length;
+        strlcpy(args->u.truncate.path, path, sizeof(args->u.truncate.path));
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            RAISE(FS_EIO);
+
+        if (args->u.truncate.ret != 0)
+            RAISE(args->err);
+    }
 
 done:
 
     return err;
 }
 
-/* TODO */
 static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
 {
+    hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_hostfs_args_t args_t;
+    args_t* args;
 
     if (!_valid_fs(fs) || !path)
         RAISE(FS_EINVAL);
+
+    if (strlen(path) >= FS_PATH_MAX)
+        RAISE(FS_EINVAL);
+
+    batch = hostfs->batch;
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            RAISE(FS_ENOMEM);
+
+        args->op = OE_HOSTFS_MKDIR;
+        args->u.mkdir.ret = -1;
+        args->u.mkdir.mode = mode;
+        strlcpy(args->u.mkdir.pathname, path, sizeof(args->u.mkdir.pathname));
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            RAISE(FS_EIO);
+
+        if (args->u.mkdir.ret != 0)
+            RAISE(args->err);
+    }
 
 done:
 
     return err;
 }
 
-/* TODO */
 static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
 {
+    hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
+    fs_host_batch_t* batch = NULL;
+    typedef oe_hostfs_args_t args_t;
+    args_t* args;
 
     if (!_valid_fs(fs) || !path)
         RAISE(FS_EINVAL);
+
+    if (strlen(path) >= FS_PATH_MAX)
+        RAISE(FS_EINVAL);
+
+    batch = hostfs->batch;
+
+    /* Create the arguments. */
+    {
+        if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+            RAISE(FS_ENOMEM);
+
+        args->op = OE_HOSTFS_RMDIR;
+        args->u.rmdir.ret = -1;
+        strlcpy(args->u.rmdir.pathname, path, sizeof(args->u.rmdir.pathname));
+    }
+
+    /* Perform the OCALL. */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            RAISE(FS_EIO);
+
+        if (args->u.rmdir.ret != 0)
+            RAISE(args->err);
+    }
 
 done:
 

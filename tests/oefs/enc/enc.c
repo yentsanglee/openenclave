@@ -974,6 +974,7 @@ static void _test_hostfs()
     /* Remove the file if it exists. */
     unlink("/mnt/hostfs/tmp/myfile");
     unlink("/mnt/hostfs/tmp/myfile2");
+    rmdir("/mnt/hostfs/tmp/mydir");
 
     /* Create a file with alphabet characters terminated by zero. */
     {
@@ -1041,9 +1042,19 @@ static void _test_hostfs()
     OE_TEST(buf.st_nlink == 2);
     OE_TEST(S_ISREG(buf.st_mode));
 
+    OE_TEST(truncate("/mnt/hostfs/tmp/myfile3", 4) == 0);
+    OE_TEST(stat("/mnt/hostfs/tmp/myfile3", &buf) == 0);
+    OE_TEST(buf.st_size == 4);
+
     /* Remove the file if it exists. */
     OE_TEST(unlink("/mnt/hostfs/tmp/myfile3") == 0);
     OE_TEST(unlink("/mnt/hostfs/tmp/myfile2") == 0);
+
+    OE_TEST(mkdir("/mnt/hostfs/tmp/mydir", 0) == 0);
+    OE_TEST(stat("/mnt/hostfs/tmp/mydir", &buf) == 0);
+    OE_TEST(S_ISDIR(buf.st_mode));
+
+    OE_TEST(rmdir("/mnt/hostfs/tmp/mydir") == 0);
 
     /* Unmount the file system. */
     OE_TEST(oe_unmount("/mnt/hostfs") == 0);

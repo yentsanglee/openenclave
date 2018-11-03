@@ -24,6 +24,9 @@ typedef enum _oe_hostfs_op {
     OE_HOSTFS_LINK,
     OE_HOSTFS_UNLINK,
     OE_HOSTFS_RENAME,
+    OE_HOSTFS_TRUNCATE,
+    OE_HOSTFS_MKDIR,
+    OE_HOSTFS_RMDIR,
     __OE_HOSTFS_MAX = OE_ENUM_MAX,
 } oe_hostfs_op_t;
 
@@ -139,6 +142,23 @@ typedef struct _oe_hostfs_args
             int ret;
             char path[HOSTFS_PATH_MAX];
         } unlink;
+        struct
+        {
+            int ret;
+            char path[HOSTFS_PATH_MAX];
+            ssize_t length;
+        } truncate;
+        struct
+        {
+            int ret;
+            char pathname[HOSTFS_PATH_MAX];
+            uint32_t mode;
+        } mkdir;
+        struct
+        {
+            int ret;
+            char pathname[HOSTFS_PATH_MAX];
+        } rmdir;
     } u;
 } oe_hostfs_args_t;
 

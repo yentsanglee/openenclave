@@ -130,6 +130,23 @@ void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
                 rename(args->u.rename.oldpath, args->u.rename.newpath);
             break;
         }
+        case OE_HOSTFS_TRUNCATE:
+        {
+            args->u.truncate.ret = 
+                truncate(args->u.truncate.path, args->u.truncate.length);
+            break;
+        }
+        case OE_HOSTFS_MKDIR:
+        {
+            args->u.mkdir.ret =
+                mkdir(args->u.mkdir.pathname, args->u.mkdir.mode);
+            break;
+        }
+        case OE_HOSTFS_RMDIR:
+        {
+            args->u.rmdir.ret = rmdir(args->u.rmdir.pathname);
+            break;
+        }
         default:
         {
             errno = EINVAL;
