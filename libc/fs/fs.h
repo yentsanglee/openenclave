@@ -8,9 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "errno.h"
-
-#define FS_PATH_MAX 256
-#define FS_BLOCK_SIZE 512
+#include "common.h"
 
 /* fs_dirent_t.d_type -- the file type. */
 #define FS_DT_UNKNOWN 0

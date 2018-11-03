@@ -16,7 +16,7 @@
 
 typedef struct _block_dev
 {
-    oe_block_dev_t base;
+    fs_block_dev_t base;
     size_t ref_count;
     pthread_spinlock_t lock;
     fs_host_batch_t* batch;
@@ -36,7 +36,7 @@ static size_t _get_batch_capacity()
     return capacity;
 }
 
-static int _block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
+static int _block_dev_get(fs_block_dev_t* dev, uint32_t blkno, void* data)
 {
     int ret = -1;
     block_dev_t* device = (block_dev_t*)dev;
@@ -76,7 +76,7 @@ done:
     return ret;
 }
 
-static int _block_dev_put(oe_block_dev_t* dev, uint32_t blkno, const void* data)
+static int _block_dev_put(fs_block_dev_t* dev, uint32_t blkno, const void* data)
 {
     int ret = -1;
     block_dev_t* device = (block_dev_t*)dev;
@@ -115,7 +115,7 @@ done:
     return ret;
 }
 
-static int _block_dev_add_ref(oe_block_dev_t* dev)
+static int _block_dev_add_ref(fs_block_dev_t* dev)
 {
     int ret = -1;
     block_dev_t* device = (block_dev_t*)dev;
@@ -133,7 +133,7 @@ done:
     return ret;
 }
 
-static int _block_dev_release(oe_block_dev_t* dev)
+static int _block_dev_release(fs_block_dev_t* dev)
 {
     int ret = -1;
     const uint16_t func = OE_OCALL_CLOSE_BLOCK_DEVICE;
@@ -163,7 +163,7 @@ done:
     return ret;
 }
 
-int oe_open_host_block_dev(const char* device_name, oe_block_dev_t** block_dev)
+int oe_open_host_block_dev(const char* device_name, fs_block_dev_t** block_dev)
 {
     int ret = -1;
     char* name = NULL;

@@ -513,7 +513,7 @@ static fs_errno_t _fs_closedir(fs_dir_t* dir)
             RAISE(args->err);
     }
 
-    /* Free the dir struct. */
+    /* free the dir struct. */
     free(dir);
 
 done:

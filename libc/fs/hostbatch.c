@@ -94,7 +94,7 @@ void _delete_thread_data(thread_data_t* td)
 {
     oe_host_free(td->data);
 
-    /* Free the host blocks. */
+    /* free the host blocks. */
     for (host_block_t* p = td->blocks; p;)
     {
         host_block_t* next = p->next;
@@ -232,7 +232,7 @@ int fs_host_batch_free(fs_host_batch_t* batch)
     /* Rewind the data area. */
     td->offset = 0;
 
-    /* Free the host blocks. */
+    /* free the host blocks. */
     {
         for (host_block_t* p = td->blocks; p;)
         {

@@ -1,9 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#define _GNU_SOURCE
+
 #include "oefs.h"
 #include <openenclave/internal/defs.h>
-#define _GNU_SOURCE
 #include <assert.h>
 #include <assert.h>
 #include <stdbool.h>
@@ -44,8 +45,6 @@
 */
 
 #define INLINE static __inline
-
-#define COUNTOF(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
 
 #define BITS_PER_BLOCK (FS_BLOCK_SIZE * 8)
 
@@ -156,7 +155,7 @@ typedef struct _oefs
     /* Should contain the value of the OEFS_MAGIC macro. */
     uint32_t magic;
 
-    oe_block_dev_t* dev;
+    fs_block_dev_t* dev;
 
     union {
         const oefs_super_block_t read;
@@ -663,7 +662,7 @@ static fs_errno_t _append_block_chain(fs_file_t* file, const buf_u32_t* blknos)
     {
         object = &file->inode;
         slots = file->inode.i_blocks;
-        count = COUNTOF(file->inode.i_blocks);
+        count = FS_COUNTOF(file->inode.i_blocks);
         blkno = file->ino;
         next = &file->inode.i_next;
     }
@@ -680,7 +679,7 @@ static fs_errno_t _append_block_chain(fs_file_t* file, const buf_u32_t* blknos)
 
         object = &bnode;
         slots = bnode.b_blocks;
-        count = COUNTOF(bnode.b_blocks);
+        count = FS_COUNTOF(bnode.b_blocks);
         next = &bnode.b_next;
     }
 
@@ -712,7 +711,7 @@ static fs_errno_t _append_block_chain(fs_file_t* file, const buf_u32_t* blknos)
             /* Set up variables to refer to the new bnode. */
             object = &bnode;
             slots = bnode.b_blocks;
-            count = COUNTOF(bnode.b_blocks);
+            count = FS_COUNTOF(bnode.b_blocks);
             blkno = new_blkno;
             next = &bnode.b_next;
         }
@@ -1192,7 +1191,7 @@ static fs_errno_t _path_to_ino(
     fs_errno_t err = FS_EOK;
     char buf[FS_PATH_MAX];
     const char* elements[FS_PATH_MAX];
-    const size_t MAX_ELEMENTS = COUNTOF(elements);
+    const size_t MAX_ELEMENTS = FS_COUNTOF(elements);
     size_t num_elements = 0;
     uint8_t i;
     uint32_t current_ino = 0;
@@ -2115,7 +2114,7 @@ done:
 **==============================================================================
 */
 
-fs_errno_t oefs_mkfs(oe_block_dev_t* dev, size_t num_blocks)
+fs_errno_t oefs_mkfs(fs_block_dev_t* dev, size_t num_blocks)
 {
     fs_errno_t err = FS_EOK;
     size_t num_bitmap_blocks;
@@ -2246,28 +2245,28 @@ done:
 
 typedef struct _block_dev
 {
-    oe_block_dev_t base;
+    fs_block_dev_t base;
     size_t size;
 } block_dev_t;
 
-static int _block_dev_get(oe_block_dev_t* dev, uint32_t blkno, void* data)
+static int _block_dev_get(fs_block_dev_t* dev, uint32_t blkno, void* data)
 {
     return -1;
 }
 
-int _block_dev_put(oe_block_dev_t* dev, uint32_t blkno, const void* data)
+int _block_dev_put(fs_block_dev_t* dev, uint32_t blkno, const void* data)
 {
     block_dev_t* device = (block_dev_t*)dev;
     device->size += FS_BLOCK_SIZE;
     return 0;
 }
 
-static int _block_dev_add_ref(oe_block_dev_t* dev)
+static int _block_dev_add_ref(fs_block_dev_t* dev)
 {
     return 0;
 }
 
-static int _block_dev_release(oe_block_dev_t* dev)
+static int _block_dev_release(fs_block_dev_t* dev)
 {
     return 0;
 }
@@ -2295,7 +2294,7 @@ done:
     return err;
 }
 
-fs_errno_t oefs_initialize(fs_t** fs_out, oe_block_dev_t* dev)
+fs_errno_t oefs_initialize(fs_t** fs_out, fs_block_dev_t* dev)
 {
     fs_errno_t err = FS_EOK;
     size_t num_blocks;

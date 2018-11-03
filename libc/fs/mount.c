@@ -16,7 +16,7 @@ int oe_mount_oefs(
     size_t num_blocks)
 {
     int ret = -1;
-    oe_block_dev_t* dev = NULL;
+    fs_block_dev_t* dev = NULL;
     fs_t* fs = NULL;
 
     if (!target)
