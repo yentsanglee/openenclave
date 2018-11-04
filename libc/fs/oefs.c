@@ -2316,10 +2316,15 @@ fs_errno_t oefs_mkfs(fs_block_dev_t* dev, size_t num_blocks)
             RAISE(FS_EIO);
     }
 
-    /* Write the remaining empty blocks. */
-    for (size_t i = 0; i < num_blocks - 3; i++)
+    /* Count the remaining empty data blocks. */
+    blkno += num_blocks - 3;
+
+    /* Cross check the actual size against computed size. */
     {
-        if (dev->put(dev, blkno++, &empty_block) != 0)
+        size_t size;
+        CHECK(oefs_size(num_blocks, &size));
+
+        if (size != (blkno * FS_BLOCK_SIZE))
             RAISE(FS_EIO);
     }
 
@@ -2327,52 +2332,32 @@ done:
     return err;
 }
 
-typedef struct _block_dev
-{
-    fs_block_dev_t base;
-    size_t size;
-} block_dev_t;
-
-static int _block_dev_get(fs_block_dev_t* dev, uint32_t blkno, void* data)
-{
-    return -1;
-}
-
-int _block_dev_put(fs_block_dev_t* dev, uint32_t blkno, const void* data)
-{
-    block_dev_t* device = (block_dev_t*)dev;
-    device->size += FS_BLOCK_SIZE;
-    return 0;
-}
-
-static int _block_dev_add_ref(fs_block_dev_t* dev)
-{
-    return 0;
-}
-
-static int _block_dev_release(fs_block_dev_t* dev)
-{
-    return 0;
-}
-
 fs_errno_t oefs_size(size_t num_blocks, size_t* size)
 {
     fs_errno_t err = FS_EOK;
-    block_dev_t dev;
-
-    dev.base.get = _block_dev_get;
-    dev.base.put = _block_dev_put;
-    dev.base.add_ref = _block_dev_add_ref;
-    dev.base.release = _block_dev_release;
-    dev.size = 0;
+    size_t total_blocks = 0;
 
     if (size)
         *size = 0;
 
-    CHECK(oefs_mkfs(&dev.base, num_blocks));
+    /* Fail if num_blocks is not a multiple of the block size. */
+    if (num_blocks % BITS_PER_BLOCK)
+        RAISE(FS_EINVAL);
+
+    /* Count the first two empty blocks. */
+    total_blocks += 2;
+
+    /* Count the super block */
+    total_blocks++;
+
+    /* Count the bitmap blocks. */
+    total_blocks += num_blocks / BITS_PER_BLOCK;
+
+    /* Count the data blocks. */
+    total_blocks += num_blocks;
 
     if (size)
-        *size = dev.size;
+        *size = total_blocks * FS_BLOCK_SIZE;
 
 done:
     return err;
