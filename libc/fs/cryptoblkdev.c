@@ -173,10 +173,7 @@ done:
     return ret;
 }
 
-static int _blkdev_put(
-    fs_blkdev_t* dev,
-    uint32_t blkno,
-    const fs_blk_t* blk)
+static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;

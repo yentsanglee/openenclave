@@ -43,10 +43,7 @@ typedef struct _blkdev
 
 } blkdev_t;
 
-static entry_t* _new_entry(
-    blkdev_t* dev,
-    uint32_t blkno,
-    const fs_blk_t* blk)
+static entry_t* _new_entry(blkdev_t* dev, uint32_t blkno, const fs_blk_t* blk)
 {
     entry_t* entry;
 
