@@ -276,6 +276,18 @@ static fs_errno_t _fs_lseek(
     int whence,
     ssize_t* offset_out);
 
+INLINE void _begin(oefs_t* oefs)
+{
+    if (oefs && oefs->magic == OEFS_MAGIC && oefs->dev)
+        oefs->dev->begin(oefs->dev);
+}
+
+INLINE void _end(oefs_t* oefs)
+{
+    if (oefs && oefs->magic == OEFS_MAGIC && oefs->dev)
+        oefs->dev->end(oefs->dev);
+}
+
 INLINE bool _test_bit(const uint8_t* data, uint32_t size, uint32_t index)
 {
     uint32_t byte = index / 8;
@@ -1438,6 +1450,8 @@ static fs_errno_t _fs_write(
     const uint8_t* ptr = (uint8_t*)data;
     uint32_t new_file_size;
 
+    _begin(oefs);
+
     if (nwritten)
         *nwritten = 0;
 
@@ -1558,6 +1572,8 @@ done:
 
     if (_flush(oefs) != 0)
         return FS_EIO;
+
+    _end(oefs);
 
     return err;
 }

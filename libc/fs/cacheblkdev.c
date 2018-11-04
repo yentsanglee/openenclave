@@ -319,6 +319,14 @@ done:
     return ret;
 }
 
+static void _blkdev_begin(fs_blkdev_t* d)
+{
+}
+
+static void _blkdev_end(fs_blkdev_t* d)
+{
+}
+
 static int _blkdev_add_ref(fs_blkdev_t* d)
 {
     int ret = -1;
@@ -353,6 +361,8 @@ int fs_open_cache_blkdev(fs_blkdev_t** dev_out, fs_blkdev_t* next)
 
     dev->base.get = _blkdev_get;
     dev->base.put = _blkdev_put;
+    dev->base.begin = _blkdev_begin;
+    dev->base.end = _blkdev_end;
     dev->base.add_ref = _blkdev_add_ref;
     dev->base.release = _blkdev_release;
     dev->ref_count = 1;

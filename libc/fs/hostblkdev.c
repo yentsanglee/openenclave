@@ -23,6 +23,16 @@ typedef struct _blkdev
     void* host_context;
 } blkdev_t;
 
+static uint8_t _checksum(const uint8_t* p, size_t n)
+{
+    uint8_t sum = 0;
+
+    while (n--)
+        sum += *p++;
+
+    return sum;
+}
+
 static size_t _get_batch_capacity()
 {
     size_t capacity = 0;
@@ -85,7 +95,7 @@ static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_blk_t* blk)
     const uint16_t func = OE_OCALL_BLKDEV_PUT;
 
 #ifdef DUMP
-    printf("HOST.PUT{%u}\n", blkno);
+    printf("HOST.PUT{blkno=%u checksum=%u}\n", blkno, _checksum(blk->data, sizeof(fs_blk_t)));
 #endif
 
     if (!device || !blk)
@@ -113,6 +123,14 @@ done:
         fs_host_batch_free(device->batch);
 
     return ret;
+}
+
+static void _blkdev_begin(fs_blkdev_t* d)
+{
+}
+
+static void _blkdev_end(fs_blkdev_t* d)
+{
 }
 
 static int _blkdev_add_ref(fs_blkdev_t* dev)
@@ -195,6 +213,8 @@ int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* device_name)
 
     device->base.get = _blkdev_get;
     device->base.put = _blkdev_put;
+    device->base.begin = _blkdev_begin;
+    device->base.end = _blkdev_end;
     device->base.add_ref = _blkdev_add_ref;
     device->base.release = _blkdev_release;
     device->batch = batch;

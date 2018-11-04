@@ -205,6 +205,14 @@ done:
     return ret;
 }
 
+static void _blkdev_begin(fs_blkdev_t* d)
+{
+}
+
+static void _blkdev_end(fs_blkdev_t* d)
+{
+}
+
 static int _blkdev_add_ref(fs_blkdev_t* dev)
 {
     int ret = -1;
@@ -242,6 +250,8 @@ int fs_open_crypto_blkdev(
 
     device->base.get = _blkdev_get;
     device->base.put = _blkdev_put;
+    device->base.begin = _blkdev_begin;
+    device->base.end = _blkdev_end;
     device->base.add_ref = _blkdev_add_ref;
     device->base.release = _blkdev_release;
     device->ref_count = 1;
