@@ -30,7 +30,7 @@ static int _load(fs_t* fs, const char* path, void** data_out, size_t* size_out)
 {
     int ret = -1;
     fs_file_t* file = NULL;
-    buf_t buf = BUF_INITIALIZER;
+    fs_buf_t buf = BUF_INITIALIZER;
 
     if (data_out)
         *data_out = NULL;
@@ -55,7 +55,7 @@ static int _load(fs_t* fs, const char* path, void** data_out, size_t* size_out)
         if (n == 0)
             break;
 
-        if (buf_append(&buf, data, n) != 0)
+        if (fs_buf_append(&buf, data, n) != 0)
             goto done;
     }
 
@@ -70,7 +70,7 @@ done:
     if (file)
         fs->fs_close(file);
 
-    buf_release(&buf);
+    fs_buf_release(&buf);
 
     return ret;
 }
@@ -251,7 +251,7 @@ static void _update_file(fs_t* fs, const char* path)
     fs_file_t* file = NULL;
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     const size_t FILE_SIZE = 1024;
-    buf_t buf = BUF_INITIALIZER;
+    fs_buf_t buf = BUF_INITIALIZER;
     ssize_t n;
 
     r = fs->fs_open(fs, path, 0, 0, &file);
@@ -261,7 +261,7 @@ static void _update_file(fs_t* fs, const char* path)
     {
         char c = alphabet[i % (sizeof(alphabet) - 1)];
 
-        if (buf_append(&buf, &c, 1) != 0)
+        if (fs_buf_append(&buf, &c, 1) != 0)
             OE_TEST(false);
     }
 
@@ -307,7 +307,7 @@ static void _update_file(fs_t* fs, const char* path)
         OE_TEST(stat.st_ctim.tv_sec == 0);
     }
 
-    buf_release(&buf);
+    fs_buf_release(&buf);
 }
 
 static void _create_myfile(fs_t* fs)
@@ -570,7 +570,7 @@ static void _write_alphabet_file(const char* target, const char* path)
 {
     char filename[FS_PATH_MAX];
     const size_t FILE_SIZE = 1024;
-    buf_t buf = BUF_INITIALIZER;
+    fs_buf_t buf = BUF_INITIALIZER;
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     FILE* is;
 
@@ -585,7 +585,7 @@ static void _write_alphabet_file(const char* target, const char* path)
     {
         char c = alphabet[i % (sizeof(alphabet) - 1)];
 
-        if (buf_append(&buf, &c, 1) != 0)
+        if (fs_buf_append(&buf, &c, 1) != 0)
             OE_TEST(false);
     }
 
@@ -593,7 +593,7 @@ static void _write_alphabet_file(const char* target, const char* path)
     OE_TEST(n == buf.size);
 
     fclose(is);
-    buf_release(&buf);
+    fs_buf_release(&buf);
 }
 
 static void _test_truncate(const char* target)
