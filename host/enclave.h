@@ -8,9 +8,11 @@
 #include <openenclave/edger8r/host.h>
 #include <openenclave/host.h>
 #include <openenclave/internal/sgxtypes.h>
+#include <openenclave/internal/switchless.h>
 #include <stdbool.h>
 #include "asmdefs.h"
 #include "hostthread.h"
+#include "switchless.h"
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -131,6 +133,9 @@ struct _oe_enclave
 
     /* Simulation mode */
     bool simulate;
+
+    /* Switchless calling */
+    oe_switchless_state_t switchless;
 };
 
 // Static asserts for consistency with

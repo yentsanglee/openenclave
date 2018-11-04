@@ -27,6 +27,7 @@ add_executable(edl_enc
     testpointer.cpp
     teststring.cpp
     teststruct.cpp
+    testswitchless.cpp
     ${all_t}
     ${bar_t}
     )

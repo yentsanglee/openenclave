@@ -17,6 +17,7 @@
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/reloc.h>
 #include <openenclave/internal/sgxtypes.h>
+#include <openenclave/internal/switchless.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/utils.h>
 #include "../report.h"
@@ -258,7 +259,7 @@ extern const size_t __oe_ecalls_table_size;
  */
 static oe_result_t _handle_call_enclave_function(uint64_t arg_in)
 {
-    oe_call_enclave_function_args_t args, *args_ptr;
+    oe_call_enclave_function_args_t args, *args_ptr = NULL;
     oe_result_t result = OE_OK;
     oe_ecall_func_t func = NULL;
     uint8_t* buffer = NULL;
@@ -334,13 +335,52 @@ static oe_result_t _handle_call_enclave_function(uint64_t arg_in)
 
     // The ecall succeeded.
     args_ptr->output_bytes_written = output_bytes_written;
-    args_ptr->result = OE_OK;
     result = OE_OK;
 
 done:
     if (buffer)
         oe_free(buffer);
 
+    // The result field is used in lock-free programming to check
+    // if a message has been processed or not.
+    // Use a release barrier to make sure that all the writes prior
+    // to this point have happened.
+    OE_ATOMIC_MEMORY_BARRIER_RELEASE();
+    if (args_ptr)
+        args_ptr->result = result;
+
+    return result;
+}
+
+oe_result_t _handle_launch_enclave_worker(uint64_t arg_in)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    oe_switchless_context_t* context = (oe_switchless_context_t*)arg_in;
+    void* args = NULL;
+    if (context == NULL)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    while (!context->shutdown_initiated)
+    {
+        OE_ATOMIC_MEMORY_BARRIER_ACQUIRE();
+
+        // Note: checking/assignment of pointer is assumed to be atomic.
+        // Which is true in x86-64. Otherwise this needs to be an explicit
+        // atomic check.
+        if ((args = context->args) == NULL)
+        {
+            continue;
+        }
+
+        // Consume the argument and indicate to the host that processing has
+        // begun
+        // Note: This needs to be an atomic set in non x86-64 platforms.
+        context->args = NULL;
+
+        _handle_call_enclave_function((uint64_t)args);
+    }
+    result = OE_OK;
+done:
     return result;
 }
 
@@ -434,6 +474,11 @@ static void _handle_ecall(
         case OE_ECALL_CALL_ENCLAVE_FUNCTION:
         {
             arg_out = _handle_call_enclave_function(arg_in);
+            break;
+        }
+        case OE_ECALL_LAUNCH_ENCLAVE_WORKER:
+        {
+            arg_out = _handle_launch_enclave_worker(arg_in);
             break;
         }
         case OE_ECALL_DESTRUCTOR:

@@ -71,6 +71,7 @@ add_library(oehost STATIC
     sgxtypes.c
     signkey.c
     strings.c
+    switchless.c
     tests.c
     crypto/sha.c
     ${PLATFORM_SRC}

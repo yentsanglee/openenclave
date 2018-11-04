@@ -633,7 +633,7 @@ let gen_fill_marshal_struct (os:out_channel) (fd:Ast.func_decl)  (args:string) =
   ) fd.Ast.plist;
   fprintf os "\n"
 
-let oe_get_host_ecall_function (os:out_channel) (fd:Ast.func_decl) =
+let oe_get_host_ecall_function (os:out_channel) (fd:Ast.func_decl) (switchless:bool)=
   fprintf os "%s" (oe_gen_wrapper_prototype fd true);
   fprintf os "\n";
   fprintf os "{\n";
@@ -655,7 +655,10 @@ let oe_get_host_ecall_function (os:out_channel) (fd:Ast.func_decl) =
   gen_fill_marshal_struct os fd "_args";
   oe_prepare_input_buffer os fd "malloc";
   fprintf os "    /* Call enclave function */\n";
-  fprintf os "    if((_result = oe_call_enclave_function(\n";
+  (if switchless then
+    fprintf os "    if((_result = oe_switchless_call_enclave_function(\n"
+  else 
+    fprintf os "    if((_result = oe_call_enclave_function(\n");
   fprintf os "                        enclave,\n";
   fprintf os "                        %s,\n" (get_function_id fd);
   fprintf os "                        _input_buffer, _input_buffer_size,\n";
@@ -847,8 +850,6 @@ let validate_oe_support (ec: enclave_content) (ep: edger8r_params) =
   List.iter (fun f -> 
     (if f.Ast.tf_is_priv then 
         failwithf "Function '%s': 'private' specifier is not supported by oeedger8r" f.Ast.tf_fdecl.fname);
-    (if f.Ast.tf_is_switchless then
-        failwithf "Function '%s': switchless ecalls and ocalls are not yet supported by Open Enclave SDK." f.Ast.tf_fdecl.fname);  
     warn_non_portable_types f.Ast.tf_fdecl;   
   ) ec.tfunc_decls;
   List.iter (fun f -> 
@@ -859,8 +860,6 @@ let validate_oe_support (ec: enclave_content) (ep: edger8r_params) =
         failwithf "Function '%s': dllimport is not supported by oeedger8r." f.Ast.uf_fdecl.fname);
     (if f.Ast.uf_allow_list != [] then
         printf "Warning: Function '%s': Reentrant ocalls are not supported by Open Enclave. Allow list ignored.\n" f.Ast.uf_fdecl.fname);
-    (if f.Ast.uf_is_switchless then
-        failwithf "Function '%s': switchless ecalls and ocalls are not yet supported by Open Enclave SDK." f.Ast.uf_fdecl.fname);
     warn_non_portable_types f.Ast.uf_fdecl;          
   ) ec.ufunc_decls
 
@@ -972,7 +971,10 @@ let gen_u_c (ec: enclave_content) (ep: edger8r_params) =
   fprintf os "OE_EXTERNC_BEGIN\n\n";
   if ec.tfunc_decls <> [] then (
     fprintf os "/* Wrappers for ecalls */\n\n";
-    List.iter (fun d -> oe_get_host_ecall_function os d.Ast.tf_fdecl; fprintf os "\n\n")  ec.tfunc_decls);
+    List.iter (fun d -> 
+      oe_get_host_ecall_function os d.Ast.tf_fdecl d.Ast.tf_is_switchless; 
+      fprintf os "\n\n"
+    )  ec.tfunc_decls);
   if ec.ufunc_decls <> [] then (
     fprintf os "\n/* ocall functions */\n\n";
     List.iter (fun d -> oe_gen_ocall_host_wrapper os d.Ast.uf_fdecl)  ec.ufunc_decls);

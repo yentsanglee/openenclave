@@ -1520,6 +1520,8 @@ oe_result_t oe_terminate_enclave(oe_enclave_t* enclave)
     if (!enclave || enclave->magic != ENCLAVE_MAGIC)
         OE_RAISE(OE_INVALID_PARAMETER);
 
+    OE_CHECK(oe_terminate_switchless(enclave));
+
     /* Call the enclave destructor */
     OE_CHECK(oe_ecall(enclave, OE_ECALL_DESTRUCTOR, 0, NULL));
 

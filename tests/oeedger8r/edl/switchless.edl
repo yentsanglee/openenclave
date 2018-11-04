@@ -1,0 +1,10 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+enclave {
+
+    trusted {
+        public int add_switchless(int a, int b) transition_using_threads;
+        public int add_normal(int a, int b);
+    };
+};

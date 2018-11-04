@@ -155,6 +155,25 @@ oe_result_t oe_call_enclave(
     void* args);
 
 /**
+ * Configure switchless calling.
+ *
+ * @param enclave The instance of the enclave to be called.
+ * @param num_enclave_workers Number of enclave worker threads for servicing
+ * switchless ecalls.
+ * @param num_host_workers Number of host worker threads for servicing
+ * switchless ocalls.
+ *
+ * @return **OE_OK** on success.
+ * @return **OE_FAILURE** If an error occured, or if a successful call has been
+ * made earlier.
+ * @return **OE_INVALID_PARAMETER** If any of the parameters are invalid.
+ */
+oe_result_t oe_configure_switchless_calling(
+    oe_enclave_t* enclave,
+    uint32_t num_enclave_workers,
+    uint32_t num_host_workers);
+
+/**
  * Get a report signed by the enclave platform for use in attestation.
  *
  * This function creates a report to be used in local or remote attestation.

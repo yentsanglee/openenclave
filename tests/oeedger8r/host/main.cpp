@@ -19,6 +19,7 @@ void test_pointer_edl_ecalls(oe_enclave_t* enclave);
 void test_struct_edl_ecalls(oe_enclave_t* enclave);
 void test_enum_edl_ecalls(oe_enclave_t* enclave);
 void test_foreign_edl_ecalls(oe_enclave_t* enclave);
+void test_switchless_edl_ecalls(oe_enclave_t* enclave);
 
 int main(int argc, const char* argv[])
 {
@@ -66,6 +67,8 @@ int main(int argc, const char* argv[])
 
     test_foreign_edl_ecalls(enclave);
     OE_TEST(test_foreign_edl_ocalls(enclave) == OE_OK);
+
+    test_switchless_edl_ecalls(enclave);
 
     oe_terminate_enclave(enclave);
 
