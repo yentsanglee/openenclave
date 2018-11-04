@@ -2,10 +2,9 @@ Todo:
 
 (A) Code walk-through.
 ---
-(B) Fix truncate() to extend files.
-(B) Change fs interface parameter types from 4 to 8 bytes integers.
-(B) Buffer cache
+(B) Remove dependency of fs on oe.
 ---
+(C) Fix truncate() to extend files.
 (C) Support directory enumeration below mount points.
 (B) Memory resident/sync'd file system.
 
