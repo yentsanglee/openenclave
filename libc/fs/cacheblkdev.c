@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include "common.h"
 #include <assert.h>
 #include <limits.h>
 #include <pthread.h>
@@ -9,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blkdev.h"
-#include "common.h"
+#include "list.h"
 
 #define TABLE_SIZE 1093
 #define MAX_ENTRIES 64
@@ -17,13 +18,25 @@
 
 typedef struct _entry entry_t;
 
+typedef struct _entry_list entry_list_t;
+
+struct _entry_list
+{
+    /* Same layout as fs_list_t */
+    entry_t* head;
+    entry_t* tail;
+    size_t size;
+};
+
 struct _entry
 {
+    /* Must align with fs_list_node_t */
+    entry_t* prev;
+    entry_t* next;
+
     uint32_t blkno;
     fs_blk_t blk;
     uint32_t index;
-    entry_t* prev;
-    entry_t* next;
 };
 
 typedef struct _blkdev
@@ -34,9 +47,7 @@ typedef struct _blkdev
     fs_blkdev_t* next;
 
     entry_t* table[TABLE_SIZE];
-    entry_t* head;
-    entry_t* tail;
-    size_t count;
+    entry_list_t list;
 
     entry_t* free;
     size_t free_count;
@@ -80,7 +91,7 @@ static void _free_entry(blkdev_t* dev, entry_t* entry)
 
 static void _release_entries(blkdev_t* dev)
 {
-    for (entry_t* p = dev->head; p;)
+    for (entry_t* p = dev->list.head; p;)
     {
         entry_t* next = p->next;
         free(p);
@@ -95,40 +106,15 @@ static void _release_entries(blkdev_t* dev)
     }
 }
 
-static void _remove_entry(blkdev_t* dev, entry_t* entry)
+FS_INLINE void _remove_entry(blkdev_t* dev, entry_t* entry)
 {
-    if (entry->prev)
-        entry->prev->next = entry->next;
-    else
-        dev->head = entry->next;
-
-    if (entry->next)
-        entry->next->prev = entry->prev;
-    else
-        dev->tail = entry->prev;
-
-    dev->count--;
+    fs_list_remove((fs_list_t*)&dev->list, (fs_list_node_t*)entry);
 }
 
 /* Insert entry at front of the list. */
 static void _insert_entry(blkdev_t* dev, entry_t* entry)
 {
-    if (dev->head)
-    {
-        entry->prev = NULL;
-        entry->next = dev->head;
-        dev->head->prev = entry;
-        dev->head = entry;
-    }
-    else
-    {
-        entry->next = NULL;
-        entry->prev = NULL;
-        dev->head = entry;
-        dev->tail = entry;
-    }
-
-    dev->count++;
+    fs_list_insert_front((fs_list_t*)&dev->list, (fs_list_node_t*)entry);
 }
 
 static entry_t* _get_entry(blkdev_t* dev, uint32_t blkno)
@@ -161,9 +147,9 @@ static void _put_entry(blkdev_t* dev, entry_t* entry)
     bool found_slot = false;
 
     /* If reached the maximum entry count, evict oldest entry. */
-    if (dev->count == MAX_ENTRIES)
+    if (dev->list.size == MAX_ENTRIES)
     {
-        entry_t* p = dev->tail;
+        entry_t* p = dev->list.tail;
         assert(p);
         _remove_entry(dev, p);
         dev->table[p->index] = NULL;

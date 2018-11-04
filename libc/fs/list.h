@@ -11,13 +11,13 @@ struct _fs_list
 {
     fs_list_node_t* head;
     fs_list_node_t* tail;
-    size_t count;
+    size_t size;
 };
 
 struct _fs_list_node
 {
-    fs_list_node_t* next;
     fs_list_node_t* prev;
+    fs_list_node_t* next;
 };
 
 FS_INLINE void fs_list_remove(fs_list_t* list, fs_list_node_t* node)
@@ -32,7 +32,7 @@ FS_INLINE void fs_list_remove(fs_list_t* list, fs_list_node_t* node)
     else
         list->tail = node->prev;
 
-    list->count--;
+    list->size--;
 }
 
 FS_INLINE void fs_list_insert_front(fs_list_t* list, fs_list_node_t* node)
@@ -52,7 +52,7 @@ FS_INLINE void fs_list_insert_front(fs_list_t* list, fs_list_node_t* node)
         list->tail = node;
     }
 
-    list->count++;
+    list->size++;
 }
 
 #endif /* _FS_LIST_H */
