@@ -18,6 +18,10 @@ int oe_mount_oefs(
     const uint8_t key[OE_MOUNT_KEY_SIZE])
 {
     int ret = -1;
+    fs_block_dev_t* host_dev = NULL;
+    fs_block_dev_t* crypto_dev = NULL;
+    fs_block_dev_t* cache_dev = NULL;
+    fs_block_dev_t* ram_dev = NULL;
     fs_block_dev_t* dev = NULL;
     fs_t* fs = NULL;
 
@@ -27,19 +31,27 @@ int oe_mount_oefs(
     if (source)
     {
         /* Open a host device. */
-        if (oe_open_host_block_dev(&dev, source) != 0)
+        if (oe_open_host_block_dev(&host_dev, source) != 0)
             goto done;
 
         /* If a key was provided, then open a crypto device. */
         if (key)
         {
-            fs_block_dev_t* crypto_dev = NULL;
-
-            if (oe_open_crypto_block_dev(&crypto_dev, key, dev) != 0)
+            if (oe_open_crypto_block_dev(&crypto_dev, key, host_dev) != 0)
                 goto done;
 
-            dev->release(dev);
+#if 0
+            if (oe_open_cache_block_dev(&cache_dev, crypto_dev) != 0)
+                goto done;
+
+            dev = cache_dev;
+#else
             dev = crypto_dev;
+#endif
+        }
+        else
+        {
+            dev = host_dev;
         }
     }
     else
@@ -54,8 +66,10 @@ int oe_mount_oefs(
         if (oefs_size(num_blocks, &size) != 0)
             goto done;
 
-        if (oe_open_ram_block_dev(&dev, size) != 0)
+        if (oe_open_ram_block_dev(&ram_dev, size) != 0)
             goto done;
+
+        dev = ram_dev;
     }
 
     if (flags & OE_MOUNT_FLAG_MKFS)
@@ -76,8 +90,17 @@ int oe_mount_oefs(
 
 done:
 
-    if (dev)
-        dev->release(dev);
+    if (host_dev)
+        host_dev->release(host_dev);
+
+    if (crypto_dev)
+        crypto_dev->release(crypto_dev);
+
+    if (cache_dev)
+        cache_dev->release(cache_dev);
+
+    if (ram_dev)
+        ram_dev->release(ram_dev);
 
     if (fs)
         fs->fs_release(fs);
