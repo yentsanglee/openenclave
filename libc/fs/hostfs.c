@@ -10,7 +10,6 @@
 #include <string.h>
 #include "hostbatch.h"
 #include "raise.h"
-#include "trace.h"
 
 #define HOSTFS_MAGIC 0xff646572
 

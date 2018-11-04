@@ -8,7 +8,6 @@
 #include "fs.h"
 #include "hostfs.h"
 #include "oefs.h"
-#include "trace.h"
 
 #define USE_CACHE
 

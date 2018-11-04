@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "fs/fs.h"
-#include "fs/trace.h"
 
 DIR* opendir(const char* name)
 {

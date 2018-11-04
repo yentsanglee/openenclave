@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "trace.h"
 
 #define ALIGNMENT sizeof(uint64_t)
 

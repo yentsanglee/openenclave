@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _fs_errno_h
-#define _fs_errno_h
+#ifndef _FS_ERRNO_H
+#define _FS_ERRNO_H
 
 /* Subset of supported errno's. */
 typedef enum _fs_errno {
@@ -36,4 +36,4 @@ typedef enum _fs_errno {
     FS_ENOTSOCK = 88,     /* Socket operation on nonsocket */
 } fs_errno_t;
 
-#endif /* _fs_errno_h */
+#endif /* _FS_ERRNO_H */

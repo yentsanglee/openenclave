@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _fs_h
-#define _fs_h
+#ifndef _FS_H
+#define _FS_H
 
 #include <dirent.h>
 #include <stdint.h>
@@ -230,4 +230,4 @@ fs_errno_t fs_getcwd(char* buf, unsigned long size, int* ret);
 
 fs_errno_t fs_chdir(const char* path, int* ret);
 
-#endif /* _fs_h */
+#endif /* _FS_H */

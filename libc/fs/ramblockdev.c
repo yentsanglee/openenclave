@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blockdev.h"
-#include "trace.h"
 
 #define BLOCK_SIZE 512
 

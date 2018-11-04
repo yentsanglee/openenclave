@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blockdev.h"
-#include "trace.h"
 
 #define SHA256_SIZE 32
 

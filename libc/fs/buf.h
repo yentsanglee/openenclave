@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _buf_h
-#define _buf_h
+#ifndef _FS_BUF_H
+#define _FS_BUF_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -20,7 +20,7 @@
         NULL, 0, 0      \
     }
 
-typedef struct _buf
+typedef struct _fs_buf
 {
     void* data;
     uint32_t size;
@@ -65,4 +65,4 @@ int buf_u32_resize(buf_u32_t* buf, uint32_t new_size);
 
 int buf_u32_append(buf_u32_t* buf, const uint32_t* data, uint32_t size);
 
-#endif /* _buf_h */
+#endif /* _FS_BUF_H */

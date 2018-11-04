@@ -13,7 +13,6 @@
 #include <string.h>
 #include "buf.h"
 #include "raise.h"
-#include "trace.h"
 
 /*
 **==============================================================================
