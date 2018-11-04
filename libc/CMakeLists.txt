@@ -21,6 +21,7 @@ add_library(oelibc STATIC
     fs/fs.c
     fs/hostbatch.c
     fs/hostblkdev.c
+    fs/list.c
     fs/oefs.c
     fs/hostfs.c
     fs/mount.c
