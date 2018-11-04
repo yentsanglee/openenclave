@@ -54,9 +54,9 @@ void oe_handle_blkdev_get(oe_enclave_t* enclave, uint64_t arg_in)
         if (fseek(stream, offset, SEEK_SET) != 0)
             return;
 
-        const size_t count = sizeof(args->block);
+        const size_t count = sizeof(args->blk);
 
-        if (fread(args->block, 1, count, stream) != count)
+        if (fread(args->blk, 1, count, stream) != count)
             return;
     }
 
@@ -84,9 +84,9 @@ void oe_handle_blkdev_put(oe_enclave_t* enclave, uint64_t arg_in)
         if (fseek(stream, offset, SEEK_SET) != 0)
             return;
 
-        const size_t count = sizeof(args->block);
+        const size_t count = sizeof(args->blk);
 
-        if (fwrite(args->block, 1, count, stream) != count)
+        if (fwrite(args->blk, 1, count, stream) != count)
             return;
 
         fflush(stream);

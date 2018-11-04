@@ -36,7 +36,7 @@ static size_t _get_batch_capacity()
     return capacity;
 }
 
-static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_block_t* block)
+static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
@@ -48,7 +48,7 @@ static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_block_t* block)
     printf("HOST.GET{%u}\n", blkno);
 #endif
 
-    if (!device || !block)
+    if (!device || !blk)
         goto done;
 
     if (!(args = fs_host_batch_calloc(device->batch, sizeof(args_t))))
@@ -64,7 +64,7 @@ static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_block_t* block)
     if (args->ret != 0)
         goto done;
 
-    memcpy(block->data, args->block, sizeof(args->block));
+    memcpy(blk->data, args->blk, sizeof(args->blk));
 
     ret = 0;
 
@@ -76,7 +76,10 @@ done:
     return ret;
 }
 
-static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_block_t* block)
+static int _blkdev_put(
+    fs_blkdev_t* dev,
+    uint32_t blkno,
+    const fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
@@ -88,7 +91,7 @@ static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_block_t* block
     printf("HOST.PUT{%u}\n", blkno);
 #endif
 
-    if (!device || !block)
+    if (!device || !blk)
         goto done;
 
     if (!(args = fs_host_batch_calloc(device->batch, sizeof(args_t))))
@@ -97,7 +100,7 @@ static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_block_t* block
     args->ret = -1;
     args->host_context = device->host_context;
     args->blkno = blkno;
-    memcpy(args->block, block->data, sizeof(args->block));
+    memcpy(args->blk, blk->data, sizeof(args->blk));
 
     if (oe_ocall(func, (uint64_t)args, NULL) != OE_OK)
         goto done;

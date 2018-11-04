@@ -169,14 +169,14 @@ void* fs_host_batch_malloc(fs_host_batch_t* batch, size_t size)
     }
     else
     {
-        host_block_t* block;
+        host_block_t* blk;
 
-        if (!(block = oe_host_calloc(1, sizeof(host_block_t) + total_size)))
+        if (!(blk = oe_host_calloc(1, sizeof(host_block_t) + total_size)))
             goto done;
 
-        block->next = td->blocks;
-        td->blocks = block;
-        ptr = block->data;
+        blk->next = td->blocks;
+        td->blocks = blk;
+        ptr = blk->data;
     }
 
     ret = ptr;

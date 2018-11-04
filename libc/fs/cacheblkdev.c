@@ -20,7 +20,7 @@ typedef struct _entry entry_t;
 struct _entry
 {
     uint32_t blkno;
-    uint32_t block[FS_BLOCK_SIZE];
+    fs_blk_t blk;
     uint32_t index;
     entry_t* prev;
     entry_t* next;
@@ -46,7 +46,7 @@ typedef struct _blkdev
 static entry_t* _new_entry(
     blkdev_t* dev,
     uint32_t blkno,
-    const fs_block_t* block)
+    const fs_blk_t* blk)
 {
     entry_t* entry;
 
@@ -62,7 +62,7 @@ static entry_t* _new_entry(
     }
 
     entry->blkno = blkno;
-    memcpy(entry->block, block, FS_BLOCK_SIZE);
+    memcpy(&entry->blk, blk, FS_BLOCK_SIZE);
 
     return entry;
 }
@@ -231,12 +231,12 @@ done:
     return ret;
 }
 
-static int _blkdev_get(fs_blkdev_t* d, uint32_t blkno, fs_block_t* block)
+static int _blkdev_get(fs_blkdev_t* d, uint32_t blkno, fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
 
-    if (!dev || !block)
+    if (!dev || !blk)
         goto done;
 
 #if defined(DISABLE_CACHING)
@@ -250,15 +250,15 @@ static int _blkdev_get(fs_blkdev_t* d, uint32_t blkno, fs_block_t* block)
 
         if ((entry = _get_entry(dev, blkno)))
         {
-            memcpy(block->data, entry->block, FS_BLOCK_SIZE);
+            memcpy(blk->data, &entry->blk, FS_BLOCK_SIZE);
             _touch_entry(dev, entry);
         }
         else
         {
-            if (dev->next->get(dev->next, blkno, block) != 0)
+            if (dev->next->get(dev->next, blkno, blk) != 0)
                 goto done;
 
-            if (!(entry = _new_entry(dev, blkno, block)))
+            if (!(entry = _new_entry(dev, blkno, blk)))
                 goto done;
 
             _put_entry(dev, entry);
@@ -273,12 +273,12 @@ done:
     return ret;
 }
 
-static int _blkdev_put(fs_blkdev_t* d, uint32_t blkno, const fs_block_t* block)
+static int _blkdev_put(fs_blkdev_t* d, uint32_t blkno, const fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
 
-    if (!dev || !block)
+    if (!dev || !blk)
         goto done;
 
 #if defined(DISABLE_CACHING)
@@ -292,22 +292,22 @@ static int _blkdev_put(fs_blkdev_t* d, uint32_t blkno, const fs_block_t* block)
 
         if ((entry = _get_entry(dev, blkno)))
         {
-            if (memcmp(entry->block, block->data, FS_BLOCK_SIZE) != 0)
+            if (memcmp(&entry->blk, blk->data, FS_BLOCK_SIZE) != 0)
             {
-                if (dev->next->put(dev->next, blkno, block) != 0)
+                if (dev->next->put(dev->next, blkno, blk) != 0)
                     goto done;
 
-                memcpy(entry->block, block->data, FS_BLOCK_SIZE);
+                memcpy(&entry->blk, blk->data, FS_BLOCK_SIZE);
             }
 
             _touch_entry(dev, entry);
         }
         else
         {
-            if (dev->next->put(dev->next, blkno, block) != 0)
+            if (dev->next->put(dev->next, blkno, blk) != 0)
                 goto done;
 
-            if (!(entry = _new_entry(dev, blkno, block)))
+            if (!(entry = _new_entry(dev, blkno, blk)))
                 goto done;
 
             _put_entry(dev, entry);

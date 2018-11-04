@@ -396,7 +396,7 @@ typedef struct _oe_ocall_blkdev_get_args
     int ret;
     void* host_context;
     uint32_t blkno;
-    uint8_t block[OE_BLKDEV_BLOCK_SIZE];
+    uint8_t blk[OE_BLKDEV_BLOCK_SIZE];
 } oe_ocall_blkdev_get_args_t;
 
 typedef struct _oe_ocall_blkdev_put_args
@@ -404,7 +404,7 @@ typedef struct _oe_ocall_blkdev_put_args
     int ret;
     void* host_context;
     uint32_t blkno;
-    uint8_t block[OE_BLKDEV_BLOCK_SIZE];
+    uint8_t blk[OE_BLKDEV_BLOCK_SIZE];
 } oe_ocall_blkdev_put_args_t;
 
 /**

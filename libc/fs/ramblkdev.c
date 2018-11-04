@@ -43,12 +43,12 @@ done:
     return ret;
 }
 
-static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_block_t* block)
+static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
 
-    if (!device || !block)
+    if (!device || !blk)
         goto done;
 
     uint8_t* ptr = device->mem + (blkno * BLOCK_SIZE);
@@ -56,7 +56,7 @@ static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_block_t* block)
     if (ptr + BLOCK_SIZE > device->mem + device->size)
         goto done;
 
-    memcpy(block->data, ptr, BLOCK_SIZE);
+    memcpy(blk->data, ptr, BLOCK_SIZE);
 
     ret = 0;
 
@@ -65,12 +65,15 @@ done:
     return ret;
 }
 
-static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_block_t* block)
+static int _blkdev_put(
+    fs_blkdev_t* dev,
+    uint32_t blkno,
+    const fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
 
-    if (!device || !block)
+    if (!device || !blk)
         goto done;
 
     uint8_t* ptr = device->mem + (blkno * BLOCK_SIZE);
@@ -78,7 +81,7 @@ static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_block_t* block
     if (ptr + BLOCK_SIZE > device->mem + device->size)
         goto done;
 
-    memcpy(ptr, block->data, BLOCK_SIZE);
+    memcpy(ptr, blk->data, BLOCK_SIZE);
 
     ret = 0;
 

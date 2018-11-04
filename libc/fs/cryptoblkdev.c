@@ -141,14 +141,13 @@ done:
     return ret;
 }
 
-static int _blkdev_get(
-    fs_blkdev_t* dev, uint32_t blkno, fs_block_t* block)
+static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
-    fs_block_t encrypted;
+    fs_blk_t encrypted;
 
-    if (!device || !block)
+    if (!device || !blk)
         goto done;
 
     /* Delegate to the next block device in the chain. */
@@ -162,7 +161,7 @@ static int _blkdev_get(
             device->key,
             blkno,
             encrypted.data,
-            block->data) != 0)
+            blk->data) != 0)
     {
         goto done;
     }
@@ -175,13 +174,15 @@ done:
 }
 
 static int _blkdev_put(
-    fs_blkdev_t* dev, uint32_t blkno, const fs_block_t* block)
+    fs_blkdev_t* dev,
+    uint32_t blkno,
+    const fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
-    fs_block_t encrypted;
+    fs_blk_t encrypted;
 
-    if (!device || !block)
+    if (!device || !blk)
         goto done;
 
     /* Encrypt the block */
@@ -190,7 +191,7 @@ static int _blkdev_put(
             MBEDTLS_AES_ENCRYPT,
             device->key,
             blkno,
-            block->data,
+            blk->data,
             encrypted.data) != 0)
     {
         goto done;
