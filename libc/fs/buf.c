@@ -9,14 +9,14 @@
 /*
 **==============================================================================
 **
-** buf_t:
+** fs_buf_t:
 **
 **==============================================================================
 */
 
 #define EXT2_BUF_CHUNK_SIZE 1024
 
-void buf_release(buf_t* buf)
+void fs_buf_release(fs_buf_t* buf)
 {
     if (buf && buf->data)
     {
@@ -24,10 +24,10 @@ void buf_release(buf_t* buf)
         free(buf->data);
     }
 
-    memset(buf, 0x00, sizeof(buf_t));
+    memset(buf, 0x00, sizeof(fs_buf_t));
 }
 
-int buf_clear(buf_t* buf)
+int fs_buf_clear(fs_buf_t* buf)
 {
     if (!buf)
         return -1;
@@ -37,7 +37,7 @@ int buf_clear(buf_t* buf)
     return 0;
 }
 
-int buf_reserve(buf_t* buf, uint32_t cap)
+int fs_buf_reserve(fs_buf_t* buf, uint32_t cap)
 {
     if (!buf)
         return -1;
@@ -69,7 +69,7 @@ int buf_reserve(buf_t* buf, uint32_t cap)
     return 0;
 }
 
-int buf_resize(buf_t* buf, uint32_t new_size)
+int fs_buf_resize(fs_buf_t* buf, uint32_t new_size)
 {
     uint8_t* data;
 
@@ -78,8 +78,8 @@ int buf_resize(buf_t* buf, uint32_t new_size)
 
     if (new_size == 0)
     {
-        buf_release(buf);
-        memset(buf, 0, sizeof(buf_t));
+        fs_buf_release(buf);
+        memset(buf, 0, sizeof(fs_buf_t));
         return 0;
     }
 
@@ -96,7 +96,7 @@ int buf_resize(buf_t* buf, uint32_t new_size)
     return 0;
 }
 
-int buf_append(buf_t* buf, const void* data, uint32_t size)
+int fs_buf_append(fs_buf_t* buf, const void* data, uint32_t size)
 {
     uint32_t new_size;
 
@@ -116,7 +116,7 @@ int buf_append(buf_t* buf, const void* data, uint32_t size)
     {
         int err;
 
-        if ((err = buf_reserve(buf, new_size)) != 0)
+        if ((err = fs_buf_reserve(buf, new_size)) != 0)
             return err;
     }
 
@@ -130,38 +130,38 @@ int buf_append(buf_t* buf, const void* data, uint32_t size)
 /*
 **==============================================================================
 **
-** buf_u32_t:
+** fs_bufu32_t:
 **
 **==============================================================================
 */
 
-void buf_u32_release(buf_u32_t* buf)
+void fs_bufu32_release(fs_bufu32_t* buf)
 {
-    buf_t tmp;
+    fs_buf_t tmp;
 
     tmp.data = buf->data;
     tmp.size = buf->size * sizeof(uint32_t);
     tmp.cap = buf->cap * sizeof(uint32_t);
-    buf_release(&tmp);
+    fs_buf_release(&tmp);
 }
 
-void buf_u32_clear(buf_u32_t* buf)
+void fs_bufu32_clear(fs_bufu32_t* buf)
 {
-    buf_u32_release(buf);
+    fs_bufu32_release(buf);
     buf->data = NULL;
     buf->size = 0;
     buf->cap = 0;
 }
 
-int buf_u32_append(buf_u32_t* buf, const uint32_t* data, uint32_t size)
+int fs_bufu32_append(fs_bufu32_t* buf, const uint32_t* data, uint32_t size)
 {
-    buf_t tmp;
+    fs_buf_t tmp;
 
     tmp.data = buf->data;
     tmp.size = buf->size * sizeof(uint32_t);
     tmp.cap = buf->cap * sizeof(uint32_t);
 
-    if (buf_append(&tmp, data, size * sizeof(uint32_t)) != 0)
+    if (fs_buf_append(&tmp, data, size * sizeof(uint32_t)) != 0)
     {
         return -1;
     }
@@ -173,15 +173,15 @@ int buf_u32_append(buf_u32_t* buf, const uint32_t* data, uint32_t size)
     return 0;
 }
 
-int buf_u32_resize(buf_u32_t* buf, uint32_t new_size)
+int fs_bufu32_resize(fs_bufu32_t* buf, uint32_t new_size)
 {
-    buf_t tmp;
+    fs_buf_t tmp;
 
     tmp.data = buf->data;
     tmp.size = buf->size * sizeof(uint32_t);
     tmp.cap = buf->cap * sizeof(uint32_t);
 
-    if (buf_resize(&tmp, new_size * sizeof(uint32_t)) != 0)
+    if (fs_buf_resize(&tmp, new_size * sizeof(uint32_t)) != 0)
         return -1;
 
     buf->data = tmp.data;

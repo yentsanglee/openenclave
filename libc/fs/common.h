@@ -19,6 +19,6 @@
 
 #define FS_COUNTOF(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
 
-#define TRACE printf("%s(%u): %s()\n", __FILE__, __LINE__, __FUNCTION__)
+#define FS_TRACE printf("%s(%u): %s()\n", __FILE__, __LINE__, __FUNCTION__)
 
 #endif /* _FS_DEFS_H */

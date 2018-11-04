@@ -10,7 +10,7 @@
 /*
 **==============================================================================
 **
-** buf_t:
+** fs_buf_t:
 **
 **==============================================================================
 */
@@ -25,22 +25,22 @@ typedef struct _fs_buf
     void* data;
     uint32_t size;
     uint32_t cap;
-} buf_t;
+} fs_buf_t;
 
-void buf_release(buf_t* buf);
+void fs_buf_release(fs_buf_t* buf);
 
-int buf_clear(buf_t* buf);
+int fs_buf_clear(fs_buf_t* buf);
 
-int buf_reserve(buf_t* buf, uint32_t cap);
+int fs_buf_reserve(fs_buf_t* buf, uint32_t cap);
 
-int buf_resize(buf_t* buf, uint32_t new_size);
+int fs_buf_resize(fs_buf_t* buf, uint32_t new_size);
 
-int buf_append(buf_t* buf, const void* data, uint32_t size);
+int fs_buf_append(fs_buf_t* buf, const void* data, uint32_t size);
 
 /*
 **==============================================================================
 **
-** buf_u32_t:
+** fs_bufu32_t:
 **
 **==============================================================================
 */
@@ -50,19 +50,19 @@ int buf_append(buf_t* buf, const void* data, uint32_t size);
         NULL, 0, 0          \
     }
 
-typedef struct _buf_u32
+typedef struct _bufu32
 {
     uint32_t* data;
     uint32_t size;
     uint32_t cap;
-} buf_u32_t;
+} fs_bufu32_t;
 
-void buf_u32_release(buf_u32_t* buf);
+void fs_bufu32_release(fs_bufu32_t* buf);
 
-void buf_u32_clear(buf_u32_t* buf);
+void fs_bufu32_clear(fs_bufu32_t* buf);
 
-int buf_u32_resize(buf_u32_t* buf, uint32_t new_size);
+int fs_bufu32_resize(fs_bufu32_t* buf, uint32_t new_size);
 
-int buf_u32_append(buf_u32_t* buf, const uint32_t* data, uint32_t size);
+int fs_bufu32_append(fs_bufu32_t* buf, const uint32_t* data, uint32_t size);
 
 #endif /* _FS_BUF_H */

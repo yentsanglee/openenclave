@@ -194,10 +194,10 @@ struct _fs_file
     oefs_inode_t inode;
 
     /* The block numbers that contain the file's data. */
-    buf_u32_t blknos;
+    fs_bufu32_t blknos;
 
     /* The block numbers that contain the file's block numbers. */
-    buf_u32_t bnode_blknos;
+    fs_bufu32_t bnode_blknos;
 
     /* The file offset (or current position). */
     uint32_t offset;
@@ -374,8 +374,8 @@ done:
 static fs_errno_t _load_blknos(
     oefs_t* oefs,
     oefs_inode_t* inode,
-    buf_u32_t* bnode_blknos,
-    buf_u32_t* blknos)
+    fs_bufu32_t* bnode_blknos,
+    fs_bufu32_t* blknos)
 {
     fs_errno_t err = FS_EOK;
 
@@ -385,7 +385,7 @@ static fs_errno_t _load_blknos(
 
         for (size_t i = 0; i < n && inode->i_blocks[i]; i++)
         {
-            if (buf_u32_append(blknos, &inode->i_blocks[i], 1) != 0)
+            if (fs_bufu32_append(blknos, &inode->i_blocks[i], 1) != 0)
                 RAISE(FS_ENOMEM);
         }
     }
@@ -403,7 +403,7 @@ static fs_errno_t _load_blknos(
             CHECK(_read_block(oefs, next, &bnode));
 
             /* Append this bnode blkno. */
-            if (buf_u32_append(bnode_blknos, &next, 1) != 0)
+            if (fs_bufu32_append(bnode_blknos, &next, 1) != 0)
                 RAISE(FS_ENOMEM);
 
             n = sizeof(bnode.b_blocks) / sizeof(uint32_t);
@@ -411,7 +411,7 @@ static fs_errno_t _load_blknos(
             /* Get all blocks from this bnode. */
             for (size_t i = 0; i < n && bnode.b_blocks[i]; i++)
             {
-                if (buf_u32_append(blknos, &bnode.b_blocks[i], 1) != 0)
+                if (fs_bufu32_append(blknos, &bnode.b_blocks[i], 1) != 0)
                     RAISE(FS_ENOMEM);
             }
 
@@ -454,7 +454,7 @@ done:
 
     if (file)
     {
-        buf_u32_release(&file->blknos);
+        fs_bufu32_release(&file->blknos);
         free(file);
     }
 
@@ -587,7 +587,7 @@ static fs_errno_t _write_data(
     oefs_t* oefs,
     const void* data,
     uint32_t size,
-    buf_u32_t* blknos)
+    fs_bufu32_t* blknos)
 {
     fs_errno_t err = FS_EOK;
     const uint8_t* ptr = (const uint8_t*)data;
@@ -604,7 +604,7 @@ static fs_errno_t _write_data(
         CHECK(_assign_blkno(oefs, &blkno));
 
         /* Append the new block number to the array of blocks numbers. */
-        if (buf_u32_append(blknos, &blkno, 1) != 0)
+        if (fs_bufu32_append(blknos, &blkno, 1) != 0)
             RAISE(FS_ENOMEM);
 
         /* Calculate bytes to copy to the block. */
@@ -658,7 +658,7 @@ static void _fill_slots(
     *rem_in_out = rem;
 }
 
-static fs_errno_t _append_block_chain(fs_file_t* file, const buf_u32_t* blknos)
+static fs_errno_t _append_block_chain(fs_file_t* file, const fs_bufu32_t* blknos)
 {
     fs_errno_t err = FS_EOK;
     const uint32_t* ptr = blknos->data;
@@ -710,7 +710,7 @@ static fs_errno_t _append_block_chain(fs_file_t* file, const buf_u32_t* blknos)
             CHECK(_assign_blkno(file->oefs, &new_blkno));
 
             /* Append the bnode blkno to the file struct. */
-            if (buf_u32_append(&file->bnode_blknos, &new_blkno, 1) != 0)
+            if (fs_bufu32_append(&file->bnode_blknos, &new_blkno, 1) != 0)
                 RAISE(FS_ENOMEM);
 
             *next = new_blkno;
@@ -935,7 +935,7 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
             file->inode.i_nblocks--;
         }
 
-        if (buf_u32_resize(&file->blknos, block_index) != 0)
+        if (fs_bufu32_resize(&file->blknos, block_index) != 0)
             RAISE(FS_ENOMEM);
     }
 
@@ -953,7 +953,7 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
             CHECK(_unassign_blkno(oefs, file->bnode_blknos.data[i]));
         }
 
-        if (buf_u32_resize(&file->bnode_blknos, 0) != 0)
+        if (fs_bufu32_resize(&file->bnode_blknos, 0) != 0)
             RAISE(FS_ENOMEM);
     }
     else
@@ -998,7 +998,7 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
             CHECK(_unassign_blkno(oefs, file->bnode_blknos.data[i]));
         }
 
-        if (buf_u32_resize(&file->bnode_blknos, bnode_index + 1) != 0)
+        if (fs_bufu32_resize(&file->bnode_blknos, bnode_index + 1) != 0)
             RAISE(FS_ENOMEM);
 
         /* Rewrite the bnode. */
@@ -1027,7 +1027,7 @@ done:
 static fs_errno_t _load_file(fs_file_t* file, void** data_out, size_t* size_out)
 {
     fs_errno_t err = FS_EOK;
-    buf_t buf = BUF_INITIALIZER;
+    fs_buf_t buf = BUF_INITIALIZER;
     char data[FS_BLOCK_SIZE];
     ssize_t n;
 
@@ -1041,7 +1041,7 @@ static fs_errno_t _load_file(fs_file_t* file, void** data_out, size_t* size_out)
         if (n == 0)
             break;
 
-        if (buf_append(&buf, data, n) != 0)
+        if (fs_buf_append(&buf, data, n) != 0)
             RAISE(FS_ENOMEM);
     }
 
@@ -1051,7 +1051,7 @@ static fs_errno_t _load_file(fs_file_t* file, void** data_out, size_t* size_out)
 
 done:
 
-    buf_release(&buf);
+    fs_buf_release(&buf);
 
     return err;
 }
@@ -1522,7 +1522,7 @@ static fs_errno_t _fs_write(
     /* Append remaining data to the file. */
     if (remaining)
     {
-        buf_u32_t blknos = BUF_U32_INITIALIZER;
+        fs_bufu32_t blknos = BUF_U32_INITIALIZER;
 
         /* Write the new blocks. */
         CHECK(_write_data(file->oefs, ptr, remaining, &blknos));
@@ -1534,10 +1534,10 @@ static fs_errno_t _fs_write(
         file->inode.i_nblocks += blknos.size;
 
         /* Append these block numbers to the file. */
-        if (buf_u32_append(&file->blknos, blknos.data, blknos.size) != 0)
+        if (fs_bufu32_append(&file->blknos, blknos.data, blknos.size) != 0)
             RAISE(FS_ENOMEM);
 
-        buf_u32_release(&blknos);
+        fs_bufu32_release(&blknos);
 
         file->offset += remaining;
         remaining = 0;
@@ -1568,8 +1568,8 @@ static fs_errno_t _fs_close(fs_file_t* file)
     if (!_valid_file(file))
         RAISE(FS_EINVAL);
 
-    buf_u32_release(&file->blknos);
-    buf_u32_release(&file->bnode_blknos);
+    fs_bufu32_release(&file->blknos);
+    fs_bufu32_release(&file->bnode_blknos);
     memset(file, 0, sizeof(fs_file_t));
     free(file);
 
