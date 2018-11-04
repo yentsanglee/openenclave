@@ -16,7 +16,7 @@ add_library(oelibc STATIC
     dirent.c
     exp2l.S
     fs/buf.c
-    fs/blockdev.c
+    fs/cacheblockdev.c
     fs/cryptoblockdev.c
     fs/fs.c
     fs/hostbatch.c
