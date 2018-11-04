@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <openenclave/internal/mount.h>
+#include "mount.h"
 #include <stdarg.h>
 #include <string.h>
 #include "blockdev.h"
@@ -11,12 +11,12 @@
 
 #define USE_CACHE
 
-int oe_mount_oefs(
+int fs_mount_oefs(
     const char* source,
     const char* target,
     uint32_t flags,
     size_t num_blocks,
-    const uint8_t key[OE_MOUNT_KEY_SIZE])
+    const uint8_t key[FS_MOUNT_KEY_SIZE])
 {
     int ret = -1;
     fs_block_dev_t* host_dev = NULL;
@@ -32,17 +32,17 @@ int oe_mount_oefs(
     if (source)
     {
         /* Open a host device. */
-        if (oe_open_host_block_dev(&host_dev, source) != 0)
+        if (fs_open_host_block_dev(&host_dev, source) != 0)
             goto done;
 
         /* If a key was provided, then open a crypto device. */
         if (key)
         {
-            if (oe_open_crypto_block_dev(&crypto_dev, key, host_dev) != 0)
+            if (fs_open_crypto_block_dev(&crypto_dev, key, host_dev) != 0)
                 goto done;
 
 #if defined(USE_CACHE)
-            if (oe_open_cache_block_dev(&cache_dev, crypto_dev) != 0)
+            if (fs_open_cache_block_dev(&cache_dev, crypto_dev) != 0)
                 goto done;
 
             dev = cache_dev;
@@ -61,19 +61,19 @@ int oe_mount_oefs(
 
         /* Open a ram device within enclave memory. */
 
-        if (flags & OE_MOUNT_FLAG_CRYPTO)
+        if (flags & FS_MOUNT_FLAG_CRYPTO)
             goto done;
 
         if (oefs_size(num_blocks, &size) != 0)
             goto done;
 
-        if (oe_open_ram_block_dev(&ram_dev, size) != 0)
+        if (fs_open_ram_block_dev(&ram_dev, size) != 0)
             goto done;
 
         dev = ram_dev;
     }
 
-    if (flags & OE_MOUNT_FLAG_MKFS)
+    if (flags & FS_MOUNT_FLAG_MKFS)
     {
         if (oefs_mkfs(dev, num_blocks) != 0)
             goto done;
@@ -109,7 +109,7 @@ done:
     return ret;
 }
 
-int oe_mount_hostfs(const char* target)
+int fs_mount_hostfs(const char* target)
 {
     int ret = -1;
     fs_t* fs = NULL;
@@ -135,7 +135,7 @@ done:
     return ret;
 }
 
-int oe_unmount(const char* target)
+int fs_unmount(const char* target)
 {
     int ret = -1;
 

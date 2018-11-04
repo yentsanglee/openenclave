@@ -225,7 +225,7 @@ done:
     return ret;
 }
 
-int oe_open_crypto_block_dev(
+int fs_open_crypto_block_dev(
     fs_block_dev_t** block_dev,
     const uint8_t key[FS_KEY_SIZE],
     fs_block_dev_t* next)

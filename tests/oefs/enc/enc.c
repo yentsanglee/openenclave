@@ -10,8 +10,6 @@
 #include <limits.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/file.h>
-#include <openenclave/internal/mount.h>
-#include <openenclave/internal/mount.h>
 #include <openenclave/internal/tests.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -21,6 +19,7 @@
 #include <unistd.h>
 #include "../../../libc/fs/buf.h"
 #include "../../../libc/fs/fs.h"
+#include "../../../libc/fs/mount.h"
 
 #define INIT
 
@@ -1019,7 +1018,7 @@ static void _test_hostfs()
     struct stat buf;
 
     /* Mount the file system. */
-    OE_TEST(oe_mount_hostfs("/mnt/hostfs") == 0);
+    OE_TEST(fs_mount_hostfs("/mnt/hostfs") == 0);
 
     /* Remove the file if it exists. */
     unlink("/mnt/hostfs/tmp/myfile");
@@ -1107,15 +1106,15 @@ static void _test_hostfs()
     OE_TEST(rmdir("/mnt/hostfs/tmp/mydir") == 0);
 
     /* Unmount the file system. */
-    OE_TEST(oe_unmount("/mnt/hostfs") == 0);
+    OE_TEST(fs_unmount("/mnt/hostfs") == 0);
 }
 
 int test_oefs(const char* oefs_filename)
 {
-    const uint32_t flags = OE_MOUNT_FLAG_MKFS;
+    const uint32_t flags = FS_MOUNT_FLAG_MKFS;
     size_t num_blocks = 4 * 4096;
     int rc;
-    uint8_t key[OE_MOUNT_KEY_SIZE] = {
+    uint8_t key[FS_MOUNT_KEY_SIZE] = {
         0x0f, 0xf0, 0x31, 0xe3, 0x93, 0xdf, 0x46, 0x7b, 0x9a, 0x33, 0xe8,
         0x3c, 0x55, 0x11, 0xac, 0x52, 0x9e, 0xd4, 0xb1, 0xad, 0x10, 0x16,
         0x4f, 0xd9, 0x92, 0x19, 0x93, 0xcc, 0xa9, 0x0e, 0xcb, 0xed,
@@ -1123,19 +1122,19 @@ int test_oefs(const char* oefs_filename)
 
     /* Mount host file. */
     const char target1[] = "/mnt/oefs";
-    rc = oe_mount_oefs(oefs_filename, target1, flags, num_blocks, key);
+    rc = fs_mount_oefs(oefs_filename, target1, flags, num_blocks, key);
     OE_TEST(rc == 0);
 
     /* Mount enclave memory. */
     const char target2[] = "/mnt/ramfs";
-    rc = oe_mount_oefs(NULL, target2, flags, num_blocks, NULL);
+    rc = fs_mount_oefs(NULL, target2, flags, num_blocks, NULL);
     OE_TEST(rc == 0);
 
     run_tests(target1);
     run_tests(target2);
 
-    rc = oe_unmount(target1);
-    rc = oe_unmount(target2);
+    rc = fs_unmount(target1);
+    rc = fs_unmount(target2);
 
     _test_hostfs();
 

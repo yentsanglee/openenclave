@@ -340,7 +340,7 @@ done:
     return ret;
 }
 
-int oe_open_cache_block_dev(fs_block_dev_t** dev_out, fs_block_dev_t* next)
+int fs_open_cache_block_dev(fs_block_dev_t** dev_out, fs_block_dev_t* next)
 {
     int ret = -1;
     block_dev_t* dev = NULL;
