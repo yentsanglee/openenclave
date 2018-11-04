@@ -9,13 +9,13 @@
 
 #define FS_KEY_SIZE 32
 
-typedef struct _fs_block_dev fs_block_dev_t;
-
 typedef struct _fs_block
 {
     char data[FS_BLOCK_SIZE];
 }
 fs_block_t;
+
+typedef struct _fs_block_dev fs_block_dev_t;
 
 struct _fs_block_dev
 {
