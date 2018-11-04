@@ -10,6 +10,8 @@
 #include "oefs.h"
 #include "trace.h"
 
+#define USE_CACHE
+
 int oe_mount_oefs(
     const char* source,
     const char* target,
@@ -40,7 +42,7 @@ int oe_mount_oefs(
             if (oe_open_crypto_block_dev(&crypto_dev, key, host_dev) != 0)
                 goto done;
 
-#if 0
+#if defined(USE_CACHE)
             if (oe_open_cache_block_dev(&cache_dev, crypto_dev) != 0)
                 goto done;
 

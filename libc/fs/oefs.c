@@ -854,6 +854,8 @@ static fs_errno_t _creat(
         CHECK(_write_block(oefs, ino, &inode));
     }
 
+    /* Create an inode for the new file. */
+
     /* Add an entry to the directory for this inode. */
     {
         fs_dirent_t ent;
@@ -893,6 +895,8 @@ static fs_errno_t _creat(
                 RAISE(FS_EIO);
         }
     }
+
+    /* Create an inode for the new file. */
 
     if (ino_out)
         *ino_out = ino;

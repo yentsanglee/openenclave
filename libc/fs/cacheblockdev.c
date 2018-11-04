@@ -15,8 +15,6 @@
 #define MAX_ENTRIES 64
 #define MAX_FREE 64
 
-//#define ENABLE_CACHING
-
 typedef struct _entry entry_t;
 
 struct _entry
@@ -54,11 +52,12 @@ static entry_t* _new_entry(
     {
         dev->free = dev->free->next;
         dev->free_count--;
-        return entry;
+        memset(entry, 0, sizeof(entry_t));
     }
-
-    if (!(entry = calloc(1, sizeof(entry_t))))
+    else if (!(entry = calloc(1, sizeof(entry_t))))
+    {
         return NULL;
+    }
 
     entry->blkno = blkno;
     memcpy(entry->block, block, FS_BLOCK_SIZE);
@@ -71,7 +70,7 @@ static void _free_entry(block_dev_t* dev, entry_t* entry)
     if (dev->free_count < MAX_FREE)
     {
         entry->next = dev->free;
-        dev->free = entry->next;
+        dev->free = entry;
         dev->free_count++;
     }
     else
@@ -83,6 +82,13 @@ static void _free_entry(block_dev_t* dev, entry_t* entry)
 static void _release_entries(block_dev_t* dev)
 {
     for (entry_t* p = dev->head; p; )
+    {
+        entry_t* next = p->next;
+        free(p);
+        p = next;
+    }
+
+    for (entry_t* p = dev->free; p; )
     {
         entry_t* next = p->next;
         free(p);
@@ -227,37 +233,36 @@ static int _block_dev_get(fs_block_dev_t* d, uint32_t blkno, void* data)
 {
     int ret = -1;
     block_dev_t* dev = (block_dev_t*)d;
-    entry_t* entry;
 
     if (!dev || !data)
         goto done;
 
-#if defined(ENABLE_CACHING)
-
-    if ((entry = _get_entry(dev, blkno)))
-    {
-        memcpy(data, entry->block, FS_BLOCK_SIZE);
-        _touch_entry(dev, entry);
-    }
-    else
+#if defined(DISABLE_CACHING)
     {
         if (dev->next->get(dev->next, blkno, data) != 0)
             goto done;
-
-        if (!(entry = _new_entry(dev, blkno, data)))
-            goto done;
-
-        _put_entry(dev, entry);
     }
+#else
+    {
+        entry_t* entry;
 
-#else /* defined(ENABLE_CACHING) */
+        if ((entry = _get_entry(dev, blkno)))
+        {
+            memcpy(data, entry->block, FS_BLOCK_SIZE);
+            _touch_entry(dev, entry);
+        }
+        else
+        {
+            if (dev->next->get(dev->next, blkno, data) != 0)
+                goto done;
 
-    (void)entry;
+            if (!(entry = _new_entry(dev, blkno, data)))
+                goto done;
 
-    if (dev->next->get(dev->next, blkno, data) != 0)
-        goto done;
-
-#endif /* defined(ENABLE_CACHING) */
+            _put_entry(dev, entry);
+        }
+    }
+#endif
 
     ret = 0;
 
@@ -270,34 +275,43 @@ static int _block_dev_put(fs_block_dev_t* d, uint32_t blkno, const void* data)
 {
     int ret = -1;
     block_dev_t* dev = (block_dev_t*)d;
-    entry_t* entry;
 
     if (!dev || !data)
         goto done;
 
-    if (dev->next->put(dev->next, blkno, data) != 0)
-        goto done;
-
-#if defined(ENABLE_CACHING)
-
-    if ((entry = _get_entry(dev, blkno)))
+#if defined(DISABLE_CACHING)
     {
-        memcpy(entry->block, data, FS_BLOCK_SIZE);
-        _touch_entry(dev, entry);
-    }
-    else
-    {
-        if (!(entry = _new_entry(dev, blkno, data)))
+        if (dev->next->put(dev->next, blkno, data) != 0)
             goto done;
-
-        _put_entry(dev, entry);
     }
+#else
+    {
+        entry_t* entry;
 
-#else /* defined(ENABLE_CACHING) */
+        if ((entry = _get_entry(dev, blkno)))
+        {
+            if (memcmp(entry->block, data, FS_BLOCK_SIZE) != 0)
+            {
+                if (dev->next->put(dev->next, blkno, data) != 0)
+                    goto done;
 
-    (void)entry;
+                memcpy(entry->block, data, FS_BLOCK_SIZE);
+            }
 
-#endif /* defined(ENABLE_CACHING) */
+            _touch_entry(dev, entry);
+        }
+        else
+        {
+            if (dev->next->put(dev->next, blkno, data) != 0)
+                goto done;
+
+            if (!(entry = _new_entry(dev, blkno, data)))
+                goto done;
+
+            _put_entry(dev, entry);
+        }
+    }
+#endif
 
     ret = 0;
 
