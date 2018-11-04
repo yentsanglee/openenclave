@@ -154,7 +154,7 @@ typedef struct _oefs
     /* Should contain the value of the OEFS_MAGIC macro. */
     uint32_t magic;
 
-    fs_block_dev_t* dev;
+    fs_blkdev_t* dev;
 
     union {
         const oefs_super_block_t read;
@@ -2192,7 +2192,7 @@ done:
 **==============================================================================
 */
 
-fs_errno_t oefs_mkfs(fs_block_dev_t* dev, size_t num_blocks)
+fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
 {
     fs_errno_t err = FS_EOK;
     size_t num_bitmap_blocks;
@@ -2357,7 +2357,7 @@ done:
     return err;
 }
 
-fs_errno_t oefs_initialize(fs_t** fs_out, fs_block_dev_t* dev)
+fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
 {
     fs_errno_t err = FS_EOK;
     size_t num_blocks;

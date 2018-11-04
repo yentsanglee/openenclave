@@ -5,7 +5,7 @@
 #include <openenclave/internal/calls.h>
 #include <stdio.h>
 
-void oe_handle_open_block_dev(
+void oe_handle_open_blkdev(
     oe_enclave_t* enclave,
     uint64_t arg_in,
     uint64_t* arg_out)
@@ -25,7 +25,7 @@ void oe_handle_open_block_dev(
     *arg_out = (uint64_t)stream;
 }
 
-void oe_handle_close_block_dev(oe_enclave_t* enclave, uint64_t arg_in)
+void oe_handle_close_blkdev(oe_enclave_t* enclave, uint64_t arg_in)
 {
     FILE* file = (FILE*)arg_in;
 
@@ -33,9 +33,9 @@ void oe_handle_close_block_dev(oe_enclave_t* enclave, uint64_t arg_in)
         fclose(file);
 }
 
-void oe_handle_block_dev_get(oe_enclave_t* enclave, uint64_t arg_in)
+void oe_handle_blkdev_get(oe_enclave_t* enclave, uint64_t arg_in)
 {
-    typedef oe_ocall_block_dev_get_args_t args_t;
+    typedef oe_ocall_blkdev_get_args_t args_t;
     args_t* args = (args_t*)arg_in;
     FILE* stream;
 
@@ -49,7 +49,7 @@ void oe_handle_block_dev_get(oe_enclave_t* enclave, uint64_t arg_in)
 
     /* Read the given block. */
     {
-        const long offset = args->blkno * OE_BLOCK_DEVICE_BLOCK_SIZE;
+        const long offset = args->blkno * OE_BLKDEV_BLOCK_SIZE;
 
         if (fseek(stream, offset, SEEK_SET) != 0)
             return;
@@ -63,9 +63,9 @@ void oe_handle_block_dev_get(oe_enclave_t* enclave, uint64_t arg_in)
     args->ret = 0;
 }
 
-void oe_handle_block_dev_put(oe_enclave_t* enclave, uint64_t arg_in)
+void oe_handle_blkdev_put(oe_enclave_t* enclave, uint64_t arg_in)
 {
-    typedef oe_ocall_block_dev_get_args_t args_t;
+    typedef oe_ocall_blkdev_get_args_t args_t;
     args_t* args = (args_t*)arg_in;
     FILE* stream;
 
@@ -79,7 +79,7 @@ void oe_handle_block_dev_put(oe_enclave_t* enclave, uint64_t arg_in)
 
     /* Write the given block. */
     {
-        const long offset = args->blkno * OE_BLOCK_DEVICE_BLOCK_SIZE;
+        const long offset = args->blkno * OE_BLKDEV_BLOCK_SIZE;
 
         if (fseek(stream, offset, SEEK_SET) != 0)
             return;

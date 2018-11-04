@@ -7,22 +7,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "blockdev.h"
+#include "blkdev.h"
 
 #define SHA256_SIZE 32
 
 #define IV_SIZE 16
 
-typedef struct _block_dev
+typedef struct _blkdev
 {
-    fs_block_dev_t base;
+    fs_blkdev_t base;
     size_t ref_count;
     pthread_spinlock_t lock;
     uint8_t key[FS_KEY_SIZE];
     mbedtls_aes_context enc_aes;
     mbedtls_aes_context dec_aes;
-    fs_block_dev_t* next;
-} block_dev_t;
+    fs_blkdev_t* next;
+} blkdev_t;
 
 static int _compute_sha256(
     const void* data,
@@ -114,10 +114,10 @@ done:
     return rc;
 }
 
-static int _block_dev_release(fs_block_dev_t* dev)
+static int _blkdev_release(fs_blkdev_t* dev)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
+    blkdev_t* device = (blkdev_t*)dev;
     size_t new_ref_count;
 
     if (!device)
@@ -141,11 +141,11 @@ done:
     return ret;
 }
 
-static int _block_dev_get(
-    fs_block_dev_t* dev, uint32_t blkno, fs_block_t* block)
+static int _blkdev_get(
+    fs_blkdev_t* dev, uint32_t blkno, fs_block_t* block)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
+    blkdev_t* device = (blkdev_t*)dev;
     fs_block_t encrypted;
 
     if (!device || !block)
@@ -174,11 +174,11 @@ done:
     return ret;
 }
 
-static int _block_dev_put(
-    fs_block_dev_t* dev, uint32_t blkno, const fs_block_t* block)
+static int _blkdev_put(
+    fs_blkdev_t* dev, uint32_t blkno, const fs_block_t* block)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
+    blkdev_t* device = (blkdev_t*)dev;
     fs_block_t encrypted;
 
     if (!device || !block)
@@ -207,10 +207,10 @@ done:
     return ret;
 }
 
-static int _block_dev_add_ref(fs_block_dev_t* dev)
+static int _blkdev_add_ref(fs_blkdev_t* dev)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
+    blkdev_t* device = (blkdev_t*)dev;
 
     if (!device)
         goto done;
@@ -225,27 +225,27 @@ done:
     return ret;
 }
 
-int fs_open_crypto_block_dev(
-    fs_block_dev_t** block_dev,
+int fs_open_crypto_blkdev(
+    fs_blkdev_t** blkdev,
     const uint8_t key[FS_KEY_SIZE],
-    fs_block_dev_t* next)
+    fs_blkdev_t* next)
 {
     int ret = -1;
-    block_dev_t* device = NULL;
+    blkdev_t* device = NULL;
 
-    if (block_dev)
-        *block_dev = NULL;
+    if (blkdev)
+        *blkdev = NULL;
 
-    if (!block_dev || !next)
+    if (!blkdev || !next)
         goto done;
 
-    if (!(device = calloc(1, sizeof(block_dev_t))))
+    if (!(device = calloc(1, sizeof(blkdev_t))))
         goto done;
 
-    device->base.get = _block_dev_get;
-    device->base.put = _block_dev_put;
-    device->base.add_ref = _block_dev_add_ref;
-    device->base.release = _block_dev_release;
+    device->base.get = _blkdev_get;
+    device->base.put = _blkdev_put;
+    device->base.add_ref = _blkdev_add_ref;
+    device->base.release = _blkdev_release;
     device->ref_count = 1;
     device->next = next;
     memcpy(device->key, key, FS_KEY_SIZE);
@@ -269,7 +269,7 @@ int fs_open_crypto_block_dev(
 
     next->add_ref(next);
 
-    *block_dev = &device->base;
+    *blkdev = &device->base;
     device = NULL;
 
     ret = 0;

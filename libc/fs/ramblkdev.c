@@ -5,23 +5,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "blockdev.h"
+#include "blkdev.h"
 
 #define BLOCK_SIZE 512
 
-typedef struct _block_dev
+typedef struct _blkdev
 {
-    fs_block_dev_t base;
+    fs_blkdev_t base;
     size_t ref_count;
     pthread_spinlock_t lock;
     uint8_t* mem;
     size_t size;
-} block_dev_t;
+} blkdev_t;
 
-static int _block_dev_release(fs_block_dev_t* dev)
+static int _blkdev_release(fs_blkdev_t* dev)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
+    blkdev_t* device = (blkdev_t*)dev;
     size_t new_ref_count;
 
     if (!device)
@@ -43,10 +43,10 @@ done:
     return ret;
 }
 
-static int _block_dev_get(fs_block_dev_t* dev, uint32_t blkno, fs_block_t* block)
+static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_block_t* block)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
+    blkdev_t* device = (blkdev_t*)dev;
 
     if (!device || !block)
         goto done;
@@ -65,10 +65,10 @@ done:
     return ret;
 }
 
-static int _block_dev_put(fs_block_dev_t* dev, uint32_t blkno, const fs_block_t* block)
+static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_block_t* block)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
+    blkdev_t* device = (blkdev_t*)dev;
 
     if (!device || !block)
         goto done;
@@ -87,10 +87,10 @@ done:
     return ret;
 }
 
-static int _block_dev_add_ref(fs_block_dev_t* dev)
+static int _blkdev_add_ref(fs_blkdev_t* dev)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
+    blkdev_t* device = (blkdev_t*)dev;
 
     if (!device)
         goto done;
@@ -104,35 +104,35 @@ static int _block_dev_add_ref(fs_block_dev_t* dev)
 done:
     return ret;
 }
-int fs_open_ram_block_dev(fs_block_dev_t** block_dev, size_t size)
+int fs_open_ram_blkdev(fs_blkdev_t** blkdev, size_t size)
 {
     int ret = -1;
-    block_dev_t* device = NULL;
+    blkdev_t* device = NULL;
 
-    if (block_dev)
-        *block_dev = NULL;
+    if (blkdev)
+        *blkdev = NULL;
 
-    if (!size || !block_dev)
+    if (!size || !blkdev)
         goto done;
 
     /* Size must be a multiple of the block size. */
     if (size % BLOCK_SIZE)
         goto done;
 
-    if (!(device = calloc(1, sizeof(block_dev_t))))
+    if (!(device = calloc(1, sizeof(blkdev_t))))
         goto done;
 
-    device->base.get = _block_dev_get;
-    device->base.put = _block_dev_put;
-    device->base.add_ref = _block_dev_add_ref;
-    device->base.release = _block_dev_release;
+    device->base.get = _blkdev_get;
+    device->base.put = _blkdev_put;
+    device->base.add_ref = _blkdev_add_ref;
+    device->base.release = _blkdev_release;
     device->ref_count = 1;
     device->size = size;
 
     if (!(device->mem = calloc(1, size)))
         goto done;
 
-    *block_dev = &device->base;
+    *blkdev = &device->base;
     device = NULL;
 
     ret = 0;

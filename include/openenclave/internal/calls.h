@@ -94,10 +94,10 @@ typedef enum _oe_func {
     OE_OCALL_SLEEP,
     OE_OCALL_GET_TIME,
     OE_OCALL_BACKTRACE_SYMBOLS,
-    OE_OCALL_OPEN_BLOCK_DEVICE,
-    OE_OCALL_CLOSE_BLOCK_DEVICE,
-    OE_OCALL_BLOCK_DEVICE_GET,
-    OE_OCALL_BLOCK_DEVICE_PUT,
+    OE_OCALL_OPEN_BLKDEV,
+    OE_OCALL_CLOSE_BLKDEV,
+    OE_OCALL_BLKDEV_GET,
+    OE_OCALL_BLKDEV_PUT,
     OE_OCALL_HOSTFS,
     /* Caution: always add new OCALL function numbers here */
 
@@ -383,29 +383,29 @@ typedef struct _oe_backtrace_symbols_args
 /*
 **==============================================================================
 **
-** oe_ocall_block_dev_get_args_t
-** oe_ocall_block_dev_put_args_t
+** oe_ocall_blkdev_get_args_t
+** oe_ocall_blkdev_put_args_t
 **
 **==============================================================================
 */
 
-#define OE_BLOCK_DEVICE_BLOCK_SIZE 512
+#define OE_BLKDEV_BLOCK_SIZE 512
 
-typedef struct _oe_ocall_block_dev_get_args
+typedef struct _oe_ocall_blkdev_get_args
 {
     int ret;
     void* host_context;
     uint32_t blkno;
-    uint8_t block[OE_BLOCK_DEVICE_BLOCK_SIZE];
-} oe_ocall_block_dev_get_args_t;
+    uint8_t block[OE_BLKDEV_BLOCK_SIZE];
+} oe_ocall_blkdev_get_args_t;
 
-typedef struct _oe_ocall_block_dev_put_args
+typedef struct _oe_ocall_blkdev_put_args
 {
     int ret;
     void* host_context;
     uint32_t blkno;
-    uint8_t block[OE_BLOCK_DEVICE_BLOCK_SIZE];
-} oe_ocall_block_dev_put_args_t;
+    uint8_t block[OE_BLKDEV_BLOCK_SIZE];
+} oe_ocall_blkdev_put_args_t;
 
 /**
  * Perform a low-level enclave function call (ECALL).

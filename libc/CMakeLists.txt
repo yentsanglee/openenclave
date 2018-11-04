@@ -16,15 +16,15 @@ add_library(oelibc STATIC
     dirent.c
     exp2l.S
     fs/buf.c
-    fs/cacheblockdev.c
-    fs/cryptoblockdev.c
+    fs/cacheblkdev.c
+    fs/cryptoblkdev.c
     fs/fs.c
     fs/hostbatch.c
-    fs/hostblockdev.c
+    fs/hostblkdev.c
     fs/oefs.c
     fs/hostfs.c
     fs/mount.c
-    fs/ramblockdev.c
+    fs/ramblkdev.c
     hostfsocall.c
     libunwind_stubs.c
     link.c

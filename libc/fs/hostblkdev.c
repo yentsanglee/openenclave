@@ -7,42 +7,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "blockdev.h"
+#include "blkdev.h"
 #include "hostbatch.h"
 
 #if 0
 #define DUMP
 #endif
 
-typedef struct _block_dev
+typedef struct _blkdev
 {
-    fs_block_dev_t base;
+    fs_blkdev_t base;
     size_t ref_count;
     pthread_spinlock_t lock;
     fs_host_batch_t* batch;
     void* host_context;
-} block_dev_t;
+} blkdev_t;
 
 static size_t _get_batch_capacity()
 {
     size_t capacity = 0;
 
-    if (sizeof(oe_ocall_block_dev_get_args_t) > capacity)
-        capacity = sizeof(oe_ocall_block_dev_get_args_t);
+    if (sizeof(oe_ocall_blkdev_get_args_t) > capacity)
+        capacity = sizeof(oe_ocall_blkdev_get_args_t);
 
-    if (sizeof(oe_ocall_block_dev_put_args_t) > capacity)
-        capacity = sizeof(oe_ocall_block_dev_put_args_t);
+    if (sizeof(oe_ocall_blkdev_put_args_t) > capacity)
+        capacity = sizeof(oe_ocall_blkdev_put_args_t);
 
     return capacity;
 }
 
-static int _block_dev_get(fs_block_dev_t* dev, uint32_t blkno, fs_block_t* block)
+static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_block_t* block)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
-    typedef oe_ocall_block_dev_get_args_t args_t;
+    blkdev_t* device = (blkdev_t*)dev;
+    typedef oe_ocall_blkdev_get_args_t args_t;
     args_t* args = NULL;
-    const uint16_t func = OE_OCALL_BLOCK_DEVICE_GET;
+    const uint16_t func = OE_OCALL_BLKDEV_GET;
 
 #ifdef DUMP
     printf("HOST.GET{%u}\n", blkno);
@@ -76,13 +76,13 @@ done:
     return ret;
 }
 
-static int _block_dev_put(fs_block_dev_t* dev, uint32_t blkno, const fs_block_t* block)
+static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_block_t* block)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
-    typedef oe_ocall_block_dev_put_args_t args_t;
+    blkdev_t* device = (blkdev_t*)dev;
+    typedef oe_ocall_blkdev_put_args_t args_t;
     args_t* args = NULL;
-    const uint16_t func = OE_OCALL_BLOCK_DEVICE_PUT;
+    const uint16_t func = OE_OCALL_BLKDEV_PUT;
 
 #ifdef DUMP
     printf("HOST.PUT{%u}\n", blkno);
@@ -115,10 +115,10 @@ done:
     return ret;
 }
 
-static int _block_dev_add_ref(fs_block_dev_t* dev)
+static int _blkdev_add_ref(fs_blkdev_t* dev)
 {
     int ret = -1;
-    block_dev_t* device = (block_dev_t*)dev;
+    blkdev_t* device = (blkdev_t*)dev;
 
     if (!device)
         goto done;
@@ -133,11 +133,11 @@ done:
     return ret;
 }
 
-static int _block_dev_release(fs_block_dev_t* dev)
+static int _blkdev_release(fs_blkdev_t* dev)
 {
     int ret = -1;
-    const uint16_t func = OE_OCALL_CLOSE_BLOCK_DEVICE;
-    block_dev_t* device = (block_dev_t*)dev;
+    const uint16_t func = OE_OCALL_CLOSE_BLKDEV;
+    blkdev_t* device = (blkdev_t*)dev;
     size_t new_ref_count;
 
     if (!device)
@@ -163,25 +163,25 @@ done:
     return ret;
 }
 
-int fs_open_host_block_dev(fs_block_dev_t** block_dev, const char* device_name)
+int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* device_name)
 {
     int ret = -1;
     char* name = NULL;
     void* host_context = NULL;
-    const uint16_t func = OE_OCALL_OPEN_BLOCK_DEVICE;
-    block_dev_t* device = NULL;
+    const uint16_t func = OE_OCALL_OPEN_BLKDEV;
+    blkdev_t* device = NULL;
     fs_host_batch_t* batch = NULL;
 
-    if (block_dev)
-        *block_dev = NULL;
+    if (blkdev)
+        *blkdev = NULL;
 
-    if (!device_name || !block_dev)
+    if (!device_name || !blkdev)
         goto done;
 
     if (!(name = oe_host_strndup(device_name, strlen(device_name))))
         goto done;
 
-    if (!(device = calloc(1, sizeof(block_dev_t))))
+    if (!(device = calloc(1, sizeof(blkdev_t))))
         goto done;
 
     if (oe_ocall(func, (uint64_t)name, (uint64_t*)&host_context) != OE_OK)
@@ -193,15 +193,15 @@ int fs_open_host_block_dev(fs_block_dev_t** block_dev, const char* device_name)
     if (!(batch = fs_host_batch_new(_get_batch_capacity())))
         goto done;
 
-    device->base.get = _block_dev_get;
-    device->base.put = _block_dev_put;
-    device->base.add_ref = _block_dev_add_ref;
-    device->base.release = _block_dev_release;
+    device->base.get = _blkdev_get;
+    device->base.put = _blkdev_put;
+    device->base.add_ref = _blkdev_add_ref;
+    device->base.release = _blkdev_release;
     device->batch = batch;
     device->ref_count = 1;
     device->host_context = host_context;
 
-    *block_dev = &device->base;
+    *blkdev = &device->base;
     device = NULL;
     batch = NULL;
 

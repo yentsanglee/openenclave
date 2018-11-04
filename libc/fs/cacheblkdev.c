@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "blockdev.h"
+#include "blkdev.h"
 #include "common.h"
 
 #define TABLE_SIZE 1093
@@ -26,12 +26,12 @@ struct _entry
     entry_t* next;
 };
 
-typedef struct _block_dev
+typedef struct _blkdev
 {
-    fs_block_dev_t base;
+    fs_blkdev_t base;
     size_t ref_count;
     pthread_spinlock_t lock;
-    fs_block_dev_t* next;
+    fs_blkdev_t* next;
 
     entry_t* table[TABLE_SIZE];
     entry_t* head;
@@ -41,10 +41,10 @@ typedef struct _block_dev
     entry_t* free;
     size_t free_count;
 
-} block_dev_t;
+} blkdev_t;
 
 static entry_t* _new_entry(
-    block_dev_t* dev,
+    blkdev_t* dev,
     uint32_t blkno,
     const fs_block_t* block)
 {
@@ -67,7 +67,7 @@ static entry_t* _new_entry(
     return entry;
 }
 
-static void _free_entry(block_dev_t* dev, entry_t* entry)
+static void _free_entry(blkdev_t* dev, entry_t* entry)
 {
     if (dev->free_count < MAX_FREE)
     {
@@ -81,7 +81,7 @@ static void _free_entry(block_dev_t* dev, entry_t* entry)
     }
 }
 
-static void _release_entries(block_dev_t* dev)
+static void _release_entries(blkdev_t* dev)
 {
     for (entry_t* p = dev->head; p;)
     {
@@ -98,7 +98,7 @@ static void _release_entries(block_dev_t* dev)
     }
 }
 
-static void _remove_entry(block_dev_t* dev, entry_t* entry)
+static void _remove_entry(blkdev_t* dev, entry_t* entry)
 {
     if (entry->prev)
         entry->prev->next = entry->next;
@@ -114,7 +114,7 @@ static void _remove_entry(block_dev_t* dev, entry_t* entry)
 }
 
 /* Insert entry at front of the list. */
-static void _insert_entry(block_dev_t* dev, entry_t* entry)
+static void _insert_entry(blkdev_t* dev, entry_t* entry)
 {
     if (dev->head)
     {
@@ -134,7 +134,7 @@ static void _insert_entry(block_dev_t* dev, entry_t* entry)
     dev->count++;
 }
 
-static entry_t* _get_entry(block_dev_t* dev, uint32_t blkno)
+static entry_t* _get_entry(blkdev_t* dev, uint32_t blkno)
 {
     size_t h = blkno % TABLE_SIZE;
     size_t n = SIZE_MAX;
@@ -158,7 +158,7 @@ static entry_t* _get_entry(block_dev_t* dev, uint32_t blkno)
     return NULL;
 }
 
-static void _put_entry(block_dev_t* dev, entry_t* entry)
+static void _put_entry(blkdev_t* dev, entry_t* entry)
 {
     size_t h = entry->blkno % TABLE_SIZE;
     bool found_slot = false;
@@ -199,16 +199,16 @@ static void _put_entry(block_dev_t* dev, entry_t* entry)
 }
 
 /* Move entry to the front of the list. */
-static void _touch_entry(block_dev_t* dev, entry_t* entry)
+static void _touch_entry(blkdev_t* dev, entry_t* entry)
 {
     _remove_entry(dev, entry);
     _insert_entry(dev, entry);
 }
 
-static int _block_dev_release(fs_block_dev_t* d)
+static int _blkdev_release(fs_blkdev_t* d)
 {
     int ret = -1;
-    block_dev_t* dev = (block_dev_t*)d;
+    blkdev_t* dev = (blkdev_t*)d;
     size_t new_ref_count;
 
     if (!dev)
@@ -231,10 +231,10 @@ done:
     return ret;
 }
 
-static int _block_dev_get(fs_block_dev_t* d, uint32_t blkno, fs_block_t* block)
+static int _blkdev_get(fs_blkdev_t* d, uint32_t blkno, fs_block_t* block)
 {
     int ret = -1;
-    block_dev_t* dev = (block_dev_t*)d;
+    blkdev_t* dev = (blkdev_t*)d;
 
     if (!dev || !block)
         goto done;
@@ -273,10 +273,10 @@ done:
     return ret;
 }
 
-static int _block_dev_put(fs_block_dev_t* d, uint32_t blkno, const fs_block_t* block)
+static int _blkdev_put(fs_blkdev_t* d, uint32_t blkno, const fs_block_t* block)
 {
     int ret = -1;
-    block_dev_t* dev = (block_dev_t*)d;
+    blkdev_t* dev = (blkdev_t*)d;
 
     if (!dev || !block)
         goto done;
@@ -322,10 +322,10 @@ done:
     return ret;
 }
 
-static int _block_dev_add_ref(fs_block_dev_t* d)
+static int _blkdev_add_ref(fs_blkdev_t* d)
 {
     int ret = -1;
-    block_dev_t* dev = (block_dev_t*)d;
+    blkdev_t* dev = (blkdev_t*)d;
 
     if (!dev)
         goto done;
@@ -340,10 +340,10 @@ done:
     return ret;
 }
 
-int fs_open_cache_block_dev(fs_block_dev_t** dev_out, fs_block_dev_t* next)
+int fs_open_cache_blkdev(fs_blkdev_t** dev_out, fs_blkdev_t* next)
 {
     int ret = -1;
-    block_dev_t* dev = NULL;
+    blkdev_t* dev = NULL;
 
     if (dev_out)
         *dev_out = NULL;
@@ -351,13 +351,13 @@ int fs_open_cache_block_dev(fs_block_dev_t** dev_out, fs_block_dev_t* next)
     if (!dev_out || !next)
         goto done;
 
-    if (!(dev = calloc(1, sizeof(block_dev_t))))
+    if (!(dev = calloc(1, sizeof(blkdev_t))))
         goto done;
 
-    dev->base.get = _block_dev_get;
-    dev->base.put = _block_dev_put;
-    dev->base.add_ref = _block_dev_add_ref;
-    dev->base.release = _block_dev_release;
+    dev->base.get = _blkdev_get;
+    dev->base.put = _blkdev_put;
+    dev->base.add_ref = _blkdev_add_ref;
+    dev->base.release = _blkdev_release;
     dev->ref_count = 1;
     dev->next = next;
     next->add_ref(next);

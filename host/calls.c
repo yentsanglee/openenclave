@@ -471,20 +471,20 @@ static oe_result_t _handle_ocall(
             oe_handle_backtrace_symbols(enclave, arg_in);
             break;
 
-        case OE_OCALL_OPEN_BLOCK_DEVICE:
-            oe_handle_open_block_dev(enclave, arg_in, arg_out);
+        case OE_OCALL_OPEN_BLKDEV:
+            oe_handle_open_blkdev(enclave, arg_in, arg_out);
             break;
 
-        case OE_OCALL_CLOSE_BLOCK_DEVICE:
-            oe_handle_close_block_dev(enclave, arg_in);
+        case OE_OCALL_CLOSE_BLKDEV:
+            oe_handle_close_blkdev(enclave, arg_in);
             break;
 
-        case OE_OCALL_BLOCK_DEVICE_GET:
-            oe_handle_block_dev_get(enclave, arg_in);
+        case OE_OCALL_BLKDEV_GET:
+            oe_handle_blkdev_get(enclave, arg_in);
             break;
 
-        case OE_OCALL_BLOCK_DEVICE_PUT:
-            oe_handle_block_dev_put(enclave, arg_in);
+        case OE_OCALL_BLKDEV_PUT:
+            oe_handle_blkdev_put(enclave, arg_in);
             break;
 
         case OE_OCALL_HOSTFS:

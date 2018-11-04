@@ -4,7 +4,7 @@
 #include "mount.h"
 #include <stdarg.h>
 #include <string.h>
-#include "blockdev.h"
+#include "blkdev.h"
 #include "fs.h"
 #include "hostfs.h"
 #include "oefs.h"
@@ -19,11 +19,11 @@ int fs_mount_oefs(
     const uint8_t key[FS_MOUNT_KEY_SIZE])
 {
     int ret = -1;
-    fs_block_dev_t* host_dev = NULL;
-    fs_block_dev_t* crypto_dev = NULL;
-    fs_block_dev_t* cache_dev = NULL;
-    fs_block_dev_t* ram_dev = NULL;
-    fs_block_dev_t* dev = NULL;
+    fs_blkdev_t* host_dev = NULL;
+    fs_blkdev_t* crypto_dev = NULL;
+    fs_blkdev_t* cache_dev = NULL;
+    fs_blkdev_t* ram_dev = NULL;
+    fs_blkdev_t* dev = NULL;
     fs_t* fs = NULL;
 
     if (!target)
@@ -32,17 +32,17 @@ int fs_mount_oefs(
     if (source)
     {
         /* Open a host device. */
-        if (fs_open_host_block_dev(&host_dev, source) != 0)
+        if (fs_open_host_blkdev(&host_dev, source) != 0)
             goto done;
 
         /* If a key was provided, then open a crypto device. */
         if (key)
         {
-            if (fs_open_crypto_block_dev(&crypto_dev, key, host_dev) != 0)
+            if (fs_open_crypto_blkdev(&crypto_dev, key, host_dev) != 0)
                 goto done;
 
 #if defined(USE_CACHE)
-            if (fs_open_cache_block_dev(&cache_dev, crypto_dev) != 0)
+            if (fs_open_cache_blkdev(&cache_dev, crypto_dev) != 0)
                 goto done;
 
             dev = cache_dev;
@@ -67,7 +67,7 @@ int fs_mount_oefs(
         if (oefs_size(num_blocks, &size) != 0)
             goto done;
 
-        if (fs_open_ram_block_dev(&ram_dev, size) != 0)
+        if (fs_open_ram_blkdev(&ram_dev, size) != 0)
             goto done;
 
         dev = ram_dev;
