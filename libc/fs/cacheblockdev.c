@@ -1,15 +1,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "common.h"
+#include <assert.h>
+#include <limits.h>
 #include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
-#include <stdint.h>
-#include <assert.h>
 #include "blockdev.h"
+#include "common.h"
 
 #define TABLE_SIZE 1093
 #define MAX_ENTRIES 64
@@ -44,7 +44,9 @@ typedef struct _block_dev
 } block_dev_t;
 
 static entry_t* _new_entry(
-    block_dev_t* dev, uint32_t blkno, const uint8_t block[FS_BLOCK_SIZE])
+    block_dev_t* dev,
+    uint32_t blkno,
+    const uint8_t block[FS_BLOCK_SIZE])
 {
     entry_t* entry;
 
@@ -81,14 +83,14 @@ static void _free_entry(block_dev_t* dev, entry_t* entry)
 
 static void _release_entries(block_dev_t* dev)
 {
-    for (entry_t* p = dev->head; p; )
+    for (entry_t* p = dev->head; p;)
     {
         entry_t* next = p->next;
         free(p);
         p = next;
     }
 
-    for (entry_t* p = dev->free; p; )
+    for (entry_t* p = dev->free; p;)
     {
         entry_t* next = p->next;
         free(p);

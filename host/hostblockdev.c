@@ -4,7 +4,6 @@
 #include "hostblockdev.h"
 #include <openenclave/internal/calls.h>
 #include <stdio.h>
-#include <unistd.h>
 
 void oe_handle_open_block_dev(
     oe_enclave_t* enclave,
