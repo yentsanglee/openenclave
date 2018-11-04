@@ -46,7 +46,7 @@ typedef struct _block_dev
 static entry_t* _new_entry(
     block_dev_t* dev,
     uint32_t blkno,
-    const uint8_t block[FS_BLOCK_SIZE])
+    const fs_block_t* block)
 {
     entry_t* entry;
 
@@ -231,12 +231,12 @@ done:
     return ret;
 }
 
-static int _block_dev_get(fs_block_dev_t* d, uint32_t blkno, void* data)
+static int _block_dev_get(fs_block_dev_t* d, uint32_t blkno, fs_block_t* block)
 {
     int ret = -1;
     block_dev_t* dev = (block_dev_t*)d;
 
-    if (!dev || !data)
+    if (!dev || !block)
         goto done;
 
 #if defined(DISABLE_CACHING)
@@ -250,15 +250,15 @@ static int _block_dev_get(fs_block_dev_t* d, uint32_t blkno, void* data)
 
         if ((entry = _get_entry(dev, blkno)))
         {
-            memcpy(data, entry->block, FS_BLOCK_SIZE);
+            memcpy(block->data, entry->block, FS_BLOCK_SIZE);
             _touch_entry(dev, entry);
         }
         else
         {
-            if (dev->next->get(dev->next, blkno, data) != 0)
+            if (dev->next->get(dev->next, blkno, block) != 0)
                 goto done;
 
-            if (!(entry = _new_entry(dev, blkno, data)))
+            if (!(entry = _new_entry(dev, blkno, block)))
                 goto done;
 
             _put_entry(dev, entry);
@@ -273,12 +273,12 @@ done:
     return ret;
 }
 
-static int _block_dev_put(fs_block_dev_t* d, uint32_t blkno, const void* data)
+static int _block_dev_put(fs_block_dev_t* d, uint32_t blkno, const fs_block_t* block)
 {
     int ret = -1;
     block_dev_t* dev = (block_dev_t*)d;
 
-    if (!dev || !data)
+    if (!dev || !block)
         goto done;
 
 #if defined(DISABLE_CACHING)
@@ -292,22 +292,22 @@ static int _block_dev_put(fs_block_dev_t* d, uint32_t blkno, const void* data)
 
         if ((entry = _get_entry(dev, blkno)))
         {
-            if (memcmp(entry->block, data, FS_BLOCK_SIZE) != 0)
+            if (memcmp(entry->block, block->data, FS_BLOCK_SIZE) != 0)
             {
-                if (dev->next->put(dev->next, blkno, data) != 0)
+                if (dev->next->put(dev->next, blkno, block) != 0)
                     goto done;
 
-                memcpy(entry->block, data, FS_BLOCK_SIZE);
+                memcpy(entry->block, block->data, FS_BLOCK_SIZE);
             }
 
             _touch_entry(dev, entry);
         }
         else
         {
-            if (dev->next->put(dev->next, blkno, data) != 0)
+            if (dev->next->put(dev->next, blkno, block) != 0)
                 goto done;
 
-            if (!(entry = _new_entry(dev, blkno, data)))
+            if (!(entry = _new_entry(dev, blkno, block)))
                 goto done;
 
             _put_entry(dev, entry);

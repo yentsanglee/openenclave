@@ -148,13 +148,13 @@ struct _fs
         ssize_t* offset_out);
 
     fs_errno_t (
-        *fs_read)(fs_file_t* file, void* data, uint32_t size, int32_t* nread);
+        *fs_read)(fs_file_t* file, void* data, size_t size, ssize_t* nread);
 
     fs_errno_t (*fs_write)(
         fs_file_t* file,
         const void* data,
-        uint32_t size,
-        int32_t* nwritten);
+        size_t size,
+        ssize_t* nwritten);
 
     fs_errno_t (*fs_close)(fs_file_t* file);
 

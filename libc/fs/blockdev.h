@@ -11,11 +11,17 @@
 
 typedef struct _fs_block_dev fs_block_dev_t;
 
+typedef struct _fs_block
+{
+    char data[FS_BLOCK_SIZE];
+}
+fs_block_t;
+
 struct _fs_block_dev
 {
-    int (*get)(fs_block_dev_t* dev, uint32_t blkno, void* data);
+    int (*get)(fs_block_dev_t* dev, uint32_t blkno, fs_block_t* block);
 
-    int (*put)(fs_block_dev_t* dev, uint32_t blkno, const void* data);
+    int (*put)(fs_block_dev_t* dev, uint32_t blkno, const fs_block_t* block);
 
     int (*add_ref)(fs_block_dev_t* dev);
 

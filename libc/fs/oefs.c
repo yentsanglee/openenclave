@@ -183,11 +183,6 @@ static bool _valid_oefs(fs_t* fs)
     return fs && ((oefs_t*)fs)->magic == OEFS_MAGIC;
 }
 
-typedef struct _oefs_block
-{
-    uint8_t data[FS_BLOCK_SIZE];
-} oefs_block_t;
-
 struct _fs_file
 {
     uint32_t magic;
@@ -259,14 +254,14 @@ static fs_errno_t _fs_release(fs_t* fs);
 static fs_errno_t _fs_read(
     fs_file_t* file,
     void* data,
-    uint32_t size,
-    int32_t* nread);
+    size_t size,
+    ssize_t* nread);
 
 static fs_errno_t _fs_write(
     fs_file_t* file,
     const void* data,
-    uint32_t size,
-    int32_t* nwritten);
+    size_t size,
+    ssize_t* nwritten);
 
 static fs_errno_t _fs_close(fs_file_t* file);
 
@@ -529,7 +524,7 @@ static fs_errno_t _flush_super_block(oefs_t* oefs)
     {
         const uint32_t blkno = SUPER_BLOCK_PHYSICAL_BLKNO;
 
-        if (oefs->dev->put(oefs->dev, blkno, &oefs->sb) != 0)
+        if (oefs->dev->put(oefs->dev, blkno, (const fs_block_t*)&oefs->sb) != 0)
             RAISE(FS_EIO);
 
         memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs_super_block_t));
@@ -551,8 +546,8 @@ static fs_errno_t _flush_bitmap(oefs_t* oefs)
     for (size_t i = 0; i < num_bitmap_blocks; i++)
     {
         /* Set pointer to the i-th block to write. */
-        oefs_block_t* block = (oefs_block_t*)oefs->bitmap.read + i;
-        oefs_block_t* block_copy = (oefs_block_t*)oefs->bitmap_copy + i;
+        fs_block_t* block = (fs_block_t*)oefs->bitmap.read + i;
+        fs_block_t* block_copy = (fs_block_t*)oefs->bitmap_copy + i;
 
         /* Flush this bitmap block if it changed. */
         if (memcmp(block, block_copy, FS_BLOCK_SIZE) != 0)
@@ -603,7 +598,7 @@ static fs_errno_t _write_data(
     while (remaining)
     {
         uint32_t blkno;
-        oefs_block_t block;
+        fs_block_t block;
         uint32_t copy_size;
 
         /* Assign a new block number from the in-memory bitmap. */
@@ -617,7 +612,7 @@ static fs_errno_t _write_data(
         copy_size = (remaining > FS_BLOCK_SIZE) ? FS_BLOCK_SIZE : remaining;
 
         /* Clear the block. */
-        memset(block.data, 0, sizeof(oefs_block_t));
+        memset(block.data, 0, sizeof(fs_block_t));
 
         /* Copy user data to the block. */
         memcpy(block.data, ptr, copy_size);
@@ -859,7 +854,7 @@ static fs_errno_t _creat(
     /* Add an entry to the directory for this inode. */
     {
         fs_dirent_t ent;
-        int32_t n;
+        ssize_t n;
 
         CHECK(_open(oefs, dir_ino, &file));
 
@@ -1035,7 +1030,7 @@ static fs_errno_t _load_file(fs_file_t* file, void** data_out, size_t* size_out)
     fs_errno_t err = FS_EOK;
     buf_t buf = BUF_INITIALIZER;
     char data[FS_BLOCK_SIZE];
-    int32_t n;
+    ssize_t n;
 
     *data_out = NULL;
     *size_out = 0;
@@ -1125,7 +1120,7 @@ static fs_errno_t _unlink(
             if (strcmp(entries[i].d_name, name) != 0)
             {
                 const uint32_t n = sizeof(fs_dirent_t);
-                int32_t nwritten;
+                ssize_t nwritten;
 
                 CHECK(_fs_write(dir, &entries[i], n, &nwritten));
 
@@ -1340,8 +1335,8 @@ done:
 static fs_errno_t _fs_read(
     fs_file_t* file,
     void* data,
-    uint32_t size,
-    int32_t* nread)
+    size_t size,
+    ssize_t* nread)
 {
     fs_errno_t err = FS_EOK;
     oefs_t* oefs = _oefs_from_file(file);
@@ -1366,7 +1361,7 @@ static fs_errno_t _fs_read(
     /* Read the data block-by-block */
     for (i = first; i < file->blknos.size && remaining > 0 && !file->eof; i++)
     {
-        oefs_block_t block;
+        fs_block_t block;
         uint32_t offset;
 
         CHECK(_read_block(file->oefs, file->blknos.data[i], &block));
@@ -1431,8 +1426,8 @@ done:
 static fs_errno_t _fs_write(
     fs_file_t* file,
     const void* data,
-    uint32_t size,
-    int32_t* nwritten)
+    size_t size,
+    ssize_t* nwritten)
 {
     fs_errno_t err = FS_EOK;
     oefs_t* oefs = _oefs_from_file(file);
@@ -1473,7 +1468,7 @@ static fs_errno_t _fs_write(
     /* Write the data block-by-block */
     for (i = first; i < file->blknos.size && remaining; i++)
     {
-        oefs_block_t block;
+        fs_block_t block;
         uint32_t offset;
 
         CHECK(_read_block(file->oefs, file->blknos.data[i], &block));
@@ -1633,7 +1628,7 @@ static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
 {
     fs_errno_t err = FS_EOK;
     oefs_t* oefs = _oefs_from_dir(dir);
-    int32_t nread = 0;
+    ssize_t nread = 0;
 
     if (ent)
         *ent = NULL;
@@ -1806,7 +1801,7 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
     /* Write the empty directory contents. */
     {
         fs_dirent_t dirents[2];
-        int32_t nwritten;
+        ssize_t nwritten;
 
         /* Initialize the ".." directory. */
         dirents[0].d_ino = dir_ino;
@@ -1893,7 +1888,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
     for (;;)
     {
         fs_dirent_t ent;
-        int32_t n;
+        ssize_t n;
 
         CHECK(_fs_read(dir, &ent, sizeof(ent), &n));
 
@@ -1924,7 +1919,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
     if (!release_ino)
     {
         fs_dirent_t ent;
-        int32_t n;
+        ssize_t n;
 
         memset(&ent, 0, sizeof(ent));
         ent.d_ino = ino;
@@ -2203,7 +2198,7 @@ fs_errno_t oefs_mkfs(fs_block_dev_t* dev, size_t num_blocks)
     fs_errno_t err = FS_EOK;
     size_t num_bitmap_blocks;
     uint32_t blkno = 0;
-    uint8_t empty_block[FS_BLOCK_SIZE];
+    fs_block_t empty_block;
 
     if (!dev || num_blocks < BITS_PER_BLOCK)
         RAISE(FS_EINVAL);
@@ -2213,17 +2208,17 @@ fs_errno_t oefs_mkfs(fs_block_dev_t* dev, size_t num_blocks)
         RAISE(FS_EINVAL);
 
     /* Initialize an empty block. */
-    memset(empty_block, 0, sizeof(empty_block));
+    memset(&empty_block, 0, sizeof(empty_block));
 
     /* Calculate the number of bitmap blocks. */
     num_bitmap_blocks = num_blocks / BITS_PER_BLOCK;
 
     /* Write empty block one. */
-    if (dev->put(dev, blkno++, empty_block) != 0)
+    if (dev->put(dev, blkno++, &empty_block) != 0)
         RAISE(FS_EIO);
 
     /* Write empty block two. */
-    if (dev->put(dev, blkno++, empty_block) != 0)
+    if (dev->put(dev, blkno++, &empty_block) != 0)
         RAISE(FS_EIO);
 
     /* Write the super block */
@@ -2235,22 +2230,22 @@ fs_errno_t oefs_mkfs(fs_block_dev_t* dev, size_t num_blocks)
         sb.s_nblocks = num_blocks;
         sb.s_free_blocks = num_blocks - 3;
 
-        if (dev->put(dev, blkno++, &sb) != 0)
+        if (dev->put(dev, blkno++, (const fs_block_t*)&sb) != 0)
             RAISE(FS_EIO);
     }
 
     /* Write the first bitmap block. */
     {
-        uint8_t block[FS_BLOCK_SIZE];
+        fs_block_t block;
 
-        memset(block, 0, sizeof(block));
+        memset(&block, 0, sizeof(block));
 
         /* Set the bit for the root inode. */
-        _set_bit(block, sizeof(block), 0);
+        _set_bit(block.data, sizeof(block), 0);
 
         /* Set the bits for the root directory. */
-        _set_bit(block, sizeof(block), 1);
-        _set_bit(block, sizeof(block), 2);
+        _set_bit(block.data, sizeof(block), 1);
+        _set_bit(block.data, sizeof(block), 2);
 
         /* Write the block. */
         if (dev->put(dev, blkno++, &block) != 0)
@@ -2283,13 +2278,13 @@ fs_errno_t oefs_mkfs(fs_block_dev_t* dev, size_t num_blocks)
             .i_blocks = {2, 3},
         };
 
-        if (dev->put(dev, blkno++, &root_inode) != 0)
+        if (dev->put(dev, blkno++, (const fs_block_t*)&root_inode) != 0)
             RAISE(FS_EIO);
     }
 
     /* Write the ".." and "." directory entries for the root directory.  */
     {
-        uint8_t blocks[2][FS_BLOCK_SIZE];
+        fs_block_t blocks[2];
 
         fs_dirent_t dir_entries[] = {
             {.d_ino = ROOT_INO,
@@ -2384,7 +2379,7 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_block_dev_t* dev)
     oefs->dev = dev;
 
     /* Read the super block from the file system. */
-    if (dev->get(dev, SUPER_BLOCK_PHYSICAL_BLKNO, &oefs->sb) != 0)
+    if (dev->get(dev, SUPER_BLOCK_PHYSICAL_BLKNO, (fs_block_t*)&oefs->sb) != 0)
         RAISE(FS_EIO);
 
     /* Check the superblock magic number. */
@@ -2422,7 +2417,7 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_block_dev_t* dev)
         {
             uint8_t* ptr = bitmap + (i * FS_BLOCK_SIZE);
 
-            if (dev->get(dev, BITMAP_PHYSICAL_BLKNO + i, ptr) != 0)
+            if (dev->get(dev, BITMAP_PHYSICAL_BLKNO + i, (fs_block_t*)ptr) != 0)
                 RAISE(FS_EIO);
         }
 

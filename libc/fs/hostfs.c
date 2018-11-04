@@ -209,8 +209,8 @@ done:
 static fs_errno_t _fs_read(
     fs_file_t* file,
     void* data,
-    uint32_t size,
-    int32_t* nread)
+    size_t size,
+    ssize_t* nread)
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
@@ -270,8 +270,8 @@ done:
 static fs_errno_t _fs_write(
     fs_file_t* file,
     const void* data,
-    uint32_t size,
-    int32_t* nwritten)
+    size_t size,
+    ssize_t* nwritten)
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;

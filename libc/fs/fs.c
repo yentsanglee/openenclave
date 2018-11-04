@@ -404,7 +404,7 @@ fs_errno_t fs_readv(int fd, const fs_iovec_t* iov, int iovcnt, ssize_t* ret)
     for (int i = 0; i < iovcnt; i++)
     {
         const fs_iovec_t* p = &iov[i];
-        int32_t n;
+        ssize_t n;
 
         CHECK(h->fs->fs_read(h->file, p->iov_base, p->iov_len, &n));
         nread += n;
@@ -437,7 +437,7 @@ fs_errno_t fs_writev(int fd, const fs_iovec_t* iov, int iovcnt, ssize_t* ret)
     for (int i = 0; i < iovcnt; i++)
     {
         const fs_iovec_t* p = &iov[i];
-        int32_t n;
+        ssize_t n;
 
         CHECK(h->fs->fs_write(h->file, p->iov_base, p->iov_len, &n));
 
@@ -707,7 +707,7 @@ fs_errno_t fs_getdents(
     while (remaining >= sizeof(struct dirent))
     {
         fs_dirent_t ent;
-        int32_t nread;
+        ssize_t nread;
 
         CHECK(h->fs->fs_read(h->file, &ent, sizeof(ent), &nread));
 

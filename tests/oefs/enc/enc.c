@@ -47,7 +47,7 @@ static int _load(fs_t* fs, const char* path, void** data_out, size_t* size_out)
     for (;;)
     {
         char data[4096];
-        int32_t n;
+        ssize_t n;
 
         if (fs->fs_read(file, data, sizeof(data), &n) != FS_EOK)
             goto done;
@@ -252,7 +252,7 @@ static void _update_file(fs_t* fs, const char* path)
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     const size_t FILE_SIZE = 1024;
     buf_t buf = BUF_INITIALIZER;
-    int32_t n;
+    ssize_t n;
 
     r = fs->fs_open(fs, path, 0, 0, &file);
     OE_TEST(r == FS_EOK);
@@ -299,7 +299,7 @@ static void _update_file(fs_t* fs, const char* path)
         OE_TEST(stat.st_rdev == 0);
         OE_TEST(stat.st_size == buf.size);
         OE_TEST(stat.st_blksize == FS_BLOCK_SIZE);
-        uint32_t n = (buf.size + FS_BLOCK_SIZE - 1) / FS_BLOCK_SIZE;
+        ssize_t n = (buf.size + FS_BLOCK_SIZE - 1) / FS_BLOCK_SIZE;
         OE_TEST(stat.st_blocks == n);
         OE_TEST(stat.__st_padding2 == 0);
         OE_TEST(stat.st_atim.tv_sec == 0);
@@ -321,7 +321,7 @@ static void _create_myfile(fs_t* fs)
 
     const char message[] = "Hello World!";
 
-    int32_t n;
+    ssize_t n;
     r = fs->fs_write(file, message, sizeof(message), &n);
     OE_TEST(r == FS_EOK);
     OE_TEST(n == sizeof(message));
@@ -356,8 +356,8 @@ static void _test_lseek(fs_t* fs)
     const size_t alphabet_length = OE_COUNTOF(alphabet) - 1;
     char buf[1093];
     ssize_t offset;
-    int32_t nread;
-    int32_t nwritten;
+    ssize_t nread;
+    ssize_t nwritten;
 
     r = fs->fs_creat(fs, "/somefile", 0, &file);
     OE_TEST(r == FS_EOK);
@@ -398,7 +398,7 @@ static void _test_links(fs_t* fs)
 {
     fs_errno_t r;
     fs_file_t* file;
-    int32_t n;
+    ssize_t n;
     char buf[1024];
     fs_stat_t stat;
 
@@ -471,7 +471,7 @@ static void _test_rename(fs_t* fs, const char* target)
 {
     fs_errno_t r;
     fs_file_t* file;
-    int32_t n;
+    ssize_t n;
     char buf[1024];
     fs_stat_t stat;
 

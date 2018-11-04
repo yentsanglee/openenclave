@@ -142,17 +142,18 @@ done:
     return ret;
 }
 
-static int _block_dev_get(fs_block_dev_t* dev, uint32_t blkno, void* data)
+static int _block_dev_get(
+    fs_block_dev_t* dev, uint32_t blkno, fs_block_t* block)
 {
     int ret = -1;
     block_dev_t* device = (block_dev_t*)dev;
-    uint8_t encrypted[FS_BLOCK_SIZE];
+    fs_block_t encrypted;
 
-    if (!device || !data)
+    if (!device || !block)
         goto done;
 
     /* Delegate to the next block device in the chain. */
-    if (device->next->get(device->next, blkno, encrypted) != 0)
+    if (device->next->get(device->next, blkno, &encrypted) != 0)
         goto done;
 
     /* Decrypt the block */
@@ -161,8 +162,8 @@ static int _block_dev_get(fs_block_dev_t* dev, uint32_t blkno, void* data)
             MBEDTLS_AES_DECRYPT,
             device->key,
             blkno,
-            encrypted,
-            data) != 0)
+            encrypted.data,
+            block->data) != 0)
     {
         goto done;
     }
@@ -174,13 +175,14 @@ done:
     return ret;
 }
 
-static int _block_dev_put(fs_block_dev_t* dev, uint32_t blkno, const void* data)
+static int _block_dev_put(
+    fs_block_dev_t* dev, uint32_t blkno, const fs_block_t* block)
 {
     int ret = -1;
     block_dev_t* device = (block_dev_t*)dev;
-    uint8_t encrypted[FS_BLOCK_SIZE];
+    fs_block_t encrypted;
 
-    if (!device || !data)
+    if (!device || !block)
         goto done;
 
     /* Encrypt the block */
@@ -189,14 +191,14 @@ static int _block_dev_put(fs_block_dev_t* dev, uint32_t blkno, const void* data)
             MBEDTLS_AES_ENCRYPT,
             device->key,
             blkno,
-            data,
-            encrypted) != 0)
+            block->data,
+            encrypted.data) != 0)
     {
         goto done;
     }
 
     /* Delegate to the next block device in the chain. */
-    if (device->next->put(device->next, blkno, encrypted) != 0)
+    if (device->next->put(device->next, blkno, &encrypted) != 0)
         goto done;
 
     ret = 0;
