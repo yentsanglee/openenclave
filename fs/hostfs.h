@@ -158,4 +158,6 @@ typedef struct _fs_hostfs_ocall_args
     } u;
 } fs_hostfs_ocall_args_t;
 
+void fs_handle_hostfs_ocall(fs_hostfs_ocall_args_t* args);
+
 #endif /* _FS_HOSTFS_H */

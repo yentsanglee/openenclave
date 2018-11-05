@@ -27,7 +27,8 @@
 #include <openenclave/internal/utils.h>
 #include "asmdefs.h"
 #include "enclave.h"
-#include "../libc/fs/hostblkdev.h"
+#include "../fs/hostblkdev.h"
+#include "../fs/hostfs.h"
 #include "ocalls.h"
 
 /*
@@ -476,7 +477,7 @@ static oe_result_t _handle_ocall(
             break;
 
         case OE_OCALL_HOSTFS:
-            oe_handle_hostfs(enclave, arg_in);
+            fs_handle_hostfs_ocall((fs_hostfs_ocall_args_t*)arg_in);
             break;
 
         default:

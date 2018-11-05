@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "../libc/fs/hostblkdev.h"
-#include <openenclave/internal/calls.h>
+#include "../fs/hostblkdev.h"
 #include <stdio.h>
 
 static void _handle_open(fs_hostblkdev_ocall_args_t* args)

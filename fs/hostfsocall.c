@@ -4,17 +4,12 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <openenclave/host.h>
-#include <openenclave/internal/calls.h>
-#include "../libc/fs/hostfs.h"
+#include "../fs/hostfs.h"
 #include <sys/stat.h>
 #include <unistd.h>
-#include "ocalls.h"
 
-void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
+void fs_handle_hostfs_ocall(fs_hostfs_ocall_args_t* args)
 {
-    fs_hostfs_ocall_args_t* args = (fs_hostfs_ocall_args_t*)arg;
-
     if (!args)
         return;
 

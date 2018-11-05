@@ -5,7 +5,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include "fs/fs.h"
+#include "../fs/fs.h"
 
 DIR* opendir(const char* name)
 {

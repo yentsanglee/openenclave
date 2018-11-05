@@ -17,9 +17,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "../../../libc/fs/buf.h"
-#include "../../../libc/fs/fs.h"
-#include "../../../libc/fs/mount.h"
+#include "../../../fs/buf.h"
+#include "../../../fs/fs.h"
+#include "../../../fs/mount.h"
 
 #define INIT
 

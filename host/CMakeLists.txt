@@ -13,7 +13,8 @@ set(PLATFORM_SRC
     crypto/key.c
     crypto/random.c
     crypto/rsa.c
-    hostfs.c
+    ../fs/hostfsocall.c
+    ../fs/hostblkdevocall.c
     linux/aep.S
     linux/aesm.c
     linux/cpuid.c
@@ -24,7 +25,6 @@ set(PLATFORM_SRC
     linux/sgxioctl.c
     linux/sgxsign.c
     linux/time.c
-    hostblkdev.c
     sgxquoteprovider.c
     )
 elseif (WIN32)
