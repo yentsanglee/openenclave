@@ -2,7 +2,10 @@ Todo:
 
 (A) Code walk-through.
 ---
-(B) Remove dependency of fs on oe.
+(B) Decouple fs from oe.
+    - fs_handle_syscall(): ENOSYS (function not implemented)
+    - fs_handle_hostblkdev_op()
+    - fs_handle_hostfs_op()
 ---
 (C) Fix truncate() to extend files.
 (C) Support directory enumeration below mount points.
