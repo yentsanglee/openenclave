@@ -11,7 +11,7 @@
 
 typedef struct _fs_blk
 {
-    char data[FS_BLOCK_SIZE];
+    uint8_t data[FS_BLOCK_SIZE];
 } fs_blk_t;
 
 typedef struct _fs_blkdev fs_blkdev_t;
