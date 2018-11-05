@@ -6,7 +6,6 @@
 #include "oefs.h"
 #include <assert.h>
 #include <assert.h>
-#include <openenclave/internal/defs.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -87,7 +86,7 @@ typedef struct _oefs_super_block
     uint8_t s_reserved[500];
 } oefs_super_block_t;
 
-OE_STATIC_ASSERT(sizeof(oefs_super_block_t) == FS_BLOCK_SIZE);
+FS_STATIC_ASSERT(sizeof(oefs_super_block_t) == FS_BLOCK_SIZE);
 
 typedef struct _oefs_inode
 {
@@ -128,7 +127,7 @@ typedef struct _oefs_inode
 
 } oefs_inode_t;
 
-OE_STATIC_ASSERT(sizeof(oefs_inode_t) == FS_BLOCK_SIZE);
+FS_STATIC_ASSERT(sizeof(oefs_inode_t) == FS_BLOCK_SIZE);
 
 typedef struct _oefs_bnode
 {
@@ -140,12 +139,12 @@ typedef struct _oefs_bnode
 
 } oefs_bnode_t;
 
-OE_STATIC_ASSERT(sizeof(oefs_bnode_t) == FS_BLOCK_SIZE);
+FS_STATIC_ASSERT(sizeof(oefs_bnode_t) == FS_BLOCK_SIZE);
 
-OE_STATIC_ASSERT(sizeof(fs_dirent_t) == 268);
+FS_STATIC_ASSERT(sizeof(fs_dirent_t) == 268);
 
-OE_STATIC_ASSERT(sizeof(fs_timespec_t) == 16);
-OE_STATIC_ASSERT(sizeof(fs_stat_t) == (10 * 4 + 3 * 16));
+FS_STATIC_ASSERT(sizeof(fs_timespec_t) == 16);
+FS_STATIC_ASSERT(sizeof(fs_stat_t) == (10 * 4 + 3 * 16));
 
 typedef struct _oefs
 {

@@ -890,3 +890,14 @@ done:
 
     return err;
 }
+
+int fs_hostfs_ocall(fs_hostfs_ocall_args_t* args)
+{
+    if (!args)
+        return -1;
+
+    if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        return -1;
+
+    return 0;
+}

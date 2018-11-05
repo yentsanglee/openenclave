@@ -4,10 +4,9 @@
 #ifndef _FS_MOUNT_H
 #define _FS_MOUNT_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/result.h>
+#include "common.h"
 
-OE_EXTERNC_BEGIN
+FS_EXTERN_C_BEGIN
 
 #define FS_MOUNT_FLAG_NONE 0
 #define FS_MOUNT_FLAG_MKFS 1
@@ -25,6 +24,6 @@ int fs_mount_hostfs(const char* target);
 
 int fs_unmount(const char* target);
 
-OE_EXTERNC_END
+FS_EXTERN_C_END
 
 #endif /* _FS_MOUNT_H */
