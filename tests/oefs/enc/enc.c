@@ -9,7 +9,6 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <openenclave/enclave.h>
-#include <openenclave/internal/file.h>
 #include <openenclave/internal/tests.h>
 #include <stddef.h>
 #include <stdio.h>
