@@ -326,18 +326,18 @@ static fs_errno_t _read_block(oefs_t* oefs, size_t blkno, fs_blk_t* blk)
 
     /* Check whether the block number is valid. */
     if (blkno == 0 || blkno > oefs->sb.read.s_nblocks)
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
     /* Sanity check: make sure the block is not free. */
     if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, blkno - 1))
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
     /* Convert the logical block number to a physical block number. */
     physical_blkno = _get_physical_blkno(oefs, blkno);
 
     /* Get the physical block. */
     if (oefs->dev->get(oefs->dev, physical_blkno, blk) != 0)
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
 done:
     return err;
@@ -350,18 +350,18 @@ static fs_errno_t _write_block(oefs_t* oefs, size_t blkno, const fs_blk_t* blk)
 
     /* Check whether the block number is valid. */
     if (blkno == 0 || blkno > oefs->sb.read.s_nblocks)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Sanity check: make sure the block is not free. */
     if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, blkno - 1))
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
     /* Convert the logical block number to a physical block number. */
     physical_blkno = _get_physical_blkno(oefs, blkno);
 
     /* Get the physical block. */
     if (oefs->dev->put(oefs->dev, physical_blkno, blk) != 0)
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
 done:
     return err;
@@ -372,11 +372,11 @@ static fs_errno_t _load_inode(oefs_t* oefs, uint32_t ino, oefs_inode_t* inode)
     fs_errno_t err = FS_EOK;
 
     /* Read this inode into memory. */
-    CHECK(_read_block(oefs, ino, (fs_blk_t*)inode));
+    FS_CHECK(_read_block(oefs, ino, (fs_blk_t*)inode));
 
     /* Check the inode magic number. */
     if (inode->i_magic != INODE_MAGIC)
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
 done:
     return err;
@@ -397,7 +397,7 @@ static fs_errno_t _load_blknos(
         for (size_t i = 0; i < n && inode->i_blocks[i]; i++)
         {
             if (fs_bufu32_append(blknos, &inode->i_blocks[i], 1) != 0)
-                RAISE(FS_ENOMEM);
+                FS_RAISE(FS_ENOMEM);
         }
     }
 
@@ -411,11 +411,11 @@ static fs_errno_t _load_blknos(
             size_t n;
 
             /* Read this bnode into memory. */
-            CHECK(_read_block(oefs, next, (fs_blk_t*)&bnode));
+            FS_CHECK(_read_block(oefs, next, (fs_blk_t*)&bnode));
 
             /* Append this bnode blkno. */
             if (fs_bufu32_append(bnode_blknos, &next, 1) != 0)
-                RAISE(FS_ENOMEM);
+                FS_RAISE(FS_ENOMEM);
 
             n = sizeof(bnode.b_blocks) / sizeof(uint32_t);
 
@@ -423,7 +423,7 @@ static fs_errno_t _load_blknos(
             for (size_t i = 0; i < n && bnode.b_blocks[i]; i++)
             {
                 if (fs_bufu32_append(blknos, &bnode.b_blocks[i], 1) != 0)
-                    RAISE(FS_ENOMEM);
+                    FS_RAISE(FS_ENOMEM);
             }
 
             next = bnode.b_next;
@@ -443,20 +443,21 @@ static fs_errno_t _open(oefs_t* oefs, uint32_t ino, fs_file_t** file_out)
         *file_out = NULL;
 
     if (!oefs || !ino || !file_out)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     if (!(file = calloc(1, sizeof(fs_file_t))))
-        RAISE(FS_ENOMEM);
+        FS_RAISE(FS_ENOMEM);
 
     file->magic = FILE_MAGIC;
     file->oefs = oefs;
     file->ino = ino;
 
     /* Read this inode into memory. */
-    CHECK(_load_inode(oefs, ino, &file->inode));
+    FS_CHECK(_load_inode(oefs, ino, &file->inode));
 
     /* Load the block numbers into memory. */
-    CHECK(_load_blknos(oefs, &file->inode, &file->bnode_blknos, &file->blknos));
+    FS_CHECK(
+        _load_blknos(oefs, &file->inode, &file->bnode_blknos, &file->blknos));
 
     *file_out = file;
     file = NULL;
@@ -497,11 +498,11 @@ static fs_errno_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
             _set_bit(_bitmap_write(oefs), oefs->bitmap_size, i);
             *blkno = i + 1;
             _sb_write(oefs)->s_free_blocks--;
-            RAISE(0);
+            FS_RAISE(0);
         }
     }
 
-    RAISE(FS_ENOSPC);
+    FS_RAISE(FS_ENOSPC);
 
 done:
     return err;
@@ -514,7 +515,7 @@ static fs_errno_t _unassign_blkno(oefs_t* oefs, uint32_t blkno)
     uint32_t index = blkno - 1;
 
     if (blkno == 0 || index >= nbits)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     assert(_test_bit(oefs->bitmap.read, oefs->bitmap_size, index));
 
@@ -535,7 +536,7 @@ static fs_errno_t _flush_super_block(oefs_t* oefs)
         const uint32_t blkno = SUPER_BLOCK_PHYSICAL_BLKNO;
 
         if (oefs->dev->put(oefs->dev, blkno, (const fs_blk_t*)&oefs->sb) != 0)
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
 
         memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs_super_block_t));
     }
@@ -566,7 +567,7 @@ static fs_errno_t _flush_bitmap(oefs_t* oefs)
             uint32_t blkno = BITMAP_PHYSICAL_BLKNO + i;
 
             if (oefs->dev->put(oefs->dev, blkno, blk) != 0)
-                RAISE(FS_EIO);
+                FS_RAISE(FS_EIO);
 
             memcpy(blk_copy, blk, FS_BLOCK_SIZE);
         }
@@ -581,12 +582,12 @@ static fs_errno_t _flush(oefs_t* oefs)
     fs_errno_t err = FS_EOK;
 
     if (!oefs)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     if (oefs->dirty)
     {
-        CHECK(_flush_bitmap(oefs));
-        CHECK(_flush_super_block(oefs));
+        FS_CHECK(_flush_bitmap(oefs));
+        FS_CHECK(_flush_super_block(oefs));
         oefs->dirty = false;
     }
 
@@ -612,11 +613,11 @@ static fs_errno_t _write_data(
         uint32_t copy_size;
 
         /* Assign a new block number from the in-memory bitmap. */
-        CHECK(_assign_blkno(oefs, &blkno));
+        FS_CHECK(_assign_blkno(oefs, &blkno));
 
         /* Append the new block number to the array of blocks numbers. */
         if (fs_bufu32_append(blknos, &blkno, 1) != 0)
-            RAISE(FS_ENOMEM);
+            FS_RAISE(FS_ENOMEM);
 
         /* Calculate bytes to copy to the block. */
         copy_size = (remaining > FS_BLOCK_SIZE) ? FS_BLOCK_SIZE : remaining;
@@ -628,7 +629,7 @@ static fs_errno_t _write_data(
         memcpy(blk.data, ptr, copy_size);
 
         /* Write the new block. */
-        CHECK(_write_block(oefs, blkno, &blk));
+        FS_CHECK(_write_block(oefs, blkno, &blk));
 
         /* Advance to next block of data to write. */
         ptr += copy_size;
@@ -697,11 +698,11 @@ static fs_errno_t _append_block_chain(
         assert(file->bnode_blknos.size != 0);
 
         if (file->bnode_blknos.size == 0)
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
 
         blkno = file->bnode_blknos.data[file->bnode_blknos.size - 1];
 
-        CHECK(_read_block(file->oefs, blkno, (fs_blk_t*)&bnode));
+        FS_CHECK(_read_block(file->oefs, blkno, (fs_blk_t*)&bnode));
 
         object = &bnode;
         slots = bnode.b_blocks;
@@ -720,16 +721,16 @@ static fs_errno_t _append_block_chain(
             uint32_t new_blkno;
 
             /* Assign a block number for a new bnode. */
-            CHECK(_assign_blkno(file->oefs, &new_blkno));
+            FS_CHECK(_assign_blkno(file->oefs, &new_blkno));
 
             /* Append the bnode blkno to the file struct. */
             if (fs_bufu32_append(&file->bnode_blknos, &new_blkno, 1) != 0)
-                RAISE(FS_ENOMEM);
+                FS_RAISE(FS_ENOMEM);
 
             *next = new_blkno;
 
             /* Rewrite the current inode or bnode. */
-            CHECK(_write_block(file->oefs, blkno, object));
+            FS_CHECK(_write_block(file->oefs, blkno, object));
 
             /* Initialize the new bnode with zeros. */
             memset(&bnode, 0, sizeof(oefs_bnode_t));
@@ -744,7 +745,7 @@ static fs_errno_t _append_block_chain(
         else
         {
             /* Rewrite the inode or bnode. */
-            CHECK(_write_block(file->oefs, blkno, object));
+            FS_CHECK(_write_block(file->oefs, blkno, object));
         }
     }
 
@@ -776,27 +777,27 @@ static fs_errno_t _split_path(
 
     /* Reject paths that are too long. */
     if (strlen(path) >= FS_PATH_MAX)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Reject paths that are not absolute */
     if (path[0] != '/')
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Handle root directory up front */
     if (strcmp(path, "/") == 0)
     {
         strlcpy(dirname, "/", FS_PATH_MAX);
         strlcpy(basename, "/", FS_PATH_MAX);
-        RAISE(0);
+        FS_RAISE(0);
     }
 
     /* This cannot fail (prechecked) */
     if (!(slash = strrchr(path, '/')))
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* If path ends with '/' character */
     if (!slash[1])
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Split the path */
     {
@@ -837,7 +838,7 @@ static fs_errno_t _creat(
         *ino_out = 0;
 
     if (!oefs || !dir_ino || !name || strlen(name) >= FS_PATH_MAX)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* ATTN: should create replace an existing file? */
 
@@ -855,10 +856,10 @@ static fs_errno_t _creat(
         else if (type == FS_DT_REG)
             inode.i_mode = FS_S_REG_DEFAULT;
         else
-            RAISE(FS_EINVAL);
+            FS_RAISE(FS_EINVAL);
 
-        CHECK(_assign_blkno(oefs, &ino));
-        CHECK(_write_block(oefs, ino, (const fs_blk_t*)&inode));
+        FS_CHECK(_assign_blkno(oefs, &ino));
+        FS_CHECK(_write_block(oefs, ino, (const fs_blk_t*)&inode));
     }
 
     /* Create an inode for the new file. */
@@ -868,12 +869,12 @@ static fs_errno_t _creat(
         fs_dirent_t ent;
         ssize_t n;
 
-        CHECK(_open(oefs, dir_ino, &file));
+        FS_CHECK(_open(oefs, dir_ino, &file));
 
         /* Check for duplicates. */
         for (;;)
         {
-            CHECK(_fs_read(file, &ent, sizeof(ent), &n));
+            FS_CHECK(_fs_read(file, &ent, sizeof(ent), &n));
 
             if (n == 0)
                 break;
@@ -881,10 +882,10 @@ static fs_errno_t _creat(
             assert(n == sizeof(ent));
 
             if (n != sizeof(ent))
-                RAISE(FS_EIO);
+                FS_RAISE(FS_EIO);
 
             if (strcmp(ent.d_name, name) == 0)
-                RAISE(FS_EEXIST);
+                FS_RAISE(FS_EEXIST);
         }
 
         /* Append the entry to the directory. */
@@ -896,10 +897,10 @@ static fs_errno_t _creat(
             ent.d_type = type;
             strlcpy(ent.d_name, name, sizeof(ent.d_name));
 
-            CHECK(_fs_write(file, &ent, sizeof(ent), &n));
+            FS_CHECK(_fs_write(file, &ent, sizeof(ent), &n));
 
             if (n != sizeof(ent))
-                RAISE(FS_EIO);
+                FS_RAISE(FS_EIO);
         }
     }
 
@@ -927,7 +928,7 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
     size_t bnode_index;
 
     if (!file)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     assert(_sane_file(file));
 
@@ -935,7 +936,7 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
 
     /* Fail if length is greater than the size of the file. */
     if (length > file->inode.i_size)
-        RAISE(FS_EFBIG);
+        FS_RAISE(FS_EFBIG);
 
     /* Calculate the index of the first block to be freed. */
     block_index = (length + FS_BLOCK_SIZE - 1) / FS_BLOCK_SIZE;
@@ -944,12 +945,12 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
     {
         for (size_t i = block_index; i < file->blknos.size; i++)
         {
-            CHECK(_unassign_blkno(oefs, file->blknos.data[i]));
+            FS_CHECK(_unassign_blkno(oefs, file->blknos.data[i]));
             file->inode.i_nblocks--;
         }
 
         if (fs_bufu32_resize(&file->blknos, block_index) != 0)
-            RAISE(FS_ENOMEM);
+            FS_RAISE(FS_ENOMEM);
     }
 
     if (block_index <= BLKNOS_PER_INODE)
@@ -963,11 +964,11 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
         /* Release all the bnode blocks. */
         for (size_t i = 0; i < file->bnode_blknos.size; i++)
         {
-            CHECK(_unassign_blkno(oefs, file->bnode_blknos.data[i]));
+            FS_CHECK(_unassign_blkno(oefs, file->bnode_blknos.data[i]));
         }
 
         if (fs_bufu32_resize(&file->bnode_blknos, 0) != 0)
-            RAISE(FS_ENOMEM);
+            FS_RAISE(FS_ENOMEM);
     }
     else
     {
@@ -988,7 +989,7 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
         if (slot_index == 0)
         {
             if (bnode_index == 0)
-                RAISE(FS_EOVERFLOW);
+                FS_RAISE(FS_EOVERFLOW);
 
             bnode_index--;
             slot_index = BLKNOS_PER_BNODE;
@@ -996,7 +997,7 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
 
         /* Load the bnode into memory. */
         bnode_blkno = file->bnode_blknos.data[bnode_index];
-        CHECK(_read_block(oefs, bnode_blkno, (fs_blk_t*)&bnode));
+        FS_CHECK(_read_block(oefs, bnode_blkno, (fs_blk_t*)&bnode));
 
         /* Clear any slots in the bnode. */
         for (size_t i = slot_index; i < BLKNOS_PER_BNODE; i++)
@@ -1008,14 +1009,14 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
         /* Release unused bnode blocks. */
         for (size_t i = bnode_index + 1; i < file->bnode_blknos.size; i++)
         {
-            CHECK(_unassign_blkno(oefs, file->bnode_blknos.data[i]));
+            FS_CHECK(_unassign_blkno(oefs, file->bnode_blknos.data[i]));
         }
 
         if (fs_bufu32_resize(&file->bnode_blknos, bnode_index + 1) != 0)
-            RAISE(FS_ENOMEM);
+            FS_RAISE(FS_ENOMEM);
 
         /* Rewrite the bnode. */
-        CHECK(_write_block(oefs, bnode_blkno, (const fs_blk_t*)&bnode));
+        FS_CHECK(_write_block(oefs, bnode_blkno, (const fs_blk_t*)&bnode));
     }
 
     /* Update the inode. */
@@ -1025,7 +1026,8 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
     file->offset = 0;
 
     /* Sync the inode to disk. */
-    CHECK(_write_block(file->oefs, file->ino, (const fs_blk_t*)&file->inode));
+    FS_CHECK(
+        _write_block(file->oefs, file->ino, (const fs_blk_t*)&file->inode));
 
 done:
 
@@ -1049,13 +1051,13 @@ static fs_errno_t _load_file(fs_file_t* file, void** data_out, size_t* size_out)
 
     for (;;)
     {
-        CHECK(_fs_read(file, data, sizeof(data), &n));
+        FS_CHECK(_fs_read(file, data, sizeof(data), &n));
 
         if (n == 0)
             break;
 
         if (fs_buf_append(&buf, data, n) != 0)
-            RAISE(FS_ENOMEM);
+            FS_RAISE(FS_ENOMEM);
     }
 
     *data_out = buf.data;
@@ -1074,9 +1076,9 @@ static fs_errno_t _release_inode(oefs_t* oefs, uint32_t ino)
     fs_errno_t err = FS_EOK;
     fs_file_t* file = NULL;
 
-    CHECK(_open(oefs, ino, &file));
-    CHECK(_truncate(file, 0));
-    CHECK(_unassign_blkno(oefs, file->ino));
+    FS_CHECK(_open(oefs, ino, &file));
+    FS_CHECK(_truncate(file, 0));
+    FS_CHECK(_unassign_blkno(oefs, file->ino));
 
 done:
 
@@ -1103,24 +1105,24 @@ static fs_errno_t _unlink(
     oefs_inode_t inode;
 
     if (!oefs || !dir_ino || !ino)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Open the directory file. */
-    CHECK(_open(oefs, dir_ino, &dir));
+    FS_CHECK(_open(oefs, dir_ino, &dir));
 
     /* Load the contents of the parent directory into memory. */
-    CHECK(_load_file(dir, &data, &size));
+    FS_CHECK(_load_file(dir, &data, &size));
 
     /* File must be a multiple of the entry size. */
     {
         assert((size % sizeof(fs_dirent_t)) == 0);
 
         if (size % sizeof(fs_dirent_t))
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
     }
 
     /* Truncate the parent directory. */
-    CHECK(_truncate(dir, 0));
+    FS_CHECK(_truncate(dir, 0));
 
     /* Rewrite the directory entries but exclude the removed file. */
     {
@@ -1134,21 +1136,21 @@ static fs_errno_t _unlink(
                 const uint32_t n = sizeof(fs_dirent_t);
                 ssize_t nwritten;
 
-                CHECK(_fs_write(dir, &entries[i], n, &nwritten));
+                FS_CHECK(_fs_write(dir, &entries[i], n, &nwritten));
 
                 if (nwritten != n)
-                    RAISE(FS_EIO);
+                    FS_RAISE(FS_EIO);
             }
         }
     }
 
     /* Load the inode into memory. */
-    CHECK(_load_inode(oefs, ino, &inode));
+    FS_CHECK(_load_inode(oefs, ino, &inode));
 
     /* If this is the only link to this file, then remove it. */
     if (inode.i_links == 1)
     {
-        CHECK(_release_inode(oefs, ino));
+        FS_CHECK(_release_inode(oefs, ino));
     }
     else
     {
@@ -1156,7 +1158,7 @@ static fs_errno_t _unlink(
         inode.i_links--;
 
         /* Rewrite the inode. */
-        CHECK(_write_block(oefs, ino, (const fs_blk_t*)&inode));
+        FS_CHECK(_write_block(oefs, ino, (const fs_blk_t*)&inode));
     }
 
 done:
@@ -1189,12 +1191,12 @@ static fs_errno_t _opendir_by_ino(
         *dir_out = NULL;
 
     if (!oefs || !ino || !dir_out)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_open(oefs, ino, &file));
+    FS_CHECK(_open(oefs, ino, &file));
 
     if (!(dir = calloc(1, sizeof(fs_dir_t))))
-        RAISE(FS_ENOMEM);
+        FS_RAISE(FS_ENOMEM);
 
     dir->magic = DIR_MAGIC;
     dir->ino = ino;
@@ -1239,18 +1241,18 @@ static fs_errno_t _path_to_ino(
 
     /* Check for null parameters */
     if (!oefs || !path || !ino_out)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Check path length */
     if (strlen(path) >= FS_PATH_MAX)
-        RAISE(FS_ENAMETOOLONG);
+        FS_RAISE(FS_ENAMETOOLONG);
 
     /* Make copy of the path. */
     strlcpy(buf, path, sizeof(buf));
 
     /* Be sure path begins with "/" */
     if (path[0] != '/')
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     elements[num_elements++] = "/";
 
@@ -1286,14 +1288,14 @@ static fs_errno_t _path_to_ino(
         {
             fs_dirent_t* ent;
 
-            CHECK(_opendir_by_ino(oefs, current_ino, &dir));
+            FS_CHECK(_opendir_by_ino(oefs, current_ino, &dir));
 
             dir_ino = current_ino;
             current_ino = 0;
 
             for (;;)
             {
-                CHECK(_fs_readdir(dir, &ent));
+                FS_CHECK(_fs_readdir(dir, &ent));
 
                 if (!ent)
                     break;
@@ -1316,9 +1318,9 @@ static fs_errno_t _path_to_ino(
             }
 
             if (!current_ino)
-                RAISE(FS_ENOENT);
+                FS_RAISE(FS_ENOENT);
 
-            CHECK(_fs_closedir(dir));
+            FS_CHECK(_fs_closedir(dir));
             dir = NULL;
         }
     }
@@ -1362,7 +1364,7 @@ static fs_errno_t _fs_read(
 
     /* Check parameters */
     if (!_valid_file(file) || !file->oefs || (!data && size))
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* The index of the first block to read. */
     first = file->offset / FS_BLOCK_SIZE;
@@ -1376,7 +1378,7 @@ static fs_errno_t _fs_read(
         fs_blk_t blk;
         uint32_t offset;
 
-        CHECK(_read_block(file->oefs, file->blknos.data[i], &blk));
+        FS_CHECK(_read_block(file->oefs, file->blknos.data[i], &blk));
 
         /* The offset of the data within this block */
         offset = file->offset % FS_BLOCK_SIZE;
@@ -1456,12 +1458,12 @@ static fs_errno_t _fs_write(
 
     /* Check parameters */
     if (!_valid_file(file) || !file->oefs || (!data && size) || !nwritten)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     assert(_sane_file(file));
 
     if (!_sane_file(file))
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     oefs = file->oefs;
 
@@ -1485,7 +1487,7 @@ static fs_errno_t _fs_write(
         fs_blk_t blk;
         uint32_t offset;
 
-        CHECK(_read_block(file->oefs, file->blknos.data[i], &blk));
+        FS_CHECK(_read_block(file->oefs, file->blknos.data[i], &blk));
 
         /* The offset of the data within this block */
         offset = file->offset % FS_BLOCK_SIZE;
@@ -1531,7 +1533,7 @@ static fs_errno_t _fs_write(
         }
 
         /* Rewrite the block. */
-        CHECK(_write_block(file->oefs, file->blknos.data[i], &blk));
+        FS_CHECK(_write_block(file->oefs, file->blknos.data[i], &blk));
     }
 
     /* Append remaining data to the file. */
@@ -1540,17 +1542,17 @@ static fs_errno_t _fs_write(
         fs_bufu32_t blknos = BUF_U32_INITIALIZER;
 
         /* Write the new blocks. */
-        CHECK(_write_data(file->oefs, ptr, remaining, &blknos));
+        FS_CHECK(_write_data(file->oefs, ptr, remaining, &blknos));
 
         /* Append these block numbers to the block-numbers chain. */
-        CHECK(_append_block_chain(file, &blknos));
+        FS_CHECK(_append_block_chain(file, &blknos));
 
         /* Update the inode's total_blocks */
         file->inode.i_nblocks += blknos.size;
 
         /* Append these block numbers to the file. */
         if (fs_bufu32_append(&file->blknos, blknos.data, blknos.size) != 0)
-            RAISE(FS_ENOMEM);
+            FS_RAISE(FS_ENOMEM);
 
         fs_bufu32_release(&blknos);
 
@@ -1562,7 +1564,8 @@ static fs_errno_t _fs_write(
     file->inode.i_size = new_file_size;
 
     /* Flush the inode to disk. */
-    CHECK(_write_block(file->oefs, file->ino, (const fs_blk_t*)&file->inode));
+    FS_CHECK(
+        _write_block(file->oefs, file->ino, (const fs_blk_t*)&file->inode));
 
     /* Calculate number of bytes written */
     *nwritten = size - remaining;
@@ -1583,7 +1586,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
     oefs_t* oefs = _oefs_from_file(file);
 
     if (!_valid_file(file))
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     fs_bufu32_release(&file->blknos);
     fs_bufu32_release(&file->bnode_blknos);
@@ -1604,7 +1607,7 @@ static fs_errno_t _fs_release(fs_t* fs)
     oefs_t* oefs = (oefs_t*)fs;
 
     if (!_valid_oefs(fs) || !oefs->bitmap.read || !oefs->bitmap_copy)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     oefs->dev->release(oefs->dev);
     free(_bitmap_write(oefs));
@@ -1627,10 +1630,10 @@ static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir)
         *dir = NULL;
 
     if (!_valid_oefs(fs) || !path || !dir)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_path_to_ino(oefs, path, NULL, &ino, NULL));
-    CHECK(_opendir_by_ino(oefs, ino, dir));
+    FS_CHECK(_path_to_ino(oefs, path, NULL, &ino, NULL));
+    FS_CHECK(_opendir_by_ino(oefs, ino, dir));
 
 done:
 
@@ -1650,17 +1653,17 @@ static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
         *ent = NULL;
 
     if (!_valid_dir(dir) || !dir->file)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_fs_read(dir->file, &dir->ent, sizeof(fs_dirent_t), &nread));
+    FS_CHECK(_fs_read(dir->file, &dir->ent, sizeof(fs_dirent_t), &nread));
 
     /* Check for end of file. */
     if (nread == 0)
-        RAISE(0);
+        FS_RAISE(0);
 
     /* Check for an illegal read size. */
     if (nread != sizeof(fs_dirent_t))
-        RAISE(FS_EBADF);
+        FS_RAISE(FS_EBADF);
 
     *ent = &dir->ent;
 
@@ -1678,7 +1681,7 @@ static fs_errno_t _fs_closedir(fs_dir_t* dir)
     oefs_t* oefs = _oefs_from_dir(dir);
 
     if (!_valid_dir(dir) || !dir->file)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     _fs_close(dir->file);
     dir->file = NULL;
@@ -1710,7 +1713,7 @@ static fs_errno_t _fs_open(
         *file_out = NULL;
 
     if (!_valid_oefs(fs) || !path || !file_out)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Reject unsupported flags. */
     {
@@ -1727,7 +1730,7 @@ static fs_errno_t _fs_open(
         supported_flags |= FS_O_CLOEXEC;
 
         if (flags & ~supported_flags)
-            RAISE(FS_EINVAL);
+            FS_RAISE(FS_EINVAL);
     }
 
     /* Get the file's inode (only if it exists). */
@@ -1737,15 +1740,15 @@ static fs_errno_t _fs_open(
     if (tmp_err == 0)
     {
         if ((flags & FS_O_CREAT && flags & FS_O_EXCL))
-            RAISE(FS_EEXIST);
+            FS_RAISE(FS_EEXIST);
 
         if ((flags & FS_O_DIRECTORY) && (type != FS_DT_DIR))
-            RAISE(FS_ENOTDIR);
+            FS_RAISE(FS_ENOTDIR);
 
-        CHECK(_open(oefs, ino, &file));
+        FS_CHECK(_open(oefs, ino, &file));
 
         if (flags & FS_O_TRUNC)
-            CHECK(_truncate(file, 0));
+            FS_CHECK(_truncate(file, 0));
 
         if (flags & FS_O_APPEND)
             file->offset = file->inode.i_size;
@@ -1757,23 +1760,23 @@ static fs_errno_t _fs_open(
         uint32_t dir_ino;
 
         if (!(flags & FS_O_CREAT))
-            RAISE(FS_ENOENT);
+            FS_RAISE(FS_ENOENT);
 
         /* Split the path into parent directory and file name */
-        CHECK(_split_path(path, dirname, basename));
+        FS_CHECK(_split_path(path, dirname, basename));
 
         /* Get the inode of the parent directory. */
-        CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL));
+        FS_CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL));
 
         /* Create the new file. */
-        CHECK(_creat(oefs, dir_ino, basename, FS_DT_REG, &ino));
+        FS_CHECK(_creat(oefs, dir_ino, basename, FS_DT_REG, &ino));
 
         /* Open the new file. */
-        CHECK(_open(oefs, ino, &file));
+        FS_CHECK(_open(oefs, ino, &file));
     }
     else
     {
-        RAISE(tmp_err);
+        FS_RAISE(tmp_err);
     }
 
     /* Save the access flags. */
@@ -1800,19 +1803,19 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
     fs_file_t* file = NULL;
 
     if (!_valid_oefs(fs) || !path)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Split the path into parent path and final component. */
-    CHECK(_split_path(path, dirname, basename));
+    FS_CHECK(_split_path(path, dirname, basename));
 
     /* Get the inode of the parent directory. */
-    CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL));
+    FS_CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, NULL));
 
     /* Create the new directory file. */
-    CHECK(_creat(oefs, dir_ino, basename, FS_DT_DIR, &ino));
+    FS_CHECK(_creat(oefs, dir_ino, basename, FS_DT_DIR, &ino));
 
     /* Open the newly created directory */
-    CHECK(_open(oefs, ino, &file));
+    FS_CHECK(_open(oefs, ino, &file));
 
     /* Write the empty directory contents. */
     {
@@ -1833,10 +1836,10 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
         dirents[1].d_type = FS_DT_DIR;
         strcpy(dirents[1].d_name, ".");
 
-        CHECK(_fs_write(file, &dirents, sizeof(dirents), &nwritten));
+        FS_CHECK(_fs_write(file, &dirents, sizeof(dirents), &nwritten));
 
         if (nwritten != sizeof(dirents))
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
     }
 
 done:
@@ -1872,32 +1875,32 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
     uint32_t release_ino = 0;
 
     if (!old_path || !new_path)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Get the inode number of the old path. */
     {
         uint8_t type;
 
-        CHECK(_path_to_ino(oefs, old_path, NULL, &ino, &type));
+        FS_CHECK(_path_to_ino(oefs, old_path, NULL, &ino, &type));
 
         /* Only regular files can be linked. */
         if (type != FS_DT_REG)
-            RAISE(FS_EINVAL);
+            FS_RAISE(FS_EINVAL);
     }
 
     /* Split the new path. */
-    CHECK(_split_path(new_path, dirname, basename));
+    FS_CHECK(_split_path(new_path, dirname, basename));
 
     /* Open the destination directory. */
     {
         uint8_t type;
 
-        CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, &type));
+        FS_CHECK(_path_to_ino(oefs, dirname, NULL, &dir_ino, &type));
 
         if (type != FS_DT_DIR)
-            RAISE(FS_EINVAL);
+            FS_RAISE(FS_EINVAL);
 
-        CHECK(_open(oefs, dir_ino, &dir));
+        FS_CHECK(_open(oefs, dir_ino, &dir));
     }
 
     /* Replace the destination file if it already exists. */
@@ -1906,14 +1909,14 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
         fs_dirent_t ent;
         ssize_t n;
 
-        CHECK(_fs_read(dir, &ent, sizeof(ent), &n));
+        FS_CHECK(_fs_read(dir, &ent, sizeof(ent), &n));
 
         if (n == 0)
             break;
 
         if (n != sizeof(ent))
         {
-            RAISE(FS_EBADF);
+            FS_RAISE(FS_EBADF);
         }
 
         if (strcmp(ent.d_name, basename) == 0)
@@ -1921,11 +1924,11 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
             release_ino = ent.d_ino;
 
             if (ent.d_type != FS_DT_REG)
-                RAISE(FS_EINVAL);
+                FS_RAISE(FS_EINVAL);
 
-            CHECK(_fs_lseek(dir, -sizeof(ent), FS_SEEK_CUR, NULL));
+            FS_CHECK(_fs_lseek(dir, -sizeof(ent), FS_SEEK_CUR, NULL));
             ent.d_ino = ino;
-            CHECK(_fs_write(dir, &ent, sizeof(ent), &n));
+            FS_CHECK(_fs_write(dir, &ent, sizeof(ent), &n));
 
             break;
         }
@@ -1944,24 +1947,24 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
         ent.d_type = FS_DT_REG;
         strlcpy(ent.d_name, basename, sizeof(ent.d_name));
 
-        CHECK(_fs_write(dir, &ent, sizeof(ent), &n));
+        FS_CHECK(_fs_write(dir, &ent, sizeof(ent), &n));
 
         if (n != sizeof(ent))
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
     }
 
     /* Increment the number of links to this file. */
     {
         oefs_inode_t inode;
 
-        CHECK(_load_inode(oefs, ino, &inode));
+        FS_CHECK(_load_inode(oefs, ino, &inode));
         inode.i_links++;
-        CHECK(_write_block(oefs, ino, (const fs_blk_t*)&inode));
+        FS_CHECK(_write_block(oefs, ino, (const fs_blk_t*)&inode));
     }
 
     /* Remove the destination file if it existed above. */
     if (release_ino)
-        CHECK(_release_inode(oefs, release_ino));
+        FS_CHECK(_release_inode(oefs, release_ino));
 
 done:
 
@@ -1983,10 +1986,10 @@ static fs_errno_t _fs_rename(
     oefs_t* oefs = (oefs_t*)fs;
 
     if (!_valid_oefs(fs) || !old_path || !new_path)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_fs_link(fs, old_path, new_path));
-    CHECK(_fs_unlink(fs, old_path));
+    FS_CHECK(_fs_link(fs, old_path, new_path));
+    FS_CHECK(_fs_unlink(fs, old_path));
 
 done:
 
@@ -2007,16 +2010,16 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
     char basename[FS_PATH_MAX];
 
     if (!_valid_oefs(fs) || !path)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_path_to_ino(oefs, path, &dir_ino, &ino, &type));
+    FS_CHECK(_path_to_ino(oefs, path, &dir_ino, &ino, &type));
 
     /* Only regular files can be removed. */
     if (type != FS_DT_REG)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_split_path(path, dirname, basename));
-    CHECK(_unlink(oefs, dir_ino, ino, basename));
+    FS_CHECK(_split_path(path, dirname, basename));
+    FS_CHECK(_unlink(oefs, dir_ino, ino, basename));
 
 done:
 
@@ -2035,16 +2038,16 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
     uint8_t type;
 
     if (!_valid_oefs(fs) || !path)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_path_to_ino(oefs, path, NULL, &ino, &type));
+    FS_CHECK(_path_to_ino(oefs, path, NULL, &ino, &type));
 
     /* Only regular files can be truncated. */
     if (type != FS_DT_REG)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_open(oefs, ino, &file));
-    CHECK(_truncate(file, length));
+    FS_CHECK(_open(oefs, ino, &file));
+    FS_CHECK(_truncate(file, length));
 
 done:
 
@@ -2068,30 +2071,30 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
     char basename[FS_PATH_MAX];
 
     if (!_valid_oefs(fs) || !path)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_path_to_ino(oefs, path, &dir_ino, &ino, &type));
+    FS_CHECK(_path_to_ino(oefs, path, &dir_ino, &ino, &type));
 
     /* The path must refer to a directory. */
     if (type != FS_DT_DIR)
-        RAISE(FS_ENOTDIR);
+        FS_RAISE(FS_ENOTDIR);
 
     /* The inode must be a directory and the directory must be empty. */
     {
         oefs_inode_t inode;
 
-        CHECK(_load_inode(oefs, ino, &inode));
+        FS_CHECK(_load_inode(oefs, ino, &inode));
 
         if (!(inode.i_mode & FS_S_IFDIR))
-            RAISE(FS_ENOTDIR);
+            FS_RAISE(FS_ENOTDIR);
 
         /* The directory must contain two entries: "." and ".." */
         if (inode.i_size != 2 * sizeof(fs_dirent_t))
-            RAISE(FS_ENOTEMPTY);
+            FS_RAISE(FS_ENOTEMPTY);
     }
 
-    CHECK(_split_path(path, dirname, basename));
-    CHECK(_unlink(oefs, dir_ino, ino, basename));
+    FS_CHECK(_split_path(path, dirname, basename));
+    FS_CHECK(_unlink(oefs, dir_ino, ino, basename));
 
 done:
 
@@ -2113,10 +2116,10 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
         memset(stat, 0, sizeof(fs_stat_t));
 
     if (!_valid_oefs(fs) || !path || !stat)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_path_to_ino(oefs, path, NULL, &ino, &type));
-    CHECK(_load_inode(oefs, ino, &inode));
+    FS_CHECK(_path_to_ino(oefs, path, NULL, &ino, &type));
+    FS_CHECK(_load_inode(oefs, ino, &inode));
 
     stat->st_dev = 0;
     stat->st_ino = ino;
@@ -2159,7 +2162,7 @@ static fs_errno_t _fs_lseek(
         *offset_out = 0;
 
     if (!_valid_file(file))
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     switch (whence)
     {
@@ -2180,13 +2183,13 @@ static fs_errno_t _fs_lseek(
         }
         default:
         {
-            RAISE(FS_EINVAL);
+            FS_RAISE(FS_EINVAL);
         }
     }
 
     /* Check whether the new offset if out of range. */
     if (new_offset < 0 || new_offset > file->offset)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     file->offset = new_offset;
 
@@ -2217,11 +2220,11 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
     fs_blk_t empty_block;
 
     if (!dev || num_blocks < BITS_PER_BLOCK)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Fail if num_blocks is not a multiple of the block size. */
     if (num_blocks % BITS_PER_BLOCK)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Initialize an empty block. */
     memset(&empty_block, 0, sizeof(empty_block));
@@ -2231,11 +2234,11 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
 
     /* Write empty block one. */
     if (dev->put(dev, blkno++, &empty_block) != 0)
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
     /* Write empty block two. */
     if (dev->put(dev, blkno++, &empty_block) != 0)
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
     /* Write the super block */
     {
@@ -2247,7 +2250,7 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
         sb.s_free_blocks = num_blocks - 3;
 
         if (dev->put(dev, blkno++, (const fs_blk_t*)&sb) != 0)
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
     }
 
     /* Write the first bitmap block. */
@@ -2265,14 +2268,14 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
 
         /* Write the block. */
         if (dev->put(dev, blkno++, &blk) != 0)
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
     }
 
     /* Write the subsequent (empty) bitmap blocks. */
     for (size_t i = 1; i < num_bitmap_blocks; i++)
     {
         if (dev->put(dev, blkno++, &empty_block) != 0)
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
     }
 
     /* Write the root directory inode. */
@@ -2295,7 +2298,7 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
         };
 
         if (dev->put(dev, blkno++, (const fs_blk_t*)&root_inode) != 0)
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
     }
 
     /* Write the ".." and "." directory entries for the root directory.  */
@@ -2321,10 +2324,10 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
         memcpy(blocks, dir_entries, sizeof(dir_entries));
 
         if (dev->put(dev, blkno++, &blocks[0]) != 0)
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
 
         if (dev->put(dev, blkno++, &blocks[1]) != 0)
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
     }
 
     /* Count the remaining empty data blocks. */
@@ -2333,10 +2336,10 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
     /* Cross check the actual size against computed size. */
     {
         size_t size;
-        CHECK(oefs_size(num_blocks, &size));
+        FS_CHECK(oefs_size(num_blocks, &size));
 
         if (size != (blkno * FS_BLOCK_SIZE))
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
     }
 
 done:
@@ -2353,7 +2356,7 @@ fs_errno_t oefs_size(size_t num_blocks, size_t* size)
 
     /* Fail if num_blocks is not a multiple of the block size. */
     if (num_blocks % BITS_PER_BLOCK)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     /* Count the first two empty blocks. */
     total_blocks += 2;
@@ -2386,21 +2389,21 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
         *fs_out = NULL;
 
     if (!fs_out || !dev)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     if (!(oefs = calloc(1, sizeof(oefs_t))))
-        RAISE(FS_ENOMEM);
+        FS_RAISE(FS_ENOMEM);
 
     /* Save pointer to device (caller is responsible for releasing it). */
     oefs->dev = dev;
 
     /* Read the super block from the file system. */
     if (dev->get(dev, SUPER_BLOCK_PHYSICAL_BLKNO, (fs_blk_t*)&oefs->sb) != 0)
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
     /* Check the superblock magic number. */
     if (oefs->sb.read.s_magic != SUPER_BLOCK_MAGIC)
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
     /* Make copy of super block. */
     memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs->sb_copy));
@@ -2410,7 +2413,7 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
 
     /* Check that the number of blocks is correct. */
     if (!num_blocks || (num_blocks % BITS_PER_BLOCK))
-        RAISE(FS_EIO);
+        FS_RAISE(FS_EIO);
 
     /* Allocate space for the block bitmap. */
     {
@@ -2422,11 +2425,11 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
 
         /* Allocate the bitmap. */
         if (!(bitmap = calloc(1, bitmap_size)))
-            RAISE(FS_ENOMEM);
+            FS_RAISE(FS_ENOMEM);
 
         /* Allocate the bitmap. */
         if (!(bitmap_copy = calloc(1, bitmap_size)))
-            RAISE(FS_ENOMEM);
+            FS_RAISE(FS_ENOMEM);
 
         /* Read the bitset into memory */
         for (size_t i = 0; i < num_bitmap_blocks; i++)
@@ -2434,7 +2437,7 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
             uint8_t* ptr = bitmap + (i * FS_BLOCK_SIZE);
 
             if (dev->get(dev, BITMAP_PHYSICAL_BLKNO + i, (fs_blk_t*)ptr) != 0)
-                RAISE(FS_EIO);
+                FS_RAISE(FS_EIO);
         }
 
         /* Make copy of the bitmap. */
@@ -2449,7 +2452,7 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
             !_test_bit(bitmap, bitmap_size, 1) ||
             !_test_bit(bitmap, bitmap_size, 2))
         {
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
         }
 
         oefs->bitmap.read = bitmap;
@@ -2463,10 +2466,10 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
     {
         oefs_inode_t inode;
 
-        CHECK(_read_block(oefs, ROOT_INO, (fs_blk_t*)&inode));
+        FS_CHECK(_read_block(oefs, ROOT_INO, (fs_blk_t*)&inode));
 
         if (inode.i_magic != INODE_MAGIC)
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
     }
 
     oefs->base.fs_release = _fs_release;

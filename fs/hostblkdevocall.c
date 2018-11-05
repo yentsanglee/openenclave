@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <stdio.h>
 #include "hostblkdev.h"
+#include <stdio.h>
 
 static void _handle_open(fs_hostblkdev_ocall_args_t* args)
 {

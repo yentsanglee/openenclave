@@ -1142,9 +1142,9 @@ int test_oefs(const char* oefs_filename)
 }
 
 OE_SET_ENCLAVE_SGX(
-    1,         /* ProductID */
-    1,         /* SecurityVersion */
-    true,      /* AllowDebug */
+    1,    /* ProductID */
+    1,    /* SecurityVersion */
+    true, /* AllowDebug */
     4096, /* HeapPageCount */
     4096, /* StackPageCount */
-    2);        /* TCSCount */
+    2);   /* TCSCount */

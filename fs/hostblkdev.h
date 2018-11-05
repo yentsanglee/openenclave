@@ -20,31 +20,26 @@ typedef struct _fs_hostblkdev_ocall_args
     {
         char* path;
         void* handle;
-    }
-    open;
+    } open;
     struct
     {
         void* handle;
-    }
-    close;
-    struct
-    {
-        int ret;
-        void* handle;
-        uint32_t blkno;
-        fs_blk_t blk;
-    }
-    get;
+    } close;
     struct
     {
         int ret;
         void* handle;
         uint32_t blkno;
         fs_blk_t blk;
-    }
-    put;
-}
-fs_hostblkdev_ocall_args_t;
+    } get;
+    struct
+    {
+        int ret;
+        void* handle;
+        uint32_t blkno;
+        fs_blk_t blk;
+    } put;
+} fs_hostblkdev_ocall_args_t;
 
 void fs_handle_hostblkdev_ocall(fs_hostblkdev_ocall_args_t* arg);
 

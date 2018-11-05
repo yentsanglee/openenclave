@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include "hostfs.h"
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "hostfs.h"
 
 void fs_handle_hostfs_ocall(fs_hostfs_ocall_args_t* args)
 {

@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include "hostblkdev.h"
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <pthread.h>
@@ -8,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blkdev.h"
-#include "hostblkdev.h"
 #include "hostbatch.h"
 #include "list.h"
 

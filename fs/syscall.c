@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include "syscall.h"
+#include <fcntl.h>
+#include <stdarg.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include "syscall.h"
 #include "errno.h"
 #include "fs.h"
 

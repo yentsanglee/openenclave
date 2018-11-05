@@ -25,10 +25,10 @@
 #include <openenclave/internal/registers.h>
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/utils.h>
-#include "asmdefs.h"
-#include "enclave.h"
 #include "../fs/hostblkdev.h"
 #include "../fs/hostfs.h"
+#include "asmdefs.h"
+#include "enclave.h"
 #include "ocalls.h"
 
 /*

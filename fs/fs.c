@@ -243,12 +243,12 @@ static fs_errno_t _realpath(const char* path, char real_path[FS_PATH_MAX])
     char resolved[FS_PATH_MAX];
 
     if (!path || !real_path)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     if (path[0] == '/')
     {
         if (strlcpy(buf, path, sizeof(buf)) >= sizeof(buf))
-            RAISE(FS_ENAMETOOLONG);
+            FS_RAISE(FS_ENAMETOOLONG);
     }
     else
     {
@@ -256,16 +256,16 @@ static fs_errno_t _realpath(const char* path, char real_path[FS_PATH_MAX])
         int r;
 
         if (fs_getcwd(cwd, sizeof(cwd), &r) != 0 || r != 0)
-            RAISE(FS_ENAMETOOLONG);
+            FS_RAISE(FS_ENAMETOOLONG);
 
         if (strlcpy(buf, cwd, sizeof(buf)) >= sizeof(buf))
-            RAISE(FS_ENAMETOOLONG);
+            FS_RAISE(FS_ENAMETOOLONG);
 
         if (strlcat(buf, "/", sizeof(buf)) >= sizeof(buf))
-            RAISE(FS_ENAMETOOLONG);
+            FS_RAISE(FS_ENAMETOOLONG);
 
         if (strlcat(buf, path, sizeof(buf)) >= sizeof(buf))
-            RAISE(FS_ENAMETOOLONG);
+            FS_RAISE(FS_ENAMETOOLONG);
     }
 
     /* Split the path into elements. */
@@ -304,18 +304,18 @@ static fs_errno_t _realpath(const char* path, char real_path[FS_PATH_MAX])
         for (size_t i = 0; i < nout; i++)
         {
             if (strlcat(resolved, out[i], FS_PATH_MAX) >= FS_PATH_MAX)
-                RAISE(FS_ENAMETOOLONG);
+                FS_RAISE(FS_ENAMETOOLONG);
 
             if (i != 0 && i + 1 != nout)
             {
                 if (strlcat(resolved, "/", FS_PATH_MAX) >= FS_PATH_MAX)
-                    RAISE(FS_ENAMETOOLONG);
+                    FS_RAISE(FS_ENAMETOOLONG);
             }
         }
     }
 
     if (strlcpy(real_path, resolved, FS_PATH_MAX) >= FS_PATH_MAX)
-        RAISE(FS_ENAMETOOLONG);
+        FS_RAISE(FS_ENAMETOOLONG);
 
 done:
     return err;
@@ -334,17 +334,17 @@ fs_errno_t fs_open(const char* pathname, int flags, uint32_t mode, int* ret)
         *ret = -1;
 
     if (!pathname || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_realpath(pathname, real_path));
+    FS_CHECK(_realpath(pathname, real_path));
 
     if (!(fs = fs_lookup(real_path, suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
     if ((index = _assign_handle()) == (size_t)-1)
-        RAISE(FS_EMFILE);
+        FS_RAISE(FS_EMFILE);
 
-    CHECK(fs->fs_open(fs, suffix, flags, mode, &file));
+    FS_CHECK(fs->fs_open(fs, suffix, flags, mode, &file));
 
     _handles[index].fs = fs;
     _handles[index].file = file;
@@ -371,12 +371,12 @@ fs_errno_t fs_close(int fd, int* ret)
         *ret = -1;
 
     if (!ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     if (!(h = _fd_to_handle(fd)))
-        RAISE(FS_EBADF);
+        FS_RAISE(FS_EBADF);
 
-    CHECK(h->fs->fs_close(h->file));
+    FS_CHECK(h->fs->fs_close(h->file));
 
     memset(h, 0, sizeof(handle_t));
 
@@ -396,17 +396,17 @@ fs_errno_t fs_readv(int fd, const fs_iovec_t* iov, int iovcnt, ssize_t* ret)
         *ret = -1;
 
     if (!iov || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     if (!(h = _fd_to_handle(fd)))
-        RAISE(FS_EBADF);
+        FS_RAISE(FS_EBADF);
 
     for (int i = 0; i < iovcnt; i++)
     {
         const fs_iovec_t* p = &iov[i];
         ssize_t n;
 
-        CHECK(h->fs->fs_read(h->file, p->iov_base, p->iov_len, &n));
+        FS_CHECK(h->fs->fs_read(h->file, p->iov_base, p->iov_len, &n));
         nread += n;
 
         if (n < p->iov_len)
@@ -429,20 +429,20 @@ fs_errno_t fs_writev(int fd, const fs_iovec_t* iov, int iovcnt, ssize_t* ret)
         *ret = -1;
 
     if (!iov || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     if (!(h = _fd_to_handle(fd)))
-        RAISE(FS_EBADF);
+        FS_RAISE(FS_EBADF);
 
     for (int i = 0; i < iovcnt; i++)
     {
         const fs_iovec_t* p = &iov[i];
         ssize_t n;
 
-        CHECK(h->fs->fs_write(h->file, p->iov_base, p->iov_len, &n));
+        FS_CHECK(h->fs->fs_write(h->file, p->iov_base, p->iov_len, &n));
 
         if (n != p->iov_len)
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
 
         nwritten += n;
     }
@@ -470,14 +470,14 @@ fs_errno_t fs_stat(const char* pathname, fs_stat_t* buf, int* ret)
     memset(&stat, 0, sizeof(stat));
 
     if (!pathname || !buf || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_realpath(pathname, real_path));
+    FS_CHECK(_realpath(pathname, real_path));
 
     if (!(fs = fs_lookup(real_path, suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
-    CHECK(fs->fs_stat(fs, suffix, &stat));
+    FS_CHECK(fs->fs_stat(fs, suffix, &stat));
 
     *buf = stat;
     *ret = 0;
@@ -495,12 +495,12 @@ fs_errno_t fs_lseek(int fd, ssize_t off, int whence, ssize_t* ret)
         *ret = -1;
 
     if (!ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     if (!(h = _fd_to_handle(fd)))
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(h->fs->fs_lseek(h->file, off, whence, ret));
+    FS_CHECK(h->fs->fs_lseek(h->file, off, whence, ret));
 
 done:
     return err;
@@ -520,22 +520,22 @@ fs_errno_t fs_link(const char* oldpath, const char* newpath, int* ret)
         *ret = -1;
 
     if (!oldpath || !newpath || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_realpath(oldpath, old_real_path));
-    CHECK(_realpath(newpath, new_real_path));
+    FS_CHECK(_realpath(oldpath, old_real_path));
+    FS_CHECK(_realpath(newpath, new_real_path));
 
     if (!(old_fs = fs_lookup(old_real_path, old_suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
     if (!(new_fs = fs_lookup(new_real_path, new_suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
     /* Disallow linking across different file systems. */
     if (old_fs != new_fs)
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
-    CHECK(old_fs->fs_link(old_fs, old_suffix, new_suffix));
+    FS_CHECK(old_fs->fs_link(old_fs, old_suffix, new_suffix));
 
     *ret = 0;
 
@@ -554,14 +554,14 @@ fs_errno_t fs_unlink(const char* pathname, int* ret)
         *ret = -1;
 
     if (!pathname || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_realpath(pathname, real_path));
+    FS_CHECK(_realpath(pathname, real_path));
 
     if (!(fs = fs_lookup(real_path, suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
-    CHECK(fs->fs_unlink(fs, suffix));
+    FS_CHECK(fs->fs_unlink(fs, suffix));
 
     *ret = 0;
 
@@ -583,22 +583,22 @@ fs_errno_t fs_rename(const char* oldpath, const char* newpath, int* ret)
         *ret = -1;
 
     if (!oldpath || !newpath || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_realpath(oldpath, old_real_path));
-    CHECK(_realpath(newpath, new_real_path));
+    FS_CHECK(_realpath(oldpath, old_real_path));
+    FS_CHECK(_realpath(newpath, new_real_path));
 
     if (!(old_fs = fs_lookup(old_real_path, old_suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
     if (!(new_fs = fs_lookup(new_real_path, new_suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
     /* Disallow renaming across different file systems. */
     if (old_fs != new_fs)
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
-    CHECK(old_fs->fs_rename(old_fs, old_suffix, new_suffix));
+    FS_CHECK(old_fs->fs_rename(old_fs, old_suffix, new_suffix));
 
     *ret = 0;
 
@@ -617,14 +617,14 @@ fs_errno_t fs_truncate(const char* path, ssize_t length, int* ret)
         *ret = -1;
 
     if (!path || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_realpath(path, real_path));
+    FS_CHECK(_realpath(path, real_path));
 
     if (!(fs = fs_lookup(real_path, suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
-    CHECK(fs->fs_truncate(fs, suffix, length));
+    FS_CHECK(fs->fs_truncate(fs, suffix, length));
 
     *ret = 0;
 
@@ -643,14 +643,14 @@ fs_errno_t fs_mkdir(const char* pathname, uint32_t mode, int* ret)
         *ret = -1;
 
     if (!pathname || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_realpath(pathname, real_path));
+    FS_CHECK(_realpath(pathname, real_path));
 
     if (!(fs = fs_lookup(real_path, suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
-    CHECK(fs->fs_mkdir(fs, suffix, mode));
+    FS_CHECK(fs->fs_mkdir(fs, suffix, mode));
 
     *ret = 0;
 
@@ -669,14 +669,14 @@ fs_errno_t fs_rmdir(const char* pathname, int* ret)
         *ret = -1;
 
     if (!pathname || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_realpath(pathname, real_path));
+    FS_CHECK(_realpath(pathname, real_path));
 
     if (!(fs = fs_lookup(real_path, suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
-    CHECK(fs->fs_rmdir(fs, suffix));
+    FS_CHECK(fs->fs_rmdir(fs, suffix));
 
     *ret = 0;
 
@@ -700,17 +700,17 @@ fs_errno_t fs_getdents(
         *ret = -1;
 
     if (!dirp || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     if (!(h = _fd_to_handle(fd)))
-        RAISE(FS_EBADF);
+        FS_RAISE(FS_EBADF);
 
     while (remaining >= sizeof(struct dirent))
     {
         fs_dirent_t ent;
         ssize_t nread;
 
-        CHECK(h->fs->fs_read(h->file, &ent, sizeof(ent), &nread));
+        FS_CHECK(h->fs->fs_read(h->file, &ent, sizeof(ent), &nread));
 
         /* Handle end of file. */
         if (nread == 0)
@@ -718,7 +718,7 @@ fs_errno_t fs_getdents(
 
         /* The file size should be a multiple of the entry size. */
         if (nread != sizeof(ent))
-            RAISE(FS_EIO);
+            FS_RAISE(FS_EIO);
 
         /* Copy entry into caller buffer. */
         dirp->d_ino = ent.d_ino;
@@ -754,14 +754,14 @@ fs_errno_t fs_access(const char* pathname, int mode, int* ret)
     memset(&stat, 0, sizeof(stat));
 
     if (!pathname || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_realpath(pathname, real_path));
+    FS_CHECK(_realpath(pathname, real_path));
 
     if (!(fs = fs_lookup(real_path, suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
-    CHECK(fs->fs_stat(fs, suffix, &stat));
+    FS_CHECK(fs->fs_stat(fs, suffix, &stat));
 
     /* ATTN: all accesses possible currently. */
 
@@ -780,14 +780,14 @@ fs_errno_t fs_getcwd(char* buf, unsigned long size, int* ret)
         *ret = -1;
 
     if (!buf || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     pthread_spin_lock(&lock);
     n = strlcpy(buf, _cwd, size);
     pthread_spin_unlock(&lock);
 
     if (n >= size)
-        RAISE(FS_ERANGE);
+        FS_RAISE(FS_ERANGE);
 
     *ret = n + 1;
 
@@ -804,7 +804,7 @@ fs_errno_t fs_chdir(const char* path, int* ret)
         *ret = -1;
 
     if (!path || !ret)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
     pthread_spin_lock(&lock);
     n = strlcpy(_cwd, path, FS_PATH_MAX);
@@ -813,7 +813,7 @@ fs_errno_t fs_chdir(const char* path, int* ret)
     if (n >= FS_PATH_MAX)
     {
         pthread_spin_unlock(&lock);
-        RAISE(FS_ENAMETOOLONG);
+        FS_RAISE(FS_ENAMETOOLONG);
     }
 
     *ret = 0;
@@ -835,17 +835,17 @@ fs_errno_t fs_opendir(const char* name, DIR** dir_out)
         *dir_out = NULL;
 
     if (!name || !dir_out)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(_realpath(name, real_path));
+    FS_CHECK(_realpath(name, real_path));
 
     if (!(fs = fs_lookup(real_path, suffix)))
-        RAISE(FS_ENOENT);
+        FS_RAISE(FS_ENOENT);
 
     if (!(h = calloc(1, sizeof(dir_handle_t))))
-        RAISE(FS_ENOMEM);
+        FS_RAISE(FS_ENOMEM);
 
-    CHECK(fs->fs_opendir(fs, suffix, &dir));
+    FS_CHECK(fs->fs_opendir(fs, suffix, &dir));
 
     h->magic = DIR_HANDLE_MAGIC;
     h->fs = fs;
@@ -873,9 +873,9 @@ fs_errno_t fs_readdir(DIR* dirp, struct dirent** entry_out)
         *entry_out = NULL;
 
     if (!dirp || !entry_out || h->magic != DIR_HANDLE_MAGIC)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(h->fs->fs_readdir(h->dir, &dirent));
+    FS_CHECK(h->fs->fs_readdir(h->dir, &dirent));
 
     if (!dirent)
         goto done;
@@ -902,9 +902,9 @@ fs_errno_t fs_closedir(DIR* dirp, int* ret)
         *ret = -1;
 
     if (!dirp || !ret || h->magic != DIR_HANDLE_MAGIC)
-        RAISE(FS_EINVAL);
+        FS_RAISE(FS_EINVAL);
 
-    CHECK(h->fs->fs_closedir(h->dir));
+    FS_CHECK(h->fs->fs_closedir(h->dir));
 
     memset(h, 0, sizeof(dir_handle_t));
     free(h);

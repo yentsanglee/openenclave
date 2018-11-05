@@ -5,7 +5,7 @@
 #define _FS_RAISE_H
 
 // clang-format off
-#define CHECK(ERR)                \
+#define FS_CHECK(ERR)                \
     do                            \
     {                             \
         fs_errno_t __err__ = ERR; \
@@ -19,7 +19,7 @@
 // clang-format on
 
 // clang-format off
-#define RAISE(ERR) \
+#define FS_RAISE(ERR) \
     do             \
     {              \
         err = ERR; \
