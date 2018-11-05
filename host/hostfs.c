@@ -6,14 +6,14 @@
 #include <fcntl.h>
 #include <openenclave/host.h>
 #include <openenclave/internal/calls.h>
-#include <openenclave/internal/hostfs.h>
+#include "../libc/fs/hostfs.h"
 #include <sys/stat.h>
 #include <unistd.h>
 #include "ocalls.h"
 
 void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
 {
-    oe_hostfs_args_t* args = (oe_hostfs_args_t*)arg;
+    fs_hostfs_args_t* args = (fs_hostfs_args_t*)arg;
 
     if (!args)
         return;
@@ -22,41 +22,41 @@ void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
 
     switch (args->op)
     {
-        case OE_HOSTFS_OPEN:
+        case FS_HOSTFS_OPEN:
         {
             args->u.open.ret = open(
                 args->u.open.pathname, args->u.open.flags, args->u.open.mode);
             break;
         }
-        case OE_HOSTFS_LSEEK:
+        case FS_HOSTFS_LSEEK:
         {
             args->u.lseek.ret = lseek(
                 args->u.lseek.fd, args->u.lseek.offset, args->u.lseek.whence);
             break;
         }
-        case OE_HOSTFS_READ:
+        case FS_HOSTFS_READ:
         {
             args->u.read.ret =
                 read(args->u.read.fd, args->u.read.buf, args->u.read.count);
             break;
         }
-        case OE_HOSTFS_WRITE:
+        case FS_HOSTFS_WRITE:
         {
             args->u.write.ret =
                 write(args->u.write.fd, args->u.write.buf, args->u.write.count);
             break;
         }
-        case OE_HOSTFS_CLOSE:
+        case FS_HOSTFS_CLOSE:
         {
             args->u.close.ret = close(args->u.close.fd);
             break;
         }
-        case OE_HOSTFS_OPENDIR:
+        case FS_HOSTFS_OPENDIR:
         {
             args->u.opendir.dir = opendir(args->u.opendir.name);
             break;
         }
-        case OE_HOSTFS_READDIR:
+        case FS_HOSTFS_READDIR:
         {
             struct dirent* entry = readdir((DIR*)args->u.readdir.dir);
 
@@ -83,12 +83,12 @@ void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
 
             break;
         }
-        case OE_HOSTFS_CLOSEDIR:
+        case FS_HOSTFS_CLOSEDIR:
         {
             args->u.closedir.ret = closedir((DIR*)args->u.closedir.dir);
             break;
         }
-        case OE_HOSTFS_STAT:
+        case FS_HOSTFS_STAT:
         {
             struct stat buf;
 
@@ -114,35 +114,35 @@ void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
 
             break;
         }
-        case OE_HOSTFS_LINK:
+        case FS_HOSTFS_LINK:
         {
             args->u.link.ret = link(args->u.link.oldpath, args->u.link.newpath);
             break;
         }
-        case OE_HOSTFS_UNLINK:
+        case FS_HOSTFS_UNLINK:
         {
             args->u.unlink.ret = unlink(args->u.unlink.path);
             break;
         }
-        case OE_HOSTFS_RENAME:
+        case FS_HOSTFS_RENAME:
         {
             args->u.rename.ret =
                 rename(args->u.rename.oldpath, args->u.rename.newpath);
             break;
         }
-        case OE_HOSTFS_TRUNCATE:
+        case FS_HOSTFS_TRUNCATE:
         {
             args->u.truncate.ret =
                 truncate(args->u.truncate.path, args->u.truncate.length);
             break;
         }
-        case OE_HOSTFS_MKDIR:
+        case FS_HOSTFS_MKDIR:
         {
             args->u.mkdir.ret =
                 mkdir(args->u.mkdir.pathname, args->u.mkdir.mode);
             break;
         }
-        case OE_HOSTFS_RMDIR:
+        case FS_HOSTFS_RMDIR:
         {
             args->u.rmdir.ret = rmdir(args->u.rmdir.pathname);
             break;

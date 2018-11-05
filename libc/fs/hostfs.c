@@ -4,12 +4,12 @@
 #define _GNU_SOURCE
 #include "hostfs.h"
 #include <openenclave/internal/calls.h>
-#include <openenclave/internal/hostfs.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include "hostbatch.h"
 #include "raise.h"
+#include "hostfs.h"
 
 #define HOSTFS_MAGIC 0xff646572
 
@@ -99,7 +99,7 @@ static fs_errno_t _fs_open(
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
     fs_file_t* file = NULL;
 
@@ -116,7 +116,7 @@ static fs_errno_t _fs_open(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_OPEN;
+        args->op = FS_HOSTFS_OPEN;
         args->u.open.ret = -1;
 
         if (!(args->u.open.pathname = fs_host_batch_strdup(batch, path)))
@@ -167,7 +167,7 @@ static fs_errno_t _fs_lseek(
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     if (offset_out)
@@ -183,7 +183,7 @@ static fs_errno_t _fs_lseek(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_LSEEK;
+        args->op = FS_HOSTFS_LSEEK;
         args->u.lseek.ret = -1;
         args->u.lseek.fd = file->fd;
         args->u.lseek.offset = offset;
@@ -213,7 +213,7 @@ static fs_errno_t _fs_read(
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     if (nread)
@@ -230,7 +230,7 @@ static fs_errno_t _fs_read(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_READ;
+        args->op = FS_HOSTFS_READ;
         args->u.read.ret = -1;
         args->u.read.fd = file->fd;
 
@@ -274,7 +274,7 @@ static fs_errno_t _fs_write(
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     if (nwritten)
@@ -291,7 +291,7 @@ static fs_errno_t _fs_write(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_WRITE;
+        args->op = FS_HOSTFS_WRITE;
         args->u.write.ret = -1;
         args->u.write.fd = file->fd;
 
@@ -329,7 +329,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     if (!_valid_file(file))
@@ -342,7 +342,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_CLOSE;
+        args->op = FS_HOSTFS_CLOSE;
         args->u.close.ret = -1;
         args->u.close.fd = file->fd;
     }
@@ -373,7 +373,7 @@ static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir_out)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
     fs_dir_t* dir = NULL;
 
@@ -390,7 +390,7 @@ static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir_out)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_OPENDIR;
+        args->op = FS_HOSTFS_OPENDIR;
 
         if (!(args->u.opendir.name = fs_host_batch_strdup(batch, path)))
             RAISE(FS_ENOMEM);
@@ -431,7 +431,7 @@ static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** entry_out)
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
     fs_dirent_t* entry;
 
@@ -448,7 +448,7 @@ static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** entry_out)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_READDIR;
+        args->op = FS_HOSTFS_READDIR;
         args->u.readdir.dir = dir->host_dir;
     }
 
@@ -485,7 +485,7 @@ static fs_errno_t _fs_closedir(fs_dir_t* dir)
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     if (!_valid_dir(dir))
@@ -498,7 +498,7 @@ static fs_errno_t _fs_closedir(fs_dir_t* dir)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_CLOSEDIR;
+        args->op = FS_HOSTFS_CLOSEDIR;
         args->u.closedir.ret = -1;
         args->u.closedir.dir = dir->host_dir;
     }
@@ -528,7 +528,7 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     batch = hostfs->batch;
@@ -547,7 +547,7 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_STAT;
+        args->op = FS_HOSTFS_STAT;
         args->u.stat.ret = -1;
         strlcpy(args->u.stat.pathname, path, sizeof(args->u.stat.pathname));
     }
@@ -588,7 +588,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     batch = hostfs->batch;
@@ -607,7 +607,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_LINK;
+        args->op = FS_HOSTFS_LINK;
         args->u.link.ret = -1;
         strlcpy(args->u.link.oldpath, old_path, sizeof(args->u.link.oldpath));
         strlcpy(args->u.link.newpath, new_path, sizeof(args->u.link.newpath));
@@ -632,7 +632,7 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     if (!_valid_fs(fs) || !path)
@@ -648,7 +648,7 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_UNLINK;
+        args->op = FS_HOSTFS_UNLINK;
         args->u.unlink.ret = -1;
         strlcpy(args->u.unlink.path, path, sizeof(args->u.unlink.path));
     }
@@ -675,7 +675,7 @@ static fs_errno_t _fs_rename(
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     batch = hostfs->batch;
@@ -694,7 +694,7 @@ static fs_errno_t _fs_rename(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_RENAME;
+        args->op = FS_HOSTFS_RENAME;
         args->u.rename.ret = -1;
         strlcpy(
             args->u.rename.oldpath, old_path, sizeof(args->u.rename.oldpath));
@@ -721,7 +721,7 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     if (!_valid_fs(fs) || !path)
@@ -737,7 +737,7 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_TRUNCATE;
+        args->op = FS_HOSTFS_TRUNCATE;
         args->u.truncate.ret = -1;
         args->u.truncate.length = length;
         strlcpy(args->u.truncate.path, path, sizeof(args->u.truncate.path));
@@ -762,7 +762,7 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     if (!_valid_fs(fs) || !path)
@@ -778,7 +778,7 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_MKDIR;
+        args->op = FS_HOSTFS_MKDIR;
         args->u.mkdir.ret = -1;
         args->u.mkdir.mode = mode;
         strlcpy(args->u.mkdir.pathname, path, sizeof(args->u.mkdir.pathname));
@@ -803,7 +803,7 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef oe_hostfs_args_t args_t;
+    typedef fs_hostfs_args_t args_t;
     args_t* args;
 
     if (!_valid_fs(fs) || !path)
@@ -819,7 +819,7 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             RAISE(FS_ENOMEM);
 
-        args->op = OE_HOSTFS_RMDIR;
+        args->op = FS_HOSTFS_RMDIR;
         args->u.rmdir.ret = -1;
         strlcpy(args->u.rmdir.pathname, path, sizeof(args->u.rmdir.pathname));
     }

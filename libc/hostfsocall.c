@@ -3,10 +3,10 @@
 
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
-#include <openenclave/internal/hostfs.h>
 #include <openenclave/internal/raise.h>
+#include "fs/hostfs.h"
 
-oe_result_t oe_hostfs_ocall(oe_hostfs_args_t* args)
+oe_result_t oe_hostfs_ocall(fs_hostfs_args_t* args)
 {
     oe_result_t result = OE_OK;
 
