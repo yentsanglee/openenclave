@@ -205,12 +205,40 @@ done:
     return ret;
 }
 
-static void _blkdev_begin(fs_blkdev_t* d)
+static int _blkdev_begin(fs_blkdev_t* d)
 {
+    int ret = -1;
+    blkdev_t* dev = (blkdev_t*)d;
+
+    if (!dev || !dev->next)
+        goto done;
+
+    if (dev->next->begin(dev->next) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+
+    return ret;
 }
 
-static void _blkdev_end(fs_blkdev_t* d)
+static int _blkdev_end(fs_blkdev_t* d)
 {
+    int ret = -1;
+    blkdev_t* dev = (blkdev_t*)d;
+
+    if (!dev || !dev->next)
+        goto done;
+
+    if (dev->next->end(dev->next) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+
+    return ret;
 }
 
 static int _blkdev_add_ref(fs_blkdev_t* dev)

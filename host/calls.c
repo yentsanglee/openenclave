@@ -27,7 +27,7 @@
 #include <openenclave/internal/utils.h>
 #include "asmdefs.h"
 #include "enclave.h"
-#include "hostblockdev.h"
+#include "hostblkdev.h"
 #include "ocalls.h"
 
 /*

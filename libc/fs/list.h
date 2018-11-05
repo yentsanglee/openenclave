@@ -55,4 +55,38 @@ FS_INLINE void fs_list_insert_front(fs_list_t* list, fs_list_node_t* node)
     list->size++;
 }
 
+FS_INLINE void fs_list_insert_back(fs_list_t* list, fs_list_node_t* node)
+{
+    if (list->tail)
+    {
+        node->next = NULL;
+        node->prev = list->tail;
+        list->tail->next = node;
+        list->tail = node;
+    }
+    else
+    {
+        node->next = NULL;
+        node->prev = NULL;
+        list->head = node;
+        list->tail = node;
+    }
+
+    list->size++;
+}
+
+FS_INLINE void fs_list_free(fs_list_t* list)
+{
+    for (fs_list_node_t* p = list->head; p;)
+    {
+        fs_list_node_t* next = p->next;
+        free(p);
+        p = next;
+    }
+
+    list->head = NULL;
+    list->tail = NULL;
+    list->size = 0;
+}
+
 #endif /* _FS_LIST_H */

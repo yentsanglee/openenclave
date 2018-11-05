@@ -22,9 +22,9 @@ struct _fs_blkdev
 
     int (*put)(fs_blkdev_t* dev, uint32_t blkno, const fs_blk_t* blk);
 
-    void (*begin)(fs_blkdev_t* dev);
+    int (*begin)(fs_blkdev_t* dev);
 
-    void (*end)(fs_blkdev_t* dev);
+    int (*end)(fs_blkdev_t* dev);
 
     int (*add_ref)(fs_blkdev_t* dev);
 

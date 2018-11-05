@@ -9,10 +9,9 @@
 #include <string.h>
 #include "blkdev.h"
 #include "hostbatch.h"
+#include "list.h"
 
-#if 0
-#define DUMP
-#endif
+#define MAX_NODES 16
 
 typedef struct _blkdev
 {
@@ -22,16 +21,6 @@ typedef struct _blkdev
     fs_host_batch_t* batch;
     void* host_context;
 } blkdev_t;
-
-static uint8_t _checksum(const uint8_t* p, size_t n)
-{
-    uint8_t sum = 0;
-
-    while (n--)
-        sum += *p++;
-
-    return sum;
-}
 
 static size_t _get_batch_capacity()
 {
@@ -46,29 +35,24 @@ static size_t _get_batch_capacity()
     return capacity;
 }
 
-static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_blk_t* blk)
+static int _blkdev_get(fs_blkdev_t* d, uint32_t blkno, fs_blk_t* blk)
 {
     int ret = -1;
-    blkdev_t* device = (blkdev_t*)dev;
+    blkdev_t* dev = (blkdev_t*)d;
     typedef oe_ocall_blkdev_get_args_t args_t;
     args_t* args = NULL;
-    const uint16_t func = OE_OCALL_BLKDEV_GET;
 
-#ifdef DUMP
-    printf("HOST.GET{%u}\n", blkno);
-#endif
-
-    if (!device || !blk)
+    if (!dev || !blk)
         goto done;
 
-    if (!(args = fs_host_batch_calloc(device->batch, sizeof(args_t))))
+    if (!(args = fs_host_batch_calloc(dev->batch, sizeof(args_t))))
         goto done;
 
     args->ret = -1;
-    args->host_context = device->host_context;
+    args->host_context = dev->host_context;
     args->blkno = blkno;
 
-    if (oe_ocall(func, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_BLKDEV_GET, (uint64_t)args, NULL) != OE_OK)
         goto done;
 
     if (args->ret != 0)
@@ -80,32 +64,28 @@ static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_blk_t* blk)
 
 done:
 
-    if (args && device)
-        fs_host_batch_free(device->batch);
+    if (args && dev)
+        fs_host_batch_free(dev->batch);
 
     return ret;
 }
 
-static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_blk_t* blk)
+static int _blkdev_put(fs_blkdev_t* d, uint32_t blkno, const fs_blk_t* blk)
 {
     int ret = -1;
-    blkdev_t* device = (blkdev_t*)dev;
+    blkdev_t* dev = (blkdev_t*)d;
     typedef oe_ocall_blkdev_put_args_t args_t;
     args_t* args = NULL;
     const uint16_t func = OE_OCALL_BLKDEV_PUT;
 
-#ifdef DUMP
-    printf("HOST.PUT{blkno=%u checksum=%u}\n", blkno, _checksum(blk->data, sizeof(fs_blk_t)));
-#endif
-
-    if (!device || !blk)
+    if (!dev || !blk)
         goto done;
 
-    if (!(args = fs_host_batch_calloc(device->batch, sizeof(args_t))))
+    if (!(args = fs_host_batch_calloc(dev->batch, sizeof(args_t))))
         goto done;
 
     args->ret = -1;
-    args->host_context = device->host_context;
+    args->host_context = dev->host_context;
     args->blkno = blkno;
     memcpy(args->blk, blk->data, sizeof(args->blk));
 
@@ -119,31 +99,33 @@ static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_blk_t* blk)
 
 done:
 
-    if (args && device)
-        fs_host_batch_free(device->batch);
+    if (args && dev)
+        fs_host_batch_free(dev->batch);
 
     return ret;
 }
 
-static void _blkdev_begin(fs_blkdev_t* d)
+static int _blkdev_begin(fs_blkdev_t* d)
 {
+    return 0;
 }
 
-static void _blkdev_end(fs_blkdev_t* d)
+static int _blkdev_end(fs_blkdev_t* d)
 {
+    return 0;
 }
 
-static int _blkdev_add_ref(fs_blkdev_t* dev)
+static int _blkdev_add_ref(fs_blkdev_t* d)
 {
     int ret = -1;
-    blkdev_t* device = (blkdev_t*)dev;
+    blkdev_t* dev = (blkdev_t*)d;
 
-    if (!device)
+    if (!dev)
         goto done;
 
-    pthread_spin_lock(&device->lock);
-    device->ref_count++;
-    pthread_spin_unlock(&device->lock);
+    pthread_spin_lock(&dev->lock);
+    dev->ref_count++;
+    pthread_spin_unlock(&dev->lock);
 
     ret = 0;
 
@@ -151,27 +133,24 @@ done:
     return ret;
 }
 
-static int _blkdev_release(fs_blkdev_t* dev)
+static int _blkdev_release(fs_blkdev_t* d)
 {
     int ret = -1;
     const uint16_t func = OE_OCALL_CLOSE_BLKDEV;
-    blkdev_t* device = (blkdev_t*)dev;
-    size_t new_ref_count;
+    blkdev_t* dev = (blkdev_t*)d;
 
-    if (!device)
+    if (!dev)
         goto done;
 
-    pthread_spin_lock(&device->lock);
-    new_ref_count = --device->ref_count;
-    pthread_spin_unlock(&device->lock);
+    pthread_spin_lock(&dev->lock);
+    pthread_spin_unlock(&dev->lock);
 
-    if (new_ref_count == 0)
+    if (--dev->ref_count == 0)
     {
-        if (oe_ocall(func, (uint64_t)device->host_context, NULL) != OE_OK)
+        if (oe_ocall(func, (uint64_t)dev->host_context, NULL) != OE_OK)
             goto done;
 
-        fs_host_batch_delete(device->batch);
-
+        fs_host_batch_delete(dev->batch);
         free(dev);
     }
 
@@ -187,7 +166,7 @@ int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* device_name)
     char* name = NULL;
     void* host_context = NULL;
     const uint16_t func = OE_OCALL_OPEN_BLKDEV;
-    blkdev_t* device = NULL;
+    blkdev_t* dev = NULL;
     fs_host_batch_t* batch = NULL;
 
     if (blkdev)
@@ -199,7 +178,7 @@ int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* device_name)
     if (!(name = oe_host_strndup(device_name, strlen(device_name))))
         goto done;
 
-    if (!(device = calloc(1, sizeof(blkdev_t))))
+    if (!(dev = calloc(1, sizeof(blkdev_t))))
         goto done;
 
     if (oe_ocall(func, (uint64_t)name, (uint64_t*)&host_context) != OE_OK)
@@ -211,26 +190,26 @@ int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* device_name)
     if (!(batch = fs_host_batch_new(_get_batch_capacity())))
         goto done;
 
-    device->base.get = _blkdev_get;
-    device->base.put = _blkdev_put;
-    device->base.begin = _blkdev_begin;
-    device->base.end = _blkdev_end;
-    device->base.add_ref = _blkdev_add_ref;
-    device->base.release = _blkdev_release;
-    device->batch = batch;
-    device->ref_count = 1;
-    device->host_context = host_context;
+    dev->base.get = _blkdev_get;
+    dev->base.put = _blkdev_put;
+    dev->base.begin = _blkdev_begin;
+    dev->base.end = _blkdev_end;
+    dev->base.add_ref = _blkdev_add_ref;
+    dev->base.release = _blkdev_release;
+    dev->batch = batch;
+    dev->ref_count = 1;
+    dev->host_context = host_context;
 
-    *blkdev = &device->base;
-    device = NULL;
+    *blkdev = &dev->base;
+    dev = NULL;
     batch = NULL;
 
     ret = 0;
 
 done:
 
-    if (device)
-        free(device);
+    if (dev)
+        free(dev);
 
     if (name)
         oe_host_free(name);

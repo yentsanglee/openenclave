@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "common.h"
 #include <assert.h>
 #include <limits.h>
 #include <pthread.h>
@@ -10,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blkdev.h"
+#include "common.h"
 #include "list.h"
 
 #define TABLE_SIZE 1093
@@ -22,7 +22,7 @@ typedef struct _entry_list entry_list_t;
 
 struct _entry_list
 {
-    /* Same layout as fs_list_t */
+    /* Must have same layout as fs_list_t */
     entry_t* head;
     entry_t* tail;
     size_t size;
@@ -30,7 +30,7 @@ struct _entry_list
 
 struct _entry
 {
-    /* Must align with fs_list_node_t */
+    /* Must align with first two field of fs_list_node_t */
     entry_t* prev;
     entry_t* next;
 
@@ -305,12 +305,40 @@ done:
     return ret;
 }
 
-static void _blkdev_begin(fs_blkdev_t* d)
+static int _blkdev_begin(fs_blkdev_t* d)
 {
+    int ret = -1;
+    blkdev_t* dev = (blkdev_t*)d;
+
+    if (!dev || !dev->next)
+        goto done;
+
+    if (dev->next->begin(dev->next) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+
+    return ret;
 }
 
-static void _blkdev_end(fs_blkdev_t* d)
+static int _blkdev_end(fs_blkdev_t* d)
 {
+    int ret = -1;
+    blkdev_t* dev = (blkdev_t*)d;
+
+    if (!dev || !dev->next)
+        goto done;
+
+    if (dev->next->end(dev->next) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+
+    return ret;
 }
 
 static int _blkdev_add_ref(fs_blkdev_t* d)

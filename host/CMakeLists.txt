@@ -24,7 +24,7 @@ set(PLATFORM_SRC
     linux/sgxioctl.c
     linux/sgxsign.c
     linux/time.c
-    hostblockdev.c
+    hostblkdev.c
     sgxquoteprovider.c
     )
 elseif (WIN32)

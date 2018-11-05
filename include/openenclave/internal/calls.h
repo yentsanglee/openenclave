@@ -385,6 +385,7 @@ typedef struct _oe_backtrace_symbols_args
 **
 ** oe_ocall_blkdev_get_args_t
 ** oe_ocall_blkdev_put_args_t
+** oe_ocall_blkdev_flush_args_t
 **
 **==============================================================================
 */

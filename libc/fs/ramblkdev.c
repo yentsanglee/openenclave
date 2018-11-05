@@ -87,12 +87,14 @@ done:
     return ret;
 }
 
-static void _blkdev_begin(fs_blkdev_t* d)
+static int _blkdev_begin(fs_blkdev_t* d)
 {
+    return 0;
 }
 
-static void _blkdev_end(fs_blkdev_t* d)
+static int _blkdev_end(fs_blkdev_t* d)
 {
+    return 0;
 }
 
 static int _blkdev_add_ref(fs_blkdev_t* dev)
