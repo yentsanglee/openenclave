@@ -493,7 +493,7 @@ static oe_result_t _handle_ocall(
             break;
 
         case OE_OCALL_FS:
-            fs_handle_ocall((void*)arg_in);
+            fs_handle_ocall((fs_args_t*)arg_in);
             break;
 
         default:

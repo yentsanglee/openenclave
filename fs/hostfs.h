@@ -84,14 +84,7 @@ typedef struct _fs_hostfs_ocall_args
         } opendir;
         struct
         {
-            struct
-            {
-                uint64_t d_ino;
-                uint64_t d_off;
-                uint16_t d_reclen;
-                uint8_t d_type;
-                char d_name[256];
-            } buf;
+            fs_dirent_t buf;
             void* entry;
             void* dir;
         } readdir;
@@ -104,34 +97,7 @@ typedef struct _fs_hostfs_ocall_args
         {
             int ret;
             char pathname[FS_PATH_MAX];
-            struct
-            {
-                uint32_t st_dev;
-                uint32_t st_ino;
-                uint16_t st_mode;
-                uint32_t st_nlink;
-                uint16_t st_uid;
-                uint16_t st_gid;
-                uint32_t st_rdev;
-                uint32_t st_size;
-                uint32_t st_blksize;
-                uint32_t st_blocks;
-                struct
-                {
-                    uint64_t tv_sec;
-                    uint64_t tv_nsec;
-                } st_atim;
-                struct
-                {
-                    uint64_t tv_sec;
-                    uint64_t tv_nsec;
-                } st_mtim;
-                struct
-                {
-                    uint64_t tv_sec;
-                    uint64_t tv_nsec;
-                } st_ctim;
-            } buf;
+            fs_stat_t buf;
         } stat;
         struct
         {
