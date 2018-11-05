@@ -2,14 +2,13 @@
 // Licensed under the MIT License.
 
 #include "hostblkdev.h"
-#include <openenclave/enclave.h>
-#include <openenclave/internal/calls.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "blkdev.h"
 #include "hostbatch.h"
+#include "hostcalls.h"
 #include "list.h"
 
 #define MAX_NODES 16
@@ -49,7 +48,7 @@ static int _blkdev_get(fs_blkdev_t* d, uint32_t blkno, fs_blk_t* blk)
     args->get.handle = dev->handle;
     args->get.blkno = blkno;
 
-    if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+    if (fs_host_call(&_GUID, &args->base) != 0)
         goto done;
 
     if (args->get.ret != 0)
@@ -87,7 +86,7 @@ static int _blkdev_put(fs_blkdev_t* d, uint32_t blkno, const fs_blk_t* blk)
     args->put.blkno = blkno;
     args->put.blk = *blk;
 
-    if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+    if (fs_host_call(&_GUID, &args->base) != 0)
         goto done;
 
     if (args->put.ret != 0)
@@ -150,7 +149,7 @@ static int _blkdev_release(fs_blkdev_t* d)
         args->op = FS_HOSTBLKDEV_CLOSE;
         args->close.handle = dev->handle;
 
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             goto done;
 
         fs_host_batch_delete(dev->batch);
@@ -193,7 +192,7 @@ int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* path)
     if (!(args->open.path = fs_host_batch_strdup(batch, path)))
         goto done;
 
-    if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+    if (fs_host_call(&_GUID, &args->base) != 0)
         goto done;
 
     if (!args->open.handle)

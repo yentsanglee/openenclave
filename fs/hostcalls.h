@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "guid.h"
+#include "args.h"
 
 typedef struct _fs_host_calls fs_host_calls_t;
 
@@ -20,8 +21,7 @@ struct _fs_host_calls
     int (*call)(
         fs_host_calls_t* host_calls, 
         const fs_guid_t* guid,
-        void* args,
-        size_t size);
+        fs_args_t* args);
 };
 
 extern fs_host_calls_t fs_host_calls;
@@ -41,9 +41,9 @@ FS_INLINE void fs_host_free(void* ptr)
     return fs_host_calls.free(&fs_host_calls, ptr);
 }
 
-FS_INLINE int fs_host_call(const fs_guid_t* guid, void* args, size_t size)
+FS_INLINE int fs_host_call(const fs_guid_t* guid, fs_args_t* args)
 {
-    return fs_host_calls.call(&fs_host_calls, guid, args, size);
+    return fs_host_calls.call(&fs_host_calls, guid, args);
 }
 
 #endif /* _FS_HOSTCALLS_H */

@@ -3,13 +3,13 @@
 
 #define _GNU_SOURCE
 #include "hostfs.h"
-#include <openenclave/internal/calls.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include "hostbatch.h"
 #include "hostfs.h"
 #include "raise.h"
+#include "hostcalls.h"
 
 #define HOSTFS_MAGIC 0xff646572
 
@@ -131,7 +131,7 @@ static fs_errno_t _fs_open(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.open.ret < 0)
@@ -196,7 +196,7 @@ static fs_errno_t _fs_lseek(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_ENOMEM);
 
         if (args->u.lseek.ret < 0)
@@ -250,7 +250,7 @@ static fs_errno_t _fs_read(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.read.ret < 0)
@@ -314,7 +314,7 @@ static fs_errno_t _fs_write(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.write.ret < 0)
@@ -356,7 +356,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.close.ret != 0)
@@ -410,7 +410,7 @@ static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir_out)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (!args->u.opendir.dir)
@@ -463,7 +463,7 @@ static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** entry_out)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (!args->u.readdir.entry)
@@ -515,7 +515,7 @@ static fs_errno_t _fs_closedir(fs_dir_t* dir)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.closedir.ret != 0)
@@ -565,7 +565,7 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.stat.ret != 0)
@@ -627,7 +627,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.link.ret != 0)
@@ -668,7 +668,7 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.unlink.ret != 0)
@@ -718,7 +718,7 @@ static fs_errno_t _fs_rename(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.rename.ret != 0)
@@ -760,7 +760,7 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.truncate.ret != 0)
@@ -802,7 +802,7 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.mkdir.ret != 0)
@@ -843,7 +843,7 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+        if (fs_host_call(&_GUID, &args->base) != 0)
             FS_RAISE(FS_EIO);
 
         if (args->u.rmdir.ret != 0)
@@ -913,7 +913,7 @@ int fs_hostfs_ocall(fs_hostfs_ocall_args_t* args)
     if (!args)
         return -1;
 
-    if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
+    if (fs_host_call(&_GUID, &args->base) != 0)
         return -1;
 
     return 0;

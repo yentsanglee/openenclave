@@ -3,7 +3,6 @@
 
 #include "hostbatch.h"
 #include <assert.h>
-#include <openenclave/enclave.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
