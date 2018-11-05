@@ -6,6 +6,15 @@
 
 #include "blkdev.h"
 
+/* ac765314-ef16-4014-9c4e-7c9e2c2781da */
+#define FS_HOSTBLKDEV_GUID                                 \
+    {                                                      \
+        0xac765314, 0xef16, 0x4014,                        \
+        {                                                  \
+            0x9c, 0x4e, 0x7c, 0x9e, 0x2c, 0x27, 0x81, 0xda \
+        }                                                  \
+    }
+
 typedef enum _fs_hostblkdev_op {
     FS_HOSTBLKDEV_OPEN,
     FS_HOSTBLKDEV_CLOSE,

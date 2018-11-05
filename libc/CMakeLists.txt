@@ -20,12 +20,13 @@ add_library(oelibc STATIC
     ../fs/cacheblkdev.c
     ../fs/cryptoblkdev.c
     ../fs/fs.c
+    ../fs/guid.c
     ../fs/hostbatch.c
     ../fs/hostblkdev.c
-    ../fs/list.c
-    ../fs/oefs.c
     ../fs/hostfs.c
+    ../fs/list.c
     ../fs/mount.c
+    ../fs/oefs.c
     ../fs/ramblkdev.c
     ../fs/syscall.c
     libunwind_stubs.c

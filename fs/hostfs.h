@@ -6,6 +6,15 @@
 
 #include "fs.h"
 
+/* 20efd84e-af47-43e4-b7eb-f1cf0d057009 */
+#define FS_HOSTFS_GUID                                     \
+    {                                                      \
+        0x20efd84e, 0xaf47, 43e4,                          \
+        {                                                  \
+            0xb7, 0xeb, 0xf1, 0xcf, 0x0d, 0x05, 0x70, 0x09 \
+        }                                                  \
+    }
+
 fs_errno_t hostfs_initialize(fs_t** fs);
 
 typedef enum _fs_hostfs_op {

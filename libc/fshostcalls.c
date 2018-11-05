@@ -16,9 +16,13 @@ static void _free(fs_host_calls_t* host_calls, void* ptr)
     return oe_host_free(ptr);
 }
 
-fs_host_calls_t fs_host_calls =
+static int _call(
+    fs_host_calls_t* host_calls,
+    const fs_guid_t* guid,
+    void* args,
+    size_t size)
 {
-    _malloc,
-    _calloc,
-    _free
-};
+    return -1;    
+}
+
+fs_host_calls_t fs_host_calls = {_malloc, _calloc, _free, _call};
