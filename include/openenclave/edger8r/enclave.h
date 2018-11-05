@@ -20,13 +20,19 @@
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/result.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/edger8r/common.h>
 
 OE_EXTERNC_BEGIN
 
 /**
  * The type of a function in ecall function table
  */
-typedef void (*oe_ecall_func_t)(void*);
+typedef void (*oe_ecall_func_t)(
+    const uint8_t* input_buffer,
+    size_t input_buffer_size,
+    uint8_t* output_buffer,
+    size_t output_buffer_size,
+    size_t* output_bytes_written);
 
 /**
  * Perform a high-level host function call (OCALL).
@@ -34,7 +40,11 @@ typedef void (*oe_ecall_func_t)(void*);
  * Call the host function whose matching the given function_id.
  * The host function is expected to have the following signature:
  *
- *     void (*)(void* args);
+ *     void (const uint8_t* input_buffer,
+ *           size_t input_buffer_size,
+ *           uint8_t* output_buffer,
+ *           size_t output_buffer_size,
+ *           size_t* output_bytes_written);
  *
  * Note that the return value of this function only indicates the success of
  * the call and not of the underlying function. The OCALL implementation must
@@ -57,102 +67,40 @@ typedef void (*oe_ecall_func_t)(void*);
  */
 oe_result_t oe_call_host_function(
     size_t function_id,
-    void* input_buffer,
+    const void* input_buffer,
     size_t input_buffer_size,
     void* output_buffer,
     size_t output_buffer_size,
     size_t* output_bytes_written);
 
 /**
+ * Allocate a buffer of given size for doing an ocall.
+ *
+ * The buffer may or may not be allocated in host memory.
+ * The buffer should be treated as untrusted.
+ *
+ * @param size The size in bytes of the buffer.
+ * @returns pointer to the allocated buffer.
+ * @return NULL if allocation failed.
+ */
+void* oe_allocate_ocall_buffer(size_t size);
+
+/**
+ * Free the buffer allocated for ocalls.
+ *
+ * @param buffer The buffer allocated via oe_allocate_ocall_buffer.
+ */
+void oe_free_ocall_buffer(void* buffer);
+
+/**
  * For hand-written enclaves, that use the older calling mechanism, define empty
  * ecall tables.
  */
-#define OE_DEFINE_EMPTY_ECALL_TABLE()                            \
-    OE_EXPORT_CONST oe_ecall_func_t _oe_ecalls_table[] = {NULL}; \
-    OE_EXPORT_CONST size_t _oe_ecalls_table_size = 0
+#define OE_DEFINE_EMPTY_ECALL_TABLE()                             \
+    OE_EXPORT_CONST oe_ecall_func_t __oe_ecalls_table[] = {NULL}; \
+    OE_EXPORT_CONST size_t __oe_ecalls_table_size = 0
 
-/**
- * Check that the given buffer lies in host memory.
- * Raise OE_INVALID_PARAMETER if check fails.
- * Allocate corresponding enclave-buffer and copy data.
- * Raise OE_OUT_OF_MEMORY if allocation fails.
- */
-#define OE_CHECKED_COPY_INPUT(enc_ptr, host_ptr, size)          \
-    do                                                          \
-    {                                                           \
-        if (host_ptr && !oe_is_outside_enclave(host_ptr, size)) \
-        {                                                       \
-            __result = OE_INVALID_PARAMETER;                    \
-            goto done;                                          \
-        }                                                       \
-        enc_ptr = NULL;                                         \
-        if (host_ptr)                                           \
-        {                                                       \
-            *(void**)&enc_ptr = malloc(size);                   \
-            if (!enc_ptr)                                       \
-            {                                                   \
-                __result = OE_OUT_OF_MEMORY;                    \
-                goto done;                                      \
-            }                                                   \
-            memcpy(enc_ptr, host_ptr, size);                    \
-        }                                                       \
-    } while (0)
-
-/**
- * Check that the given buffer lies in host memory.
- * Raise OE_INVALID_PARAMETER if check fails.
- * Allocate corresponding enclave-buffer.
- * Raise OE_OUT_OF_MEMORY if allocation fails.
- */
-#define OE_CHECKED_ALLOCATE_OUTPUT(enc_ptr, host_ptr, size)     \
-    do                                                          \
-    {                                                           \
-        if (host_ptr && !oe_is_outside_enclave(host_ptr, size)) \
-        {                                                       \
-            __result = OE_INVALID_PARAMETER;                    \
-            goto done;                                          \
-        }                                                       \
-        enc_ptr = NULL;                                         \
-        if (host_ptr)                                           \
-        {                                                       \
-            *(void**)&enc_ptr = malloc(size);                   \
-            if (!enc_ptr)                                       \
-            {                                                   \
-                __result = OE_OUT_OF_MEMORY;                    \
-                goto done;                                      \
-            }                                                   \
-        }                                                       \
-    } while (0)
-
-/**
- * Copy enclave buffer to host buffer.
- */
-#define OE_COPY_TO_HOST(host_ptr, enc_ptr, size) \
-    do                                           \
-    {                                            \
-        if (!enc_ptr)                            \
-            break;                               \
-        *(void**)&host_ptr = (void*)__host_ptr;  \
-        __host_ptr += (size_t)size;              \
-        memcpy(host_ptr, enc_ptr, size);         \
-    } while (0)
-
-/**
- * Copy buffer from host to enclave.
- */
-#define OE_COPY_FROM_HOST(enc_ptr, host_ptr, size)              \
-    do                                                          \
-    {                                                           \
-        if (host_ptr && !oe_is_outside_enclave(host_ptr, size)) \
-        {                                                       \
-            __result = OE_INVALID_PARAMETER;                    \
-            goto done;                                          \
-        }                                                       \
-        if (host_ptr)                                           \
-            memcpy(enc_ptr, host_ptr, size);                    \
-    } while (0)
-
-// Define oe_lfence for Spectre mitigation in x686-64 platforms.
+// Define oe_lfence for Spectre mitigation in x86-64 platforms.
 #if __x86_64__ || _M_X64
 
 // x86_64 processor.

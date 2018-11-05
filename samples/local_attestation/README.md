@@ -21,7 +21,7 @@ See [Remote Attestation's README](../remote_attestation/README.md#attestation-pr
 
 ## Local Attestation sample
 
-This sample demonstrates how to attest two enclaves to each other locally by using Open Enclave APIs: `oe_get_report`, `oe_get_target_info`, and `oe_verify_report`. They works together to complete a local attestation process.
+This sample demonstrates how to attest two enclaves to each other locally by using Open Enclave APIs: `oe_get_report`, `oe_get_target_info`, and `oe_verify_report`. They work together to complete a local attestation process.
 
 To simplify this sample without losing the focus in explaining how the local attestation works, host1 and host2 are combined into one single host to eliminate the need for additional  code for inter-process communication between two hosts.
 Diagram 2 is the configuration used in this sample.
@@ -61,7 +61,7 @@ The host does the following in this sample:
 1. Create two enclaves for attesting each other, let's say they are enclave1 and enclave2
 
     ```c
-    oe_create_enclave( enclaveImagePath, OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
+    oe_create_localattestation_enclave( enclaveImagePath, OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
     ```
 
 2.  Attest enclave 1 to enclave 2
