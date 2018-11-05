@@ -1,5 +1,7 @@
 Todo:
 
+(B) CPIO
 (B) Memory resident/sync'd file system.
+(C) Separate Linux dependencies (stat and dirent).
 (C) Fix truncate() to extend files.
 (C) Support directory enumeration below mount points.
