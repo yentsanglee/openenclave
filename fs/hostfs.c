@@ -7,9 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hostbatch.h"
+#include "hostcalls.h"
 #include "hostfs.h"
 #include "raise.h"
-#include "hostcalls.h"
 
 #define HOSTFS_MAGIC 0xff646572
 

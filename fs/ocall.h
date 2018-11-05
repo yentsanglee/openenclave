@@ -4,8 +4,8 @@
 #ifndef _FS_OCALL_H
 #define _FS_OCALL_H
 
-#include "common.h"
 #include "args.h"
+#include "common.h"
 
 void fs_handle_ocall(fs_args_t* args);
 

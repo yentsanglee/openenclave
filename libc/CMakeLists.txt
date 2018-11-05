@@ -18,6 +18,7 @@ add_library(oelibc STATIC
     exp2l.S
     ../fs/buf.c
     ../fs/cacheblkdev.c
+    ../fs/cpio.c
     ../fs/cryptoblkdev.c
     ../fs/fs.c
     ../fs/guid.c

@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "../../../fs/buf.h"
+#include "../../../fs/cpio.h"
 #include "../../../fs/fs.h"
 #include "../../../fs/mount.h"
 
@@ -944,7 +945,7 @@ void run_tests(const char* target)
         OE_TEST(strcmp(suffix, "/aaa/bbb/ccc/myfile") == 0);
     }
 
-    /* Try fopen() */
+    /* Try fopen(void) */
     {
         char path[FS_PATH_MAX];
         char buf[512];
@@ -1011,7 +1012,30 @@ void run_tests(const char* target)
     _test_fcntl(target);
 }
 
-static void _test_hostfs()
+static void _test_cpio(void)
+{
+    fs_cpio_t* cpio;
+    fs_cpio_entry_t entry;
+    int r;
+    size_t m = 0;
+
+    cpio = fs_cpio_open("/mnt/hostfs/root/openenclave/tests.cpio");
+    OE_TEST(cpio);
+
+    while ((r = fs_cpio_next(cpio, &entry)) > 0)
+    {
+        printf("name{%s}\n", entry.name);
+        printf("size{%zu}\n", entry.filesize);
+        printf("mode{%06o}\n", entry.mode);
+        m++;
+    }
+
+    OE_TEST(m > 0);
+    OE_TEST(r == 0);
+    OE_TEST(fs_cpio_close(cpio) == 0);
+}
+
+static void _test_hostfs(void)
 {
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     struct stat buf;
@@ -1054,16 +1078,16 @@ static void _test_hostfs()
         OE_TEST(fclose(is) == 0);
     }
 
-    /* Test stat() */
+    /* Test stat(void) */
     OE_TEST(stat("/mnt/hostfs/tmp/myfile", &buf) == 0);
     OE_TEST(buf.st_size == sizeof(alphabet));
     OE_TEST(buf.st_nlink == 1);
     OE_TEST(S_ISREG(buf.st_mode));
 
-    /* Test link() */
+    /* Test link(void) */
     OE_TEST(link("/mnt/hostfs/tmp/myfile", "/mnt/hostfs/tmp/myfile2") == 0);
 
-    /* Test stat() */
+    /* Test stat(void) */
     OE_TEST(stat("/mnt/hostfs/tmp/myfile2", &buf) == 0);
     OE_TEST(buf.st_size == sizeof(alphabet));
     OE_TEST(buf.st_nlink == 2);
@@ -1103,6 +1127,8 @@ static void _test_hostfs()
     OE_TEST(S_ISDIR(buf.st_mode));
 
     OE_TEST(rmdir("/mnt/hostfs/tmp/mydir") == 0);
+
+    _test_cpio();
 
     /* Unmount the file system. */
     OE_TEST(fs_unmount("/mnt/hostfs") == 0);

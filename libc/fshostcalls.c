@@ -25,7 +25,6 @@ static int _call(
     const fs_guid_t* guid,
     fs_args_t* args)
 {
-
     if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
         return -1;
 

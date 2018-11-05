@@ -4,8 +4,8 @@
 #ifndef _FS_HOSTBLKDEV_H
 #define _FS_HOSTBLKDEV_H
 
-#include "blkdev.h"
 #include "args.h"
+#include "blkdev.h"
 
 /* ac765314-ef16-4014-9c4e-7c9e2c2781da */
 #define FS_HOSTBLKDEV_GUID                                 \

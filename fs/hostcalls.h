@@ -4,9 +4,9 @@
 #ifndef _FS_HOSTCALLS_H
 #define _FS_HOSTCALLS_H
 
+#include "args.h"
 #include "common.h"
 #include "guid.h"
-#include "args.h"
 
 typedef struct _fs_host_calls fs_host_calls_t;
 
@@ -19,7 +19,7 @@ struct _fs_host_calls
     void (*free)(fs_host_calls_t* host_calls, void* ptr);
 
     int (*call)(
-        fs_host_calls_t* host_calls, 
+        fs_host_calls_t* host_calls,
         const fs_guid_t* guid,
         fs_args_t* args);
 };
