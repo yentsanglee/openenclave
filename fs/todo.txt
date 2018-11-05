@@ -1,16 +1,5 @@
 Todo:
 
-(A) Code walk-through.
----
-(B) Decouple fs from oe (allows porting to linux-sgx & testing outside enclave)
-    - fs_handle_hostblkdev_op()
-    - fs_handle_hostfs_op()
-    - fs_host_t interface.
-        - oe_host_alloc()
-        - oe_host_free()
-        - oe_host_strndup()
-        - oe_ocall()
----
+(B) Memory resident/sync'd file system.
 (C) Fix truncate() to extend files.
 (C) Support directory enumeration below mount points.
-(B) Memory resident/sync'd file system.

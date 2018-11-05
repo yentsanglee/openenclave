@@ -5,6 +5,7 @@
 #define _FS_HOSTBLKDEV_H
 
 #include "blkdev.h"
+#include "args.h"
 
 /* ac765314-ef16-4014-9c4e-7c9e2c2781da */
 #define FS_HOSTBLKDEV_GUID                                 \
@@ -24,6 +25,7 @@ typedef enum _fs_hostblkdev_op {
 
 typedef struct _fs_hostblkdev_ocall_args
 {
+    fs_args_t base;
     fs_hostblkdev_op_t op;
     struct
     {

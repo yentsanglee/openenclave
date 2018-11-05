@@ -14,6 +14,8 @@
 
 #define MAX_NODES 16
 
+static const fs_guid_t _GUID = FS_HOSTBLKDEV_GUID;
+
 typedef struct _blkdev
 {
     fs_blkdev_t base;
@@ -41,12 +43,13 @@ static int _blkdev_get(fs_blkdev_t* d, uint32_t blkno, fs_blk_t* blk)
     if (!(args = fs_host_batch_calloc(dev->batch, sizeof(args_t))))
         goto done;
 
+    args->base.guid = _GUID;
     args->op = FS_HOSTBLKDEV_GET;
     args->get.ret = -1;
     args->get.handle = dev->handle;
     args->get.blkno = blkno;
 
-    if (oe_ocall(OE_OCALL_HOSTBLKDEV, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
         goto done;
 
     if (args->get.ret != 0)
@@ -77,13 +80,14 @@ static int _blkdev_put(fs_blkdev_t* d, uint32_t blkno, const fs_blk_t* blk)
     if (!(args = fs_host_batch_calloc(dev->batch, sizeof(args_t))))
         goto done;
 
+    args->base.guid = _GUID;
     args->op = FS_HOSTBLKDEV_PUT;
     args->put.ret = -1;
     args->put.handle = dev->handle;
     args->put.blkno = blkno;
     args->put.blk = *blk;
 
-    if (oe_ocall(OE_OCALL_HOSTBLKDEV, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
         goto done;
 
     if (args->put.ret != 0)
@@ -142,10 +146,11 @@ static int _blkdev_release(fs_blkdev_t* d)
         if (!(args = fs_host_batch_calloc(dev->batch, sizeof(args_t))))
             goto done;
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTBLKDEV_CLOSE;
         args->close.handle = dev->handle;
 
-        if (oe_ocall(OE_OCALL_HOSTBLKDEV, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             goto done;
 
         fs_host_batch_delete(dev->batch);
@@ -182,12 +187,13 @@ int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* path)
     if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
         goto done;
 
+    args->base.guid = _GUID;
     args->op = FS_HOSTBLKDEV_OPEN;
 
     if (!(args->open.path = fs_host_batch_strdup(batch, path)))
         goto done;
 
-    if (oe_ocall(OE_OCALL_HOSTBLKDEV, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
         goto done;
 
     if (!args->open.handle)

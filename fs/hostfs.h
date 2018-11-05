@@ -5,11 +5,13 @@
 #define _FS_HOSTFS_H
 
 #include "fs.h"
+#include "args.h"
+#include "guid.h"
 
 /* 20efd84e-af47-43e4-b7eb-f1cf0d057009 */
 #define FS_HOSTFS_GUID                                     \
     {                                                      \
-        0x20efd84e, 0xaf47, 43e4,                          \
+        0x20efd84e, 0xaf47, 0x43e4,                        \
         {                                                  \
             0xb7, 0xeb, 0xf1, 0xcf, 0x0d, 0x05, 0x70, 0x09 \
         }                                                  \
@@ -37,6 +39,7 @@ typedef enum _fs_hostfs_op {
 
 typedef struct _fs_hostfs_ocall_args
 {
+    fs_args_t base;
     fs_hostfs_op_t op;
     int err; /* errno value */
 

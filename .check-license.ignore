@@ -90,5 +90,5 @@ VERSION
 ./tests/libunwind/tests.unsupported
 *Jenkinsfile
 .gitattributes
-./libc/fs/todo.txt
 ./host/linux/pe.h
+./fs/todo.txt

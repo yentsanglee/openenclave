@@ -26,8 +26,7 @@
 #include <openenclave/internal/registers.h>
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/utils.h>
-#include "../fs/hostblkdev.h"
-#include "../fs/hostfs.h"
+#include "../fs/ocall.h"
 #include "asmdefs.h"
 #include "enclave.h"
 #include "ocalls.h"
@@ -493,12 +492,8 @@ static oe_result_t _handle_ocall(
             oe_handle_backtrace_symbols(enclave, arg_in);
             break;
 
-        case OE_OCALL_HOSTBLKDEV:
-            fs_handle_hostblkdev_ocall((fs_hostblkdev_ocall_args_t*)arg_in);
-            break;
-
-        case OE_OCALL_HOSTFS:
-            fs_handle_hostfs_ocall((fs_hostfs_ocall_args_t*)arg_in);
+        case OE_OCALL_FS:
+            fs_handle_ocall((void*)arg_in);
             break;
 
         default:

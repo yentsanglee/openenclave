@@ -5,6 +5,7 @@ if (UNIX)
 set(PLATFORM_SRC
     ../common/asn1.c
     ../common/cert.c
+    ../fs/ocall.c
     ../fs/hostfsocall.c
     ../fs/hostblkdevocall.c
     crypto/openssl/asn1.c

@@ -19,6 +19,8 @@
 
 #define DIR_MAGIC 0xa9136e28
 
+static const fs_guid_t _GUID = FS_HOSTFS_GUID;
+
 typedef struct _hostfs
 {
     fs_t base;
@@ -116,6 +118,7 @@ static fs_errno_t _fs_open(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_OPEN;
         args->u.open.ret = -1;
 
@@ -128,7 +131,7 @@ static fs_errno_t _fs_open(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.open.ret < 0)
@@ -183,6 +186,7 @@ static fs_errno_t _fs_lseek(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_LSEEK;
         args->u.lseek.ret = -1;
         args->u.lseek.fd = file->fd;
@@ -192,7 +196,7 @@ static fs_errno_t _fs_lseek(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_ENOMEM);
 
         if (args->u.lseek.ret < 0)
@@ -230,6 +234,7 @@ static fs_errno_t _fs_read(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_READ;
         args->u.read.ret = -1;
         args->u.read.fd = file->fd;
@@ -245,7 +250,7 @@ static fs_errno_t _fs_read(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.read.ret < 0)
@@ -291,6 +296,7 @@ static fs_errno_t _fs_write(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_WRITE;
         args->u.write.ret = -1;
         args->u.write.fd = file->fd;
@@ -308,7 +314,7 @@ static fs_errno_t _fs_write(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.write.ret < 0)
@@ -342,6 +348,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_CLOSE;
         args->u.close.ret = -1;
         args->u.close.fd = file->fd;
@@ -349,7 +356,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.close.ret != 0)
@@ -390,6 +397,7 @@ static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir_out)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_OPENDIR;
 
         if (!(args->u.opendir.name = fs_host_batch_strdup(batch, path)))
@@ -402,7 +410,7 @@ static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir_out)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (!args->u.opendir.dir)
@@ -448,13 +456,14 @@ static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** entry_out)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_READDIR;
         args->u.readdir.dir = dir->host_dir;
     }
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (!args->u.readdir.entry)
@@ -498,6 +507,7 @@ static fs_errno_t _fs_closedir(fs_dir_t* dir)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_CLOSEDIR;
         args->u.closedir.ret = -1;
         args->u.closedir.dir = dir->host_dir;
@@ -505,7 +515,7 @@ static fs_errno_t _fs_closedir(fs_dir_t* dir)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.closedir.ret != 0)
@@ -547,6 +557,7 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_STAT;
         args->u.stat.ret = -1;
         strlcpy(args->u.stat.pathname, path, sizeof(args->u.stat.pathname));
@@ -554,7 +565,7 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.stat.ret != 0)
@@ -607,6 +618,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_LINK;
         args->u.link.ret = -1;
         strlcpy(args->u.link.oldpath, old_path, sizeof(args->u.link.oldpath));
@@ -615,7 +627,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.link.ret != 0)
@@ -648,6 +660,7 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_UNLINK;
         args->u.unlink.ret = -1;
         strlcpy(args->u.unlink.path, path, sizeof(args->u.unlink.path));
@@ -655,7 +668,7 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.unlink.ret != 0)
@@ -694,6 +707,7 @@ static fs_errno_t _fs_rename(
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_RENAME;
         args->u.rename.ret = -1;
         strlcpy(
@@ -704,7 +718,7 @@ static fs_errno_t _fs_rename(
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.rename.ret != 0)
@@ -737,6 +751,7 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_TRUNCATE;
         args->u.truncate.ret = -1;
         args->u.truncate.length = length;
@@ -745,7 +760,7 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.truncate.ret != 0)
@@ -778,6 +793,7 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_MKDIR;
         args->u.mkdir.ret = -1;
         args->u.mkdir.mode = mode;
@@ -786,7 +802,7 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.mkdir.ret != 0)
@@ -819,6 +835,7 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
         if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
             FS_RAISE(FS_ENOMEM);
 
+        args->base.guid = _GUID;
         args->op = FS_HOSTFS_RMDIR;
         args->u.rmdir.ret = -1;
         strlcpy(args->u.rmdir.pathname, path, sizeof(args->u.rmdir.pathname));
@@ -826,7 +843,7 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
 
     /* Perform the OCALL. */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
             FS_RAISE(FS_EIO);
 
         if (args->u.rmdir.ret != 0)
@@ -896,7 +913,7 @@ int fs_hostfs_ocall(fs_hostfs_ocall_args_t* args)
     if (!args)
         return -1;
 
-    if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_FS, (uint64_t)args, NULL) != OE_OK)
         return -1;
 
     return 0;
