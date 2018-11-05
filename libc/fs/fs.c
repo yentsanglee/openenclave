@@ -684,6 +684,7 @@ done:
     return err;
 }
 
+#if 0
 fs_errno_t fs_getdents(
     unsigned int fd,
     struct dirent* dirp,
@@ -737,6 +738,7 @@ fs_errno_t fs_getdents(
 done:
     return err;
 }
+#endif
 
 fs_errno_t fs_access(const char* pathname, int mode, int* ret)
 {

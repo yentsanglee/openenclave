@@ -218,11 +218,13 @@ fs_errno_t fs_mkdir(const char* pathname, uint32_t mode, int* ret);
 
 fs_errno_t fs_rmdir(const char* pathname, int* ret);
 
+#if 0
 fs_errno_t fs_getdents(
     unsigned int fd,
     struct dirent* dirp,
     unsigned int count,
     int* ret);
+#endif
 
 fs_errno_t fs_access(const char* pathname, int mode, int* ret);
 

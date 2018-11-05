@@ -4,7 +4,6 @@
 #define __OE_NEED_TIME_CALLS
 #define _GNU_SOURCE
 #include <assert.h>
-#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <openenclave/enclave.h>
@@ -18,7 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/time.h>
@@ -27,6 +25,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "fs/fs.h"
+#include "fs/syscall.h"
 
 static oe_syscall_hook_t _hook;
 static oe_spinlock_t _lock;
@@ -41,16 +40,10 @@ _syscall_open(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     const char* filename = (const char*)x1;
     int flags = (int)x2;
     int mode = (int)x3;
-    fs_errno_t err;
-    int ret;
 
-    err = fs_open(filename, flags, mode, &ret);
-
-    if (err != FS_ENOENT)
-    {
-        errno = err;
-        return ret;
-    }
+    (void)filename;
+    (void)flags;
+    (void)mode;
 
     if (flags == O_WRONLY)
         return STDOUT_FILENO;
@@ -58,36 +51,8 @@ _syscall_open(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     return -1;
 }
 
-static long
-_syscall_creat(long n, long x1, long x2, long x3, long x4, long x5, long x6)
+static long _syscall_close(long n, ...)
 {
-    const char* pathname = (const char*)x1;
-    int mode = (int)x2;
-    fs_errno_t err;
-    int ret;
-
-    err = fs_creat(pathname, mode, &ret);
-
-    if (err != FS_ENOENT)
-    {
-        errno = err;
-        return ret;
-    }
-
-    return -1;
-}
-
-static long _syscall_close(long n, long x1, ...)
-{
-    int fd = (int)x1;
-    int ret;
-
-    if (fd >= 3)
-    {
-        errno = fs_close(fd, &ret);
-        return ret;
-    }
-
     /* required by mbedtls */
     return 0;
 }
@@ -98,77 +63,34 @@ static long _syscall_mmap(long n, ...)
     return EPERM;
 }
 
-ssize_t _syscall_readv(int fd, const struct iovec* iov, int iovcnt)
+static long _syscall_readv(long n, ...)
 {
-    ssize_t ret;
-
-    if (fd >= 3)
-    {
-        errno = fs_readv(fd, (fs_iovec_t*)iov, iovcnt, &ret);
-        return ret;
-    }
+    /* required by mbedtls */
 
     /* return zero-bytes read */
     return 0;
 }
 
-static ssize_t _syscall_read(int fd, void* buf, size_t count)
-{
-    struct iovec iov;
-    iov.iov_base = (void*)buf;
-    iov.iov_len = count;
-    return _syscall_readv(fd, &iov, 1);
-}
-
-static long _syscall_stat(long num, long x1, long x2, long x3, ...)
-{
-    const char* pathname = (const char*)x1;
-    struct stat* buf = (struct stat*)x2;
-    int ret = -1;
-    fs_stat_t stat;
-
-    errno = fs_stat(pathname, &stat, &ret);
-
-    if (errno == 0)
-    {
-        buf->st_dev = stat.st_dev;
-        buf->st_ino = stat.st_ino;
-        buf->st_mode = stat.st_mode;
-        buf->st_nlink = stat.st_nlink;
-        buf->st_uid = stat.st_uid;
-        buf->st_gid = stat.st_gid;
-        buf->st_rdev = stat.st_rdev;
-        buf->st_size = stat.st_size;
-        buf->st_blksize = stat.st_blksize;
-        buf->st_blocks = stat.st_blocks;
-        buf->st_atim.tv_sec = stat.st_atim.tv_sec;
-        buf->st_atim.tv_nsec = stat.st_atim.tv_nsec;
-        buf->st_mtim.tv_sec = stat.st_mtim.tv_sec;
-        buf->st_mtim.tv_nsec = stat.st_mtim.tv_nsec;
-        buf->st_ctim.tv_sec = stat.st_ctim.tv_sec;
-        buf->st_ctim.tv_nsec = stat.st_ctim.tv_nsec;
-    }
-
-    return ret;
-}
-
 static long
 _syscall_ioctl(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
-    /* Silently ignore ioctl's */
+    int fd = (int)x1;
+
+    /* only allow ioctl() on these descriptors */
+    if (fd != STDIN_FILENO && fd != STDOUT_FILENO && fd != STDERR_FILENO)
+        abort();
+
     return 0;
 }
 
-ssize_t _syscall_writev(int fd, const struct iovec* iov, int iovcnt)
+static long
+_syscall_writev(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
+    int fd = (int)x1;
+    const struct iovec* iov = (const struct iovec*)x2;
+    unsigned long iovcnt = (unsigned long)x3;
     long ret = 0;
     int device;
-
-    if (fd >= 3)
-    {
-        errno = fs_writev(fd, (fs_iovec_t*)iov, iovcnt, &ret);
-        return ret;
-    }
 
     /* Allow writing only to stdout and stderr */
     switch (fd)
@@ -196,14 +118,6 @@ ssize_t _syscall_writev(int fd, const struct iovec* iov, int iovcnt)
     }
 
     return ret;
-}
-
-static ssize_t _syscall_write(int fd, const void* buf, size_t count)
-{
-    struct iovec iov;
-    iov.iov_base = (void*)buf;
-    iov.iov_len = count;
-    return _syscall_writev(fd, &iov, 1);
 }
 
 static long _syscall_clock_gettime(long n, long x1, long x2)
@@ -289,130 +203,6 @@ done:
     return ret;
 }
 
-static ssize_t _syscall_lseek(int fd, ssize_t off, int whence)
-{
-    ssize_t ret;
-
-    errno = fs_lseek(fd, off, whence, &ret);
-
-    return ret;
-}
-
-static int _syscall_link(const char* oldpath, const char* newpath)
-{
-    int ret;
-
-    errno = fs_link(oldpath, newpath, &ret);
-
-    return ret;
-}
-
-static int _syscall_unlink(const char* pathname)
-{
-    int ret;
-
-    errno = fs_unlink(pathname, &ret);
-
-    return ret;
-}
-
-static int _syscall_rename(const char* oldpath, const char* newpath)
-{
-    int ret;
-
-    errno = fs_rename(oldpath, newpath, &ret);
-
-    return ret;
-}
-
-static int _syscall_truncate(const char* path, ssize_t length)
-{
-    int ret;
-
-    errno = fs_truncate(path, length, &ret);
-
-    return ret;
-}
-
-static int _syscall_mkdir(const char* pathname, uint32_t mode)
-{
-    int ret;
-
-    errno = fs_mkdir(pathname, mode, &ret);
-
-    return ret;
-}
-
-static int _syscall_rmdir(const char* pathname)
-{
-    int ret;
-
-    errno = fs_rmdir(pathname, &ret);
-
-    return ret;
-}
-
-int _syscall_getdents(unsigned int fd, struct dirent* dirp, unsigned int count)
-{
-    int ret;
-
-    errno = fs_getdents(fd, dirp, count, &ret);
-
-    return ret;
-}
-
-static int _syscall_fcntl(int fd, int cmd, ...)
-{
-    switch (cmd)
-    {
-        case F_SETFD:
-        {
-            va_list ap;
-            va_start(ap, cmd);
-
-            int flags = va_arg(ap, int);
-
-            /* Ignore O_CLOEXEC in enclaves since exec is unsupported. */
-            if (flags == O_CLOEXEC)
-                return 0;
-
-            va_end(ap);
-            return -1;
-        }
-        default:
-        {
-            return -1;
-        }
-    }
-}
-
-static int _syscall_access(const char* pathname, int mode)
-{
-    int ret;
-
-    errno = fs_access(pathname, mode, &ret);
-
-    return ret;
-}
-
-static int _syscall_getcwd(char* buf, unsigned long size)
-{
-    int ret;
-
-    errno = fs_getcwd(buf, size, &ret);
-
-    return ret;
-}
-
-static int _syscall_chdir(const char* path)
-{
-    int ret;
-
-    errno = fs_chdir(path, &ret);
-
-    return ret;
-}
-
 /* Intercept __syscalls() from MUSL */
 long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
@@ -434,6 +224,17 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         /* The hook ignored the syscall so fall through */
     }
 
+    {
+        long ret;
+        fs_errno_t err;
+
+        if (fs_handle_syscall(n, x1, x2, x3, x4, x5, x6, &ret, &err) == 0)
+        {
+            errno = err;
+            return ret;
+        }
+    }
+
     switch (n)
     {
         case SYS_nanosleep:
@@ -443,53 +244,17 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         case SYS_clock_gettime:
             return _syscall_clock_gettime(n, x1, x2);
         case SYS_writev:
-            return _syscall_writev((int)x1, (const struct iovec*)x2, (int)x3);
-        case SYS_write:
-            return _syscall_write((int)x1, (const void*)x2, (size_t)x3);
+            return _syscall_writev(n, x1, x2, x3, x4, x5, x6);
         case SYS_ioctl:
             return _syscall_ioctl(n, x1, x2, x3, x4, x5, x6);
         case SYS_open:
             return _syscall_open(n, x1, x2, x3, x4, x5, x6);
-        case SYS_creat:
-            return _syscall_creat(n, x1, x2, x3, x4, x5, x6);
         case SYS_close:
             return _syscall_close(n, x1, x2, x3, x4, x5, x6);
         case SYS_mmap:
             return _syscall_mmap(n, x1, x2, x3, x4, x5, x6);
         case SYS_readv:
-            return _syscall_readv((int)x1, (const struct iovec*)x2, (int)x3);
-        case SYS_read:
-            return _syscall_read((int)x1, (void*)x2, (size_t)x3);
-        case SYS_stat:
-            return _syscall_stat(n, x1, x2, x3, x4, x5, x6);
-        case SYS_lseek:
-            return _syscall_lseek(x1, x2, x3);
-        case SYS_link:
-            return _syscall_link((const char*)x1, (const char*)x2);
-        case SYS_unlink:
-            return _syscall_unlink((const char*)x1);
-        case SYS_rename:
-            return _syscall_rename((const char*)x1, (const char*)x2);
-        case SYS_truncate:
-            return _syscall_truncate((const char*)x1, (ssize_t)x2);
-        case SYS_mkdir:
-            return _syscall_mkdir((const char*)x1, (uint32_t)x2);
-        case SYS_rmdir:
-            return _syscall_rmdir((const char*)x1);
-        case SYS_fcntl:
-            return _syscall_fcntl((int)x1, (int)x2);
-        case SYS_access:
-            return _syscall_access((const char*)x1, (int)x2);
-        case SYS_getcwd:
-            return _syscall_getcwd((char*)x1, (unsigned long)x2);
-        case SYS_chdir:
-            return _syscall_chdir((char*)x1);
-        case SYS_getdents:
-        case SYS_getdents64:
-        {
-            return _syscall_getdents(
-                (unsigned int)x1, (struct dirent*)x2, (unsigned int)x3);
-        }
+            return _syscall_readv(n, x1, x2, x3, x4, x5, x6);
         default:
         {
             /* All other MUSL-initiated syscalls are aborted. */
