@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blkdev.h"
+#include "hostblkdev.h"
 #include "hostbatch.h"
 #include "list.h"
 
@@ -19,27 +20,19 @@ typedef struct _blkdev
     size_t ref_count;
     pthread_spinlock_t lock;
     fs_host_batch_t* batch;
-    void* host_context;
+    void* handle;
 } blkdev_t;
 
 static size_t _get_batch_capacity()
 {
-    size_t capacity = 0;
-
-    if (sizeof(oe_ocall_blkdev_get_args_t) > capacity)
-        capacity = sizeof(oe_ocall_blkdev_get_args_t);
-
-    if (sizeof(oe_ocall_blkdev_put_args_t) > capacity)
-        capacity = sizeof(oe_ocall_blkdev_put_args_t);
-
-    return capacity;
+    return sizeof(fs_hostblkdev_ocall_args_t);
 }
 
 static int _blkdev_get(fs_blkdev_t* d, uint32_t blkno, fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
-    typedef oe_ocall_blkdev_get_args_t args_t;
+    typedef fs_hostblkdev_ocall_args_t args_t;
     args_t* args = NULL;
 
     if (!dev || !blk)
@@ -48,17 +41,18 @@ static int _blkdev_get(fs_blkdev_t* d, uint32_t blkno, fs_blk_t* blk)
     if (!(args = fs_host_batch_calloc(dev->batch, sizeof(args_t))))
         goto done;
 
-    args->ret = -1;
-    args->host_context = dev->host_context;
-    args->blkno = blkno;
+    args->op = FS_HOSTBLKDEV_GET;
+    args->get.ret = -1;
+    args->get.handle = dev->handle;
+    args->get.blkno = blkno;
 
-    if (oe_ocall(OE_OCALL_BLKDEV_GET, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_HOSTBLKDEV, (uint64_t)args, NULL) != OE_OK)
         goto done;
 
-    if (args->ret != 0)
+    if (args->get.ret != 0)
         goto done;
 
-    memcpy(blk->data, args->blk, sizeof(args->blk));
+    *blk = args->get.blk;
 
     ret = 0;
 
@@ -74,9 +68,8 @@ static int _blkdev_put(fs_blkdev_t* d, uint32_t blkno, const fs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
-    typedef oe_ocall_blkdev_put_args_t args_t;
+    typedef fs_hostblkdev_ocall_args_t args_t;
     args_t* args = NULL;
-    const uint16_t func = OE_OCALL_BLKDEV_PUT;
 
     if (!dev || !blk)
         goto done;
@@ -84,15 +77,16 @@ static int _blkdev_put(fs_blkdev_t* d, uint32_t blkno, const fs_blk_t* blk)
     if (!(args = fs_host_batch_calloc(dev->batch, sizeof(args_t))))
         goto done;
 
-    args->ret = -1;
-    args->host_context = dev->host_context;
-    args->blkno = blkno;
-    memcpy(args->blk, blk->data, sizeof(args->blk));
+    args->op = FS_HOSTBLKDEV_PUT;
+    args->put.ret = -1;
+    args->put.handle = dev->handle;
+    args->put.blkno = blkno;
+    args->put.blk = *blk;
 
-    if (oe_ocall(func, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_HOSTBLKDEV, (uint64_t)args, NULL) != OE_OK)
         goto done;
 
-    if (args->ret != 0)
+    if (args->put.ret != 0)
         goto done;
 
     ret = 0;
@@ -136,18 +130,22 @@ done:
 static int _blkdev_release(fs_blkdev_t* d)
 {
     int ret = -1;
-    const uint16_t func = OE_OCALL_CLOSE_BLKDEV;
     blkdev_t* dev = (blkdev_t*)d;
+    typedef fs_hostblkdev_ocall_args_t args_t;
+    args_t* args = NULL;
 
     if (!dev)
         goto done;
 
-    pthread_spin_lock(&dev->lock);
-    pthread_spin_unlock(&dev->lock);
-
     if (--dev->ref_count == 0)
     {
-        if (oe_ocall(func, (uint64_t)dev->host_context, NULL) != OE_OK)
+        if (!(args = fs_host_batch_calloc(dev->batch, sizeof(args_t))))
+            goto done;
+
+        args->op = FS_HOSTBLKDEV_CLOSE;
+        args->close.handle = dev->handle;
+
+        if (oe_ocall(OE_OCALL_HOSTBLKDEV, (uint64_t)args, NULL) != OE_OK)
             goto done;
 
         fs_host_batch_delete(dev->batch);
@@ -157,37 +155,42 @@ static int _blkdev_release(fs_blkdev_t* d)
     ret = 0;
 
 done:
+
     return ret;
 }
 
-int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* device_name)
+int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* path)
 {
     int ret = -1;
-    char* name = NULL;
-    void* host_context = NULL;
-    const uint16_t func = OE_OCALL_OPEN_BLKDEV;
     blkdev_t* dev = NULL;
     fs_host_batch_t* batch = NULL;
+    typedef fs_hostblkdev_ocall_args_t args_t;
+    args_t* args = NULL;
 
     if (blkdev)
         *blkdev = NULL;
 
-    if (!device_name || !blkdev)
-        goto done;
-
-    if (!(name = oe_host_strndup(device_name, strlen(device_name))))
+    if (!blkdev || !path)
         goto done;
 
     if (!(dev = calloc(1, sizeof(blkdev_t))))
         goto done;
 
-    if (oe_ocall(func, (uint64_t)name, (uint64_t*)&host_context) != OE_OK)
-        goto done;
-
-    if (!host_context)
-        goto done;
-
     if (!(batch = fs_host_batch_new(_get_batch_capacity())))
+        goto done;
+
+    if (!(args = fs_host_batch_calloc(batch, sizeof(args_t))))
+        goto done;
+
+    args->op = FS_HOSTBLKDEV_OPEN;
+
+    if (!(args->open.path = fs_host_batch_strdup(batch, path)))
+        goto done;
+
+    if (oe_ocall(OE_OCALL_HOSTBLKDEV, (uint64_t)args, NULL) != OE_OK)
+        goto done;
+
+    if (!args->open.handle)
         goto done;
 
     dev->base.get = _blkdev_get;
@@ -198,21 +201,20 @@ int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* device_name)
     dev->base.release = _blkdev_release;
     dev->batch = batch;
     dev->ref_count = 1;
-    dev->host_context = host_context;
+    dev->handle = args->open.handle;
 
     *blkdev = &dev->base;
     dev = NULL;
     batch = NULL;
-
     ret = 0;
 
 done:
 
+    if (args && dev && dev->batch)
+        fs_host_batch_free(dev->batch);
+
     if (dev)
         free(dev);
-
-    if (name)
-        oe_host_free(name);
 
     if (batch)
         fs_host_batch_delete(batch);

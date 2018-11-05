@@ -20,4 +20,6 @@ char* fs_host_batch_strdup(fs_host_batch_t* batch, const char* str);
 
 int fs_host_batch_free(fs_host_batch_t* batch);
 
+void dump_lock(fs_host_batch_t* batch);
+
 #endif /* _FS_HOSTBATCH_H */

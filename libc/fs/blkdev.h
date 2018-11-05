@@ -31,7 +31,7 @@ struct _fs_blkdev
     int (*release)(fs_blkdev_t* dev);
 };
 
-int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* device_name);
+int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* path);
 
 int fs_open_ram_blkdev(fs_blkdev_t** blkdev, size_t size);
 

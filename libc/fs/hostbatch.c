@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define ALIGNMENT sizeof(uint64_t)
 
@@ -29,11 +30,15 @@ struct _thread_data
     host_block_t* blocks;
 };
 
+#define GUARD 0xa89d0e55
+
 struct _fs_host_batch
 {
     size_t capacity;
     thread_data_t* tds;
+    uint32_t guard1;
     pthread_spinlock_t lock;
+    uint32_t guard2;
 };
 
 static thread_data_t* _new_thread_data(fs_host_batch_t* batch)
@@ -116,6 +121,8 @@ fs_host_batch_t* fs_host_batch_new(size_t capacity)
         goto done;
 
     batch->capacity = capacity;
+    batch->guard1 = GUARD;
+    batch->guard2 = GUARD;
 
     ret = batch;
     batch = NULL;
