@@ -7,10 +7,3 @@ Todo:
 (C) Fix truncate() to extend files.
 (C) Support directory enumeration below mount points.
 (B) Memory resident/sync'd file system.
-
-Unsupported:
-    telldir()
-    seekdir()
-    rewinddir()
-    fdopen()
-    dirfd()
