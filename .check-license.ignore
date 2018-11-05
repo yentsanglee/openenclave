@@ -91,3 +91,4 @@ VERSION
 *Jenkinsfile
 .gitattributes
 ./libc/fs/todo.txt
+./host/linux/pe.h
