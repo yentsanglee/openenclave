@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "hostcalls.h"
 
 #define ALIGNMENT sizeof(uint64_t)
 
@@ -49,7 +50,7 @@ static thread_data_t* _new_thread_data(fs_host_batch_t* batch)
     if (!(td = calloc(1, sizeof(thread_data_t))))
         goto done;
 
-    if (!(td->data = oe_host_calloc(1, batch->capacity)))
+    if (!(td->data = fs_host_calloc(1, batch->capacity)))
         goto done;
 
     td->thread = pthread_self();
@@ -96,13 +97,13 @@ static thread_data_t* _get_thread_data(fs_host_batch_t* batch)
 
 void _delete_thread_data(thread_data_t* td)
 {
-    oe_host_free(td->data);
+    fs_host_free(td->data);
 
     /* free the host blocks. */
     for (host_block_t* p = td->blocks; p;)
     {
         host_block_t* next = p->next;
-        oe_host_free(p);
+        fs_host_free(p);
         p = next;
     }
 
@@ -178,7 +179,7 @@ void* fs_host_batch_malloc(fs_host_batch_t* batch, size_t size)
     {
         host_block_t* blk;
 
-        if (!(blk = oe_host_calloc(1, sizeof(host_block_t) + total_size)))
+        if (!(blk = fs_host_calloc(1, sizeof(host_block_t) + total_size)))
             goto done;
 
         blk->next = td->blocks;
@@ -243,7 +244,7 @@ int fs_host_batch_free(fs_host_batch_t* batch)
         for (host_block_t* p = td->blocks; p;)
         {
             host_block_t* next = p->next;
-            oe_host_free(p);
+            fs_host_free(p);
             p = next;
         }
 

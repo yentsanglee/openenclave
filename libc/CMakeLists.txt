@@ -14,6 +14,7 @@ add_library(oelibc STATIC
     atexit.c
     dladdr.c
     dirent.c
+    fshostcalls.c
     exp2l.S
     ../fs/buf.c
     ../fs/cacheblkdev.c
