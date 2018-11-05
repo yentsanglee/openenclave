@@ -6,7 +6,7 @@
 #include <openenclave/internal/raise.h>
 #include "fs/hostfs.h"
 
-oe_result_t oe_hostfs_ocall(fs_hostfs_args_t* args)
+oe_result_t oe_hostfs_ocall(fs_hostfs_ocall_args_t* args)
 {
     oe_result_t result = OE_OK;
 

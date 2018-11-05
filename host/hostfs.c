@@ -13,7 +13,7 @@
 
 void oe_handle_hostfs(oe_enclave_t* enclave, uint64_t arg)
 {
-    fs_hostfs_args_t* args = (fs_hostfs_args_t*)arg;
+    fs_hostfs_ocall_args_t* args = (fs_hostfs_ocall_args_t*)arg;
 
     if (!args)
         return;

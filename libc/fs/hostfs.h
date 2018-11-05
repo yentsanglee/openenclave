@@ -26,7 +26,7 @@ typedef enum _fs_hostfs_op {
     FS_HOSTFS_RMDIR,
 } fs_hostfs_op_t;
 
-typedef struct _fs_hostfs_args
+typedef struct _fs_hostfs_ocall_args
 {
     fs_hostfs_op_t op;
     int err; /* errno value */
@@ -156,6 +156,6 @@ typedef struct _fs_hostfs_args
             char pathname[FS_PATH_MAX];
         } rmdir;
     } u;
-} fs_hostfs_args_t;
+} fs_hostfs_ocall_args_t;
 
 #endif /* _FS_HOSTFS_H */

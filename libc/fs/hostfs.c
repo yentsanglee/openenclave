@@ -99,7 +99,7 @@ static fs_errno_t _fs_open(
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
     fs_file_t* file = NULL;
 
@@ -167,7 +167,7 @@ static fs_errno_t _fs_lseek(
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     if (offset_out)
@@ -213,7 +213,7 @@ static fs_errno_t _fs_read(
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     if (nread)
@@ -274,7 +274,7 @@ static fs_errno_t _fs_write(
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     if (nwritten)
@@ -329,7 +329,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     if (!_valid_file(file))
@@ -373,7 +373,7 @@ static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir_out)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
     fs_dir_t* dir = NULL;
 
@@ -431,7 +431,7 @@ static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** entry_out)
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
     fs_dirent_t* entry;
 
@@ -485,7 +485,7 @@ static fs_errno_t _fs_closedir(fs_dir_t* dir)
 {
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     if (!_valid_dir(dir))
@@ -528,7 +528,7 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     batch = hostfs->batch;
@@ -588,7 +588,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     batch = hostfs->batch;
@@ -632,7 +632,7 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     if (!_valid_fs(fs) || !path)
@@ -675,7 +675,7 @@ static fs_errno_t _fs_rename(
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     batch = hostfs->batch;
@@ -721,7 +721,7 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     if (!_valid_fs(fs) || !path)
@@ -762,7 +762,7 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     if (!_valid_fs(fs) || !path)
@@ -803,7 +803,7 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
     hostfs_t* hostfs = (hostfs_t*)fs;
     fs_errno_t err = FS_EOK;
     fs_host_batch_t* batch = NULL;
-    typedef fs_hostfs_args_t args_t;
+    typedef fs_hostfs_ocall_args_t args_t;
     args_t* args;
 
     if (!_valid_fs(fs) || !path)
