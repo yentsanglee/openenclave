@@ -1025,8 +1025,20 @@ static void _test_cpio(void)
     while ((r = fs_cpio_next(cpio, &entry)) > 0)
     {
         printf("name{%s}\n", entry.name);
-        printf("size{%zu}\n", entry.filesize);
+        printf("size{%zu}\n", entry.size);
         printf("mode{%06o}\n", entry.mode);
+
+        if (strcmp(entry.name, "oefs/oefs.edl") == 0)
+        {
+            char data[16];
+            ssize_t n;
+
+            printf("<<<<<<<<<<<<<<<<\n");
+            while ((n = fs_cpio_read(cpio, data, sizeof(data))) > 0)
+                printf("%.*s", (int)n, data);
+            printf(">>>>>>>>>>>>>>>>\n");
+        }
+
         m++;
     }
 

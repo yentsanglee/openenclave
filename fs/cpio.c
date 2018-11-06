@@ -189,6 +189,7 @@ int fs_cpio_next(fs_cpio_t* cpio, fs_cpio_entry_t* entry_out)
     fs_cpio_entry_t entry;
     ssize_t r;
     long file_offset;
+    size_t namesize;
 
     if (entry_out)
         memset(entry_out, 0, sizeof(fs_cpio_entry_t));
@@ -211,7 +212,7 @@ int fs_cpio_next(fs_cpio_t* cpio, fs_cpio_entry_t* entry_out)
         if ((r = _get_filesize(&header)) < 0)
             goto done;
 
-        entry.filesize = (size_t)r;
+        entry.size = (size_t)r;
     }
 
     /* Get the file mode. */
@@ -227,11 +228,11 @@ int fs_cpio_next(fs_cpio_t* cpio, fs_cpio_entry_t* entry_out)
         if ((r = _get_namesize(&header)) < 0 || r >= FS_PATH_MAX)
             goto done;
 
-        entry.namesize = (size_t)r;
+        namesize = (size_t)r;
     }
 
     /* Read the name. */
-    if (fread(&entry.name, 1, entry.namesize, cpio->stream) != entry.namesize)
+    if (fread(&entry.name, 1, namesize, cpio->stream) != namesize)
         goto done;
 
     /* Skip any padding after the name. */
@@ -242,7 +243,7 @@ int fs_cpio_next(fs_cpio_t* cpio, fs_cpio_entry_t* entry_out)
     file_offset = ftell(cpio->stream);
 
     /* Skip over the file data. */
-    if (fseek(cpio->stream, entry.filesize, SEEK_CUR) != 0)
+    if (fseek(cpio->stream, entry.size, SEEK_CUR) != 0)
         goto done;
 
     /* Skip any padding after the file data. */
@@ -266,6 +267,35 @@ int fs_cpio_next(fs_cpio_t* cpio, fs_cpio_entry_t* entry_out)
     *entry_out = entry;
 
     ret = 1;
+
+done:
+    return ret;
+}
+
+ssize_t fs_cpio_read(fs_cpio_t* cpio, void* data, size_t size)
+{
+    ssize_t ret = -1;
+    size_t rem;
+    ssize_t n;
+    long offset;
+
+    if (!cpio || !cpio->stream || !data)
+        goto done;
+
+    offset = ftell(cpio->stream);
+    
+    if (offset > cpio->offset)
+        goto done;
+
+    rem = cpio->offset - offset;
+
+    if (size > rem)
+        size = rem;
+
+    if ((n = fread(data, 1, size, cpio->stream)) != size)
+        goto done;
+
+    ret = n;
 
 done:
     return ret;
