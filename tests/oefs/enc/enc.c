@@ -1013,21 +1013,26 @@ void run_tests(const char* target)
     _test_fcntl(target);
 }
 
-static void _test_cpio(const char* source, const char* target)
+static void _test_cpio(const char* source, const char* target1, const char* target2)
 {
-    OE_TEST(fs_cpio_extract(source, target) == 0);
+    OE_TEST(fs_cpio_extract(source, target1) == 0);
+    OE_TEST(fs_cpio_extract(source, target2) == 0);
 
     fs_strarr_t arr1 = FS_STRARR_INITIALIZER;
     fs_strarr_t arr2 = FS_STRARR_INITIALIZER;
-    OE_TEST(fs_lsr(target, &arr1) == 0);
-    OE_TEST(fs_lsr(target, &arr2) == 0);
+    OE_TEST(fs_lsr(target1, &arr1) == 0);
+    OE_TEST(fs_lsr(target2, &arr2) == 0);
 
     OE_TEST(arr1.size > 1);
     OE_TEST(arr1.size == arr2.size);
 
     for (size_t i = 0; i < arr1.size; i++)
     {
+        OE_TEST(fs_cmp(arr1.data[i], arr2.data[i]) == 0);
+#if 0
         OE_TEST(strcmp(arr1.data[i], arr2.data[i]) == 0);
+        OE_TEST(fs_cmp(arr1.data[i], arr2.data[i]) == 0);
+#endif
     }
 
     fs_strarr_release(&arr1);
@@ -1127,12 +1132,6 @@ static void _test_hostfs()
 
     OE_TEST(rmdir("/mnt/hostfs/tmp/mydir") == 0);
 
-    {
-        const char source[] = "/mnt/hostfs/root/openenclave/tests.cpio";
-        const char target[] = "/mnt/hostfs/tmp/tests.cpio";
-        _test_cpio(source, target);
-    }
-
     /* Unmount the file system. */
     OE_TEST(fs_unmount("/mnt/hostfs") == 0);
 }
@@ -1165,13 +1164,15 @@ int test_oefs(const char* oefs_filename)
 
     {
         const char source[] = "/mnt/hostfs/root/openenclave/tests.cpio";
-        const char target[] = "/mnt/ramfs/tests.cpio";
-        _test_cpio(source, target);
+        const char target1[] = "/mnt/hostfs/tmp/tests.cpio";
+        const char target2[] = "/mnt/ramfs/tests.cpio";
+        _test_cpio(source, target1, target2);
     }
     {
         const char source[] = "/mnt/hostfs/root/openenclave/tests.cpio";
-        const char target[] = "/mnt/oefs/tests.cpio";
-        _test_cpio(source, target);
+        const char target1[] = "/mnt/hostfs/tmp/tests.cpio";
+        const char target2[] = "/mnt/oefs/tests.cpio";
+        _test_cpio(source, target1, target2);
     }
 
     rc = fs_unmount(target1);

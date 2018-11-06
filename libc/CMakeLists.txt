@@ -27,6 +27,7 @@ add_library(oelibc STATIC
     ../fs/hostfs.c
     ../fs/list.c
     ../fs/lsr.c
+    ../fs/cmp.c
     ../fs/mount.c
     ../fs/oefs.c
     ../fs/ramblkdev.c
