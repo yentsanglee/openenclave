@@ -1,8 +1,13 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#define _GNU_SOURCE
 #include "cpio.h"
 #include <limits.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #define FS_CPIO_MODE_IFMT 00170000
 #define FS_CPIO_MODE_IFSOCK 0140000
@@ -54,6 +59,7 @@ struct _fs_cpio
     FILE* stream;
     cpio_header_t header;
     size_t entry_size;
+    long eof_offset;
     long offset;
 };
 
@@ -246,6 +252,9 @@ int fs_cpio_next(fs_cpio_t* cpio, fs_cpio_entry_t* entry_out)
     if (fseek(cpio->stream, entry.size, SEEK_CUR) != 0)
         goto done;
 
+    /* Save the file offset. */
+    cpio->eof_offset = ftell(cpio->stream);
+
     /* Skip any padding after the file data. */
     if (_skip_padding(cpio->stream) != 0)
         goto done;
@@ -284,10 +293,10 @@ ssize_t fs_cpio_read(fs_cpio_t* cpio, void* data, size_t size)
 
     offset = ftell(cpio->stream);
     
-    if (offset > cpio->offset)
+    if (offset > cpio->eof_offset)
         goto done;
 
-    rem = cpio->offset - offset;
+    rem = cpio->eof_offset - offset;
 
     if (size > rem)
         size = rem;
@@ -298,5 +307,69 @@ ssize_t fs_cpio_read(fs_cpio_t* cpio, void* data, size_t size)
     ret = n;
 
 done:
+    return ret;
+}
+
+int fs_cpio_extract(const char* source, const char* target)
+{
+    int ret = -1;
+    fs_cpio_t* cpio = NULL;
+    int r;
+    fs_cpio_entry_t entry;
+    char path[FS_PATH_MAX];
+    FILE* os = NULL;
+
+    if (!source || !target)
+        goto done;
+
+    if (!(cpio = fs_cpio_open(source)))
+        goto done;
+
+    if (access(target, R_OK) != 0 && mkdir(target, 0766) != 0)
+        goto done;
+
+    while ((r = fs_cpio_next(cpio, &entry)) > 0)
+    {
+        if (strcmp(entry.name, ".") == 0)
+            continue;
+
+        strlcpy(path, target, sizeof(path));
+        strlcat(path, "/", sizeof(path));
+        strlcat(path, entry.name, sizeof(path));
+
+        if (S_ISDIR(entry.mode))
+        {
+            if (access(path, R_OK) && mkdir(path, entry.mode) != 0)
+                goto done;
+        }
+        else
+        {
+            char data[512];
+            ssize_t n;
+
+            if (!(os = fopen(path, "wb")))
+                goto done;
+
+            while ((n = fs_cpio_read(cpio, data, sizeof(data))) > 0)
+            {
+                if (fwrite(data, 1, n, os) != n)
+                    goto done;
+            }
+
+            fclose(os);
+            os = NULL;
+        }
+    }
+
+    ret = 0;
+
+done:
+
+    if (cpio)
+        fs_cpio_close(cpio);
+
+    if (os)
+        fclose(os);
+
     return ret;
 }

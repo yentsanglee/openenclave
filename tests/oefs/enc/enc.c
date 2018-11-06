@@ -945,7 +945,7 @@ void run_tests(const char* target)
         OE_TEST(strcmp(suffix, "/aaa/bbb/ccc/myfile") == 0);
     }
 
-    /* Try fopen(void) */
+    /* Try fopen() */
     {
         char path[FS_PATH_MAX];
         char buf[512];
@@ -1012,42 +1012,14 @@ void run_tests(const char* target)
     _test_fcntl(target);
 }
 
-static void _test_cpio(void)
+static void _test_cpio()
 {
-    fs_cpio_t* cpio;
-    fs_cpio_entry_t entry;
-    int r;
-    size_t m = 0;
-
-    cpio = fs_cpio_open("/mnt/hostfs/root/openenclave/tests.cpio");
-    OE_TEST(cpio);
-
-    while ((r = fs_cpio_next(cpio, &entry)) > 0)
-    {
-        printf("name{%s}\n", entry.name);
-        printf("size{%zu}\n", entry.size);
-        printf("mode{%06o}\n", entry.mode);
-
-        if (strcmp(entry.name, "oefs/oefs.edl") == 0)
-        {
-            char data[16];
-            ssize_t n;
-
-            printf("<<<<<<<<<<<<<<<<\n");
-            while ((n = fs_cpio_read(cpio, data, sizeof(data))) > 0)
-                printf("%.*s", (int)n, data);
-            printf(">>>>>>>>>>>>>>>>\n");
-        }
-
-        m++;
-    }
-
-    OE_TEST(m > 0);
-    OE_TEST(r == 0);
-    OE_TEST(fs_cpio_close(cpio) == 0);
+    const char source[] = "/mnt/hostfs/root/openenclave/tests.cpio";
+    const char target[] = "/mnt/hostfs/tmp/tests.cpio";
+    OE_TEST(fs_cpio_extract(source, target) == 0);
 }
 
-static void _test_hostfs(void)
+static void _test_hostfs()
 {
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     struct stat buf;
@@ -1090,16 +1062,16 @@ static void _test_hostfs(void)
         OE_TEST(fclose(is) == 0);
     }
 
-    /* Test stat(void) */
+    /* Test stat() */
     OE_TEST(stat("/mnt/hostfs/tmp/myfile", &buf) == 0);
     OE_TEST(buf.st_size == sizeof(alphabet));
     OE_TEST(buf.st_nlink == 1);
     OE_TEST(S_ISREG(buf.st_mode));
 
-    /* Test link(void) */
+    /* Test link() */
     OE_TEST(link("/mnt/hostfs/tmp/myfile", "/mnt/hostfs/tmp/myfile2") == 0);
 
-    /* Test stat(void) */
+    /* Test stat() */
     OE_TEST(stat("/mnt/hostfs/tmp/myfile2", &buf) == 0);
     OE_TEST(buf.st_size == sizeof(alphabet));
     OE_TEST(buf.st_nlink == 2);

@@ -23,4 +23,6 @@ int fs_cpio_next(fs_cpio_t* cpio, fs_cpio_entry_t* entry_out);
 
 ssize_t fs_cpio_read(fs_cpio_t* cpio, void* data, size_t size);
 
+int fs_cpio_extract(const char* source, const char* target);
+
 #endif /* _FS_CPIO_H */
