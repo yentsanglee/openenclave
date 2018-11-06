@@ -26,10 +26,12 @@ add_library(oelibc STATIC
     ../fs/hostblkdev.c
     ../fs/hostfs.c
     ../fs/list.c
+    ../fs/lsr.c
     ../fs/mount.c
     ../fs/oefs.c
     ../fs/ramblkdev.c
     ../fs/syscall.c
+    ../fs/strarr.c
     libunwind_stubs.c
     link.c
     locale.c

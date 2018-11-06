@@ -3,11 +3,11 @@
 
 #define _GNU_SOURCE
 #include "cpio.h"
+#include <fcntl.h>
 #include <limits.h>
 #include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #define FS_CPIO_MODE_IFMT 00170000
 #define FS_CPIO_MODE_IFSOCK 0140000
@@ -292,7 +292,7 @@ ssize_t fs_cpio_read(fs_cpio_t* cpio, void* data, size_t size)
         goto done;
 
     offset = ftell(cpio->stream);
-    
+
     if (offset > cpio->eof_offset)
         goto done;
 
