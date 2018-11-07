@@ -19,3 +19,5 @@ prereqs/isgx/linux-sgx-driver/
 prereqs/dcap/*.deb
 prereqs/packages/.packages
 prereqs/sgx-driver/*.bin
+*.obj
+*.exe
