@@ -8,6 +8,8 @@ set(PLATFORM_SRC
     ../fs/ocall.c
     ../fs/hostfsocall.c
     ../fs/hostblkdevocall.c
+    ../fs/cpio.c
+    ../fs/strings.c
     crypto/openssl/asn1.c
     crypto/openssl/cert.c
     crypto/openssl/crl.c

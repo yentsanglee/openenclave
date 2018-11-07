@@ -32,6 +32,7 @@ add_library(oelibc STATIC
     ../fs/ramblkdev.c
     ../fs/syscall.c
     ../fs/strarr.c
+    ../fs/strings.c
     libunwind_stubs.c
     link.c
     locale.c

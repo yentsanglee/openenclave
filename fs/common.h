@@ -46,4 +46,12 @@
 
 #define FS_FIELD_SIZE(TYPE, FIELD) (sizeof(((TYPE*)0)->FIELD))
 
+#if defined(__GNUC__)
+#define FS_PACK_BEGIN _Pragma("pack(push, 1)")
+#define FS_PACK_END _Pragma("pack(pop)")
+#elif _MSC_VER
+#define FS_PACK_BEGIN __pragma(pack(push, 1))
+#define FS_PACK_END __pragma(pack(pop))
+#endif
+
 #endif /* _FS_DEFS_H */

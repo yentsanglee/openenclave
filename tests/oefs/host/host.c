@@ -6,6 +6,28 @@
 #include <stdio.h>
 #include <string.h>
 #include "oefs_u.h"
+#include "../../../fs/cpio.h"
+
+static void _create_cpio_archive()
+{
+    fs_cpio_t* cpio;
+    const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+    fs_cpio_entry_t entry;
+
+    cpio = fs_cpio_open("/tmp/my.cpio", FS_CPIO_FLAG_CREATE);
+    OE_TEST(cpio != NULL);
+
+    memset(&entry, 0, sizeof(entry));
+    entry.size = sizeof(alphabet);
+    entry.mode = 0;
+    strcpy(entry.name, "alphabet");
+
+    OE_TEST(fs_cpio_write_entry(cpio, &entry) == 0);
+
+    OE_TEST(fs_cpio_write_data(cpio, alphabet, sizeof(alphabet)) == 0);
+
+    OE_TEST(fs_cpio_close(cpio) == 0);
+}
 
 int main(int argc, const char* argv[])
 {
@@ -34,6 +56,9 @@ int main(int argc, const char* argv[])
         OE_TEST((os = fopen(argv[2], "wb")) != NULL);
         fclose(os);
     }
+
+    /* Create the CPIO archive. */
+    _create_cpio_archive();
 
     r = test_oefs(enclave, &ret, argv[2]);
     if (r != OE_OK || ret != 0)

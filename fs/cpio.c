@@ -1,13 +1,17 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+
 #include "cpio.h"
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "strings.h"
 
 #define CPIO_BLOCK_SIZE 512
 
@@ -69,8 +73,8 @@ struct _fs_cpio
 typedef struct _entry
 {
     cpio_header_t header;
+    char name[FS_PATH_MAX];
     size_t size;
-    char name[400 - sizeof(cpio_header_t)];
 }
 entry_t;
 
@@ -90,8 +94,8 @@ entry_t _dot =
     .header.rdevminor = "00000000",
     .header.namesize = "00000002",
     .header.check = "00000000",
-    .size = sizeof(cpio_header_t) + 2,
     .name = ".",
+    .size = sizeof(cpio_header_t) + 2,
 };
 
 entry_t _trailer =
@@ -110,8 +114,8 @@ entry_t _trailer =
     .header.rdevminor = "00000000",
     .header.namesize = "0000000B",
     .header.check = "00000000",
-    .size = sizeof(entry_t),
     .name = "TRAILER!!!",
+    .size = sizeof(cpio_header_t) + 11
 };
 
 static bool _valid_header(const cpio_header_t* header)
@@ -245,7 +249,6 @@ static int _write_padding(FILE* stream, size_t n)
     }
 
     ret = 0;
-    goto done;
 
 done:
     return ret;
@@ -488,9 +491,9 @@ int fs_cpio_extract(const char* source, const char* target)
         if (strcmp(entry.name, ".") == 0)
             continue;
 
-        strlcpy(path, target, sizeof(path));
-        strlcat(path, "/", sizeof(path));
-        strlcat(path, entry.name, sizeof(path));
+        fs_strlcpy(path, target, sizeof(path));
+        fs_strlcat(path, "/", sizeof(path));
+        fs_strlcat(path, entry.name, sizeof(path));
 
         if (S_ISDIR(entry.mode))
         {
@@ -544,9 +547,8 @@ int fs_cpio_write_entry(fs_cpio_t* cpio, const fs_cpio_entry_t* entry)
 
     /* Write the CPIO header */
     {
-        if (fwrite(&h, 1, sizeof(h), cpio->stream) != sizeof(h))
-            goto done;
-
+        memset(&h, 0, sizeof(h));
+        strcpy(h.magic, "070701");
         _uint_to_hex(h.ino, 0);
         _uint_to_hex(h.mode, entry->mode);
         _uint_to_hex(h.uid, 0);
@@ -560,6 +562,9 @@ int fs_cpio_write_entry(fs_cpio_t* cpio, const fs_cpio_entry_t* entry)
         _uint_to_hex(h.rdevminor, 0);
         _uint_to_hex(h.namesize, (unsigned int)namesize);
         _uint_to_hex(h.check, 0);
+
+        if (fwrite(&h, 1, sizeof(h), cpio->stream) != sizeof(h))
+            goto done;
     }
 
     /* Write the file name. */
