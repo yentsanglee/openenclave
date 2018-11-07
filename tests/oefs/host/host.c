@@ -19,7 +19,7 @@ static void _create_cpio_archive()
 
     memset(&entry, 0, sizeof(entry));
     entry.size = sizeof(alphabet);
-    entry.mode = 0;
+    entry.mode = FS_CPIO_MODE_IFREG;
     strcpy(entry.name, "alphabet");
 
     OE_TEST(fs_cpio_write_entry(cpio, &entry) == 0);

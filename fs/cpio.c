@@ -15,33 +15,6 @@
 
 #define CPIO_BLOCK_SIZE 512
 
-#define FS_CPIO_MODE_IFMT 00170000
-#define FS_CPIO_MODE_IFSOCK 0140000
-#define FS_CPIO_MODE_IFLNK 0120000
-#define FS_CPIO_MODE_IFREG 0100000
-#define FS_CPIO_MODE_IFBLK 0060000
-#define FS_CPIO_MODE_IFDIR 0040000
-#define FS_CPIO_MODE_IFCHR 0020000
-#define FS_CPIO_MODE_IFIFO 0010000
-#define FS_CPIO_MODE_ISUID 0004000
-#define FS_CPIO_MODE_ISGID 0002000
-#define FS_CPIO_MODE_ISVTX 0001000
-
-#define FS_CPIO_MODE_IRWXU 00700
-#define FS_CPIO_MODE_IRUSR 00400
-#define FS_CPIO_MODE_IWUSR 00200
-#define FS_CPIO_MODE_IXUSR 00100
-
-#define FS_CPIO_MODE_IRWXG 00070
-#define FS_CPIO_MODE_IRGRP 00040
-#define FS_CPIO_MODE_IWGRP 00020
-#define FS_CPIO_MODE_IXGRP 00010
-
-#define FS_CPIO_MODE_IRWXO 00007
-#define FS_CPIO_MODE_IROTH 00004
-#define FS_CPIO_MODE_IWOTH 00002
-#define FS_CPIO_MODE_IXOTH 00001
-
 typedef struct _cpio_header
 {
     char magic[6];
@@ -346,7 +319,7 @@ done:
 }
 
 /* Read next entry: HEADER + NAME + FILEDATA + PADDING */
-int fs_cpio_next(fs_cpio_t* cpio, fs_cpio_entry_t* entry_out)
+int fs_cpio_read_entry(fs_cpio_t* cpio, fs_cpio_entry_t* entry_out)
 {
     int ret = -1;
     cpio_header_t header;
@@ -439,7 +412,7 @@ done:
     return ret;
 }
 
-ssize_t fs_cpio_read(fs_cpio_t* cpio, void* data, size_t size)
+ssize_t fs_cpio_read_data(fs_cpio_t* cpio, void* data, size_t size)
 {
     ssize_t ret = -1;
     size_t rem;
@@ -486,7 +459,7 @@ int fs_cpio_extract(const char* source, const char* target)
     if (access(target, R_OK) != 0 && mkdir(target, 0766) != 0)
         goto done;
 
-    while ((r = fs_cpio_next(cpio, &entry)) > 0)
+    while ((r = fs_cpio_read_entry(cpio, &entry)) > 0)
     {
         if (strcmp(entry.name, ".") == 0)
             continue;
@@ -508,7 +481,7 @@ int fs_cpio_extract(const char* source, const char* target)
             if (!(os = fopen(path, "wb")))
                 goto done;
 
-            while ((n = fs_cpio_read(cpio, data, sizeof(data))) > 0)
+            while ((n = fs_cpio_read_data(cpio, data, sizeof(data))) > 0)
             {
                 if (fwrite(data, 1, n, os) != n)
                     goto done;
@@ -540,6 +513,13 @@ int fs_cpio_write_entry(fs_cpio_t* cpio, const fs_cpio_entry_t* entry)
 
     if (!cpio || !cpio->stream || !entry)
         goto done;
+
+    /* Check file type. */
+    if (!(entry->mode & FS_CPIO_MODE_IFREG) && 
+        !(entry->mode & FS_CPIO_MODE_IFDIR))
+    {
+        goto done;
+    }
 
     /* Calculate the size of the name */
     if ((namesize = strlen(entry->name) + 1) > FS_PATH_MAX)
