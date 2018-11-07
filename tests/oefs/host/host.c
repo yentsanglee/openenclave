@@ -17,7 +17,7 @@ int main(int argc, const char* argv[])
 
     if (argc != 3)
     {
-        fprintf(stderr, "Usage: %s ENCLAVE_PATH EXT2_FILENAME\n", argv[0]);
+        fprintf(stderr, "Usage: %s ENCLAVE_PATH OEFS_PATH\n", argv[0]);
         return 1;
     }
 
@@ -26,6 +26,13 @@ int main(int argc, const char* argv[])
     {
         fprintf(stderr, "%s: oe_create_oefs_enclave() failed\n", argv[0]);
         exit(1);
+    }
+
+    /* Truncate or create the OEFS file. */
+    {
+        FILE* os;
+        OE_TEST((os = fopen(argv[2], "wb")) != NULL);
+        fclose(os);
     }
 
     r = test_oefs(enclave, &ret, argv[2]);
