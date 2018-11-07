@@ -50,7 +50,8 @@ function(oeedl_file EDL_FILE TYPE OUT_FILES_VAR)
 
 	if(${ARGC} EQUAL 5)
 		if (${ARGV3} STREQUAL "--edl-search-dir")
-			set(edl_search_path --search-path ${CMAKE_CURRENT_SOURCE_DIR}/${ARGV4})
+			set(edl_search_path1 "--search-path")
+			set(edl_search_path2 "${CMAKE_CURRENT_SOURCE_DIR}/${ARGV4}")
 		endif()
 	endif()
 
@@ -70,7 +71,7 @@ function(oeedl_file EDL_FILE TYPE OUT_FILES_VAR)
 		# order to cause files to be regenerated if the
 		# oeedger8r is rebuilt.
 		DEPENDS ${EDL_FILE} oeedger8r ${OE_BINDIR}/${OEEDGER8R_COMMAND}
-		COMMAND ${OE_BINDIR}/${OEEDGER8R_COMMAND} ${type_opt} ${headers_only} ${dir_opt} ${CMAKE_CURRENT_BINARY_DIR} ${EDL_FILE} --search-path ${in_path} ${edl_search_path}
+		COMMAND ${OE_BINDIR}/${OEEDGER8R_COMMAND} ${type_opt} ${headers_only} ${dir_opt} ${CMAKE_CURRENT_BINARY_DIR} ${EDL_FILE} --search-path ${in_path} ${edl_search_path1} ${edl_search_path2}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 		)
 

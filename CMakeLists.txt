@@ -89,6 +89,7 @@ add_subdirectory(host)
 add_subdirectory(include)
 add_subdirectory(tests)
 add_subdirectory(tools)
+add_subdirectory(securefile)
 
 if (UNIX)
   add_subdirectory(3rdparty)
