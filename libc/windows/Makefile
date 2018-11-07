@@ -34,6 +34,8 @@ SOURCES=$(SOURCES) write_stderr.c
 SOURCES=$(SOURCES) test_string.c
 SOURCES=$(SOURCES) __test_failed.c
 SOURCES=$(SOURCES) exit.c
+
+# string:
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\strcpy.c
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\stpcpy.c
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\strcmp.c
@@ -41,6 +43,9 @@ SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\memcmp.c
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\memcpy.c
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\memset.c
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\strlen.c
+
+# math:
+#SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\math\pow.c
 
 OBJECTS=$(SOURCES:.c=.obj)
 
