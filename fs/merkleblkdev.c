@@ -8,8 +8,6 @@
 #include "blkdev.h"
 #include "sha.h"
 
-/* TODO: add 'dirty' array for partial syncing of the tree. */
-
 typedef struct _blkdev
 {
     fs_blkdev_t base;
@@ -58,7 +56,12 @@ FS_INLINE size_t _min(size_t x, size_t y)
     return (x < y) ? x : y;
 }
 
-static int _hash(
+FS_INLINE int _hash(fs_sha256_t* hash, const void* data, size_t size)
+{
+    return fs_sha256(hash, data, size);
+}
+
+static int _hash2(
     fs_sha256_t* hash, 
     const fs_sha256_t* left, 
     const fs_sha256_t* right)
@@ -76,7 +79,7 @@ static int _hash(
     data.left = *left;
     data.right = *right;
 
-    if (fs_sha256(hash, &data, sizeof(data)) != 0)
+    if (_hash(hash, &data, sizeof(data)) != 0)
         goto done;
 
     ret = 0;
@@ -105,7 +108,6 @@ static int _write_hash_tree(blkdev_t* dev)
 
     for (size_t i = 0, j = 0; i < nblks && j < dev->nhashes; i++)
     {
-        fs_blk_t blk;
         size_t hashes_per_block;
         size_t nhashes;
         bool dirty = false;
@@ -116,10 +118,6 @@ static int _write_hash_tree(blkdev_t* dev)
         /* Calculate the number of hashes to write. */
         nhashes = _min(hashes_per_block, dev->nhashes - j);
         
-        /* Copy the hashes onto the block. */
-        memset(&blk, 0, sizeof(blk));
-        memcpy(&blk, &dev->hashes[j], nhashes * sizeof(fs_sha256_t));
-
         /* Determine whether any hashes in this block are dirty. */
         for (size_t k = j; k < nhashes; k++)
         {
@@ -129,6 +127,12 @@ static int _write_hash_tree(blkdev_t* dev)
 
         if (dirty)
         {
+            fs_blk_t blk;
+
+            /* Copy the hashes onto the block. */
+            memset(&blk, 0, sizeof(blk));
+            memcpy(&blk, &dev->hashes[j], nhashes * sizeof(fs_sha256_t));
+
             if (dev->next->put(dev->next, i + dev->nblks, &blk) != 0)
                 goto done;
         }
@@ -184,7 +188,7 @@ static int _check_hash_tree(blkdev_t* dev)
     {
         fs_sha256_t hash;
 
-        if (_hash(&hash,
+        if (_hash2(&hash,
             &dev->hashes[_left_child_index(i)],
             &dev->hashes[_right_child_index(i)]) != 0)
         {
@@ -241,7 +245,7 @@ static int _update_hash_tree(
     {
         fs_sha256_t tmp_hash;
 
-        if (_hash(
+        if (_hash2(
             &tmp_hash,
             &dev->hashes[_left_child_index(parent)],
             &dev->hashes[_right_child_index(parent)]) != 0)
@@ -249,7 +253,7 @@ static int _update_hash_tree(
             goto done;
         }
 
-        _set_hash(dev, index, &tmp_hash);
+        _set_hash(dev, parent, &tmp_hash);
         parent = _parent_index(parent);
     }
 
@@ -301,9 +305,10 @@ static int _blkdev_get(fs_blkdev_t* blkdev, uint32_t blkno, fs_blk_t* blk)
     if (dev->next->get(dev->next, blkno, blk) != 0)
         goto done;
 
-    if (fs_sha256(&hash, blk, sizeof(fs_blk_t)) != 0)
+    if (_hash(&hash, blk, sizeof(fs_blk_t)) != 0)
         goto done;
 
+    /* Check the hash to make sure the block was not tampered with. */
     if (_check_hash(dev, blkno, &hash) != 0)
     {
         memset(blk, 0, sizeof(fs_blk_t));
@@ -326,7 +331,7 @@ static int _blkdev_put(fs_blkdev_t* blkdev, uint32_t blkno, const fs_blk_t* blk)
     if (!dev || !blk || blkno > dev->nblks)
         goto done;
 
-    if (fs_sha256(&hash, blk, sizeof(fs_blk_t)) != 0)
+    if (_hash(&hash, blk, sizeof(fs_blk_t)) != 0)
         goto done;
 
     if (_update_hash_tree(dev, blkno, &hash) != 0)
@@ -334,6 +339,11 @@ static int _blkdev_put(fs_blkdev_t* blkdev, uint32_t blkno, const fs_blk_t* blk)
 
     if (dev->next->put(dev->next, blkno, blk) != 0)
         goto done;
+
+#if defined(EXTRA_CHECKS)
+    if (_check_hash_tree(dev) != 0)
+        goto done;
+#endif
 
     ret = 0;
 
@@ -418,6 +428,7 @@ int fs_open_merkle_blkdev(
     dev->nblks = nblks;
     dev->hashes = hashes;
     dev->nhashes = nhashes;
+    dev->dirty = dirty;
 
     /* Initialize the blocks. */
     if (initialize)
@@ -429,7 +440,7 @@ int fs_open_merkle_blkdev(
         memset(&zero_blk, 0, sizeof(zero_blk));
 
         /* Compute the hash of the zero-filled block. */
-        if (fs_sha256(&zero_hash, &zero_blk, sizeof(zero_blk)) != 0)
+        if (_hash(&zero_hash, &zero_blk, sizeof(zero_blk)) != 0)
             goto done;
 
         /* Write all the data blocks. */
@@ -445,26 +456,29 @@ int fs_open_merkle_blkdev(
             for (size_t i = nblks - 1; i < nhashes; i++)
                 _set_hash(dev, i, &zero_hash);
 
-            /* Initialize the non-leaf nodes. */
+            /* Initialize the non-leaf nodes in reverse. */
             for (size_t i = 0; i < nblks - 1; i++)
             {
+                size_t rindex = (nblks - 1) - i - 1;
+
                 fs_sha256_t tmp_hash;
 
-                if (_hash(
+                if (_hash2(
                     &tmp_hash,
-                    &dev->hashes[_left_child_index(i)],
-                    &dev->hashes[_right_child_index(i)]) != 0)
+                    &dev->hashes[_left_child_index(rindex)],
+                    &dev->hashes[_right_child_index(rindex)]) != 0)
                 {
                     goto done;
                 }
 
-                _set_hash(dev, i, &tmp_hash);
+                _set_hash(dev, rindex, &tmp_hash);
             }
         }
 
-        /* Check the hash tree. */
+#if defined(EXTRA_CHECKS)
         if (_check_hash_tree(dev) != 0)
             goto done;
+#endif
 
         /* Set all the dirty bits so all hash nodes will be written. */
         memset(dev->dirty, 1, dev->nhashes);

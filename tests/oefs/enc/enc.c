@@ -21,11 +21,14 @@
 #include "../../../fs/cpio.h"
 #include "../../../fs/fs.h"
 #include "../../../fs/mount.h"
+#include "../../../fs/blkdev.h"
 #include "oefs_t.h"
 
 #define INIT
 
 #define BLOCK_SIZE 512
+
+#define DUMP
 
 static int _load(fs_t* fs, const char* path, void** data_out, size_t* size_out)
 {
@@ -1188,6 +1191,59 @@ static void _test_hostfs()
 
     /* Unmount the file system. */
     OE_TEST(fs_unmount("/mnt/hostfs") == 0);
+}
+
+void _test_merkle(void)
+{
+    fs_blkdev_t* ram_dev;
+    fs_blkdev_t* dev;
+    size_t nblks = 8;
+    size_t size = (nblks * FS_BLOCK_SIZE) * 4;
+
+    OE_TEST(fs_open_ram_blkdev(&ram_dev, size) == 0);
+
+    /* Test initialization. */
+    {
+        OE_TEST(fs_open_merkle_blkdev(&dev, nblks, true, ram_dev) == 0);
+
+        for (size_t i = 0; i < nblks; i++)
+        {
+            fs_blk_t blk;
+            fs_blk_t tmp;
+
+            OE_TEST(dev->get(dev, i, &blk) == 0);
+
+            memset(&tmp, 0, sizeof(tmp));
+            OE_TEST(memcmp(&blk, &tmp, sizeof(blk)) == 0);
+
+            memset(&tmp, i, sizeof(tmp));
+            OE_TEST(dev->put(dev, i, &tmp) == 0);
+            OE_TEST(dev->get(dev, i, &blk) == 0);
+            OE_TEST(memcmp(&blk, &tmp, sizeof(blk)) == 0);
+        }
+
+        dev->release(dev);
+    }
+
+    /* Test load. */
+    {
+        OE_TEST(fs_open_merkle_blkdev(&dev, nblks, false, ram_dev) == 0);
+
+        for (size_t i = 0; i < nblks; i++)
+        {
+            fs_blk_t blk;
+            fs_blk_t tmp;
+
+            OE_TEST(dev->get(dev, i, &blk) == 0);
+
+            memset(&tmp, i, sizeof(tmp));
+            OE_TEST(memcmp(&blk, &tmp, sizeof(blk)) == 0);
+        }
+
+        dev->release(dev);
+    }
+
+    ram_dev->release(ram_dev);
 }
 
 int test_oefs(const char* src_dir, const char* bin_dir)

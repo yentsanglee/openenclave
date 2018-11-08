@@ -11,6 +11,11 @@
 
 #define USE_CACHE
 
+FS_INLINE bool _is_power_of_two(size_t n)
+{
+    return (n & (n - 1)) == 0;
+}
+
 int fs_mount_oefs(
     const char* source,
     const char* target,
@@ -23,10 +28,14 @@ int fs_mount_oefs(
     fs_blkdev_t* crypto_dev = NULL;
     fs_blkdev_t* cache_dev = NULL;
     fs_blkdev_t* ram_dev = NULL;
+    fs_blkdev_t* merkle_dev = NULL;
     fs_blkdev_t* dev = NULL;
     fs_t* fs = NULL;
 
     if (!target)
+        goto done;
+
+    if (num_blocks < 2 || !_is_power_of_two(num_blocks))
         goto done;
 
     if (source)
@@ -38,17 +47,21 @@ int fs_mount_oefs(
         /* If a key was provided, then open a crypto device. */
         if (key)
         {
-            if (fs_open_crypto_blkdev(&crypto_dev, key, host_dev) != 0)
+            bool initialize = (flags & FS_MOUNT_FLAG_MKFS);
+
+            if (fs_open_merkle_blkdev(
+                &merkle_dev, num_blocks, initialize, host_dev) != 0)
+            {
+                goto done;
+            }
+
+            if (fs_open_crypto_blkdev(&crypto_dev, key, merkle_dev) != 0)
                 goto done;
 
-#if defined(USE_CACHE)
             if (fs_open_cache_blkdev(&cache_dev, crypto_dev) != 0)
                 goto done;
 
             dev = cache_dev;
-#else
-            dev = crypto_dev;
-#endif
         }
         else
         {
@@ -102,6 +115,9 @@ done:
 
     if (ram_dev)
         ram_dev->release(ram_dev);
+
+    if (merkle_dev)
+        merkle_dev->release(merkle_dev);
 
     if (fs)
         fs->fs_release(fs);

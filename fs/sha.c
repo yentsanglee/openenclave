@@ -1,4 +1,5 @@
 #include <mbedtls/sha256.h>
+#include <stdio.h>
 #include "sha.h"
 
 int fs_sha256(fs_sha256_t* hash, const void* data, size_t size)
@@ -27,4 +28,15 @@ int fs_sha256(fs_sha256_t* hash, const void* data, size_t size)
 
 done:
     return ret;
+}
+
+void fs_sha256_dump(const fs_sha256_t* hash)
+{
+    for (size_t i = 0; i < sizeof(fs_sha256_t); i++)
+    {
+        uint8_t byte = hash->data[i];
+        printf("%02x", byte);
+    }
+
+    printf("\n");
 }
