@@ -4,6 +4,7 @@
 enclave {
     trusted {
         public int test_oefs(
-            [string, in] const char* oefs_filename);
+            [string, in] const char* src_dir,
+            [string, in] const char* bin_dir);
     };
 };

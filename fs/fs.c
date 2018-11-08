@@ -255,7 +255,7 @@ static fs_errno_t _realpath(const char* path, char real_path[FS_PATH_MAX])
         char cwd[FS_PATH_MAX];
         int r;
 
-        if (fs_getcwd(cwd, sizeof(cwd), &r) != 0 || r != 0)
+        if (fs_getcwd(cwd, sizeof(cwd), &r) != 0 || r < 0)
             FS_RAISE(FS_ENAMETOOLONG);
 
         if (strlcpy(buf, cwd, sizeof(buf)) >= sizeof(buf))
@@ -792,6 +792,7 @@ fs_errno_t fs_getcwd(char* buf, unsigned long size, int* ret)
     *ret = n + 1;
 
 done:
+
     return err;
 }
 

@@ -21,6 +21,7 @@
 #include "../../../fs/cpio.h"
 #include "../../../fs/fs.h"
 #include "../../../fs/mount.h"
+#include "oefs_t.h"
 
 #define INIT
 
@@ -1013,30 +1014,61 @@ void run_tests(const char* target)
     _test_fcntl(target);
 }
 
-static void _test_cpio(const char* source, const char* target1, const char* target2)
+static void _test_cpio_host_to_host(
+    const char* src_dir, 
+    const char* bin_dir)
 {
-    OE_TEST(fs_cpio_extract(source, target1) == 0);
-    OE_TEST(fs_cpio_extract(source, target2) == 0);
+    char source[PATH_MAX];
+    char target[PATH_MAX];
+    char target2[PATH_MAX];
 
-    fs_strarr_t arr1 = FS_STRARR_INITIALIZER;
-    fs_strarr_t arr2 = FS_STRARR_INITIALIZER;
-    OE_TEST(fs_lsr(target1, &arr1) == 0);
-    OE_TEST(fs_lsr(target2, &arr2) == 0);
+    strlcpy(source, "/mnt/hostfs", sizeof(source));
+    strlcat(source, src_dir, sizeof(source));
+    strlcat(source, "/tests", sizeof(source));
 
-    OE_TEST(arr1.size > 1);
-    OE_TEST(arr1.size == arr2.size);
+    strlcpy(target, "/mnt/hostfs", sizeof(target));
+    strlcat(target, bin_dir, sizeof(target));
+    strlcat(target, "/tests/oefs/enclave.tests.cpio", sizeof(target));
 
-    for (size_t i = 0; i < arr1.size; i++)
-    {
-        OE_TEST(fs_cmp(arr1.data[i], arr2.data[i]) == 0);
-#if 0
-        OE_TEST(strcmp(arr1.data[i], arr2.data[i]) == 0);
-        OE_TEST(fs_cmp(arr1.data[i], arr2.data[i]) == 0);
-#endif
-    }
+    strlcpy(target2, "/mnt/hostfs", sizeof(target2));
+    strlcat(target2, bin_dir, sizeof(target2));
+    strlcat(target2, "/tests/oefs/enclave.test.cpio.dir", sizeof(target2));
 
-    fs_strarr_release(&arr1);
-    fs_strarr_release(&arr2);
+    printf("source=%s\n", source);
+    printf("target=%s\n", target);
+
+    unlink(target);
+    rmdir(target2);
+
+    OE_TEST(fs_cpio_pack(source, target) == 0);
+    OE_TEST(fs_cpio_unpack(target, target2) == 0);
+    OE_TEST(fs_cmp(source, target2) == 0);
+}
+
+static void _test_cpio_host_to_enclave(
+    const char* src_dir, 
+    const char* bin_dir)
+{
+    char source[PATH_MAX];
+    char target[PATH_MAX];
+    char target2[PATH_MAX];
+
+    strlcpy(source, "/mnt/hostfs", sizeof(source));
+    strlcat(source, src_dir, sizeof(source));
+    strlcat(source, "/tests", sizeof(source));
+
+    strlcpy(target, "/mnt/oefs/enclave.tests.cpio", sizeof(target));
+    strlcpy(target2, "/mnt/oefs/enclave.test.cpio.dir", sizeof(target2));
+
+    printf("source=%s\n", source);
+    printf("target=%s\n", target);
+
+    unlink(target);
+    rmdir(target2);
+
+    OE_TEST(fs_cpio_pack(source, target) == 0);
+    OE_TEST(fs_cpio_unpack(target, target2) == 0);
+    OE_TEST(fs_cmp(source, target2) == 0);
 }
 
 static void _test_hostfs()
@@ -1136,24 +1168,31 @@ static void _test_hostfs()
     OE_TEST(fs_unmount("/mnt/hostfs") == 0);
 }
 
-int test_oefs(const char* oefs_filename)
+int test_oefs(const char* src_dir, const char* bin_dir)
 {
     const uint32_t flags = FS_MOUNT_FLAG_MKFS;
     size_t num_blocks = 4 * 4096;
     int rc;
+    const char target1[] = "/mnt/oefs";
+    const char target2[] = "/mnt/ramfs";
     uint8_t key[FS_MOUNT_KEY_SIZE] = {
         0x0f, 0xf0, 0x31, 0xe3, 0x93, 0xdf, 0x46, 0x7b, 0x9a, 0x33, 0xe8,
         0x3c, 0x55, 0x11, 0xac, 0x52, 0x9e, 0xd4, 0xb1, 0xad, 0x10, 0x16,
         0x4f, 0xd9, 0x92, 0x19, 0x93, 0xcc, 0xa9, 0x0e, 0xcb, 0xed,
     };
 
-    /* Mount host file. */
-    const char target1[] = "/mnt/oefs";
-    rc = fs_mount_oefs(oefs_filename, target1, flags, num_blocks, key);
-    OE_TEST(rc == 0);
+    /* Mount the host OEFS file. */
+    {
+        char path[PATH_MAX];
+
+        strlcpy(path, bin_dir, sizeof(path));
+        strlcat(path, "/tests/oefs/tests.oefs", sizeof(path));
+
+        rc = fs_mount_oefs(path, target1, flags, num_blocks, key);
+        OE_TEST(rc == 0);
+    }
 
     /* Mount enclave memory. */
-    const char target2[] = "/mnt/ramfs";
     rc = fs_mount_oefs(NULL, target2, flags, num_blocks, NULL);
     OE_TEST(rc == 0);
 
@@ -1162,18 +1201,8 @@ int test_oefs(const char* oefs_filename)
 
     OE_TEST(fs_mount_hostfs("/mnt/hostfs") == 0);
 
-    {
-        const char source[] = "/mnt/hostfs/root/openenclave/tests.cpio";
-        const char target1[] = "/mnt/hostfs/tmp/tests.cpio";
-        const char target2[] = "/mnt/ramfs/tests.cpio";
-        _test_cpio(source, target1, target2);
-    }
-    {
-        const char source[] = "/mnt/hostfs/root/openenclave/tests.cpio";
-        const char target1[] = "/mnt/hostfs/tmp/tests.cpio";
-        const char target2[] = "/mnt/oefs/tests.cpio";
-        _test_cpio(source, target1, target2);
-    }
+    _test_cpio_host_to_host(src_dir, bin_dir);
+    _test_cpio_host_to_enclave(src_dir, bin_dir);
 
     rc = fs_unmount(target1);
     rc = fs_unmount(target2);

@@ -19,7 +19,15 @@
 
 #define FS_COUNTOF(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
 
-#define FS_TRACE printf("%s(%u): %s()\n", __FILE__, __LINE__, __FUNCTION__)
+// clang-format off
+#define FS_TRACE \
+    do \
+    { \
+        printf("%s(%u): %s()\n", __FILE__, __LINE__, __FUNCTION__); \
+        fflush(stdout); \
+    } \
+    while (0)
+// clang-format on
 
 #ifdef __cplusplus
 #define FS_EXTERN_C_BEGIN extern "C" {

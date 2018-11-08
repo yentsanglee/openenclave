@@ -11,4 +11,5 @@ add_test(
     tests/oefs 
     ./host/oefs_host 
     ./enc/oefs_enc 
-    ${CMAKE_BINARY_DIR}/tests/oefs/test.oefs)
+    "${PROJECT_SOURCE_DIR}"
+    "${CMAKE_BINARY_DIR}")

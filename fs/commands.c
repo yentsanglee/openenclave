@@ -57,9 +57,7 @@ int fs_lsr(const char* root, fs_strarr_t* paths)
         for (i = 0; i < dirs.size; i++)
         {
             if (fs_lsr(dirs.data[i], paths) != 0)
-            {
                 goto done;
-            }
         }
     }
 

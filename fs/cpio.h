@@ -22,7 +22,6 @@
 
 #define FS_CPIO_FLAG_READ 0
 #define FS_CPIO_FLAG_CREATE 1
-#define FS_CPIO_FLAG_APPEND 2
 
 #define FS_CPIO_MODE_IFMT 00170000
 #define FS_CPIO_MODE_IFSOCK 0140000
@@ -72,6 +71,8 @@ int fs_cpio_write_entry(fs_cpio_t* cpio, const fs_cpio_entry_t* entry);
 
 ssize_t fs_cpio_write_data(fs_cpio_t* cpio, const void* data, size_t size);
 
-int fs_cpio_extract(const char* source, const char* target);
+int fs_cpio_pack(const char* source, const char* target);
+
+int fs_cpio_unpack(const char* source, const char* target);
 
 #endif /* _FS_CPIO_H */

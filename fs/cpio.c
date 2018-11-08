@@ -10,8 +10,11 @@
 #include <limits.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <unistd.h>
 #include "strings.h"
+#include "strarr.h"
+#include "fs.h"
 
 #define CPIO_BLOCK_SIZE 512
 
@@ -90,6 +93,23 @@ entry_t _trailer =
     .name = "TRAILER!!!",
     .size = sizeof(cpio_header_t) + 11
 };
+
+#if 0
+static void _dump(const uint8_t* data, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        uint8_t c = data[i];
+
+        if (c >= ' ' && c <= '~')
+            printf("%c", c);
+        else
+            printf("<%02x>", c);
+    }
+
+    printf("\n");
+}
+#endif
 
 static bool _valid_header(const cpio_header_t* header)
 {
@@ -251,17 +271,6 @@ fs_cpio_t* fs_cpio_open(const char* path, uint32_t flags)
         cpio->write = true;
         stream = NULL;
     }
-    else if ((flags & FS_CPIO_FLAG_APPEND))
-    {
-        if (access(path, F_OK) != 0)
-            goto done;
-
-        if (!(stream = fopen(path, "ab")))
-            goto done;
-
-        cpio->stream = stream;
-        stream = NULL;
-    }
     else
     {
         if (!(stream = fopen(path, "rb")))
@@ -295,10 +304,6 @@ int fs_cpio_close(fs_cpio_t* cpio)
     /* If file was open for write, then pad and write out the header. */
     if (cpio->write)
     {
-        /* Pad data out to four-byte boundary. */
-        if (_write_padding(cpio->stream, 4) != 0)
-            goto done;
-
         /* Write the trailer. */
         if (fwrite(&_trailer, 1, _trailer.size, cpio->stream) != _trailer.size)
             goto done;
@@ -309,8 +314,8 @@ int fs_cpio_close(fs_cpio_t* cpio)
     }
 
     fclose(cpio->stream);
-    free(cpio);
     memset(cpio, 0, sizeof(fs_cpio_t));
+    free(cpio);
 
     ret = 0;
 
@@ -441,7 +446,89 @@ done:
     return ret;
 }
 
-int fs_cpio_extract(const char* source, const char* target)
+int fs_cpio_write_entry(fs_cpio_t* cpio, const fs_cpio_entry_t* entry)
+{
+    int ret = -1;
+    cpio_header_t h;
+    size_t namesize;
+
+    if (!cpio || !cpio->stream || !entry)
+        goto done;
+
+    /* Check file type. */
+    if (!(entry->mode & FS_CPIO_MODE_IFREG) && 
+        !(entry->mode & FS_CPIO_MODE_IFDIR))
+    {
+        goto done;
+    }
+
+    /* Calculate the size of the name */
+    if ((namesize = strlen(entry->name) + 1) > FS_PATH_MAX)
+        goto done;
+
+    /* Write the CPIO header */
+    {
+        memset(&h, 0, sizeof(h));
+        strcpy(h.magic, "070701");
+        _uint_to_hex(h.ino, 0);
+        _uint_to_hex(h.mode, entry->mode);
+        _uint_to_hex(h.uid, 0);
+        _uint_to_hex(h.gid, 0);
+        _uint_to_hex(h.nlink, 1);
+        _uint_to_hex(h.mtime, 0x56734BA4); /* hardcode a time */
+        _uint_to_hex(h.filesize, (unsigned int)entry->size);
+        _uint_to_hex(h.devmajor, 8);
+        _uint_to_hex(h.devminor, 2);
+        _uint_to_hex(h.rdevmajor, 0);
+        _uint_to_hex(h.rdevminor, 0);
+        _uint_to_hex(h.namesize, (unsigned int)namesize);
+        _uint_to_hex(h.check, 0);
+
+        if (fwrite(&h, 1, sizeof(h), cpio->stream) != sizeof(h))
+            goto done;
+    }
+
+    /* Write the file name. */
+    {
+        if (fwrite(entry->name, 1, namesize, cpio->stream) != namesize)
+            goto done;
+
+        /* Pad to four-byte boundary. */
+        if (_write_padding(cpio->stream, 4) != 0)
+            goto done;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+ssize_t fs_cpio_write_data(fs_cpio_t* cpio, const void* data, size_t size)
+{
+    ssize_t ret = -1;
+
+    if (!cpio || !cpio->stream || (size && !data) || !cpio->write)
+        goto done;
+
+    if (size)
+    {
+        if (fwrite(data, 1, size, cpio->stream) != size)
+            goto done;
+    }
+    else
+    {
+        if (_write_padding(cpio->stream, 4) != 0)
+            goto done;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int fs_cpio_unpack(const char* source, const char* target)
 {
     int ret = -1;
     fs_cpio_t* cpio = NULL;
@@ -505,76 +592,178 @@ done:
     return ret;
 }
 
-int fs_cpio_write_entry(fs_cpio_t* cpio, const fs_cpio_entry_t* entry)
+static int _append_file(fs_cpio_t* cpio, const char* path)
 {
     int ret = -1;
-    cpio_header_t h;
-    size_t namesize;
+    struct stat st;
+    FILE* is = NULL;
+    ssize_t n;
 
-    if (!cpio || !cpio->stream || !entry)
+    if (!cpio || !path)
         goto done;
 
-    /* Check file type. */
-    if (!(entry->mode & FS_CPIO_MODE_IFREG) && 
-        !(entry->mode & FS_CPIO_MODE_IFDIR))
+    /* Stat the file to get the size and mode. */
+    if (stat(path, &st) != 0)
+        goto done;
+
+    /* Write the CPIO header. */
     {
-        goto done;
-    }
+        fs_cpio_entry_t ent;
 
-    /* Calculate the size of the name */
-    if ((namesize = strlen(entry->name) + 1) > FS_PATH_MAX)
-        goto done;
+        memset(&ent, 0, sizeof(ent));
 
-    /* Write the CPIO header */
-    {
-        memset(&h, 0, sizeof(h));
-        strcpy(h.magic, "070701");
-        _uint_to_hex(h.ino, 0);
-        _uint_to_hex(h.mode, entry->mode);
-        _uint_to_hex(h.uid, 0);
-        _uint_to_hex(h.gid, 0);
-        _uint_to_hex(h.nlink, 1);
-        _uint_to_hex(h.mtime, 0x56734BA4); /* hardcode a time */
-        _uint_to_hex(h.filesize, (unsigned int)entry->size);
-        _uint_to_hex(h.devmajor, 8);
-        _uint_to_hex(h.devminor, 2);
-        _uint_to_hex(h.rdevmajor, 0);
-        _uint_to_hex(h.rdevminor, 0);
-        _uint_to_hex(h.namesize, (unsigned int)namesize);
-        _uint_to_hex(h.check, 0);
+        if (S_ISDIR(st.st_mode))
+            st.st_size = 0;
+        else
+            ent.size = st.st_size;
 
-        if (fwrite(&h, 1, sizeof(h), cpio->stream) != sizeof(h))
+        ent.mode = st.st_mode;
+
+        if (fs_strlcpy(ent.name, path, sizeof(ent.name)) >= sizeof(ent.name))
+            goto done;
+
+        if (fs_cpio_write_entry(cpio, &ent) != 0)
             goto done;
     }
 
-    /* Write the file name. */
+    /* Write the CPIO data. */
+    if (!S_ISDIR(st.st_mode))
     {
-        if (fwrite(entry->name, 1, namesize, cpio->stream) != namesize)
+        char buf[512];
+
+        if (!(is = fopen(path, "rb")))
             goto done;
 
-        /* Pad to four-byte boundary. */
-        if (_write_padding(cpio->stream, 4) != 0)
+        while ((n = fread(buf, 1, sizeof(buf), is)) > 0)
+        {
+            if (fs_cpio_write_data(cpio, buf, n) != 0)
+                goto done;
+        }
+
+        if (n < 0)
             goto done;
     }
+
+    if (fs_cpio_write_data(cpio, NULL, 0) != 0)
+        goto done;
 
     ret = 0;
 
 done:
+
+    if (is)
+        fclose(is);
+
     return ret;
 }
 
-ssize_t fs_cpio_write_data(fs_cpio_t* cpio, const void* data, size_t size)
+static int _pack(fs_cpio_t* cpio, const char* root)
 {
-    ssize_t ret = -1;
+    int ret = -1;
+    DIR* dir = NULL;
+    struct dirent* ent;
+    char path[FS_PATH_MAX];
+    fs_strarr_t dirs = FS_STRARR_INITIALIZER;
 
-    if (!cpio || !cpio->stream || !data || !cpio->write)
+
+    if (!(dir = opendir(root)))
         goto done;
 
-    if (fwrite(data, 1, size, cpio->stream) != size)
+    /* Append this directory to the CPIO archive. */
+    if (strcmp(root, ".") != 0)
+    {
+        if (_append_file(cpio, root) != 0)
+            goto done;
+    }
+
+    /* Find all children of this directory. */
+    while ((ent = readdir(dir)))
+    {
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+            continue;
+
+        *path = '\0';
+
+        if (strcmp(root, ".") != 0)
+        {
+            fs_strlcat(path, root, sizeof(path));
+            fs_strlcat(path, "/", sizeof(path));
+        }
+
+        fs_strlcat(path, ent->d_name, sizeof(path));
+
+        /* Append to dirs[] array */
+        if (ent->d_type & FS_DT_DIR)
+        {
+            if (fs_strarr_append(&dirs, path) != 0)
+                goto done;
+        }
+        else
+        {
+            /* Append this file to the CPIO archive. */
+            if (_append_file(cpio, path) != 0)
+                goto done;
+        }
+
+    }
+
+    /* Recurse into child directories */
+    {
+        size_t i;
+
+        for (i = 0; i < dirs.size; i++)
+        {
+            if (_pack(cpio, dirs.data[i]) != 0)
+                goto done;
+        }
+    }
+
+    ret = 0;
+
+done:
+
+    if (dir)
+        closedir(dir);
+
+    fs_strarr_release(&dirs);
+
+    return ret;
+}
+
+int fs_cpio_pack(const char* source, const char* target)
+{
+    int ret = -1;
+    fs_cpio_t* cpio = NULL;
+    FILE* os = NULL;
+    char cwd[FS_PATH_MAX];
+
+    if (!source || !target)
+        goto done;
+
+    if (!(cpio = fs_cpio_open(target, FS_CPIO_FLAG_CREATE)))
+        goto done;
+
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+        goto done;
+
+    if (chdir(source) != 0)
+        goto done;
+
+    if (_pack(cpio, ".") != 0)
+        goto done;
+
+    if (chdir(cwd) != 0)
         goto done;
 
     ret = 0;
 
 done:
+
+    if (cpio)
+        fs_cpio_close(cpio);
+
+    if (os)
+        fclose(os);
+
     return ret;
 }

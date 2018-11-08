@@ -10,6 +10,7 @@ set(PLATFORM_SRC
     ../fs/hostblkdevocall.c
     ../fs/cpio.c
     ../fs/strings.c
+    ../fs/strarr.c
     crypto/openssl/asn1.c
     crypto/openssl/cert.c
     crypto/openssl/crl.c
