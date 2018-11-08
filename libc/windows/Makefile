@@ -57,8 +57,8 @@ $(TARGET): $(OBJECTS)
 .c.obj:
 	cl $(CLFLAGS) $(INCLUDES) /c /Fo$@ $<
 
-#$(SOURCES): force_rebuild
-#force_rebuild:
+$(SOURCES): force_rebuild
+force_rebuild:
 
 clean:
 	@ del /F /Q $(OBJECTS) $(TARGET)
