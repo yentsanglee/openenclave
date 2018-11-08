@@ -55,9 +55,6 @@ int main(int argc, const char* argv[])
     src_dir = argv[2];
     bin_dir = argv[3];
 
-printf("src_dir=%s\n", src_dir);
-printf("bin_dir=%s\n", bin_dir);
-
     /* Create the CPIO archive. */
     _create_cpio_archive(src_dir, bin_dir);
 

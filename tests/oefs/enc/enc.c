@@ -76,6 +76,7 @@ done:
     return ret;
 }
 
+#if defined(DUMP)
 static void _dump_dir(fs_t* fs, const char* dirname)
 {
     fs_errno_t r;
@@ -100,6 +101,7 @@ static void _dump_dir(fs_t* fs, const char* dirname)
     r = fs->fs_closedir(dir);
     OE_TEST(r == FS_EOK);
 }
+#endif
 
 static void _create_files(fs_t* fs)
 {
@@ -219,6 +221,7 @@ static void _remove_dir_nnnn(fs_t* fs)
     }
 }
 
+#if defined(DUMP)
 static void _dump_file(fs_t* fs, const char* path)
 {
     void* data;
@@ -245,6 +248,7 @@ static void _dump_file(fs_t* fs, const char* path)
 
     free(data);
 }
+#endif
 
 static void _update_file(fs_t* fs, const char* path)
 {
@@ -328,7 +332,9 @@ static void _create_myfile(fs_t* fs)
     OE_TEST(n == sizeof(message));
 
     fs->fs_close(file);
+#if defined(DUMP)
     _dump_file(fs, path);
+#endif
 }
 
 static void _truncate_file(fs_t* fs, const char* path)
@@ -392,7 +398,9 @@ static void _test_lseek(fs_t* fs)
     r = fs->fs_close(file);
     OE_TEST(r == FS_EOK);
 
-    //_dump_file(fs, "/somefile");
+#if defined(DUMP)
+    _dump_file(fs, "/somefile");
+#endif
 }
 
 static void _test_links(fs_t* fs)
@@ -771,8 +779,6 @@ static void _test_opendir(const char* target)
 
             while ((ent = readdir(dir)))
             {
-                printf("d_name{%s}\n", ent->d_name);
-
                 switch (n)
                 {
                     case 0:
@@ -827,15 +833,12 @@ static void _test_cwd(const char* target)
     strlcpy(expected, target, sizeof(expected));
     strlcat(expected, "/home", sizeof(expected));
 
-    printf("expected=%s\n", expected);
-
     OE_TEST(access(expected, F_OK) != 0);
     OE_TEST(mkdir(expected, 0) == 0);
     OE_TEST(access(expected, F_OK) == 0);
 
     char real[PATH_MAX];
     OE_TEST(realpath(path, real) != NULL);
-    printf("real=%s\n", real);
     OE_TEST(strcmp(real, expected) == 0);
 
     OE_TEST(mkdir(_mkpath(buf, target, "/ddd1"), 0) == 0);
@@ -914,25 +917,35 @@ void run_tests(const char* target)
     _create_dirs(fs);
 
     /* Dump some directories. */
+#if defined(DUMP)
     _dump_dir(fs, "/");
     _dump_dir(fs, "/dir-0001");
     _dump_dir(fs, "/aaa/bbb/ccc");
+#endif
 
     /* Test updating of a file. */
     {
         const char path[] = "/filename-0001";
         _update_file(fs, path);
+#if defined(DUMP)
         _dump_file(fs, path);
+#endif
         _read_alphabet_file(target, path);
         _truncate_file(fs, path);
+#if defined(DUMP)
         _dump_file(fs, path);
+#endif
     }
 
     /* Create "/aaa/bbb/ccc/myfile" */
+#if defined(DUMP)
     _dump_dir(fs, "/aaa/bbb/ccc");
+#endif
     _create_myfile(fs);
+#if defined(DUMP)
     _dump_dir(fs, "/aaa/bbb/ccc");
     _dump_dir(fs, "/aaa/bbb/ccc");
+#endif
 
     /* Lookup "/aaa/bbb/ccc/myfile". */
     {
@@ -955,7 +968,6 @@ void run_tests(const char* target)
         strlcpy(path, target, sizeof(path));
         strlcat(path, "/aaa/bbb/ccc/myfile", sizeof(path));
 
-        printf("path=%s\n", path);
         FILE* is = fopen(path, "rb");
         OE_TEST(is != NULL);
 
@@ -969,27 +981,43 @@ void run_tests(const char* target)
     _remove_file(fs, "/aaa/bbb/ccc/myfile");
 
     /* Remove some directories. */
+#if defined(DUMP)
     _dump_dir(fs, "/aaa/bbb");
+#endif
     _remove_dir(fs, "/aaa/bbb/ccc");
+#if defined(DUMP)
     _dump_dir(fs, "/aaa/bbb");
+#endif
 
     /* Remove some directories. */
+#if defined(DUMP)
     _dump_dir(fs, "/aaa");
+#endif
     _remove_dir(fs, "/aaa/bbb");
+#if defined(DUMP)
     _dump_dir(fs, "/aaa");
+#endif
 
     /* Remove some directories. */
+#if defined(DUMP)
     _dump_dir(fs, "/");
+#endif
     _remove_dir(fs, "/aaa");
+#if defined(DUMP)
     _dump_dir(fs, "/");
+#endif
 
     /* Remove directories named like dir-NNNN */
     _remove_dir_nnnn(fs);
+#if defined(DUMP)
     _dump_dir(fs, "/");
+#endif
 
     /* Remove files named like filename-NNNN */
     _remove_files_nnnn(fs);
+#if defined(DUMP)
     _dump_dir(fs, "/");
+#endif
 
     /* Test the lseek function. */
     _test_lseek(fs);
@@ -1034,9 +1062,6 @@ static void _test_cpio_host_to_host(
     strlcat(target2, bin_dir, sizeof(target2));
     strlcat(target2, "/tests/oefs/enclave.test.cpio.dir", sizeof(target2));
 
-    printf("source=%s\n", source);
-    printf("target=%s\n", target);
-
     unlink(target);
     rmdir(target2);
 
@@ -1059,9 +1084,6 @@ static void _test_cpio_host_to_enclave(
 
     strlcpy(target, "/mnt/oefs/enclave.tests.cpio", sizeof(target));
     strlcpy(target2, "/mnt/oefs/enclave.test.cpio.dir", sizeof(target2));
-
-    printf("source=%s\n", source);
-    printf("target=%s\n", target);
 
     unlink(target);
     rmdir(target2);
