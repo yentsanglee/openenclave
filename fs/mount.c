@@ -9,7 +9,9 @@
 #include "hostfs.h"
 #include "oefs.h"
 
-#define USE_CACHE
+#define USE_CACHE_BLKDEV
+#define USE_MERKLE_BLKDEV
+#define USE_CRYPTO_BLKDEV
 
 FS_INLINE bool _is_power_of_two(size_t n)
 {
@@ -30,6 +32,7 @@ int fs_mount_oefs(
     fs_blkdev_t* ram_dev = NULL;
     fs_blkdev_t* merkle_dev = NULL;
     fs_blkdev_t* dev = NULL;
+    fs_blkdev_t* next = NULL;
     fs_t* fs = NULL;
 
     if (!target)
@@ -44,29 +47,46 @@ int fs_mount_oefs(
         if (fs_open_host_blkdev(&host_dev, source) != 0)
             goto done;
 
+        next = host_dev;
+
         /* If a key was provided, then open a crypto device. */
         if (key)
         {
-            bool initialize = (flags & FS_MOUNT_FLAG_MKFS);
-
-            if (fs_open_merkle_blkdev(
-                &merkle_dev, num_blocks, initialize, host_dev) != 0)
+#if defined(USE_CRYPTO_BLKDEV)
             {
-                goto done;
+                if (fs_open_crypto_blkdev(&crypto_dev, key, next) != 0)
+                    goto done;
+
+                next = crypto_dev;
             }
+#endif
 
-            if (fs_open_crypto_blkdev(&crypto_dev, key, merkle_dev) != 0)
-                goto done;
+#if defined(USE_MERKLE_BLKDEV)
+            {
+                bool initialize = (flags & FS_MOUNT_FLAG_MKFS);
 
-            if (fs_open_cache_blkdev(&cache_dev, crypto_dev) != 0)
-                goto done;
+                if (fs_open_merkle_blkdev(
+                    &merkle_dev, num_blocks, initialize, next) != 0)
+                {
+                    goto done;
+                }
 
-            dev = cache_dev;
+                next = merkle_dev;
+            }
+#endif
+
+#if defined(USE_CACHE_BLKDEV)
+            /* cache_dev */
+            {
+                if (fs_open_cache_blkdev(&cache_dev, next) != 0)
+                    goto done;
+
+                next = cache_dev;
+            }
+#endif
         }
-        else
-        {
-            dev = host_dev;
-        }
+
+        dev = next;
     }
     else
     {

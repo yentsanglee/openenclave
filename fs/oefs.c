@@ -1709,6 +1709,8 @@ static fs_errno_t _fs_open(
     uint32_t ino = 0;
     uint8_t type;
 
+    _begin(oefs);
+
     if (file_out)
         *file_out = NULL;
 
@@ -1789,6 +1791,8 @@ done:
     if (_flush(oefs) != 0)
         return FS_EIO;
 
+    _end(oefs);
+
     return err;
 }
 
@@ -1801,6 +1805,8 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
     uint32_t dir_ino;
     uint32_t ino;
     fs_file_t* file = NULL;
+
+    _begin(oefs);
 
     if (!_valid_oefs(fs) || !path)
         FS_RAISE(FS_EINVAL);
@@ -1850,6 +1856,8 @@ done:
     if (_flush(oefs) != 0)
         return FS_EIO;
 
+    _end(oefs);
+
     return err;
 }
 
@@ -1859,8 +1867,19 @@ static fs_errno_t _fs_creat(
     uint32_t mode,
     fs_file_t** file_out)
 {
+    oefs_t* oefs = (oefs_t*)fs;
+    fs_errno_t err = 0;
     int flags = FS_O_CREAT | FS_O_WRONLY | FS_O_TRUNC;
-    return _fs_open(fs, path, flags, mode, file_out);
+
+    _begin(oefs);
+
+    FS_CHECK(_fs_open(fs, path, flags, mode, file_out));
+
+done:
+
+    _end(oefs);
+
+    return err;
 }
 
 static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
@@ -1873,6 +1892,8 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
     uint32_t dir_ino;
     fs_file_t* dir = NULL;
     uint32_t release_ino = 0;
+
+    _begin(oefs);
 
     if (!old_path || !new_path)
         FS_RAISE(FS_EINVAL);
@@ -1974,6 +1995,8 @@ done:
     if (_flush(oefs) != 0)
         return FS_EIO;
 
+    _end(oefs);
+
     return err;
 }
 
@@ -1985,6 +2008,8 @@ static fs_errno_t _fs_rename(
     fs_errno_t err = FS_EOK;
     oefs_t* oefs = (oefs_t*)fs;
 
+    _begin(oefs);
+
     if (!_valid_oefs(fs) || !old_path || !new_path)
         FS_RAISE(FS_EINVAL);
 
@@ -1995,6 +2020,8 @@ done:
 
     if (_flush(oefs) != 0)
         return FS_EIO;
+
+    _end(oefs);
 
     return err;
 }
@@ -2008,6 +2035,8 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
     uint8_t type;
     char dirname[FS_PATH_MAX];
     char basename[FS_PATH_MAX];
+
+    _begin(oefs);
 
     if (!_valid_oefs(fs) || !path)
         FS_RAISE(FS_EINVAL);
@@ -2026,6 +2055,8 @@ done:
     if (_flush(oefs) != 0)
         return FS_EIO;
 
+    _end(oefs);
+
     return err;
 }
 
@@ -2036,6 +2067,8 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
     fs_file_t* file = NULL;
     uint32_t ino;
     uint8_t type;
+
+    _begin(oefs);
 
     if (!_valid_oefs(fs) || !path)
         FS_RAISE(FS_EINVAL);
@@ -2057,6 +2090,8 @@ done:
     if (_flush(oefs) != 0)
         return FS_EIO;
 
+    _end(oefs);
+
     return err;
 }
 
@@ -2069,6 +2104,8 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
     uint8_t type;
     char dirname[FS_PATH_MAX];
     char basename[FS_PATH_MAX];
+
+    _begin(oefs);
 
     if (!_valid_oefs(fs) || !path)
         FS_RAISE(FS_EINVAL);
@@ -2100,6 +2137,8 @@ done:
 
     if (_flush(oefs) != 0)
         return FS_EIO;
+
+    _end(oefs);
 
     return err;
 }
@@ -2218,6 +2257,9 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
     size_t num_bitmap_blocks;
     uint32_t blkno = 0;
     fs_blk_t empty_block;
+
+    if (dev)
+        dev->begin(dev);
 
     if (!dev || num_blocks < BITS_PER_BLOCK)
         FS_RAISE(FS_EINVAL);
@@ -2343,6 +2385,10 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
     }
 
 done:
+
+    if (dev)
+        dev->begin(dev);
+
     return err;
 }
 

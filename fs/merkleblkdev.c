@@ -106,6 +106,7 @@ static int _write_hash_tree(blkdev_t* dev)
         nblks = _round_to_multiple(nbytes, FS_BLOCK_SIZE) / FS_BLOCK_SIZE;
     }
 
+    /* TODO: this is a hot spot: optimize */
     for (size_t i = 0, j = 0; i < nblks && j < dev->nhashes; i++)
     {
         size_t hashes_per_block;
@@ -122,7 +123,10 @@ static int _write_hash_tree(blkdev_t* dev)
         for (size_t k = j; k < nhashes; k++)
         {
             if (dev->dirty[k])
+            {
                 dirty = true;
+                break;
+            }
         }
 
         if (dirty)
@@ -257,9 +261,6 @@ static int _update_hash_tree(
         parent = _parent_index(parent);
     }
 
-    /* Write the hash tree to the next device. */
-    _write_hash_tree(dev);
-
     ret = 0;
 
 done:
@@ -354,13 +355,43 @@ done:
 
 static int _blkdev_begin(fs_blkdev_t* d)
 {
-    return 0;
+    int ret = -1;
+    blkdev_t* dev = (blkdev_t*)d;
+
+    if (!dev || !dev->next)
+        goto done;
+
+    if (_write_hash_tree(dev) != 0)
+        goto done;
+
+    if (dev->next->begin(dev->next) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+
+    return ret;
 }
 
 static int _blkdev_end(fs_blkdev_t* d)
 {
-    return 0;
+    int ret = -1;
+    blkdev_t* dev = (blkdev_t*)d;
+
+    if (!dev || !dev->next)
+        goto done;
+
+    if (dev->next->end(dev->next) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+
+    return ret;
 }
+
 
 static int _blkdev_add_ref(fs_blkdev_t* blkdev)
 {
