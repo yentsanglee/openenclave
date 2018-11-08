@@ -15,4 +15,6 @@ void __test_failed(const char* cond, const char* file, size_t line, const char* 
 
 void test_string(void);
 
+void test_stdarg(void);
+
 #endif /* _OELIBC_TESTS_H */

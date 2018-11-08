@@ -29,11 +29,13 @@ LINKFLAGS=$(LINKFLAGS) /subsystem:console
 SOURCES=
 SOURCES=$(SOURCES) main.c
 SOURCES=$(SOURCES) print.c
+SOURCES=$(SOURCES) _fltused.c
 SOURCES=$(SOURCES) write_stdout.c
 SOURCES=$(SOURCES) write_stderr.c
 SOURCES=$(SOURCES) test_string.c
 SOURCES=$(SOURCES) __test_failed.c
 SOURCES=$(SOURCES) exit.c
+SOURCES=$(SOURCES) test_stdarg.c
 
 # string:
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\strcpy.c
