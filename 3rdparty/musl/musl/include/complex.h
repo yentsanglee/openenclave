@@ -5,7 +5,47 @@
 extern "C" {
 #endif
 
+
+#ifdef _MSC_VER
+//
+// Visual Studio Doesn't support the attribute syntax for _Complex. But it can support the data type. So we typedef 
+// to a neutral type and everything looks the same.
+
+#pragma message("Visual C")
+
+#ifndef _C_COMPLEX_T
+    #define _C_COMPLEX_T
+    typedef struct _C_double_complex
+    {
+        double _Val[2];
+    } _C_double_complex;
+
+    typedef struct _C_float_complex
+    {
+        float _Val[2];
+    } _C_float_complex;
+
+    typedef struct _C_ldouble_complex
+    {
+        long double _Val[2];
+    } _C_ldouble_complex;
+#endif
+
+typedef _C_double_complex  _Dcomplex;
+typedef _C_float_complex   _Fcomplex;
+typedef _C_ldouble_complex _Lcomplex;
+
+
+#else
+
+typedef double _Complex  _Dcomplex;
+typedef float _Complex   _Fcomplex;
+typedef long double _Complex   _Lcomplex;
+
+#endif
+
 #define complex _Complex
+
 #ifdef __GNUC__
 #define _Complex_I (__extension__ (0.0f+1.0fi))
 #else
@@ -13,93 +53,94 @@ extern "C" {
 #endif
 #define I _Complex_I
 
-double complex cacos(double complex);
-float complex cacosf(float complex);
-long double complex cacosl(long double complex);
 
-double complex casin(double complex);
-float complex casinf(float complex);
-long double complex casinl(long double complex);
+_Dcomplex cacos(_Dcomplex);
+_Fcomplex cacosf(_Fcomplex);
+_Lcomplex cacosl(_Lcomplex);
 
-double complex catan(double complex);
-float complex catanf(float complex);
-long double complex catanl(long double complex);
+_Dcomplex casin(_Dcomplex);
+_Fcomplex casinf(_Fcomplex);
+_Lcomplex casinl(_Lcomplex);
 
-double complex ccos(double complex);
-float complex ccosf(float complex);
-long double complex ccosl(long double complex);
+_Dcomplex catan(_Dcomplex);
+_Fcomplex catanf(_Fcomplex);
+_Lcomplex catanl(_Lcomplex);
 
-double complex csin(double complex);
-float complex csinf(float complex);
-long double complex csinl(long double complex);
+_Dcomplex ccos(_Dcomplex);
+_Fcomplex ccosf(_Fcomplex);
+_Lcomplex ccosl(_Lcomplex);
 
-double complex ctan(double complex);
-float complex ctanf(float complex);
-long double complex ctanl(long double complex);
+_Dcomplex csin(_Dcomplex);
+_Fcomplex csinf(_Fcomplex);
+_Lcomplex csinl(_Lcomplex);
 
-double complex cacosh(double complex);
-float complex cacoshf(float complex);
-long double complex cacoshl(long double complex);
+_Dcomplex ctan(_Dcomplex);
+_Fcomplex ctanf(_Fcomplex);
+_Lcomplex ctanl(_Lcomplex);
 
-double complex casinh(double complex);
-float complex casinhf(float complex);
-long double complex casinhl(long double complex);
+_Dcomplex cacosh(_Dcomplex);
+_Fcomplex cacoshf(_Fcomplex);
+_Lcomplex cacoshl(_Lcomplex);
 
-double complex catanh(double complex);
-float complex catanhf(float complex);
-long double complex catanhl(long double complex);
+_Dcomplex casinh(_Dcomplex);
+_Fcomplex casinhf(_Fcomplex);
+_Lcomplex casinhl(_Lcomplex);
 
-double complex ccosh(double complex);
-float complex ccoshf(float complex);
-long double complex ccoshl(long double complex);
+_Dcomplex catanh(_Dcomplex);
+_Fcomplex catanhf(_Fcomplex);
+_Lcomplex catanhl(_Lcomplex);
 
-double complex csinh(double complex);
-float complex csinhf(float complex);
-long double complex csinhl(long double complex);
+_Dcomplex ccosh(_Dcomplex);
+_Fcomplex ccoshf(_Fcomplex);
+_Lcomplex ccoshl(_Lcomplex);
 
-double complex ctanh(double complex);
-float complex ctanhf(float complex);
-long double complex ctanhl(long double complex);
+_Dcomplex csinh(_Dcomplex);
+_Fcomplex csinhf(_Fcomplex);
+_Lcomplex csinhl(_Lcomplex);
 
-double complex cexp(double complex);
-float complex cexpf(float complex);
-long double complex cexpl(long double complex);
+_Dcomplex ctanh(_Dcomplex);
+_Fcomplex ctanhf(_Fcomplex);
+_Lcomplex ctanhl(_Lcomplex);
 
-double complex clog(double complex);
-float complex clogf(float complex);
-long double complex clogl(long double complex);
+_Dcomplex cexp(_Dcomplex);
+_Fcomplex cexpf(_Fcomplex);
+_Lcomplex cexpl(_Lcomplex);
 
-double cabs(double complex);
-float cabsf(float complex);
-long double cabsl(long double complex);
+_Dcomplex clog(_Dcomplex);
+_Fcomplex clogf(_Fcomplex);
+_Lcomplex clogl(_Lcomplex);
 
-double complex cpow(double complex, double complex);
-float complex cpowf(float complex, float complex);
-long double complex cpowl(long double complex, long double complex);
+double cabs(_Dcomplex);
+float cabsf(_Fcomplex);
+long double cabsl(_Lcomplex);
 
-double complex csqrt(double complex);
-float complex csqrtf(float complex);
-long double complex csqrtl(long double complex);
+_Dcomplex cpow(_Dcomplex, _Dcomplex);
+_Fcomplex cpowf(_Fcomplex, _Fcomplex);
+_Lcomplex cpowl(_Lcomplex, _Lcomplex);
 
-double carg(double complex);
-float cargf(float complex);
-long double cargl(long double complex);
+_Dcomplex csqrt(_Dcomplex);
+_Fcomplex csqrtf(_Fcomplex);
+_Lcomplex csqrtl(_Lcomplex);
 
-double cimag(double complex);
-float cimagf(float complex);
-long double cimagl(long double complex);
+double carg(_Dcomplex);
+float cargf(_Fcomplex);
+long double cargl(_Lcomplex);
 
-double complex conj(double complex);
-float complex conjf(float complex);
-long double complex conjl(long double complex);
+double cimag(_Dcomplex);
+float cimagf(_Fcomplex);
+long double cimagl(_Lcomplex);
 
-double complex cproj(double complex);
-float complex cprojf(float complex);
-long double complex cprojl(long double complex);
+_Dcomplex conj(_Dcomplex);
+_Fcomplex conjf(_Fcomplex);
+_Lcomplex conjl(_Lcomplex);
 
-double creal(double complex);
-float crealf(float complex);
-long double creall(long double complex);
+_Dcomplex cproj(_Dcomplex);
+_Fcomplex cprojf(_Fcomplex);
+_Lcomplex cprojl(_Lcomplex);
+
+double creal(_Dcomplex);
+float crealf(_Fcomplex);
+long double creall(_Lcomplex);
 
 #ifndef __cplusplus
 #define __CIMAG(x, t) \

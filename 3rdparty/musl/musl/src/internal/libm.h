@@ -174,14 +174,14 @@ double __sin(double,double,int);
 double __cos(double,double);
 double __tan(double,double,int);
 double __expo2(double);
-double complex __ldexp_cexp(double complex,int);
+_Dcomplex __ldexp_cexp(_Dcomplex,int);
 
 int    __rem_pio2f(float,double*);
 float  __sindf(double);
 float  __cosdf(double);
 float  __tandf(double,int);
 float  __expo2f(float);
-float complex __ldexp_cexpf(float complex,int);
+_Fcomplex __ldexp_cexpf(_Fcomplex,int);
 
 int __rem_pio2l(long double, long double *);
 long double __sinl(long double, long double, int);
