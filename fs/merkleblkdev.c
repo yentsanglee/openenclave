@@ -95,26 +95,35 @@ static void _set_hash(blkdev_t* dev, size_t i, const fs_sha256_t* hash)
 static int _write_hash_tree(blkdev_t* dev)
 {
     int ret = -1;
-    size_t nbytes = dev->nhashes * sizeof(fs_sha256_t);
-    size_t nblks = _round_to_multiple(nbytes, FS_BLOCK_SIZE) / FS_BLOCK_SIZE;
-    const fs_sha256_t* ptr = (fs_sha256_t*)dev->hashes;
-    size_t rem = dev->nhashes;
-    size_t base = 0;
+    size_t nblks;
 
-    for (size_t i = 0; i < nblks; i++)
+    /* Calculate the total number of hash blocks to be written. */
+    {
+        size_t nbytes = dev->nhashes * sizeof(fs_sha256_t);
+        nblks = _round_to_multiple(nbytes, FS_BLOCK_SIZE) / FS_BLOCK_SIZE;
+    }
+
+    for (size_t i = 0, j = 0; i < nblks && j < dev->nhashes; i++)
     {
         fs_blk_t blk;
-        size_t n = _min(rem, sizeof(blk) / sizeof(fs_sha256_t));
+        size_t hashes_per_block;
+        size_t nhashes;
         bool dirty = false;
-        size_t nhashes = n / sizeof(fs_sha256_t);
 
+        /* Calculate the number of hashes contained in one block. */
+        hashes_per_block = FS_BLOCK_SIZE / sizeof(fs_sha256_t);
+
+        /* Calculate the number of hashes to write. */
+        nhashes = _min(hashes_per_block, dev->nhashes - j);
+        
+        /* Copy the hashes onto the block. */
         memset(&blk, 0, sizeof(blk));
-        memcpy(&blk, ptr, n);
+        memcpy(&blk, &dev->hashes[j], nhashes * sizeof(fs_sha256_t));
 
         /* Determine whether any hashes in this block are dirty. */
-        for (size_t j = base; j < base + nhashes; j++)
+        for (size_t k = j; k < nhashes; k++)
         {
-            if (dev->dirty[j])
+            if (dev->dirty[k])
                 dirty = true;
         }
 
@@ -124,9 +133,7 @@ static int _write_hash_tree(blkdev_t* dev)
                 goto done;
         }
 
-        ptr += n;
-        rem -= n;
-        base += nhashes;
+        j += nhashes;
     }
 
     /* Clear the dirty bits. */
