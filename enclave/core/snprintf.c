@@ -45,8 +45,8 @@ static const char* _u64_to_hex_str(char buf[17], uint64_t x)
     uint64_t hi = (0xffffffff00000000 & x) >> 32;
     uint64_t lo = (0x00000000ffffffff & x);
 
-    _u32_to_hex_str(buf, hi);
-    _u32_to_hex_str(buf + 8, lo);
+    _u32_to_hex_str(buf, (uint32_t)hi);
+    _u32_to_hex_str(buf + 8, (uint32_t)lo);
 
     return buf;
 }
@@ -65,7 +65,7 @@ static const char* _u64_to_str(char buf[21], uint64_t x)
 
     while (x)
     {
-        uint64_t m = x % 10;
+        char m = (char)(x % 10);
         *--end = m + '0';
         x = x / 10;
     }
@@ -217,7 +217,7 @@ int oe_vsnprintf(char* str, size_t size, const char* fmt, oe_va_list ap)
         }
     }
 
-    return n;
+    return (int)n;
 }
 
 int oe_snprintf(char* str, size_t size, const char* fmt, ...)

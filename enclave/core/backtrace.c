@@ -121,7 +121,7 @@ oe_result_t oe_print_backtrace(void)
 {
     oe_result_t result = OE_UNEXPECTED;
     void* buffer[OE_BACKTRACE_MAX];
-    size_t size;
+    int size;
     char** syms = NULL;
 
     if ((size = oe_backtrace(buffer, OE_BACKTRACE_MAX)) <= 0)
@@ -132,7 +132,7 @@ oe_result_t oe_print_backtrace(void)
 
     oe_host_printf("=== backtrace:\n");
 
-    for (size_t i = 0; i < size; i++)
+    for (int i = 0; i < size; i++)
         oe_host_printf("%s(): %p\n", syms[i], buffer[i]);
 
     oe_host_printf("\n");

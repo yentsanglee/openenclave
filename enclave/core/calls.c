@@ -950,6 +950,39 @@ void __oe_handle_main(
 **
 **==============================================================================
 */
+void __oe_handle_main_wrap(oe_ecall_enc_args_t* ecall_args)
+{
+    __oe_handle_main(
+        ecall_args->arg1,
+        ecall_args->arg2,
+        ecall_args->cssa,
+        ecall_args->tcs,
+        &ecall_args->arg1_out,
+        &ecall_args->arg2_out);
+}
+
+/*
+**==============================================================================
+**
+** _oe_notify_nested_exit_start()
+**
+**     Notify the nested exist happens.
+**
+**     This function saves the current ocall context to the thread data. The
+**     ocall context contains the stack pointer and the return address of the
+**     function when ocall happens inside enclave (i.e. one type of nested
+**     exit).
+**     When debugger does stack stitching, it will update the untrusted ocall
+**     frame's previous stack frame pointer and return address with the ocall
+**     context from trusted thread data. When GDB does stack walking, the parent
+**     stack of an untrusted ocall will be stack of the _OE_EXIT trusted
+**     function instead of stack of oe_enter/__morestack untrusted function.
+**     Refer to the _oe_notify_ocall_start function in host side, and the
+**     OCallStartBreakpoint and update_untrusted_ocall_frame function in the
+**     python plugin.
+**
+**==============================================================================
+*/
 void _oe_notify_nested_exit_start(
     uint64_t arg1,
     oe_ocall_context_t* ocall_context)

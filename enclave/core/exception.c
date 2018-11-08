@@ -386,6 +386,8 @@ void _oe_virtual_exception_dispatcher(
     return;
 }
 
+#if defined(__linux__)
+
 /*
 **==============================================================================
 **
@@ -415,3 +417,5 @@ void _oe_cleanup_xstates(void)
 
     return;
 }
+
+#endif /* defined(__linux__) */
