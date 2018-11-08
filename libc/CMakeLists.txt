@@ -29,7 +29,9 @@ add_library(oelibc STATIC
     ../fs/commands.c
     ../fs/mount.c
     ../fs/oefs.c
+    ../fs/merkleblkdev.c
     ../fs/ramblkdev.c
+    ../fs/sha.c
     ../fs/syscall.c
     ../fs/strarr.c
     ../fs/strings.c

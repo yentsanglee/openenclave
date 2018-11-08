@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blkdev.h"
+#include "sha.h"
 
 #define SHA256_SIZE 32
 
@@ -24,6 +25,7 @@ typedef struct _blkdev
     fs_blkdev_t* next;
 } blkdev_t;
 
+#if 0
 static int _compute_sha256(
     const void* data,
     size_t size,
@@ -50,6 +52,7 @@ done:
     mbedtls_sha256_free(&ctx);
     return ret;
 }
+#endif
 
 static int _generate_initialization_vector(
     const uint8_t key[FS_KEY_SIZE],
@@ -58,7 +61,7 @@ static int _generate_initialization_vector(
 {
     int ret = -1;
     uint8_t buf[IV_SIZE];
-    uint8_t key_hash[SHA256_SIZE];
+    fs_sha256_t key_hash;
     mbedtls_aes_context aes;
 
     mbedtls_aes_init(&aes);
@@ -69,11 +72,11 @@ static int _generate_initialization_vector(
     memcpy(buf, &blkno, sizeof(blkno));
 
     /* Compute the hash of the key. */
-    if (_compute_sha256(key, FS_KEY_SIZE, key_hash) != 0)
+    if (fs_sha256(&key_hash, key, FS_KEY_SIZE) != 0)
         goto done;
 
     /* Create a SHA-256 hash of the key. */
-    if (mbedtls_aes_setkey_enc(&aes, key_hash, sizeof(key_hash) * 8) != 0)
+    if (mbedtls_aes_setkey_enc(&aes, key_hash.data, sizeof(key_hash) * 8) != 0)
         goto done;
 
     /* Encrypt the buffer with the hash of the key, yielding the IV. */

@@ -42,4 +42,10 @@ int fs_open_crypto_blkdev(
     const uint8_t key[FS_KEY_SIZE],
     fs_blkdev_t* next);
 
+int fs_open_merkle_blkdev(
+    fs_blkdev_t** blkdev, 
+    size_t num_blocks,
+    bool initialize,
+    fs_blkdev_t* next);
+
 #endif /* _FS_BLKDEV_H */
