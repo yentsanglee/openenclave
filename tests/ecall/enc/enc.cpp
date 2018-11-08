@@ -8,8 +8,38 @@
 #include <openenclave/internal/globals.h>
 #include <openenclave/internal/jump.h>
 #include <openenclave/internal/tests.h>
+#include <openenclave/internal/utils.h>
 #include "../args.h"
 
+class testclass
+{
+  public:
+    testclass()
+    {
+        m_a = 'a';
+        m_b = 'b';
+    }
+	~testclass()
+	{
+	}
+  private:
+    int m_a;
+    int m_b;
+};
+
+#if 0
+volatile testclass x;
+
+oe_jmpbuf_t jb;
+
+int my_setjmp()
+{
+    int ret;
+    ret = oe_setjmp(&jb);
+    return ret;
+}
+volatile int rand = my_setjmp();
+#endif
 int TestSetjmp()
 {
     oe_jmpbuf_t buf;
@@ -164,12 +194,20 @@ OE_ECALL void A(void* args_)
     }
 }
 
+extern "C" int oe_atexit(void (*function)(void));
+
+    int atexit(void (*function)(void))
+{
+    return oe_atexit(function);
+}
+
+
 OE_SET_ENCLAVE_SGX(
     1,    /* ProductID */
     1,    /* SecurityVersion */
     true, /* AllowDebug */
-    1024, /* HeapPageCount */
-    1024, /* StackPageCount */
+    10, /* HeapPageCount */
+    10, /* StackPageCount */
     2);   /* TCSCount */
 
 OE_DEFINE_EMPTY_ECALL_TABLE();
