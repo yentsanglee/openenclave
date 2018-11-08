@@ -395,15 +395,16 @@ int fs_open_merkle_blkdev(
     /* Calculate the number of nodes (hashes) in the hash tree. */
     nhashes = (nblks * 2) - 1;
 
+    /* Allocate the device structure. */
+    if (!(dev = calloc(1, sizeof(blkdev_t))))
+        goto done;
+
     /* Allocate the hash tree. */
-    if (!(hashes = calloc(sizeof(fs_sha256_t), nhashes)))
+    if (!(hashes = calloc(nhashes, sizeof(fs_sha256_t))))
         goto done;
 
     /* Allocate the dirty bytes for the hash tree. */
-    if (!(dirty = calloc(sizeof(uint8_t), nhashes)))
-        goto done;
-
-    if (!(dev = calloc(1, sizeof(blkdev_t))))
+    if (!(dirty = calloc(nhashes, sizeof(uint8_t))))
         goto done;
 
     dev->base.get = _blkdev_get;
