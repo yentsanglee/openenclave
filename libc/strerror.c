@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include <errno.h>
+#include <locale.h>
 
 typedef struct _error_info
 {
