@@ -31,4 +31,5 @@ void test_string(void)
     _test_strcmp();
     _test_memcpy();
     _test_memcmp();
+    print("==== passed test_string()\n");
 }
