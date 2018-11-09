@@ -5,10 +5,13 @@
 
 void TestAll()
 {
+#if !defined(_WIN32)
     TestASN1();
     TestCRL();
     TestEC();
     TestRandom();
     TestRSA();
+#endif
     TestSHA();
+    TestHMAC();
 }
