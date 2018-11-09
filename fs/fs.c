@@ -96,7 +96,7 @@ done:
     return ret;
 }
 
-int fs_bind(fs_t* fs, const char* path)
+int fs_mount(fs_t* fs, const char* path)
 {
     int ret = -1;
     binding_t binding;
@@ -133,7 +133,7 @@ done:
     return ret;
 }
 
-int fs_unbind(const char* path)
+int fs_unmount(const char* path)
 {
     int ret = -1;
     fs_t* fs = NULL;

@@ -2576,12 +2576,12 @@ done:
 #define USE_MERKLE_BLKDEV
 #define USE_CRYPTO_BLKDEV
 
-int fs_mount_oefs(
+int fs_new_oefs(
+    fs_t** fs_out,
     const char* source,
-    const char* target,
     uint32_t flags,
     size_t nblks,
-    const uint8_t key[FS_MOUNT_KEY_SIZE])
+    const uint8_t key[FS_KEY_SIZE])
 {
     int ret = -1;
     fs_blkdev_t* host_dev = NULL;
@@ -2593,78 +2593,58 @@ int fs_mount_oefs(
     fs_blkdev_t* next = NULL;
     fs_t* fs = NULL;
 
-    if (!target)
+    if (fs_out)
+        *fs_out = NULL;
+
+    if (!fs_out || !source || nblks < 2 || !_is_power_of_two(nblks))
         goto done;
 
-    if (nblks < 2 || !_is_power_of_two(nblks))
+    /* Open a host device. */
+    if (fs_open_host_blkdev(&host_dev, source) != 0)
         goto done;
 
-    if (source)
+    next = host_dev;
+
+    /* If a key was provided, then open a crypto device. */
+    if (key)
     {
-        /* Open a host device. */
-        if (fs_open_host_blkdev(&host_dev, source) != 0)
-            goto done;
-
-        next = host_dev;
-
-        /* If a key was provided, then open a crypto device. */
-        if (key)
-        {
 #if defined(USE_CRYPTO_BLKDEV)
-            {
-                if (fs_open_crypto_blkdev(&crypto_dev, key, next) != 0)
-                    goto done;
+        {
+            if (fs_open_crypto_blkdev(&crypto_dev, key, next) != 0)
+                goto done;
 
-                next = crypto_dev;
-            }
+            next = crypto_dev;
+        }
 #endif
 
 #if defined(USE_MERKLE_BLKDEV)
+        {
+            bool initialize = (flags & FS_FLAG_MKFS);
+
+            if (fs_open_merkle_blkdev(
+                    &merkle_dev, nblks, initialize, next) != 0)
             {
-                bool initialize = (flags & FS_MOUNT_FLAG_MKFS);
-
-                if (fs_open_merkle_blkdev(
-                        &merkle_dev, nblks, initialize, next) != 0)
-                {
-                    goto done;
-                }
-
-                next = merkle_dev;
+                goto done;
             }
+
+            next = merkle_dev;
+        }
 #endif
 
 #if defined(USE_CACHE_BLKDEV)
-            /* cache_dev */
-            {
-                if (fs_open_cache_blkdev(&cache_dev, next) != 0)
-                    goto done;
+        /* cache_dev */
+        {
+            if (fs_open_cache_blkdev(&cache_dev, next) != 0)
+                goto done;
 
-                next = cache_dev;
-            }
-#endif
+            next = cache_dev;
         }
-
-        dev = next;
-    }
-    else
-    {
-        size_t size;
-
-        /* Open a ram device within enclave memory. */
-
-        if (flags & FS_MOUNT_FLAG_CRYPTO)
-            goto done;
-
-        if (oefs_size(nblks, &size) != 0)
-            goto done;
-
-        if (fs_open_ram_blkdev(&ram_dev, size) != 0)
-            goto done;
-
-        dev = ram_dev;
+#endif
     }
 
-    if (flags & FS_MOUNT_FLAG_MKFS)
+    dev = next;
+
+    if (flags & FS_FLAG_MKFS)
     {
         if (oefs_mkfs(dev, nblks) != 0)
             goto done;
@@ -2673,8 +2653,7 @@ int fs_mount_oefs(
     if (oefs_initialize(&fs, dev) != 0)
         goto done;
 
-    if (fs_bind(fs, target) != 0)
-        goto done;
+    *fs_out = fs;
 
     fs = NULL;
     ret = 0;
@@ -2695,6 +2674,59 @@ done:
 
     if (merkle_dev)
         merkle_dev->release(merkle_dev);
+
+    if (fs)
+        fs->fs_release(fs);
+
+    return ret;
+}
+
+int fs_new_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks)
+{
+    int ret = -1;
+    fs_blkdev_t* ram_dev = NULL;
+    fs_blkdev_t* dev = NULL;
+    fs_t* fs = NULL;
+    
+    if (fs_out)
+        *fs_out = NULL;
+
+    if (!fs_out || nblks < 2 || !_is_power_of_two(nblks))
+        goto done;
+
+    /* Open an oefs device within enclave memory. */
+    {
+        size_t size;
+
+        if (flags & FS_FLAG_CRYPTO)
+            goto done;
+
+        if (oefs_size(nblks, &size) != 0)
+            goto done;
+
+        if (fs_open_ram_blkdev(&ram_dev, size) != 0)
+            goto done;
+
+        dev = ram_dev;
+    }
+
+    if (flags & FS_FLAG_MKFS)
+    {
+        if (oefs_mkfs(dev, nblks) != 0)
+            goto done;
+    }
+
+    if (oefs_initialize(&fs, dev) != 0)
+        goto done;
+
+    *fs_out = fs;
+    fs = NULL;
+    ret = 0;
+
+done:
+
+    if (ram_dev)
+        ram_dev->release(ram_dev);
 
     if (fs)
         fs->fs_release(fs);

@@ -21,7 +21,6 @@
 #include "../../../fs/commands.h"
 #include "../../../fs/cpio.h"
 #include "../../../fs/fs.h"
-#include "../../../fs/mount.h"
 #include "oefs_t.h"
 
 #define INIT
@@ -1094,9 +1093,11 @@ static void _test_hostfs()
 {
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     struct stat buf;
+    fs_t* hostfs = NULL;
 
     /* Mount the file system. */
-    OE_TEST(fs_mount("hostfs", NULL, "/mnt/hostfs") == 0);
+    OE_TEST(fs_new_hostfs(&hostfs) == 0);
+    OE_TEST(fs_mount(hostfs, "/mnt/hostfs") == 0);
 
     /* Remove the file if it exists. */
     unlink("/mnt/hostfs/tmp/myfile");
@@ -1242,17 +1243,20 @@ void _test_merkle(void)
 
 int test_oefs(const char* src_dir, const char* bin_dir)
 {
-    const uint32_t flags = FS_MOUNT_FLAG_MKFS;
+    const uint32_t flags = FS_FLAG_MKFS;
     size_t num_bytes = 4194304;
     size_t num_blocks = num_bytes / FS_BLOCK_SIZE;
     int rc;
     const char target1[] = "/mnt/oefs";
     const char target2[] = "/mnt/ramfs";
-    uint8_t key[FS_MOUNT_KEY_SIZE] = {
+    uint8_t key[FS_KEY_SIZE] = {
         0x0f, 0xf0, 0x31, 0xe3, 0x93, 0xdf, 0x46, 0x7b, 0x9a, 0x33, 0xe8,
         0x3c, 0x55, 0x11, 0xac, 0x52, 0x9e, 0xd4, 0xb1, 0xad, 0x10, 0x16,
         0x4f, 0xd9, 0x92, 0x19, 0x93, 0xcc, 0xa9, 0x0e, 0xcb, 0xed,
     };
+    fs_t* oefs = NULL;
+    fs_t* ramfs = NULL;
+    fs_t* hostfs = NULL;
 
     /* Mount the host OEFS file. */
     {
@@ -1261,18 +1265,19 @@ int test_oefs(const char* src_dir, const char* bin_dir)
         strlcpy(path, bin_dir, sizeof(path));
         strlcat(path, "/tests/oefs/tests.oefs", sizeof(path));
 
-        rc = fs_mount("oefs", path, target1, flags, num_blocks, key);
-        OE_TEST(rc == 0);
+        OE_TEST(fs_new_oefs(&oefs, path, flags, num_blocks, key) == 0);
+        OE_TEST(fs_mount(oefs, target1) == 0);
     }
 
     /* Mount enclave memory. */
-    rc = fs_mount("ramfs", NULL, target2, flags, num_blocks);
-    OE_TEST(rc == 0);
+    OE_TEST(fs_new_ramfs(&ramfs, flags, num_blocks) == 0);
+    OE_TEST(fs_mount(ramfs, target2) == 0);
 
     run_tests(target1);
     run_tests(target2);
 
-    OE_TEST(fs_mount("hostfs", NULL, "/mnt/hostfs") == 0);
+    OE_TEST(fs_new_hostfs(&hostfs) == 0);
+    OE_TEST(fs_mount(hostfs, "/mnt/hostfs") == 0);
 
     _test_cpio_host_to_host(src_dir, bin_dir);
     _test_cpio_host_to_enclave(src_dir, bin_dir);

@@ -855,7 +855,7 @@ done:
     return err;
 }
 
-fs_errno_t hostfs_initialize(fs_t** fs_out)
+static fs_errno_t _fs_initialize(fs_t** fs_out)
 {
     fs_errno_t err = FS_EOK;
     hostfs_t* hostfs = NULL;
@@ -919,29 +919,25 @@ int fs_hostfs_ocall(fs_hostfs_ocall_args_t* args)
     return 0;
 }
 
-int fs_mount_hostfs(const char* source, const char* target)
+int fs_new_hostfs(fs_t** fs_out)
 {
     int ret = -1;
     fs_t* fs = NULL;
 
-    /* TODO: handle source here. */
+    if (fs_out)
+        *fs_out =NULL;
 
-    if (!target)
+    if (!fs_out)
         goto done;
 
-    if (hostfs_initialize(&fs) != 0)
+    if (_fs_initialize(&fs) != 0)
         goto done;
 
-    if (fs_bind(fs, target) != 0)
-        goto done;
-
+    *fs_out = fs;
     fs = NULL;
     ret = 0;
 
 done:
-
-    if (fs)
-        fs->fs_release(fs);
 
     return ret;
 }

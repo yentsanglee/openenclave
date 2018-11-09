@@ -10,6 +10,12 @@
 #include "common.h"
 #include "errno.h"
 
+/* File system creating flags. */
+#define FS_FLAG_NONE 0
+#define FS_FLAG_MKFS 1
+#define FS_FLAG_CRYPTO 2
+#define FS_KEY_SIZE 32
+
 /* fs_dirent_t.d_type -- the file type. */
 #define FS_DT_UNKNOWN 0
 #define FS_DT_FIFO 1 /* unused */
@@ -180,9 +186,9 @@ struct _fs
     fs_errno_t (*fs_rmdir)(fs_t* fs, const char* path);
 };
 
-int fs_bind(fs_t* fs, const char* path);
+int fs_mount(fs_t* fs, const char* path);
 
-int fs_unbind(const char* path);
+int fs_unmount(const char* path);
 
 fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX]);
 
@@ -223,5 +229,16 @@ fs_errno_t fs_access(const char* pathname, int mode, int* ret);
 fs_errno_t fs_getcwd(char* buf, unsigned long size, int* ret);
 
 fs_errno_t fs_chdir(const char* path, int* ret);
+
+int fs_new_hostfs(fs_t** fs_out);
+
+int fs_new_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks);
+
+int fs_new_oefs(
+    fs_t** fs_out,
+    const char* source,
+    uint32_t flags,
+    size_t nblks,
+    const uint8_t key[FS_KEY_SIZE]);
 
 #endif /* _FS_H */

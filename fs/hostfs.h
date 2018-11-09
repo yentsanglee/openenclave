@@ -18,8 +18,6 @@
         }                                                  \
     }
 
-fs_errno_t hostfs_initialize(fs_t** fs);
-
 typedef enum _fs_hostfs_op {
     FS_HOSTFS_OPEN,
     FS_HOSTFS_LSEEK,
@@ -140,7 +138,5 @@ typedef struct _fs_hostfs_ocall_args
 int fs_hostfs_ocall(fs_hostfs_ocall_args_t* args);
 
 void fs_handle_hostfs_ocall(fs_hostfs_ocall_args_t* args);
-
-int fs_mount_hostfs(const char* source, const char* target);
 
 #endif /* _FS_HOSTFS_H */
