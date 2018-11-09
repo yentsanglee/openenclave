@@ -4,9 +4,12 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <string.h>
 #include "blkdev.h"
 #include "sha.h"
+
+#define HASHES_PER_BLOCK (FS_BLOCK_SIZE / sizeof(fs_sha256_t))
 
 typedef struct _blkdev
 {
@@ -17,6 +20,11 @@ typedef struct _blkdev
     size_t nblks;
     const fs_sha256_t* hashes;
     size_t nhashes;
+
+    /* The number of hash blocks. */
+    size_t n_hash_blks;
+
+    /* Keeps track of dirty hash blocks. */
     uint8_t* dirty;
 } blkdev_t;
 
@@ -90,64 +98,35 @@ done:
 
 static void _set_hash(blkdev_t* dev, size_t i, const fs_sha256_t* hash)
 {
+    uint32_t hblkno = i / HASHES_PER_BLOCK;
+
+    assert(i < dev->nhashes);
+    assert(hblkno < dev->n_hash_blks);
+
     ((fs_sha256_t*)dev->hashes)[i] = *hash;
-    dev->dirty[i] = 1;
+    dev->dirty[hblkno] = 1;
 }
 
 /* Write the hashes just after the data blocks. */
 static int _write_hash_tree(blkdev_t* dev)
 {
     int ret = -1;
-    size_t nblks;
+    const fs_blk_t* p = (const fs_blk_t*)dev->hashes;
 
-    /* Calculate the total number of hash blocks to be written. */
+    for (size_t i = 0; i < dev->n_hash_blks; i++)
     {
-        size_t nbytes = dev->nhashes * sizeof(fs_sha256_t);
-        nblks = _round_to_multiple(nbytes, FS_BLOCK_SIZE) / FS_BLOCK_SIZE;
-    }
-
-    for (size_t i = 0, j = 0; i < nblks && j < dev->nhashes; i++)
-    {
-        size_t hashes_per_block;
-        size_t nhashes;
-        bool dirty = false;
-
-        /* Calculate the number of hashes contained in one block. */
-        hashes_per_block = FS_BLOCK_SIZE / sizeof(fs_sha256_t);
-
-        /* Calculate the number of hashes to write. */
-        nhashes = _min(hashes_per_block, dev->nhashes - j);
-        
-        /* Determine whether any hashes in this block are dirty. */
-        for (size_t k = j; k < nhashes; k++)
+        if (dev->dirty[i])
         {
-            if (dev->dirty[k])
-            {
-                dirty = true;
-                break;
-            }
-        }
-
-        if (dirty)
-        {
-            fs_blk_t blk;
-
-            /* Copy the hashes onto the block. */
-            memset(&blk, 0, sizeof(blk));
-            memcpy(&blk, &dev->hashes[j], nhashes * sizeof(fs_sha256_t));
-
-            if (dev->next->put(dev->next, i + dev->nblks, &blk) != 0)
+            if (dev->next->put(dev->next, i + dev->nblks, p) != 0)
                 goto done;
+
+            dev->dirty[i] = 0;
         }
 
-        j += nhashes;
+        p++;
     }
-
-    /* Clear the dirty bits. */
-    memset(dev->dirty, 0, sizeof(uint8_t) * sizeof(dev->nhashes));
 
     ret = 0;
-    goto done;
 
 done:
     return ret;
@@ -439,12 +418,22 @@ int fs_open_merkle_blkdev(
     if (!(dev = calloc(1, sizeof(blkdev_t))))
         goto done;
 
-    /* Allocate the hash tree. */
-    if (!(hashes = calloc(nhashes, sizeof(fs_sha256_t))))
-        goto done;
+    /* Allocate the hash tree (allocate extra memory up to block boundary). */
+    {
+        size_t size = nhashes * sizeof(fs_sha256_t);
+
+        size = _round_to_multiple(size, FS_BLOCK_SIZE);
+
+        if (!(hashes = calloc(1, size)))
+            goto done;
+    }
+
+    /* Calculate the number of hash blocks. */
+    dev->n_hash_blks =
+        _round_to_multiple(nhashes, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
 
     /* Allocate the dirty bytes for the hash tree. */
-    if (!(dirty = calloc(nhashes, sizeof(uint8_t))))
+    if (!(dirty = calloc(1, dev->n_hash_blks)))
         goto done;
 
     dev->base.get = _blkdev_get;
@@ -511,7 +500,7 @@ int fs_open_merkle_blkdev(
 #endif
 
         /* Set all the dirty bits so all hash nodes will be written. */
-        memset(dev->dirty, 1, dev->nhashes);
+        memset(dev->dirty, 1, dev->n_hash_blks);
 
         /* Write the hash tree to the next device. */
         if (_write_hash_tree(dev) != 0)
