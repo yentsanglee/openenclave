@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "oelibc.h"
 #include "tests.h"
 

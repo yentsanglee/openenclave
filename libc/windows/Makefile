@@ -36,6 +36,7 @@ SOURCES=$(SOURCES) test_string.c
 SOURCES=$(SOURCES) __test_failed.c
 SOURCES=$(SOURCES) exit.c
 SOURCES=$(SOURCES) test_stdarg.c
+SOURCES=$(SOURCES) malloc.c
 
 # string:
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\strcpy.c
