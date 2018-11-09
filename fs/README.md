@@ -182,8 +182,7 @@ fs_t;
 ```
 
 Once this interface is implemented, one may write a callback function for 
-mounting the interface into the directory hierarchy. For example, here is the 
-an example.
+mounting the interface into the directory hierarchy. For example:
 
 ```
 int fs_mount_myfs(
@@ -216,6 +215,10 @@ Finally the file system can be mounted.
 ```
 fs_mount("myfs", source_path, target_path);
 ```
+
+Note that **fs_mount()** just provides a unified function for mounting file
+systems. One could also call **fs_mount_myfs()** directly without registering 
+it.
 
 Block devices
 -------------
