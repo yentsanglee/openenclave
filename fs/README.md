@@ -61,11 +61,9 @@ Supported libc functions
 | fgetln()    |
 | ferror()    |
 | rewind()    |
-|:-----------:|
 | vfprintf()  |
 | fprintf()   |
 | fscanf()    |
-| ----------- |
 | open()      |
 | creat()     |
 | close()     |
@@ -74,7 +72,6 @@ Supported libc functions
 | write()     |
 | writev()    |
 | lseek()     |
-| ----------- |
 | stat()      |
 | link()      |
 | unlink()    |
@@ -82,12 +79,10 @@ Supported libc functions
 | link()      |
 | unlink()    |
 | access()    |
-| ----------- |
 | mkdir()     |
 | chdir()     |
 | rmdir()     |
 | getcwd()    |
-| ----------- |
 | opendir()   |
 | readdir()   |
 | readdir_r() |
