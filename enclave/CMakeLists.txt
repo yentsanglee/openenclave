@@ -32,7 +32,12 @@ if(USE_LIBSGX)
 target_compile_definitions(oeenclave PUBLIC OE_USE_LIBSGX)
 endif()    
 
+target_compile_definitions(oeenclave PUBLIC OE_BUILD_ENCLAVE)
+
+target_include_directories(oeenclave PRIVATE ${CMAKE_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/include)
+
 target_link_libraries(oeenclave PUBLIC
+    oe_includes
     mbedcrypto
     oelibc)
 
