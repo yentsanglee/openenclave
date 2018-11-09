@@ -230,11 +230,11 @@ fs_errno_t fs_getcwd(char* buf, unsigned long size, int* ret);
 
 fs_errno_t fs_chdir(const char* path, int* ret);
 
-int fs_new_hostfs(fs_t** fs_out);
+int fs_create_hostfs(fs_t** fs_out);
 
-int fs_new_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks);
+int fs_create_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks);
 
-int fs_new_oefs(
+int fs_create_oefs(
     fs_t** fs_out,
     const char* source,
     uint32_t flags,

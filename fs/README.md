@@ -5,19 +5,27 @@ Overview
 --------
 
 **FS** is a library for managing enclave file systems. It provides reference
-implementations for three file systems.
+implementations for three file system types.
 
 - **hostfs** - a file system for manipulating unencrypted host files.
-- **oefs** - an experimental full-disk-encryption (FDE) file system.
 - **ramfs** - a ramdisk file system that resides within the enclave.
+- **oefs** - an experimental full-disk-encryption (FDE) file system.
 
-Additionally **FS** provides a framework for registering other file systems.
+Additionally **FS** provides a framework for defining new file system types.
 
-To use a file system, it must first be mounted into the enclave directory 
-hierarchy. For example.
+The first step in using a file system is to create an instance of it. For
+example, the following snippet creates an instance of the **hostfs** file 
+system.
 
 ```
-oe_mount("hostfs", "/", "/mnt/hostfs");
+fs_t* fs;
+fs_create_hostfs(&fs);
+```
+
+Next, the file system is mounted as follows.
+
+```
+fs_mount(fs, "/mnt/hostfs");
 ```
 
 Once mounted, file systems are manipulated with the standard POSIX libc
@@ -88,10 +96,11 @@ Supported libc functions
 | readdir_r() |
 | closedir()  |
 
-Defining, registering, and mounting a new file system
------------------------------------------------------
+Defining new file system types
+------------------------------
 
-New file systems are defined by implementing the following interface.
+New file systems are defined by implementing a function that produces instances
+of the the following interface.
 
 ```
 typedef struct _fs
@@ -181,44 +190,20 @@ typedef struct _fs
 fs_t;
 ```
 
-Once this interface is implemented, one may write a callback function for 
-mounting the interface into the directory hierarchy. For example:
+For example, the following function creates an instance of the **myfs** file
+system (parameters are added as needed).
 
 ```
-int fs_mount_myfs(
-    const char* type, 
-    const char* source, 
-    const char* target, 
-    va_list ap)
-{
-    if (!source || !target)
-        return -1;
-
-    /* Create and initialize fs_t structure here */
-    ...
-
-    if (fs_bind(fs, target) != 0)
-        return -1;
-
-    return 0;
-}
+int create_myfs(fs_t* fs);
 ```
 
-Next the file system may be registered with **FS**.
+As shown earlier, an instance can be created and mounted as follows.
 
 ```
-fs_register("myfs", fs_mount_myfs);
+fs_t* fs;
+create_myfs(&fs);
+fs_mount(fs, "myfs");
 ```
-
-Finally the file system can be mounted.
-
-```
-fs_mount("myfs", source_path, target_path);
-```
-
-Note that **fs_mount()** just provides a unified function for mounting file
-systems. One could also call **fs_mount_myfs()** directly without registering 
-it.
 
 Block devices
 -------------

@@ -2576,7 +2576,7 @@ done:
 #define USE_MERKLE_BLKDEV
 #define USE_CRYPTO_BLKDEV
 
-int fs_new_oefs(
+int fs_create_oefs(
     fs_t** fs_out,
     const char* source,
     uint32_t flags,
@@ -2681,7 +2681,7 @@ done:
     return ret;
 }
 
-int fs_new_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks)
+int fs_create_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks)
 {
     int ret = -1;
     fs_blkdev_t* ram_dev = NULL;

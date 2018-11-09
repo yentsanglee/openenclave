@@ -1096,7 +1096,7 @@ static void _test_hostfs()
     fs_t* hostfs = NULL;
 
     /* Mount the file system. */
-    OE_TEST(fs_new_hostfs(&hostfs) == 0);
+    OE_TEST(fs_create_hostfs(&hostfs) == 0);
     OE_TEST(fs_mount(hostfs, "/mnt/hostfs") == 0);
 
     /* Remove the file if it exists. */
@@ -1265,18 +1265,18 @@ int test_oefs(const char* src_dir, const char* bin_dir)
         strlcpy(path, bin_dir, sizeof(path));
         strlcat(path, "/tests/oefs/tests.oefs", sizeof(path));
 
-        OE_TEST(fs_new_oefs(&oefs, path, flags, num_blocks, key) == 0);
+        OE_TEST(fs_create_oefs(&oefs, path, flags, num_blocks, key) == 0);
         OE_TEST(fs_mount(oefs, target1) == 0);
     }
 
     /* Mount enclave memory. */
-    OE_TEST(fs_new_ramfs(&ramfs, flags, num_blocks) == 0);
+    OE_TEST(fs_create_ramfs(&ramfs, flags, num_blocks) == 0);
     OE_TEST(fs_mount(ramfs, target2) == 0);
 
     run_tests(target1);
     run_tests(target2);
 
-    OE_TEST(fs_new_hostfs(&hostfs) == 0);
+    OE_TEST(fs_create_hostfs(&hostfs) == 0);
     OE_TEST(fs_mount(hostfs, "/mnt/hostfs") == 0);
 
     _test_cpio_host_to_host(src_dir, bin_dir);
