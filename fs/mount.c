@@ -22,7 +22,7 @@ int fs_mount_oefs(
     const char* source,
     const char* target,
     uint32_t flags,
-    size_t num_blocks,
+    size_t nblks,
     const uint8_t key[FS_MOUNT_KEY_SIZE])
 {
     int ret = -1;
@@ -38,7 +38,7 @@ int fs_mount_oefs(
     if (!target)
         goto done;
 
-    if (num_blocks < 2 || !_is_power_of_two(num_blocks))
+    if (nblks < 2 || !_is_power_of_two(nblks))
         goto done;
 
     if (source)
@@ -66,7 +66,7 @@ int fs_mount_oefs(
                 bool initialize = (flags & FS_MOUNT_FLAG_MKFS);
 
                 if (fs_open_merkle_blkdev(
-                    &merkle_dev, num_blocks, initialize, next) != 0)
+                    &merkle_dev, nblks, initialize, next) != 0)
                 {
                     goto done;
                 }
@@ -97,7 +97,7 @@ int fs_mount_oefs(
         if (flags & FS_MOUNT_FLAG_CRYPTO)
             goto done;
 
-        if (oefs_size(num_blocks, &size) != 0)
+        if (oefs_size(nblks, &size) != 0)
             goto done;
 
         if (fs_open_ram_blkdev(&ram_dev, size) != 0)
@@ -108,7 +108,7 @@ int fs_mount_oefs(
 
     if (flags & FS_MOUNT_FLAG_MKFS)
     {
-        if (oefs_mkfs(dev, num_blocks) != 0)
+        if (oefs_mkfs(dev, nblks) != 0)
             goto done;
     }
 
@@ -119,7 +119,6 @@ int fs_mount_oefs(
         goto done;
 
     fs = NULL;
-
     ret = 0;
 
 done:

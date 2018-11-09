@@ -13,7 +13,7 @@
 
 #define FS_PATH_MAX 256
 
-#define FS_BLOCK_SIZE 512
+#define FS_BLOCK_SIZE 1024
 
 #define FS_INLINE static __inline
 

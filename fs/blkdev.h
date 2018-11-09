@@ -44,7 +44,7 @@ int fs_open_crypto_blkdev(
 
 int fs_open_merkle_blkdev(
     fs_blkdev_t** blkdev, 
-    size_t num_blocks,
+    size_t nblks,
     bool initialize,
     fs_blkdev_t* next);
 

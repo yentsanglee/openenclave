@@ -17,7 +17,7 @@ int fs_mount_oefs(
     const char* source,
     const char* target,
     uint32_t flags,
-    size_t num_blocks,
+    size_t nblks,
     const uint8_t key[FS_MOUNT_KEY_SIZE]);
 
 int fs_mount_hostfs(const char* target);

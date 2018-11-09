@@ -7,8 +7,6 @@
 #include <string.h>
 #include "blkdev.h"
 
-#define BLOCK_SIZE 512
-
 typedef struct _blkdev
 {
     fs_blkdev_t base;
@@ -51,12 +49,12 @@ static int _blkdev_get(fs_blkdev_t* dev, uint32_t blkno, fs_blk_t* blk)
     if (!device || !blk)
         goto done;
 
-    uint8_t* ptr = device->mem + (blkno * BLOCK_SIZE);
+    uint8_t* ptr = device->mem + (blkno * FS_BLOCK_SIZE);
 
-    if (ptr + BLOCK_SIZE > device->mem + device->size)
+    if (ptr + FS_BLOCK_SIZE > device->mem + device->size)
         goto done;
 
-    memcpy(blk->data, ptr, BLOCK_SIZE);
+    memcpy(blk->data, ptr, FS_BLOCK_SIZE);
 
     ret = 0;
 
@@ -73,12 +71,12 @@ static int _blkdev_put(fs_blkdev_t* dev, uint32_t blkno, const fs_blk_t* blk)
     if (!device || !blk)
         goto done;
 
-    uint8_t* ptr = device->mem + (blkno * BLOCK_SIZE);
+    uint8_t* ptr = device->mem + (blkno * FS_BLOCK_SIZE);
 
-    if (ptr + BLOCK_SIZE > device->mem + device->size)
+    if (ptr + FS_BLOCK_SIZE > device->mem + device->size)
         goto done;
 
-    memcpy(ptr, blk->data, BLOCK_SIZE);
+    memcpy(ptr, blk->data, FS_BLOCK_SIZE);
 
     ret = 0;
 
@@ -126,7 +124,7 @@ int fs_open_ram_blkdev(fs_blkdev_t** blkdev, size_t size)
         goto done;
 
     /* Size must be a multiple of the block size. */
-    if (size % BLOCK_SIZE)
+    if (size % FS_BLOCK_SIZE)
         goto done;
 
     if (!(device = calloc(1, sizeof(blkdev_t))))

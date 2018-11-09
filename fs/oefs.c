@@ -77,13 +77,13 @@ typedef struct _oefs_super_block
     uint32_t s_magic;
 
     /* The total number of blocks in the file system. */
-    uint32_t s_nblocks;
+    uint32_t s_nblks;
 
     /* The number of free blocks. */
     uint32_t s_free_blocks;
 
-    /* Reserved. */
-    uint8_t s_reserved[500];
+    /* (12) Reserved. */
+    uint8_t s_reserved[FS_BLOCK_SIZE - 12];
 } oefs_super_block_t;
 
 FS_STATIC_ASSERT(sizeof(oefs_super_block_t) == FS_BLOCK_SIZE);
@@ -113,8 +113,8 @@ typedef struct _oefs_inode
     uint32_t i_mtime;
     uint32_t i_dtime;
 
-    /* Total number of 512-byte blocks in this file. */
-    uint32_t i_nblocks;
+    /* Total number of blocks in this file. */
+    uint32_t i_nblks;
 
     /* The next blknos block. */
     uint32_t i_next;
@@ -122,8 +122,8 @@ typedef struct _oefs_inode
     /* Reserved. */
     uint32_t i_reserved[6];
 
-    /* Blocks comprising this file. */
-    uint32_t i_blocks[112];
+    /* (64) Blocks comprising this file. */
+    uint32_t i_blocks[(FS_BLOCK_SIZE/4) - 16];
 
 } oefs_inode_t;
 
@@ -135,7 +135,7 @@ typedef struct _oefs_bnode
     uint32_t b_next;
 
     /* Blocks comprising this file. */
-    uint32_t b_blocks[127];
+    uint32_t b_blocks[(FS_BLOCK_SIZE/4)-1];
 
 } oefs_bnode_t;
 
@@ -172,6 +172,7 @@ typedef struct _oefs
     oefs_super_block_t sb_copy;
     uint8_t* bitmap_copy;
     size_t bitmap_size;
+    size_t nblks;
 
     bool dirty;
 } oefs_t;
@@ -233,6 +234,16 @@ struct _fs_dir
     /* The current directory entry. */
     fs_dirent_t ent;
 };
+
+FS_INLINE bool _is_power_of_two(size_t n)
+{
+    return (n & (n - 1)) == 0;
+}
+
+static size_t _round_to_multiple(size_t x, size_t m)
+{
+    return (size_t)((x + (m - 1)) / m * m);
+}
 
 static bool _valid_dir(fs_dir_t* dir)
 {
@@ -311,11 +322,16 @@ INLINE void _clr_bit(uint8_t* data, uint32_t size, uint32_t index)
     data[byte] &= ~(1 << bit);
 }
 
+INLINE size_t _num_bitmap_blocks(size_t nblks)
+{
+    return _round_to_multiple(nblks, BITS_PER_BLOCK) / BITS_PER_BLOCK;
+}
+
 /* Get the physical block number from a logical block number. */
 INLINE uint32_t _get_physical_blkno(oefs_t* oefs, uint32_t blkno)
 {
     /* Calculate the number of bitmap blocks. */
-    size_t num_bitmap_blocks = oefs->sb.read.s_nblocks / BITS_PER_BLOCK;
+    size_t num_bitmap_blocks = _num_bitmap_blocks(oefs->nblks);
     return blkno + (3 + num_bitmap_blocks) - 1;
 }
 
@@ -325,7 +341,7 @@ static fs_errno_t _read_block(oefs_t* oefs, size_t blkno, fs_blk_t* blk)
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
-    if (blkno == 0 || blkno > oefs->sb.read.s_nblocks)
+    if (blkno == 0 || blkno > oefs->sb.read.s_nblks)
         FS_RAISE(FS_EIO);
 
     /* Sanity check: make sure the block is not free. */
@@ -349,7 +365,7 @@ static fs_errno_t _write_block(oefs_t* oefs, size_t blkno, const fs_blk_t* blk)
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
-    if (blkno == 0 || blkno > oefs->sb.read.s_nblocks)
+    if (blkno == 0 || blkno > oefs->sb.read.s_nblks)
         FS_RAISE(FS_EINVAL);
 
     /* Sanity check: make sure the block is not free. */
@@ -491,7 +507,7 @@ static fs_errno_t _assign_blkno(oefs_t* oefs, uint32_t* blkno)
 
     *blkno = 0;
 
-    for (uint32_t i = 0; i < oefs->bitmap_size * 8; i++)
+    for (uint32_t i = 0; i < oefs->nblks; i++)
     {
         if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, i))
         {
@@ -511,10 +527,9 @@ done:
 static fs_errno_t _unassign_blkno(oefs_t* oefs, uint32_t blkno)
 {
     fs_errno_t err = FS_EOK;
-    uint32_t nbits = oefs->bitmap_size * 8;
     uint32_t index = blkno - 1;
 
-    if (blkno == 0 || index >= nbits)
+    if (blkno == 0 || index >= oefs->nblks)
         FS_RAISE(FS_EINVAL);
 
     assert(_test_bit(oefs->bitmap.read, oefs->bitmap_size, index));
@@ -551,7 +566,7 @@ static fs_errno_t _flush_bitmap(oefs_t* oefs)
     size_t num_bitmap_blocks;
 
     /* Calculate the number of bitmap blocks. */
-    num_bitmap_blocks = oefs->sb.read.s_nblocks / BITS_PER_BLOCK;
+    num_bitmap_blocks = _num_bitmap_blocks(oefs->nblks);
 
     /* Flush each bitmap block that changed. */
     for (size_t i = 0; i < num_bitmap_blocks; i++)
@@ -761,7 +776,7 @@ static bool _sane_file(fs_file_t* file)
     if (!file->ino)
         return false;
 
-    if (file->inode.i_nblocks != file->blknos.size)
+    if (file->inode.i_nblks != file->blknos.size)
         return false;
 
     return true;
@@ -946,7 +961,7 @@ static fs_errno_t _truncate(fs_file_t* file, ssize_t length)
         for (size_t i = block_index; i < file->blknos.size; i++)
         {
             FS_CHECK(_unassign_blkno(oefs, file->blknos.data[i]));
-            file->inode.i_nblocks--;
+            file->inode.i_nblks--;
         }
 
         if (fs_bufu32_resize(&file->blknos, block_index) != 0)
@@ -1548,7 +1563,7 @@ static fs_errno_t _fs_write(
         FS_CHECK(_append_block_chain(file, &blknos));
 
         /* Update the inode's total_blocks */
-        file->inode.i_nblocks += blknos.size;
+        file->inode.i_nblks += blknos.size;
 
         /* Append these block numbers to the file. */
         if (fs_bufu32_append(&file->blknos, blknos.data, blknos.size) != 0)
@@ -2170,7 +2185,7 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
     stat->st_rdev = 0;
     stat->st_size = inode.i_size;
     stat->st_blksize = FS_BLOCK_SIZE;
-    stat->st_blocks = inode.i_nblocks;
+    stat->st_blocks = inode.i_nblks;
     stat->__st_padding2 = 0;
     stat->st_atim.tv_sec = inode.i_atime;
     stat->st_atim.tv_nsec = 0;
@@ -2251,7 +2266,7 @@ done:
 **==============================================================================
 */
 
-fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
+fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t nblks)
 {
     fs_errno_t err = FS_EOK;
     size_t num_bitmap_blocks;
@@ -2261,18 +2276,14 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
     if (dev)
         dev->begin(dev);
 
-    if (!dev || num_blocks < BITS_PER_BLOCK)
-        FS_RAISE(FS_EINVAL);
-
-    /* Fail if num_blocks is not a multiple of the block size. */
-    if (num_blocks % BITS_PER_BLOCK)
+    if (!dev || nblks < 2 || !_is_power_of_two(nblks))
         FS_RAISE(FS_EINVAL);
 
     /* Initialize an empty block. */
     memset(&empty_block, 0, sizeof(empty_block));
 
     /* Calculate the number of bitmap blocks. */
-    num_bitmap_blocks = num_blocks / BITS_PER_BLOCK;
+    num_bitmap_blocks = _num_bitmap_blocks(nblks);
 
     /* Write empty block one. */
     if (dev->put(dev, blkno++, &empty_block) != 0)
@@ -2288,8 +2299,8 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
         memset(&sb, 0, sizeof(sb));
 
         sb.s_magic = SUPER_BLOCK_MAGIC;
-        sb.s_nblocks = num_blocks;
-        sb.s_free_blocks = num_blocks - 3;
+        sb.s_nblks = nblks;
+        sb.s_free_blocks = nblks - 3;
 
         if (dev->put(dev, blkno++, (const fs_blk_t*)&sb) != 0)
             FS_RAISE(FS_EIO);
@@ -2333,7 +2344,7 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
             .i_ctime = 0,
             .i_mtime = 0,
             .i_dtime = 0,
-            .i_nblocks = 2,
+            .i_nblks = 2,
             .i_next = 0,
             .i_reserved = {0},
             .i_blocks = {2, 3},
@@ -2373,12 +2384,12 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t num_blocks)
     }
 
     /* Count the remaining empty data blocks. */
-    blkno += num_blocks - 3;
+    blkno += nblks - 3;
 
     /* Cross check the actual size against computed size. */
     {
         size_t size;
-        FS_CHECK(oefs_size(num_blocks, &size));
+        FS_CHECK(oefs_size(nblks, &size));
 
         if (size != (blkno * FS_BLOCK_SIZE))
             FS_RAISE(FS_EIO);
@@ -2392,7 +2403,7 @@ done:
     return err;
 }
 
-fs_errno_t oefs_size(size_t num_blocks, size_t* size)
+fs_errno_t oefs_size(size_t nblks, size_t* size)
 {
     fs_errno_t err = FS_EOK;
     size_t total_blocks = 0;
@@ -2400,9 +2411,8 @@ fs_errno_t oefs_size(size_t num_blocks, size_t* size)
     if (size)
         *size = 0;
 
-    /* Fail if num_blocks is not a multiple of the block size. */
-    if (num_blocks % BITS_PER_BLOCK)
-        FS_RAISE(FS_EINVAL);
+    if (nblks < 2 || !_is_power_of_two(nblks) || !size)
+        goto done;
 
     /* Count the first two empty blocks. */
     total_blocks += 2;
@@ -2411,13 +2421,16 @@ fs_errno_t oefs_size(size_t num_blocks, size_t* size)
     total_blocks++;
 
     /* Count the bitmap blocks. */
-    total_blocks += num_blocks / BITS_PER_BLOCK;
+    total_blocks += 
+        _round_to_multiple(nblks, BITS_PER_BLOCK) / BITS_PER_BLOCK;
 
     /* Count the data blocks. */
-    total_blocks += num_blocks;
+    total_blocks += nblks;
 
     if (size)
         *size = total_blocks * FS_BLOCK_SIZE;
+
+    goto done;
 
 done:
     return err;
@@ -2426,7 +2439,7 @@ done:
 fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
 {
     fs_errno_t err = FS_EOK;
-    size_t num_blocks;
+    size_t nblks;
     uint8_t* bitmap = NULL;
     uint8_t* bitmap_copy = NULL;
     oefs_t* oefs = NULL;
@@ -2455,16 +2468,16 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
     memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs->sb_copy));
 
     /* Get the number of blocks. */
-    num_blocks = oefs->sb.read.s_nblocks;
+    nblks = oefs->sb.read.s_nblks;
 
     /* Check that the number of blocks is correct. */
-    if (!num_blocks || (num_blocks % BITS_PER_BLOCK))
+    if (!nblks)
         FS_RAISE(FS_EIO);
 
     /* Allocate space for the block bitmap. */
     {
         /* Calculate the number of bitmap blocks. */
-        size_t num_bitmap_blocks = num_blocks / BITS_PER_BLOCK;
+        size_t num_bitmap_blocks = _num_bitmap_blocks(nblks);
 
         /* Calculate the size of the bitmap. */
         size_t bitmap_size = num_bitmap_blocks * FS_BLOCK_SIZE;
@@ -2504,6 +2517,7 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
         oefs->bitmap.read = bitmap;
         oefs->bitmap_copy = bitmap_copy;
         oefs->bitmap_size = bitmap_size;
+        oefs->nblks = nblks;
         bitmap = NULL;
         bitmap_copy = NULL;
     }

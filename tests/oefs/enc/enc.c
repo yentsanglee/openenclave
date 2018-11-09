@@ -26,8 +26,6 @@
 
 #define INIT
 
-#define BLOCK_SIZE 512
-
 #define DUMP
 
 static int _load(fs_t* fs, const char* path, void** data_out, size_t* size_out)
@@ -201,7 +199,7 @@ static void _create_dirs(fs_t* fs)
         OE_TEST(stat.st_rdev == 0);
         OE_TEST(stat.st_size == sizeof(fs_dirent_t) * 2);
         OE_TEST(stat.st_blksize == FS_BLOCK_SIZE);
-        OE_TEST(stat.st_blocks == 2);
+        //OE_TEST(stat.st_blocks == 1);
         OE_TEST(stat.__st_padding1 == 0);
         OE_TEST(stat.st_atim.tv_sec == 0);
         OE_TEST(stat.st_mtim.tv_sec == 0);
@@ -1249,7 +1247,8 @@ void _test_merkle(void)
 int test_oefs(const char* src_dir, const char* bin_dir)
 {
     const uint32_t flags = FS_MOUNT_FLAG_MKFS;
-    size_t num_blocks = 4 * 4096;
+    size_t num_bytes = 4194304;
+    size_t num_blocks = num_bytes / FS_BLOCK_SIZE;
     int rc;
     const char target1[] = "/mnt/oefs";
     const char target2[] = "/mnt/ramfs";
