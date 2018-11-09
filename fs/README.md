@@ -14,7 +14,7 @@ implementations for two file systems.
 Additionally **FS** provides a framework for registering other file systems.
 
 To use a file system, it must first be mounted into the enclave directory 
-hierarhcy. For example.
+hierarchy. For example.
 
 ```
 oe_mount("hostfs", "/", "/mnt/hostfs");
@@ -31,7 +31,7 @@ fwrite(buf, 1, sizeof(buf), stream);
 fclose(stream);
 ```
 
-When a file system is no longer needed, it is unumounted as follows.
+When a file system is no longer needed, it is unmounted as follows.
 
 ```
 oe_unmount("/mnt/hostfs");
@@ -204,7 +204,7 @@ int fs_mount_myfs(
     ...
 
     if (fs_bind(fs, target) != 0)
-        rturn -1;
+        return -1;
 
     return 0;
 }
