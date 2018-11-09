@@ -42,7 +42,6 @@ SOURCES=$(SOURCES) test_string.c
 SOURCES=$(SOURCES) __test_failed.c
 SOURCES=$(SOURCES) exit.c
 SOURCES=$(SOURCES) test_stdarg.c
-<<<<<<< HEAD
 SOURCES=$(SOURCES) malloc.c
 
 # libc
