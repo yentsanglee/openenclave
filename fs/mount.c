@@ -9,10 +9,6 @@
 #include "hostfs.h"
 #include "oefs.h"
 
-#define USE_CACHE_BLKDEV
-#define USE_MERKLE_BLKDEV
-#define USE_CRYPTO_BLKDEV
-
 #define MAX_CALLBACKS 16
 
 static int _mount_oefs_callback(

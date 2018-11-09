@@ -2573,6 +2573,10 @@ done:
     return err;
 }
 
+#define USE_CACHE_BLKDEV
+#define USE_MERKLE_BLKDEV
+#define USE_CRYPTO_BLKDEV
+
 int fs_mount_oefs(
     const char* source,
     const char* target,
