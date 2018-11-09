@@ -29,7 +29,7 @@ void _test_bzero(void)
 void _test_index(void)
 {
 	const char * s = "Sphinx of black quartz, judge my vow";
-	TEST(index(s, 'z') == 21);
+	TEST(index(s, 'z') == &s[21]);
 }
 
 void _test_memccpy(void)
