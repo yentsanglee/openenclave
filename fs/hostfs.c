@@ -936,7 +936,6 @@ int fs_mount_hostfs(const char* source, const char* target)
         goto done;
 
     fs = NULL;
-
     ret = 0;
 
 done:

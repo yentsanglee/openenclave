@@ -7,11 +7,7 @@
 #include "common.h"
 #include "blkdev.h"
 #include "fs.h"
-
-#define FS_MOUNT_FLAG_NONE 0
-#define FS_MOUNT_FLAG_MKFS 1
-#define FS_MOUNT_FLAG_CRYPTO 2
-#define FS_MOUNT_KEY_SIZE 32
+#include "mount.h"
 
 /* Compute required size of a file system with the given block count. */
 fs_errno_t oefs_size(size_t nblks, size_t* size);

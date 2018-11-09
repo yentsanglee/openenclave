@@ -8,6 +8,11 @@
 
 FS_EXTERN_C_BEGIN
 
+#define FS_MOUNT_FLAG_NONE 0
+#define FS_MOUNT_FLAG_MKFS 1
+#define FS_MOUNT_FLAG_CRYPTO 2
+#define FS_MOUNT_KEY_SIZE 32
+
 typedef int (*fs_mount_callback_t)(
     const char* type,
     const char* source,

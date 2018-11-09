@@ -22,8 +22,6 @@
 #include "../../../fs/fs.h"
 #include "../../../fs/mount.h"
 #include "../../../fs/blkdev.h"
-#include "../../../fs/oefs.h"
-#include "../../../fs/hostfs.h"
 #include "oefs_t.h"
 
 #define INIT
@@ -1102,7 +1100,7 @@ static void _test_hostfs()
     struct stat buf;
 
     /* Mount the file system. */
-    OE_TEST(fs_mount_hostfs(NULL, "/mnt/hostfs") == 0);
+    OE_TEST(fs_mount("hostfs", NULL, "/mnt/hostfs") == 0);
 
     /* Remove the file if it exists. */
     unlink("/mnt/hostfs/tmp/myfile");
@@ -1267,18 +1265,18 @@ int test_oefs(const char* src_dir, const char* bin_dir)
         strlcpy(path, bin_dir, sizeof(path));
         strlcat(path, "/tests/oefs/tests.oefs", sizeof(path));
 
-        rc = fs_mount_oefs(path, target1, flags, num_blocks, key);
+        rc = fs_mount("oefs", path, target1, flags, num_blocks, key);
         OE_TEST(rc == 0);
     }
 
     /* Mount enclave memory. */
-    rc = fs_mount_oefs(NULL, target2, flags, num_blocks, NULL);
+    rc = fs_mount("oefs", NULL, target2, flags, num_blocks, NULL);
     OE_TEST(rc == 0);
 
     run_tests(target1);
     run_tests(target2);
 
-    OE_TEST(fs_mount_hostfs(NULL, "/mnt/hostfs") == 0);
+    OE_TEST(fs_mount("hostfs", NULL, "/mnt/hostfs") == 0);
 
     _test_cpio_host_to_host(src_dir, bin_dir);
     _test_cpio_host_to_enclave(src_dir, bin_dir);
