@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <assert.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
 #include "blkdev.h"
 #include "sha.h"
@@ -70,8 +70,8 @@ FS_INLINE int _hash(fs_sha256_t* hash, const void* data, size_t size)
 }
 
 static int _hash2(
-    fs_sha256_t* hash, 
-    const fs_sha256_t* left, 
+    fs_sha256_t* hash,
+    const fs_sha256_t* left,
     const fs_sha256_t* right)
 {
     int ret = -1;
@@ -79,8 +79,7 @@ static int _hash2(
     {
         fs_sha256_t left;
         fs_sha256_t right;
-    }
-    data_t;
+    } data_t;
     data_t data;
 
     memset(hash, 0, sizeof(fs_sha256_t));
@@ -170,9 +169,10 @@ static int _check_hash_tree(blkdev_t* dev)
     {
         fs_sha256_t hash;
 
-        if (_hash2(&hash,
-            &dev->hashes[_left_child_index(i)],
-            &dev->hashes[_right_child_index(i)]) != 0)
+        if (_hash2(
+                &hash,
+                &dev->hashes[_left_child_index(i)],
+                &dev->hashes[_right_child_index(i)]) != 0)
         {
             goto done;
         }
@@ -205,8 +205,8 @@ done:
 }
 
 static int _update_hash_tree(
-    blkdev_t* dev, 
-    uint32_t blkno, 
+    blkdev_t* dev,
+    uint32_t blkno,
     const fs_sha256_t* hash)
 {
     int ret = -1;
@@ -228,9 +228,9 @@ static int _update_hash_tree(
         fs_sha256_t tmp_hash;
 
         if (_hash2(
-            &tmp_hash,
-            &dev->hashes[_left_child_index(parent)],
-            &dev->hashes[_right_child_index(parent)]) != 0)
+                &tmp_hash,
+                &dev->hashes[_left_child_index(parent)],
+                &dev->hashes[_right_child_index(parent)]) != 0)
         {
             goto done;
         }
@@ -370,7 +370,6 @@ done:
     return ret;
 }
 
-
 static int _blkdev_add_ref(fs_blkdev_t* blkdev)
 {
     int ret = -1;
@@ -390,7 +389,7 @@ done:
 }
 
 int fs_open_merkle_blkdev(
-    fs_blkdev_t** blkdev, 
+    fs_blkdev_t** blkdev,
     size_t nblks,
     bool initialize,
     fs_blkdev_t* next)
@@ -483,9 +482,9 @@ int fs_open_merkle_blkdev(
                 fs_sha256_t tmp_hash;
 
                 if (_hash2(
-                    &tmp_hash,
-                    &dev->hashes[_left_child_index(rindex)],
-                    &dev->hashes[_right_child_index(rindex)]) != 0)
+                        &tmp_hash,
+                        &dev->hashes[_left_child_index(rindex)],
+                        &dev->hashes[_right_child_index(rindex)]) != 0)
                 {
                     goto done;
                 }

@@ -1,6 +1,6 @@
+#include "sha.h"
 #include <mbedtls/sha256.h>
 #include <stdio.h>
-#include "sha.h"
 
 int fs_sha256(fs_sha256_t* hash, const void* data, size_t size)
 {

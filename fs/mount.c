@@ -25,28 +25,38 @@ static int _mount_oefs_callback(
 }
 
 static int _mount_hostfs_callback(
-    const char* type, 
-    const char* source, 
-    const char* target, 
+    const char* type,
+    const char* source,
+    const char* target,
     va_list ap)
 {
     return fs_mount_hostfs(source, target);
+}
+
+static int _mount_ramfs_callback(
+    const char* type,
+    const char* source,
+    const char* target,
+    va_list ap)
+{
+    uint32_t flags = va_arg(ap, uint32_t);
+    size_t nblks = va_arg(ap, size_t);
+    return fs_mount_oefs(NULL, target, flags, nblks, NULL);
 }
 
 typedef struct _callback
 {
     const char* type;
     fs_mount_callback_t callback;
-}
-callback_t;
+} callback_t;
 
-static callback_t _callbacks[MAX_CALLBACKS] =
-{
-    { "hostfs", _mount_hostfs_callback},
-    { "oefs", _mount_oefs_callback },
+static callback_t _callbacks[MAX_CALLBACKS] = {
+    {"hostfs", _mount_hostfs_callback},
+    {"oefs", _mount_oefs_callback},
+    {"ramfs", _mount_ramfs_callback},
 };
 
-static size_t _ncallbacks = 2;
+static size_t _ncallbacks = 3;
 
 int fs_register(const char* type, fs_mount_callback_t callback)
 {
@@ -85,7 +95,7 @@ int fs_mount(const char* type, const char* source, const char* target, ...)
         }
     }
 
-    /* Not found. */
+/* Not found. */
 
 done:
     return ret;

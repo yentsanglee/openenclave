@@ -20,7 +20,7 @@ typedef int (*fs_mount_callback_t)(
     va_list ap);
 
 int fs_register(const char* type, fs_mount_callback_t callback);
-    
+
 int fs_mount(const char* type, const char* source, const char* target, ...);
 
 int fs_unmount(const char* target);

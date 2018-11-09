@@ -6,15 +6,15 @@
 #endif
 
 #include "cpio.h"
+#include <dirent.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <dirent.h>
 #include <unistd.h>
-#include "strings.h"
-#include "strarr.h"
 #include "fs.h"
+#include "strarr.h"
+#include "strings.h"
 
 #define CPIO_BLOCK_SIZE 512
 
@@ -51,11 +51,9 @@ typedef struct _entry
     cpio_header_t header;
     char name[FS_PATH_MAX];
     size_t size;
-}
-entry_t;
+} entry_t;
 
-entry_t _dot =
-{
+entry_t _dot = {
     .header.magic = "070701",
     .header.ino = "00B66448",
     .header.mode = "000041ED",
@@ -74,25 +72,22 @@ entry_t _dot =
     .size = sizeof(cpio_header_t) + 2,
 };
 
-entry_t _trailer =
-{
-    .header.magic = "070701",
-    .header.ino = "00000000",
-    .header.mode = "00000000",
-    .header.uid = "00000000",
-    .header.gid = "00000000",
-    .header.nlink = "00000002",
-    .header.mtime = "00000000",
-    .header.filesize = "00000000",
-    .header.devmajor = "00000000",
-    .header.devminor = "00000000",
-    .header.rdevmajor = "00000000",
-    .header.rdevminor = "00000000",
-    .header.namesize = "0000000B",
-    .header.check = "00000000",
-    .name = "TRAILER!!!",
-    .size = sizeof(cpio_header_t) + 11
-};
+entry_t _trailer = {.header.magic = "070701",
+                    .header.ino = "00000000",
+                    .header.mode = "00000000",
+                    .header.uid = "00000000",
+                    .header.gid = "00000000",
+                    .header.nlink = "00000002",
+                    .header.mtime = "00000000",
+                    .header.filesize = "00000000",
+                    .header.devmajor = "00000000",
+                    .header.devminor = "00000000",
+                    .header.rdevmajor = "00000000",
+                    .header.rdevminor = "00000000",
+                    .header.namesize = "0000000B",
+                    .header.check = "00000000",
+                    .name = "TRAILER!!!",
+                    .size = sizeof(cpio_header_t) + 11};
 
 #if 0
 static void _dump(const uint8_t* data, size_t size)
@@ -145,27 +140,42 @@ static ssize_t _hex_to_ssize(const char* str, size_t len)
     return x;
 }
 
-static char _hex_digit(
-    unsigned int x)
+static char _hex_digit(unsigned int x)
 {
     switch (x)
     {
-        case 0x0: return '0';
-        case 0x1: return '1';
-        case 0x2: return '2';
-        case 0x3: return '3';
-        case 0x4: return '4';
-        case 0x5: return '5';
-        case 0x6: return '6';
-        case 0x7: return '7';
-        case 0x8: return '8';
-        case 0x9: return '9';
-        case 0xA: return 'A';
-        case 0xB: return 'B';
-        case 0xC: return 'C';
-        case 0xD: return 'D';
-        case 0xE: return 'E';
-        case 0xF: return 'F';
+        case 0x0:
+            return '0';
+        case 0x1:
+            return '1';
+        case 0x2:
+            return '2';
+        case 0x3:
+            return '3';
+        case 0x4:
+            return '4';
+        case 0x5:
+            return '5';
+        case 0x6:
+            return '6';
+        case 0x7:
+            return '7';
+        case 0x8:
+            return '8';
+        case 0x9:
+            return '9';
+        case 0xA:
+            return 'A';
+        case 0xB:
+            return 'B';
+        case 0xC:
+            return 'C';
+        case 0xD:
+            return 'D';
+        case 0xE:
+            return 'E';
+        case 0xF:
+            return 'F';
     }
 
     return '\0';
@@ -456,7 +466,7 @@ int fs_cpio_write_entry(fs_cpio_t* cpio, const fs_cpio_entry_t* entry)
         goto done;
 
     /* Check file type. */
-    if (!(entry->mode & FS_CPIO_MODE_IFREG) && 
+    if (!(entry->mode & FS_CPIO_MODE_IFREG) &&
         !(entry->mode & FS_CPIO_MODE_IFDIR))
     {
         goto done;
@@ -665,7 +675,6 @@ static int _pack(fs_cpio_t* cpio, const char* root)
     char path[FS_PATH_MAX];
     fs_strarr_t dirs = FS_STRARR_INITIALIZER;
 
-
     if (!(dir = opendir(root)))
         goto done;
 
@@ -704,7 +713,6 @@ static int _pack(fs_cpio_t* cpio, const char* root)
             if (_append_file(cpio, path) != 0)
                 goto done;
         }
-
     }
 
     /* Recurse into child directories */

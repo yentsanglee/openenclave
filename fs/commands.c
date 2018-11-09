@@ -2,9 +2,9 @@
 // Licensed under the MIT License.
 
 #define _GNU_SOURCE
+#include "commands.h"
 #include <dirent.h>
 #include <sys/stat.h>
-#include "commands.h"
 #include "common.h"
 #include "fs.h"
 #include "strarr.h"

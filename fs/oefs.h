@@ -4,8 +4,8 @@
 #ifndef _FS_FSFS_H
 #define _FS_FSFS_H
 
-#include "common.h"
 #include "blkdev.h"
+#include "common.h"
 #include "fs.h"
 #include "mount.h"
 

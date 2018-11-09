@@ -16,12 +16,12 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "../../../fs/blkdev.h"
 #include "../../../fs/buf.h"
 #include "../../../fs/commands.h"
 #include "../../../fs/cpio.h"
 #include "../../../fs/fs.h"
 #include "../../../fs/mount.h"
-#include "../../../fs/blkdev.h"
 #include "oefs_t.h"
 
 #define INIT
@@ -199,7 +199,7 @@ static void _create_dirs(fs_t* fs)
         OE_TEST(stat.st_rdev == 0);
         OE_TEST(stat.st_size == sizeof(fs_dirent_t) * 2);
         OE_TEST(stat.st_blksize == FS_BLOCK_SIZE);
-        //OE_TEST(stat.st_blocks == 1);
+        // OE_TEST(stat.st_blocks == 1);
         OE_TEST(stat.__st_padding1 == 0);
         OE_TEST(stat.st_atim.tv_sec == 0);
         OE_TEST(stat.st_mtim.tv_sec == 0);
@@ -917,7 +917,7 @@ void run_tests(const char* target)
     /* Create some directories. */
     _create_dirs(fs);
 
-    /* Dump some directories. */
+/* Dump some directories. */
 #if defined(DUMP)
     _dump_dir(fs, "/");
     _dump_dir(fs, "/dir-0001");
@@ -938,7 +938,7 @@ void run_tests(const char* target)
 #endif
     }
 
-    /* Create "/aaa/bbb/ccc/myfile" */
+/* Create "/aaa/bbb/ccc/myfile" */
 #if defined(DUMP)
     _dump_dir(fs, "/aaa/bbb/ccc");
 #endif
@@ -981,7 +981,7 @@ void run_tests(const char* target)
 
     _remove_file(fs, "/aaa/bbb/ccc/myfile");
 
-    /* Remove some directories. */
+/* Remove some directories. */
 #if defined(DUMP)
     _dump_dir(fs, "/aaa/bbb");
 #endif
@@ -990,7 +990,7 @@ void run_tests(const char* target)
     _dump_dir(fs, "/aaa/bbb");
 #endif
 
-    /* Remove some directories. */
+/* Remove some directories. */
 #if defined(DUMP)
     _dump_dir(fs, "/aaa");
 #endif
@@ -999,7 +999,7 @@ void run_tests(const char* target)
     _dump_dir(fs, "/aaa");
 #endif
 
-    /* Remove some directories. */
+/* Remove some directories. */
 #if defined(DUMP)
     _dump_dir(fs, "/");
 #endif
@@ -1043,9 +1043,7 @@ void run_tests(const char* target)
     _test_fcntl(target);
 }
 
-static void _test_cpio_host_to_host(
-    const char* src_dir, 
-    const char* bin_dir)
+static void _test_cpio_host_to_host(const char* src_dir, const char* bin_dir)
 {
     char source[PATH_MAX];
     char target[PATH_MAX];
@@ -1071,9 +1069,7 @@ static void _test_cpio_host_to_host(
     OE_TEST(fs_cmp(source, target2) == 0);
 }
 
-static void _test_cpio_host_to_enclave(
-    const char* src_dir, 
-    const char* bin_dir)
+static void _test_cpio_host_to_enclave(const char* src_dir, const char* bin_dir)
 {
     char source[PATH_MAX];
     char target[PATH_MAX];
@@ -1270,7 +1266,7 @@ int test_oefs(const char* src_dir, const char* bin_dir)
     }
 
     /* Mount enclave memory. */
-    rc = fs_mount("oefs", NULL, target2, flags, num_blocks, NULL);
+    rc = fs_mount("ramfs", NULL, target2, flags, num_blocks);
     OE_TEST(rc == 0);
 
     run_tests(target1);

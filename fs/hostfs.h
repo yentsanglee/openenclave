@@ -4,10 +4,10 @@
 #ifndef _FS_HOSTFS_H
 #define _FS_HOSTFS_H
 
+#include <stdarg.h>
 #include "args.h"
 #include "fs.h"
 #include "guid.h"
-#include <stdarg.h>
 
 /* 20efd84e-af47-43e4-b7eb-f1cf0d057009 */
 #define FS_HOSTFS_GUID                                     \

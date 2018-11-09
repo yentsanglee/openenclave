@@ -123,7 +123,7 @@ typedef struct _oefs_inode
     uint32_t i_reserved[6];
 
     /* (64) Blocks comprising this file. */
-    uint32_t i_blocks[(FS_BLOCK_SIZE/4) - 16];
+    uint32_t i_blocks[(FS_BLOCK_SIZE / 4) - 16];
 
 } oefs_inode_t;
 
@@ -135,7 +135,7 @@ typedef struct _oefs_bnode
     uint32_t b_next;
 
     /* Blocks comprising this file. */
-    uint32_t b_blocks[(FS_BLOCK_SIZE/4)-1];
+    uint32_t b_blocks[(FS_BLOCK_SIZE / 4) - 1];
 
 } oefs_bnode_t;
 
@@ -2421,8 +2421,7 @@ fs_errno_t oefs_size(size_t nblks, size_t* size)
     total_blocks++;
 
     /* Count the bitmap blocks. */
-    total_blocks += 
-        _round_to_multiple(nblks, BITS_PER_BLOCK) / BITS_PER_BLOCK;
+    total_blocks += _round_to_multiple(nblks, BITS_PER_BLOCK) / BITS_PER_BLOCK;
 
     /* Count the data blocks. */
     total_blocks += nblks;
@@ -2625,7 +2624,7 @@ int fs_mount_oefs(
                 bool initialize = (flags & FS_MOUNT_FLAG_MKFS);
 
                 if (fs_open_merkle_blkdev(
-                    &merkle_dev, nblks, initialize, next) != 0)
+                        &merkle_dev, nblks, initialize, next) != 0)
                 {
                     goto done;
                 }

@@ -1,14 +1,14 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <limits.h>
 #include <openenclave/host.h>
 #include <openenclave/internal/tests.h>
 #include <stdio.h>
 #include <string.h>
-#include <limits.h>
-#include "oefs_u.h"
 #include "../../../fs/cpio.h"
 #include "../../../fs/strings.h"
+#include "oefs_u.h"
 
 static void _create_cpio_archive(const char* src_dir, const char* bin_dir)
 {

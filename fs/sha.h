@@ -9,8 +9,7 @@
 typedef struct _fs_sha256
 {
     uint8_t data[32];
-}
-fs_sha256_t;
+} fs_sha256_t;
 
 int fs_sha256(fs_sha256_t* hash, const void* data, size_t size);
 
