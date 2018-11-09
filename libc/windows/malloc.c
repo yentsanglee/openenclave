@@ -21,8 +21,8 @@ void* calloc(size_t nmemb, size_t size)
 {
     void* ptr = malloc(nmemb * size);
 
-    if (!ptr)
-        return NULL;
+    if (ptr)
+        memset(ptr, 0, nmemb * size);
 
-    return memset(ptr, 0, nmemb * size);
+    return ptr;
 }
