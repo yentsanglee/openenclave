@@ -106,7 +106,6 @@ static int _write_hash_tree(blkdev_t* dev)
         nblks = _round_to_multiple(nbytes, FS_BLOCK_SIZE) / FS_BLOCK_SIZE;
     }
 
-    /* TODO: this is a hot spot: optimize */
     for (size_t i = 0, j = 0; i < nblks && j < dev->nhashes; i++)
     {
         size_t hashes_per_block;
