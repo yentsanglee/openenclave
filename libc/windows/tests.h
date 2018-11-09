@@ -17,4 +17,6 @@ void test_string(void);
 
 void test_stdarg(void);
 
+void test_pow(void);
+
 #endif /* _OELIBC_TESTS_H */

@@ -6,6 +6,7 @@ void oemain(void)
 {
     test_string();
     test_stdarg();
+    test_pow();
 
     print("==== passed all tests\n");
 }

@@ -21,12 +21,16 @@ CLFLAGS=$(CLFLAGS) /Wall
 CLFLAGS=$(CLFLAGS) /O1
 CLFLAGS=$(CLFLAGS) /GS-
 CLFLAGS=$(CLFLAGS) /Oi-
+CLFLAGS=$(CLFLAGS) /Od
+CLFLAGS=$(CLFLAGS) /Zi
+CLFLAGS=$(CLFLAGS) /DEBUG:FULL
 
 LINKFLAGS=
 LINKFLAGS=$(LINKFLAGS) /nologo 
 LINKFLAGS=$(LINKFLAGS) /nodefaultlib 
 LINKFLAGS=$(LINKFLAGS) /entry:oemain 
 LINKFLAGS=$(LINKFLAGS) /subsystem:console
+LINKFLAGS=$(LINKFLAGS) /DEBUG:FULL
 
 SOURCES=
 SOURCES=$(SOURCES) main.c
@@ -38,6 +42,7 @@ SOURCES=$(SOURCES) test_string.c
 SOURCES=$(SOURCES) __test_failed.c
 SOURCES=$(SOURCES) exit.c
 SOURCES=$(SOURCES) test_stdarg.c
+<<<<<<< HEAD
 SOURCES=$(SOURCES) malloc.c
 
 # libc
@@ -48,6 +53,7 @@ SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\ctype\tolower.c
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\ctype\toupper.c
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\ctype\iswalpha.c
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\ctype\towctrans.c
+SOURCES=$(SOURCES) test_pow.c
 
 # string:
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\bcmp.c
@@ -124,8 +130,14 @@ SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\wmemmove.c
 SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\string\wmemset.c
 
 
+# stdlib:
+#SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\stdlib\strtod.c
+
 # math:
-#SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\math\pow.c
+SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\math\fabs.c
+SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\math\scalbn.c
+SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\math\pow.c
+SOURCES=$(SOURCES) ..\..\3rdparty\musl\musl\src\math\sqrt.c
 
 OBJECTS=$(SOURCES:.c=.obj)
 
