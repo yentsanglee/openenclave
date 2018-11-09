@@ -22,6 +22,8 @@
 #include "../../../fs/fs.h"
 #include "../../../fs/mount.h"
 #include "../../../fs/blkdev.h"
+#include "../../../fs/oefs.h"
+#include "../../../fs/hostfs.h"
 #include "oefs_t.h"
 
 #define INIT
@@ -1100,7 +1102,7 @@ static void _test_hostfs()
     struct stat buf;
 
     /* Mount the file system. */
-    OE_TEST(fs_mount_hostfs("/mnt/hostfs") == 0);
+    OE_TEST(fs_mount_hostfs(NULL, "/mnt/hostfs") == 0);
 
     /* Remove the file if it exists. */
     unlink("/mnt/hostfs/tmp/myfile");
@@ -1276,7 +1278,7 @@ int test_oefs(const char* src_dir, const char* bin_dir)
     run_tests(target1);
     run_tests(target2);
 
-    OE_TEST(fs_mount_hostfs("/mnt/hostfs") == 0);
+    OE_TEST(fs_mount_hostfs(NULL, "/mnt/hostfs") == 0);
 
     _test_cpio_host_to_host(src_dir, bin_dir);
     _test_cpio_host_to_enclave(src_dir, bin_dir);

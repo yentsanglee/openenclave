@@ -13,160 +13,85 @@
 #define USE_MERKLE_BLKDEV
 #define USE_CRYPTO_BLKDEV
 
-FS_INLINE bool _is_power_of_two(size_t n)
-{
-    return (n & (n - 1)) == 0;
-}
+#define MAX_CALLBACKS 16
 
-int fs_mount_oefs(
+static int _mount_oefs_callback(
+    const char* type,
     const char* source,
     const char* target,
-    uint32_t flags,
-    size_t nblks,
-    const uint8_t key[FS_MOUNT_KEY_SIZE])
+    va_list ap)
+{
+    uint32_t flags = va_arg(ap, uint32_t);
+    size_t nblks = va_arg(ap, size_t);
+    const uint8_t* key = va_arg(ap, const uint8_t*);
+
+    return fs_mount_oefs(source, target, flags, nblks, key);
+}
+
+static int _mount_hostfs_callback(
+    const char* type, 
+    const char* source, 
+    const char* target, 
+    va_list ap)
+{
+    return fs_mount_hostfs(source, target);
+}
+
+typedef struct _callback
+{
+    const char* type;
+    fs_mount_callback_t callback;
+}
+callback_t;
+
+static callback_t _callbacks[MAX_CALLBACKS] =
+{
+    { "hostfs", _mount_hostfs_callback},
+    { "oefs", _mount_oefs_callback },
+};
+
+static size_t _ncallbacks = 2;
+
+int fs_register(const char* type, fs_mount_callback_t callback)
 {
     int ret = -1;
-    fs_blkdev_t* host_dev = NULL;
-    fs_blkdev_t* crypto_dev = NULL;
-    fs_blkdev_t* cache_dev = NULL;
-    fs_blkdev_t* ram_dev = NULL;
-    fs_blkdev_t* merkle_dev = NULL;
-    fs_blkdev_t* dev = NULL;
-    fs_blkdev_t* next = NULL;
-    fs_t* fs = NULL;
 
-    if (!target)
+    if (!callback)
         goto done;
 
-    if (nblks < 2 || !_is_power_of_two(nblks))
+    if (_ncallbacks == MAX_CALLBACKS)
         goto done;
 
-    if (source)
-    {
-        /* Open a host device. */
-        if (fs_open_host_blkdev(&host_dev, source) != 0)
-            goto done;
-
-        next = host_dev;
-
-        /* If a key was provided, then open a crypto device. */
-        if (key)
-        {
-#if defined(USE_CRYPTO_BLKDEV)
-            {
-                if (fs_open_crypto_blkdev(&crypto_dev, key, next) != 0)
-                    goto done;
-
-                next = crypto_dev;
-            }
-#endif
-
-#if defined(USE_MERKLE_BLKDEV)
-            {
-                bool initialize = (flags & FS_MOUNT_FLAG_MKFS);
-
-                if (fs_open_merkle_blkdev(
-                    &merkle_dev, nblks, initialize, next) != 0)
-                {
-                    goto done;
-                }
-
-                next = merkle_dev;
-            }
-#endif
-
-#if defined(USE_CACHE_BLKDEV)
-            /* cache_dev */
-            {
-                if (fs_open_cache_blkdev(&cache_dev, next) != 0)
-                    goto done;
-
-                next = cache_dev;
-            }
-#endif
-        }
-
-        dev = next;
-    }
-    else
-    {
-        size_t size;
-
-        /* Open a ram device within enclave memory. */
-
-        if (flags & FS_MOUNT_FLAG_CRYPTO)
-            goto done;
-
-        if (oefs_size(nblks, &size) != 0)
-            goto done;
-
-        if (fs_open_ram_blkdev(&ram_dev, size) != 0)
-            goto done;
-
-        dev = ram_dev;
-    }
-
-    if (flags & FS_MOUNT_FLAG_MKFS)
-    {
-        if (oefs_mkfs(dev, nblks) != 0)
-            goto done;
-    }
-
-    if (oefs_initialize(&fs, dev) != 0)
-        goto done;
-
-    if (fs_bind(fs, target) != 0)
-        goto done;
-
-    fs = NULL;
-    ret = 0;
+    _callbacks[_ncallbacks].type = type;
+    _callbacks[_ncallbacks].callback = callback;
+    _ncallbacks++;
 
 done:
-
-    if (host_dev)
-        host_dev->release(host_dev);
-
-    if (crypto_dev)
-        crypto_dev->release(crypto_dev);
-
-    if (cache_dev)
-        cache_dev->release(cache_dev);
-
-    if (ram_dev)
-        ram_dev->release(ram_dev);
-
-    if (merkle_dev)
-        merkle_dev->release(merkle_dev);
-
-    if (fs)
-        fs->fs_release(fs);
-
     return ret;
 }
 
-int fs_mount_hostfs(const char* target)
+int fs_mount(const char* type, const char* source, const char* target, ...)
 {
     int ret = -1;
-    fs_t* fs = NULL;
 
-    if (!target)
+    if (!type)
         goto done;
 
-    if (hostfs_initialize(&fs) != 0)
-        goto done;
+    for (size_t i = 0; i < _ncallbacks; i++)
+    {
+        if (strcmp(_callbacks[i].type, type) == 0)
+        {
+            va_list ap;
+            va_start(ap, target);
+            ret = (*_callbacks[i].callback)(type, source, target, ap);
+            va_end(ap);
+            goto done;
+        }
+    }
 
-    if (fs_bind(fs, target) != 0)
-        goto done;
-
-    fs = NULL;
-
-    ret = 0;
+    /* Not found. */
 
 done:
-
-    if (fs)
-        fs->fs_release(fs);
-
     return ret;
 }
 

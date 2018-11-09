@@ -918,3 +918,31 @@ int fs_hostfs_ocall(fs_hostfs_ocall_args_t* args)
 
     return 0;
 }
+
+int fs_mount_hostfs(const char* source, const char* target)
+{
+    int ret = -1;
+    fs_t* fs = NULL;
+
+    /* TODO: handle source here. */
+
+    if (!target)
+        goto done;
+
+    if (hostfs_initialize(&fs) != 0)
+        goto done;
+
+    if (fs_bind(fs, target) != 0)
+        goto done;
+
+    fs = NULL;
+
+    ret = 0;
+
+done:
+
+    if (fs)
+        fs->fs_release(fs);
+
+    return ret;
+}
