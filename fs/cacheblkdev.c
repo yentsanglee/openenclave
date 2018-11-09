@@ -11,6 +11,7 @@
 #include "blkdev.h"
 #include "common.h"
 #include "list.h"
+#include "atomic.h"
 
 #define TABLE_SIZE 1093
 #define MAX_ENTRIES 64
@@ -42,8 +43,7 @@ struct _entry
 typedef struct _blkdev
 {
     fs_blkdev_t base;
-    size_t ref_count;
-    pthread_spinlock_t lock;
+    volatile uint64_t ref_count;
     fs_blkdev_t* next;
 
     entry_t* table[TABLE_SIZE];
@@ -192,16 +192,11 @@ static int _blkdev_release(fs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
-    size_t new_ref_count;
 
     if (!dev)
         goto done;
 
-    pthread_spin_lock(&dev->lock);
-    new_ref_count = --dev->ref_count;
-    pthread_spin_unlock(&dev->lock);
-
-    if (new_ref_count == 0)
+    if (fs_atomic_decrement(&dev->ref_count) == 0)
     {
         dev->next->release(dev->next);
         _release_entries(dev);
@@ -349,9 +344,7 @@ static int _blkdev_add_ref(fs_blkdev_t* d)
     if (!dev)
         goto done;
 
-    pthread_spin_lock(&dev->lock);
-    dev->ref_count++;
-    pthread_spin_unlock(&dev->lock);
+    fs_atomic_increment(&dev->ref_count);
 
     ret = 0;
 

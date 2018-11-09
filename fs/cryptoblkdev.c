@@ -9,6 +9,7 @@
 #include <string.h>
 #include "blkdev.h"
 #include "sha.h"
+#include "atomic.h"
 
 #define SHA256_SIZE 32
 
@@ -17,8 +18,7 @@
 typedef struct _blkdev
 {
     fs_blkdev_t base;
-    size_t ref_count;
-    pthread_spinlock_t lock;
+    volatile uint64_t ref_count;
     uint8_t key[FS_KEY_SIZE];
     mbedtls_aes_context enc_aes;
     mbedtls_aes_context dec_aes;
@@ -121,16 +121,11 @@ static int _blkdev_release(fs_blkdev_t* dev)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
-    size_t new_ref_count;
 
     if (!device)
         goto done;
 
-    pthread_spin_lock(&device->lock);
-    new_ref_count = --device->ref_count;
-    pthread_spin_unlock(&device->lock);
-
-    if (new_ref_count == 0)
+    if (fs_atomic_decrement(&device->ref_count) == 0)
     {
         mbedtls_aes_free(&device->enc_aes);
         mbedtls_aes_free(&device->dec_aes);
@@ -252,9 +247,7 @@ static int _blkdev_add_ref(fs_blkdev_t* dev)
     if (!device)
         goto done;
 
-    pthread_spin_lock(&device->lock);
-    device->ref_count++;
-    pthread_spin_unlock(&device->lock);
+    fs_atomic_increment(&device->ref_count);
 
     ret = 0;
 

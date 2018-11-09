@@ -8,14 +8,14 @@
 #include <string.h>
 #include "blkdev.h"
 #include "sha.h"
+#include "atomic.h"
 
 #define HASHES_PER_BLOCK (FS_BLOCK_SIZE / sizeof(fs_sha256_t))
 
 typedef struct _blkdev
 {
     fs_blkdev_t base;
-    size_t ref_count;
-    pthread_spinlock_t lock;
+    volatile uint64_t ref_count;
     fs_blkdev_t* next;
     size_t nblks;
     const fs_sha256_t* hashes;
@@ -249,16 +249,11 @@ static int _blkdev_release(fs_blkdev_t* blkdev)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
-    size_t new_ref_count;
 
     if (!dev)
         goto done;
 
-    pthread_spin_lock(&dev->lock);
-    new_ref_count = --dev->ref_count;
-    pthread_spin_unlock(&dev->lock);
-
-    if (new_ref_count == 0)
+    if (fs_atomic_decrement(&dev->ref_count) == 0)
     {
         dev->next->release(dev->next);
         free((fs_sha256_t*)dev->hashes);
@@ -378,9 +373,7 @@ static int _blkdev_add_ref(fs_blkdev_t* blkdev)
     if (!dev)
         goto done;
 
-    pthread_spin_lock(&dev->lock);
-    dev->ref_count++;
-    pthread_spin_unlock(&dev->lock);
+    fs_atomic_increment(&dev->ref_count);
 
     ret = 0;
 

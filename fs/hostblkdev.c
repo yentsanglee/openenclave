@@ -10,6 +10,7 @@
 #include "hostbatch.h"
 #include "hostcalls.h"
 #include "list.h"
+#include "atomic.h"
 
 #define MAX_NODES 16
 
@@ -18,8 +19,7 @@ static const fs_guid_t _GUID = FS_HOSTBLKDEV_GUID;
 typedef struct _blkdev
 {
     fs_blkdev_t base;
-    size_t ref_count;
-    pthread_spinlock_t lock;
+    volatile uint64_t ref_count;
     fs_host_batch_t* batch;
     void* handle;
 } blkdev_t;
@@ -120,9 +120,7 @@ static int _blkdev_add_ref(fs_blkdev_t* d)
     if (!dev)
         goto done;
 
-    pthread_spin_lock(&dev->lock);
-    dev->ref_count++;
-    pthread_spin_unlock(&dev->lock);
+    fs_atomic_increment(&dev->ref_count);
 
     ret = 0;
 
@@ -140,7 +138,7 @@ static int _blkdev_release(fs_blkdev_t* d)
     if (!dev)
         goto done;
 
-    if (--dev->ref_count == 0)
+    if (fs_atomic_decrement(&dev->ref_count) == 0)
     {
         if (!(args = fs_host_batch_calloc(dev->batch, sizeof(args_t))))
             goto done;
