@@ -5,11 +5,11 @@ Overview
 --------
 
 **FS** is a library for managing enclave file systems. It provides reference
-implementations for two file systems.
+implementations for three file systems.
 
 - **hostfs** - a file system for manipulating unencrypted host files.
 - **oefs** - an experimental full-disk-encryption (FDE) file system.
-- **ramdisk** - a file system that resides within the enclave.
+- **ramfs** - a ramdisk file system that resides within the enclave.
 
 Additionally **FS** provides a framework for registering other file systems.
 
@@ -61,7 +61,7 @@ Supported libc functions
 | fgetln()    |
 | ferror()    |
 | rewind()    |
-| ----------- |
+|:-----------:|
 | vfprintf()  |
 | fprintf()   |
 | fscanf()    |
