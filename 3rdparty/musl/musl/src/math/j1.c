@@ -153,13 +153,14 @@ double y1(double x)
 {
 	double z,u,v;
 	uint32_t ix,lx;
+    static const double Zero = 0.0;
 
 	EXTRACT_WORDS(ix, lx, x);
 	/* y1(nan)=nan, y1(<0)=nan, y1(0)=-inf, y1(inf)=0 */
 	if ((ix<<1 | lx) == 0)
-		return -1/0.0;
+		return -1/Zero;
 	if (ix>>31)
-		return 0/0.0;
+		return 0/Zero;
 	if (ix >= 0x7ff00000)
 		return 1/x;
 

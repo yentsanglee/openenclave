@@ -181,6 +181,11 @@ static const long double R[] = {
 #define Ha Wb
 #define Hb Wb
 
+#if 1
+#undef LDBL_MAX
+#define LDBL_MAX DBL_MAX  // Parser wont parse constants bigger than dbl_max
+#endif
+
 static const long double MAXLOGL = 1.1356523406294143949492E4L;
 static const long double MINLOGL = -1.13994985314888605586758E4L;
 static const long double LOGE2L = 6.9314718055994530941723E-1L;
@@ -198,6 +203,7 @@ long double powl(long double x, long double y)
 	long e;
 	volatile long double z=0;
 	long double w=0, W=0, Wa=0, Wb=0, ya=0, yb=0, u=0;
+    static const double Zero = 0.0;
 
 	/* make sure no invalid exception is raised by nan comparision */
 	if (isnan(x)) {
@@ -271,9 +277,9 @@ long double powl(long double x, long double y)
 			if (y < 0.0) {
 				if (signbit(x) && yoddint)
 					/* (-0.0)**(-odd int) = -inf, divbyzero */
-					return -1.0/0.0;
+					return -1.0/Zero;
 				/* (+-0.0)**(negative) = inf, divbyzero */
-				return 1.0/0.0;
+				return 1.0/Zero;
 			}
 			if (signbit(x) && yoddint)
 				return -0.0;

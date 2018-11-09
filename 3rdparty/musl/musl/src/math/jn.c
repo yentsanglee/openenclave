@@ -217,6 +217,7 @@ double yn(int n, double x)
 	uint32_t ix, lx, ib;
 	int nm1, sign, i;
 	double a, b, temp;
+    static const double Zero = 0.0;
 
 	EXTRACT_WORDS(ix, lx, x);
 	sign = ix>>31;
@@ -225,7 +226,7 @@ double yn(int n, double x)
 	if ((ix | (lx|-lx)>>31) > 0x7ff00000) /* nan */
 		return x;
 	if (sign && (ix|lx)!=0) /* x < 0 */
-		return 0/0.0;
+		return 0/Zero;
 	if (ix == 0x7ff00000)
 		return 0.0;
 

@@ -105,12 +105,13 @@ float y0f(float x)
 {
 	float z,u,v;
 	uint32_t ix;
+    static const float Zero = 0.0f;
 
 	GET_FLOAT_WORD(ix, x);
 	if ((ix & 0x7fffffff) == 0)
-		return -1/0.0f;
+		return -1/Zero;
 	if (ix>>31)
-		return 0/0.0f;
+		return 0/Zero;
 	if (ix >= 0x7f800000)
 		return 1/x;
 	if (ix >= 0x40000000) {  /* |x| >= 2.0 */

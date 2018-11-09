@@ -21,6 +21,7 @@ float jnf(int n, float x)
 	uint32_t ix;
 	int nm1, sign, i;
 	float a, b, temp;
+    static const float Zero = 0.0f;
 
 	GET_FLOAT_WORD(ix, x);
 	sign = ix>>31;
@@ -164,6 +165,7 @@ float ynf(int n, float x)
 	uint32_t ix, ib;
 	int nm1, sign, i;
 	float a, b, temp;
+    static const float Zero = 0.0f;
 
 	GET_FLOAT_WORD(ix, x);
 	sign = ix>>31;
@@ -171,7 +173,7 @@ float ynf(int n, float x)
 	if (ix > 0x7f800000) /* nan */
 		return x;
 	if (sign && ix != 0) /* x < 0 */
-		return 0/0.0f;
+		return 0/Zero;
 	if (ix == 0x7f800000)
 		return 0.0f;
 

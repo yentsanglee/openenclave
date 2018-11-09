@@ -105,6 +105,7 @@ long double log1pl(long double xm1)
 {
 	long double x, y, z;
 	int e;
+    static const Zero = 0.0f;
 
 	if (isnan(xm1))
 		return xm1;
@@ -119,7 +120,7 @@ long double log1pl(long double xm1)
 	if (x <= 0.0) {
 		if (x == 0.0)
 			return -1/(x*x); /* -inf with divbyzero */
-		return 0/0.0f; /* nan with invalid */
+		return 0/Zero; /* nan with invalid */
 	}
 
 	/* Separate mantissa from exponent.

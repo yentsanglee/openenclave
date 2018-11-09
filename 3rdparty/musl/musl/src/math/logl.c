@@ -109,6 +109,7 @@ long double logl(long double x)
 {
 	long double y, z;
 	int e;
+    static const float Zero = 0.0f;
 
 	if (isnan(x))
 		return x;
@@ -117,7 +118,7 @@ long double logl(long double x)
 	if (x <= 0.0) {
 		if (x == 0.0)
 			return -1/(x*x); /* -inf with divbyzero */
-		return 0/0.0f; /* nan with invalid */
+		return 0/Zero; /* nan with invalid */
 	}
 
 	/* separate mantissa from exponent */

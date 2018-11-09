@@ -7,11 +7,12 @@ int ilogbf(float x)
 	union {float f; uint32_t i;} u = {x};
 	uint32_t i = u.i;
 	int e = i>>23 & 0xff;
+    static const float Zero = 0.0f;
 
 	if (!e) {
 		i <<= 9;
 		if (i == 0) {
-			FORCE_EVAL(0/0.0f);
+			FORCE_EVAL(0/Zero);
 			return FP_ILOGB0;
 		}
 		/* subnormal x */
@@ -19,7 +20,7 @@ int ilogbf(float x)
 		return e;
 	}
 	if (e == 0xff) {
-		FORCE_EVAL(0/0.0f);
+		FORCE_EVAL(0/Zero);
 		return i<<9 ? FP_ILOGBNAN : INT_MAX;
 	}
 	return e - 0x7f;

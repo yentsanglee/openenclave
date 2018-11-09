@@ -112,6 +112,7 @@ double tgamma(double x)
 	double_t dy, z, r;
 	uint32_t ix = u.i>>32 & 0x7fffffff;
 	int sign = u.i>>63;
+    static const double Zero = 0.0;
 
 	/* special cases */
 	if (ix >= 0x7ff00000)
@@ -125,7 +126,7 @@ double tgamma(double x)
 	/* raise inexact when non-integer */
 	if (x == floor(x)) {
 		if (sign)
-			return 0/0.0;
+			return 0/Zero;
 		if (x <= sizeof fact/sizeof *fact)
 			return fact[(int)x - 1];
 	}
