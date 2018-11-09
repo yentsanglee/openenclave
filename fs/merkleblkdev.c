@@ -339,9 +339,6 @@ static int _blkdev_begin(fs_blkdev_t* d)
     if (!dev || !dev->next)
         goto done;
 
-    if (_write_hash_tree(dev) != 0)
-        goto done;
-
     if (dev->next->begin(dev->next) != 0)
         goto done;
 
@@ -358,6 +355,9 @@ static int _blkdev_end(fs_blkdev_t* d)
     blkdev_t* dev = (blkdev_t*)d;
 
     if (!dev || !dev->next)
+        goto done;
+
+    if (_write_hash_tree(dev) != 0)
         goto done;
 
     if (dev->next->end(dev->next) != 0)
