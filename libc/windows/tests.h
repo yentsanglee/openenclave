@@ -6,7 +6,7 @@ void __test_failed(const char* cond, const char* file, size_t line, const char* 
 #define TEST(COND) \
     do \
     { \
-        if (!COND) \
+        if (!(COND)) \
         { \
             __test_failed(#COND, __FILE__, __LINE__, __FUNCTION__); \
         } \
