@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "tests.h"
 #include <string.h>
 
@@ -42,7 +43,7 @@ void _test_memccpy(void)
 
 void _test_memchr(void)
 {
-	long long x = 0x12345678ffffffff;
+	unsigned char x[] = { 0x12, 0x00, 0x56, 0x78, 0xff, 0xff, 0xff, 0xff };
 	unsigned char * y = (unsigned char *)memchr(&x, 0x56, 8);
 	TEST(*y == 0x56);
 }
@@ -54,67 +55,104 @@ void _test_memcmp(void)
 
 void _test_memcpy(void)
 {
-    char buf[1024];
-    memcpy(buf, "hello", 5);
+    char buf[16];
+    char * ret = memcpy(buf, "hello", 5);
     TEST(memcmp(buf, "hello", 5) == 0);
+	TEST(ret == buf);
 }
 
 void _test_memmem(void)
 {
-	long long x = 0x0123456789abcdef;
-	long long y = 0x89ab;
-	long long z = 0x89cd;
-	//unsigned char * ret = (unsigned char *)memmem(&x, 8, &y, 2);
-	//TEST(*ret == 0x89);
-	//TEST(*(ret+1) == 0xab);
+	unsigned char haystack[] = { 0x0, 0x11, 0x22, 0x00, 0x33, 0x44, 0x00, 0x55 };
+	unsigned char needle[] = { 0x33, 0x44 };
+	unsigned char noexist_needle[] = { 0x33, 0x55 };
 
-	//ret = (unsigned char *)memmem(&x, 8, &z, 2);
-	//TEST(ret == NULL);
+	unsigned char * ret = (unsigned char *)memmem(haystack, 8, needle, 2);
+
+	TEST(ret[0] == 0x33);
+	TEST(ret[1] == 0x44);
+
+	ret = (unsigned char *)memmem(haystack, 8, noexist_needle, 2);
+	TEST(ret == NULL);
 }
 
 void _test_memmove(void)
 {
-
+	unsigned char buf[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+	memmove(&buf[5], &buf[0], 5);
+	TEST(buf[5] == 0);
+	TEST(buf[8] == 3);
 }
 
 void _test_mempcpy(void)
 {
-
+	unsigned char buf1[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+	unsigned char buf2[16];
+	unsigned char * ret = (unsigned char *)mempcpy(buf2, buf1, 10);
+	TEST(buf2[7] == 7);
+	TEST(buf2[7] != 6);
+	TEST(ret == &buf2[10]);
 }
 
 void _test_memrchr(void)
 {
-
+	unsigned char x[] = { 0x12, 0x34, 0x56, 0x78, 0xff, 0x00, 0xff, 0xaa };
+	unsigned char * y = (unsigned char *)memrchr(&x[0], 0x78, 8);
+	TEST(*y == 0x78);
+	TEST(y == &x[3]);
 }
 
 void _test_memset(void)
 {
-
+	unsigned char buf[16] = {0};
+	memset(buf, 1, 16);
+	TEST(buf[3] == 1);
+	TEST(buf[6] == 1);
 }
 
 void _test_rindex(void)
 {
-
+	const char * s = "Five quacking zephyrs jolt my wax bed";
+	TEST( (rindex(s, 'o') == &s[23]) );
 }
 
 void _test_stpcpy(void)
 {
-
+	char buf[1024] = {0};
+	const char * s = "abc";
+	char * ret = stpcpy(buf, s);
+	TEST(ret[0] == '\0');
+	TEST(ret[-1] == 'c');
+	TEST(ret[-3] == 'a');
+	TEST(ret == &buf[3]);
 }
 
 void _test_stpncpy(void)
 {
-
+	char buf[1024] = {0};
+	const char * s = "abc";
+	char * ret = stpncpy(buf, s, 10);
+	TEST(ret[0] == '\0');
+	TEST(ret[-1] == 'c');
+	TEST(ret[-3] == 'a');
+	TEST(ret == &buf[3]);
 }
 
 void _test_strcasecmp(void)
 {
-
+	const char * s1 = "aBc";
+	const char * s2 = "AbC";
+	const char * s3 = "CCC";
+	TEST(strcasecmp(s1, s2) == 0);
+	TEST(strcasecmp(s1, s3) != 0);
 }
 
 void _test_strcasestr(void)
 {
-
+	const char * s = "Waxy and quivering, jocks fumble the pizza.";
+	char * ret = strcasestr(s, "fumble");
+	TEST(ret != NULL);
+	TEST(ret == &s[26]);
 }
 
 void _test_strcat(void)
