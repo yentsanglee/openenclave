@@ -12,6 +12,8 @@ add_executable(cryptoenc
     ../../crl_tests.c
     ../../ec_tests.c
     ../../hash.c
+    ../../hmac_tests.c
+    ../../kdf_tests.c
     ../../random_tests.c
     ../../rsa_tests.c
     ../../sha_tests.c
