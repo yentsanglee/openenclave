@@ -10,6 +10,7 @@
 #include "hostcalls.h"
 #include "hostfs.h"
 #include "raise.h"
+#include "atomic.h"
 
 #define HOSTFS_MAGIC 0xff646572
 
@@ -25,6 +26,7 @@ typedef struct _hostfs
 {
     fs_t base;
     uint32_t magic;
+    volatile uint64_t ref_count;
     fs_host_batch_t* batch;
 } hostfs_t;
 
@@ -66,11 +68,28 @@ static fs_errno_t _fs_release(fs_t* fs)
     if (!_valid_fs(fs))
         FS_RAISE(FS_EINVAL);
 
-    fs_host_batch_delete(hostfs->batch);
-
-    free(fs);
+    if (fs_atomic_decrement(&hostfs->ref_count) == 0)
+    {
+        fs_host_batch_delete(hostfs->batch);
+        free(fs);
+    }
 
 done:
+    return err;
+}
+
+static fs_errno_t _fs_add_ref(fs_t* fs)
+{
+    fs_errno_t err = FS_EOK;
+    hostfs_t* hostfs = (hostfs_t*)fs;
+
+    if (!_valid_fs(fs))
+        FS_RAISE(FS_EINVAL);
+
+    fs_atomic_increment(&hostfs->ref_count);
+
+done:
+
     return err;
 }
 
@@ -874,6 +893,7 @@ static fs_errno_t _fs_initialize(fs_t** fs_out)
         FS_RAISE(FS_ENOMEM);
 
     hostfs->base.fs_release = _fs_release;
+    hostfs->base.fs_add_ref = _fs_add_ref;
     hostfs->base.fs_creat = _fs_creat;
     hostfs->base.fs_open = _fs_open;
     hostfs->base.fs_lseek = _fs_lseek;
@@ -891,6 +911,7 @@ static fs_errno_t _fs_initialize(fs_t** fs_out)
     hostfs->base.fs_mkdir = _fs_mkdir;
     hostfs->base.fs_rmdir = _fs_rmdir;
     hostfs->magic = HOSTFS_MAGIC;
+    hostfs->ref_count = 1;
     hostfs->batch = batch;
 
     *fs_out = &hostfs->base;

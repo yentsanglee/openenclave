@@ -12,6 +12,7 @@
 #include <string.h>
 #include "buf.h"
 #include "raise.h"
+#include "atomic.h"
 
 /*
 **==============================================================================
@@ -152,6 +153,8 @@ typedef struct _oefs
 
     /* Should contain the value of the OEFS_MAGIC macro. */
     uint32_t magic;
+
+    volatile uint64_t ref_count;
 
     fs_blkdev_t* dev;
 
@@ -1624,11 +1627,29 @@ static fs_errno_t _fs_release(fs_t* fs)
     if (!_valid_oefs(fs) || !oefs->bitmap.read || !oefs->bitmap_copy)
         FS_RAISE(FS_EINVAL);
 
-    oefs->dev->release(oefs->dev);
-    free(_bitmap_write(oefs));
-    free(oefs->bitmap_copy);
-    memset(oefs, 0, sizeof(oefs_t));
-    free(oefs);
+    if (fs_atomic_decrement(&oefs->ref_count) == 0)
+    {
+        oefs->dev->release(oefs->dev);
+        free(_bitmap_write(oefs));
+        free(oefs->bitmap_copy);
+        memset(oefs, 0, sizeof(oefs_t));
+        free(oefs);
+    }
+
+done:
+
+    return err;
+}
+
+static fs_errno_t _fs_add_ref(fs_t* fs)
+{
+    fs_errno_t err = FS_EOK;
+    oefs_t* oefs = (oefs_t*)fs;
+
+    if (!_valid_oefs(fs))
+        FS_RAISE(FS_EINVAL);
+
+    fs_atomic_increment(&oefs->ref_count);
 
 done:
 
@@ -2532,6 +2553,7 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
     }
 
     oefs->base.fs_release = _fs_release;
+    oefs->base.fs_add_ref = _fs_add_ref;
     oefs->base.fs_creat = _fs_creat;
     oefs->base.fs_open = _fs_open;
     oefs->base.fs_lseek = _fs_lseek;
@@ -2549,6 +2571,7 @@ fs_errno_t oefs_initialize(fs_t** fs_out, fs_blkdev_t* dev)
     oefs->base.fs_mkdir = _fs_mkdir;
     oefs->base.fs_rmdir = _fs_rmdir;
     oefs->magic = OEFS_MAGIC;
+    oefs->ref_count = 1;
     oefs->dev->add_ref(dev);
 
     *fs_out = &oefs->base;

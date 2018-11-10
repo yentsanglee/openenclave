@@ -126,6 +126,8 @@ int fs_mount(fs_t* fs, const char* path)
     }
     pthread_spin_unlock(&_lock);
 
+    fs_add_ref(fs);
+
     ret = 0;
 
 done:
@@ -353,6 +355,32 @@ fs_errno_t fs_open(const char* pathname, int flags, uint32_t mode, int* ret)
 
 done:
 
+    return err;
+}
+
+fs_errno_t fs_release(fs_t* fs)
+{
+    fs_errno_t err = 0;
+
+    if (!fs || !fs->fs_release)
+        FS_RAISE(FS_EINVAL);
+
+    FS_CHECK(fs->fs_release(fs));
+
+done:
+    return err;
+}
+
+fs_errno_t fs_add_ref(fs_t* fs)
+{
+    fs_errno_t err = 0;
+
+    if (!fs || !fs->fs_add_ref)
+        FS_RAISE(FS_EINVAL);
+
+    FS_CHECK(fs->fs_add_ref(fs));
+
+done:
     return err;
 }
 

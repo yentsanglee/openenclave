@@ -137,6 +137,8 @@ struct _fs
 {
     fs_errno_t (*fs_release)(fs_t* fs);
 
+    fs_errno_t (*fs_add_ref)(fs_t* fs);
+
     fs_errno_t (
         *fs_creat)(fs_t* fs, const char* path, uint32_t mode, fs_file_t** file);
 
@@ -186,11 +188,9 @@ struct _fs
     fs_errno_t (*fs_rmdir)(fs_t* fs, const char* path);
 };
 
-int fs_mount(fs_t* fs, const char* path);
+fs_errno_t fs_release(fs_t* fs);
 
-int fs_unmount(const char* path);
-
-fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX]);
+fs_errno_t fs_add_ref(fs_t* fs);
 
 fs_errno_t fs_creat(const char* pathname, uint32_t mode, int* ret);
 
@@ -229,6 +229,12 @@ fs_errno_t fs_access(const char* pathname, int mode, int* ret);
 fs_errno_t fs_getcwd(char* buf, unsigned long size, int* ret);
 
 fs_errno_t fs_chdir(const char* path, int* ret);
+
+int fs_mount(fs_t* fs, const char* path);
+
+int fs_unmount(const char* path);
+
+fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX]);
 
 int fs_create_hostfs(fs_t** fs_out);
 

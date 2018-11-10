@@ -1186,6 +1186,8 @@ static void _test_hostfs()
 
     /* Unmount the file system. */
     OE_TEST(fs_unmount("/mnt/hostfs") == 0);
+
+    fs_release(hostfs);
 }
 
 void _test_merkle(void)
@@ -1285,6 +1287,10 @@ int test_oefs(const char* src_dir, const char* bin_dir)
     rc = fs_unmount(target1);
     rc = fs_unmount(target2);
     rc = fs_unmount("/mnt/hostfs");
+
+    fs_release(ramfs);
+    fs_release(hostfs);
+    fs_release(oefs);
 
     _test_hostfs();
 
