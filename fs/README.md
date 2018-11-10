@@ -194,7 +194,7 @@ For example, the following function creates an instance of the **myfs** file
 system (parameters are added as needed).
 
 ```
-int create_myfs(fs_t* fs);
+int create_myfs(fs_t** fs);
 ```
 
 As shown earlier, an instance can be created and mounted as follows.
