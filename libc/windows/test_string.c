@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include "tests.h"
 #include <string.h>
+#include <errno.h>
 
 void _test_bcmp(void)
 {
@@ -157,22 +158,38 @@ void _test_strcasestr(void)
 
 void _test_strcat(void)
 {
+	char buf[1024] = {0};
+	char * s1 = "abc";
+	char * s2 = "DEF";
 
+	
+	char * ret = strcat(buf, s1);
+	TEST(ret[1] == 'b');
+	ret = strcat(buf+3, s2);
+	TEST(buf[4] == 'E');
 }
 
 void _test_strchr(void)
 {
-
+	const char * s = "My ex pub quiz crowd gave joyful thanks";
+	char * ret  = strchr(s, 'p');
+	
+	TEST(ret == &s[6]);
 }
 
 void _test_strchrnul(void)
 {
-
+	const char * s = "abc";
+	char * ret = strchrnul(s, 'd');
+	TEST(ret == &s[3]);
+	ret = strchrnul(s, 'c');
+	TEST(ret == &s[2]);
 }
 
 void _test_strcmp(void)
 {
     TEST(strcmp("aaa", "aaa") == 0);
+	TEST(strcmp("aaa", "aab") != 0);
 }
 
 void _test_strcpy(void)
@@ -184,22 +201,37 @@ void _test_strcpy(void)
 
 void _test_strcspn(void)
 {
-
+	const char * s = "111222333abc789";
+	size_t ret = strcspn(s, "7");
+	TEST(ret == 12);
 }
 
 void _test_strdup(void)
 {
-
+	const char * s1 = "The quick brown fox jumps over a lazy dog";
+	char * s2 = strdup(s1);
+	TEST(s1 != s2);
+	TEST(s2[5] == 'u');
+	TEST(s2[10] == 'b');
 }
 
 void _test_strerror_r(void)
 {
-
+	char buf[1024];
+	char * s1 = strerror_r(EAGAIN, buf, 1024);
+	TEST(strcmp(buf, "Resource temporarily unavailable") == 0);
 }
 
 void _test_strlcat(void)
 {
-
+	char buf[8] = { 0 };
+	buf[0] = 'Z';
+	const char * s = "0123456789abcdef";
+	size_t ret = strlcat(buf, s, 8);
+	TEST(ret == 17);
+	TEST(buf[0] == 'Z');
+	TEST(buf[1] == '0');
+	TEST(buf[7] == '\0');
 }
 
 void _test_strlcpy(void)
