@@ -1241,7 +1241,6 @@ static fs_errno_t _path_to_ino(
     fs_errno_t err = FS_EOK;
     char buf[FS_PATH_MAX];
     const char* elements[FS_PATH_MAX];
-    const size_t MAX_ELEMENTS = FS_COUNTOF(elements);
     size_t num_elements = 0;
     uint8_t i;
     uint32_t current_ino = 0;
@@ -1281,7 +1280,7 @@ static fs_errno_t _path_to_ino(
 
         for (p = strtok_r(buf, "/", &save); p; p = strtok_r(NULL, "/", &save))
         {
-            assert(num_elements < MAX_ELEMENTS);
+            assert(num_elements < FS_COUNTOF(elements));
             elements[num_elements++] = p;
         }
     }
