@@ -1230,9 +1230,10 @@ void _test_merkle(void)
             fs_blk_t blk;
             fs_blk_t tmp;
 
+printf("GET...\n");
             OE_TEST(dev->get(dev, i, &blk) == 0);
 
-            memset(&tmp, i, sizeof(tmp));
+            memset(&tmp, (uint8_t)i, sizeof(tmp));
             OE_TEST(memcmp(&blk, &tmp, sizeof(blk)) == 0);
         }
 

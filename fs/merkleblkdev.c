@@ -23,13 +23,10 @@ typedef struct _node
 
     /* The index of a leaf node (or zero for null). */
     uint32_t right;
-
-    /* TODO: Get rid of padding by allowing nodes to cross block boundaries. */
-    uint8_t padding[24];
 }
 node_t;
 
-FS_STATIC_ASSERT(sizeof(node_t) == 64);
+FS_STATIC_ASSERT(sizeof(node_t) == 40);
 
 typedef struct _blkdev
 {
@@ -157,20 +154,27 @@ static void _set_node(
     uint32_t left,
     uint32_t right)
 {
-    uint32_t index = i / NODES_PER_BLOCK;
-    node_t* node;
-
-    /* TODO: touch more than one block to support cross-block nodes. */
-
     assert(i < dev->nnodes);
-    assert(index < dev->nnodeblks);
 
-    node = (node_t*)&dev->nodes[i];
-    node->hash = *hash;
-    node->left = left;
-    node->right = right;
+    /* Update the node. */
+    {
+        node_t* node;
+        node = (node_t*)&dev->nodes[i];
+        node->hash = *hash;
+        node->left = left;
+        node->right = right;
+    }
 
-    dev->dirty[index] = 1;
+    /* Determine which blocks will need to be updated. */
+    {
+        const uint8_t* start = (const uint8_t*)dev->nodes;
+        const uint8_t* p = (const uint8_t*)&dev->nodes[i];
+        size_t lo_byte = p - start;
+        size_t hi_byte = (p + sizeof(node_t) - 1) - start;
+
+        dev->dirty[lo_byte / FS_BLOCK_SIZE] = 1;
+        dev->dirty[hi_byte / FS_BLOCK_SIZE] = 1;
+    }
 }
 
 /* Write the nodes just after the data blocks. */
