@@ -12,9 +12,9 @@ extern "C" {
 
 typedef int errno_t;
 
-int consttime_memequal(const void *b1, const void *b2, size_t len);
+int consttime_memequal(const void* b1, const void* b2, size_t len);
 
-errno_t memset_s(void *s, size_t smax, int c, size_t n);
+errno_t memset_s(void* s, size_t smax, int c, size_t n);
 
 #if defined(__cplusplus)
 }
