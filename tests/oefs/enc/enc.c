@@ -1194,8 +1194,8 @@ void _test_merkle(void)
 {
     fs_blkdev_t* ram_dev;
     fs_blkdev_t* dev;
-    size_t nblks = 8;
-    size_t size = (nblks * FS_BLOCK_SIZE) * 4;
+    size_t nblks = 512;
+    size_t size = (nblks * FS_BLOCK_SIZE) * 2;
 
     OE_TEST(fs_open_ram_blkdev(&ram_dev, size) == 0);
 
@@ -1205,23 +1205,22 @@ void _test_merkle(void)
 
         for (size_t i = 0; i < nblks; i++)
         {
+            /* Write a block */
             fs_blk_t blk;
+            memset(&blk, (uint8_t)i, sizeof(blk));
+            OE_TEST(dev->put(dev, i, &blk) == 0);
+
+            /* Get a block */
             fs_blk_t tmp;
-
-            OE_TEST(dev->get(dev, i, &blk) == 0);
-
             memset(&tmp, 0, sizeof(tmp));
-            OE_TEST(memcmp(&blk, &tmp, sizeof(blk)) == 0);
-
-            memset(&tmp, i, sizeof(tmp));
-            OE_TEST(dev->put(dev, i, &tmp) == 0);
-            OE_TEST(dev->get(dev, i, &blk) == 0);
+            OE_TEST(dev->get(dev, i, &tmp) == 0);
             OE_TEST(memcmp(&blk, &tmp, sizeof(blk)) == 0);
         }
 
         dev->release(dev);
     }
 
+#if 0
     /* Test load. */
     {
         OE_TEST(fs_open_merkle_blkdev(&dev, nblks, false, ram_dev) == 0);
@@ -1239,6 +1238,7 @@ void _test_merkle(void)
 
         dev->release(dev);
     }
+#endif
 
     ram_dev->release(ram_dev);
 }
@@ -1259,6 +1259,8 @@ int test_oefs(const char* src_dir, const char* bin_dir)
     fs_t* oefs = NULL;
     fs_t* ramfs = NULL;
     fs_t* hostfs = NULL;
+
+    _test_merkle();
 
     /* Mount the host OEFS file. */
     {
