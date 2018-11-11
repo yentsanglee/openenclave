@@ -12,6 +12,7 @@ LDFLAGS = -nostdlib -nodefaultlibs -nostartfiles -Wl,--no-undefined -Wl,-Bstatic
 INCLUDES = -I../../../openenclave/include
 
 all:
+	( cd ../../build/sgxfs ; make )
 	@ gcc $(INCLUDES) -o main stubs.c -Wl,--whole-archive $(LDFLAGS) $(LIBS)
 
 clean:
