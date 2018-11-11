@@ -636,8 +636,10 @@ static int _blkdev_end(fs_blkdev_t* d)
     if (!dev || !dev->next)
         goto done;
 
+#if 1
     if (_write_mtree(dev) != 0)
         goto done;
+#endif
 
     if (dev->next->end(dev->next) != 0)
         goto done;
