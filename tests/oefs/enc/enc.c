@@ -1194,7 +1194,8 @@ void _test_merkle(void)
 {
     fs_blkdev_t* ram_dev;
     fs_blkdev_t* dev;
-    size_t nblks = 512;
+    //size_t nblks = 512;
+    size_t nblks = 8;
     size_t size = (nblks * FS_BLOCK_SIZE) * 2;
 
     OE_TEST(fs_open_ram_blkdev(&ram_dev, size) == 0);
@@ -1220,7 +1221,6 @@ void _test_merkle(void)
         dev->release(dev);
     }
 
-#if 0
     /* Test load. */
     {
         OE_TEST(fs_open_merkle_blkdev(&dev, nblks, false, ram_dev) == 0);
@@ -1230,7 +1230,6 @@ void _test_merkle(void)
             fs_blk_t blk;
             fs_blk_t tmp;
 
-printf("GET...\n");
             OE_TEST(dev->get(dev, i, &blk) == 0);
 
             memset(&tmp, (uint8_t)i, sizeof(tmp));
@@ -1239,7 +1238,6 @@ printf("GET...\n");
 
         dev->release(dev);
     }
-#endif
 
     ram_dev->release(ram_dev);
 }

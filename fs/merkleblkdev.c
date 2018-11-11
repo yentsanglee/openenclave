@@ -155,14 +155,28 @@ static void _set_node(
     uint32_t right)
 {
     assert(i < dev->nnodes);
+    assert(left < dev->nnodes);
+    assert(right < dev->nnodes);
 
     /* Update the node. */
     {
+        node_t tmp;
+        tmp.hash = *hash;
+        tmp.left = left;
+        tmp.right = right;
+
         node_t* node;
         node = (node_t*)&dev->nodes[i];
         node->hash = *hash;
         node->left = left;
         node->right = right;
+
+#if 0
+        if (memcmp(&tmp, node, sizeof(tmp)) == 0)
+        {
+            return;
+        }
+#endif
     }
 
     /* Determine which blocks will need to be updated. */
@@ -267,12 +281,15 @@ static int _check_mtree(blkdev_t* dev)
         }
 
         if (!fs_sha256_eq(hash, &dev->nodes[i].hash))
+        {
             goto done;
+        }
     }
 
     ret = 0;
 
 done:
+
     return ret;
 }
 
@@ -318,10 +335,23 @@ static int _update_up(blkdev_t* dev, uint32_t root, uint32_t child)
         assert(0);
     }
 
-    if (_hash(dev, &hash, left, right) != 0)
-        goto done;
+    if (left && right)
+    {
+        if (_hash(dev, &hash, left, right) != 0)
+            goto done;
 
-    _set_node(dev, root, &hash, left, right);
+        _set_node(dev, root, &hash, left, right);
+    }
+    else if (left)
+    {
+        const node_t* node = &dev->nodes[left];
+        _set_node(dev, root, &node->hash, left, right);
+    }
+    else
+    {
+        const node_t* node = &dev->nodes[right];
+        _set_node(dev, root, &node->hash, left, right);
+    }
 
     if (root != 0)
     {
@@ -369,8 +399,8 @@ static int _update_down(
     }
     else /* one left shoe and one right shoe */
     {
-        uint32_t left = (d_old == D_LEFT) ? d_old : d_new;
-        uint32_t right = (d_old == D_RIGHT) ? d_old : d_new;
+        uint32_t left = (d_old == D_LEFT) ? old : new;
+        uint32_t right = (d_old == D_RIGHT) ? old : new;
         fs_sha256_t h;
 
         if (_hash(dev, &h, left, right) != 0)
@@ -456,6 +486,12 @@ static int _update_mtree(
                     goto done;
 
                 _set_node(dev, ancestor, &h, leaf, node->right);
+
+                if (ancestor != 0)
+                {
+                    if (_update_up(dev, _parent(ancestor), ancestor) != 0)
+                        goto done;
+                }
             }
         }
         else
@@ -474,6 +510,12 @@ static int _update_mtree(
                     goto done;
 
                 _set_node(dev, ancestor, &h, node->left, leaf);
+
+                if (ancestor != 0)
+                {
+                    if (_update_up(dev, _parent(ancestor), ancestor) != 0)
+                        goto done;
+                }
             }
         }
     }
@@ -494,6 +536,9 @@ static int _blkdev_release(fs_blkdev_t* blkdev)
 
     if (fs_atomic_decrement(&dev->ref_count) == 0)
     {
+        if (_write_mtree(dev) != 0)
+            goto done;
+
         dev->next->release(dev->next);
         free((void*)dev->nodes);
         free(dev->dirty);
@@ -680,11 +725,11 @@ int fs_open_merkle_blkdev(
 
     if (initialize)
     {
-        /* Set all the dirty bits so all nodes will be written. */
-        memset(dev->dirty, 1, dev->nnodeblks);
-
         if (_check_mtree(dev) != 0)
             goto done;
+
+        /* Set all the dirty bits so all nodes will be written. */
+        memset(dev->dirty, 1, dev->nnodeblks);
 
         /* Write the Merkle tree (contains all null nodes initially). */
         if (_write_mtree(dev) != 0)
@@ -697,12 +742,6 @@ int fs_open_merkle_blkdev(
 
         if (_check_mtree(dev) != 0)
             goto done;
-    }
-
-    {
-        printf("blocksize=%zu\n", FS_BLOCK_SIZE);
-        printf("nblks=%zu\n", dev->nblks);
-        printf("extra=%zu\n", dev->nnodeblks);
     }
 
     next->add_ref(next);
