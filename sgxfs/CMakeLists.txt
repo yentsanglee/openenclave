@@ -1,0 +1,26 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+set(LINUX_SGX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/linux-sgx/linux-sgx)
+
+add_library(sgxfs STATIC 
+    file_flush.cpp
+    file_init.cpp
+    file_other.cpp
+    file_read_write.cpp
+    file_version.cpp
+    lru_cache.cpp
+    sgx_tprotected_fs.cpp
+    ocalls.c
+    thread.c)
+
+target_include_directories(sgxfs PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${LINUX_SGX_DIR}/common/inc
+    ${LINUX_SGX_DIR}/sdk/protected_fs/sgx_tprotected_fs)
+
+target_link_libraries(sgxfs PUBLIC mbedcrypto oelibcxx oelibc)
+
+set_property(TARGET sgxfs PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
+
+install(TARGETS sgxfs ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
