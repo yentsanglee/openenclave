@@ -160,23 +160,11 @@ static void _set_node(
 
     /* Update the node. */
     {
-        node_t tmp;
-        tmp.hash = *hash;
-        tmp.left = left;
-        tmp.right = right;
-
         node_t* node;
         node = (node_t*)&dev->nodes[i];
         node->hash = *hash;
         node->left = left;
         node->right = right;
-
-#if 0
-        if (memcmp(&tmp, node, sizeof(tmp)) == 0)
-        {
-            return;
-        }
-#endif
     }
 
     /* Determine which blocks will need to be updated. */
