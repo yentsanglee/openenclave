@@ -7,19 +7,27 @@ add_library(sgxfs STATIC
     file_flush.cpp
     file_init.cpp
     file_other.cpp
+    file_crypto.cpp
     file_read_write.cpp
     file_version.cpp
     lru_cache.cpp
     sgx_tprotected_fs.cpp
     ocalls.c
-    thread.c)
+    thread.c
+    memset_s.c
+    consttime_memequal.c
+    sgx_is_outside_enclave.c
+    sgx_read_rand.c
+    tcrypto.c
+    key.c)
 
 target_include_directories(sgxfs PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${LINUX_SGX_DIR}/common/inc
+    ${LINUX_SGX_DIR}/common/inc/internal
     ${LINUX_SGX_DIR}/sdk/protected_fs/sgx_tprotected_fs)
 
-target_link_libraries(sgxfs PUBLIC mbedcrypto oelibcxx oelibc)
+target_link_libraries(sgxfs PUBLIC oelibcxx oeenclave mbedcrypto oelibc)
 
 set_property(TARGET sgxfs PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
