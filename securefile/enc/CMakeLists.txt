@@ -1,10 +1,9 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-set(LINUX_SGX_DIR 
-    ${PROJECT_SOURCE_DIR}/3rdparty/linux-sgx)
+set(LINUX_SGX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/linux-sgx)
 
-add_library(sgxsecurefile STATIC 
+add_library(sfenclave STATIC 
     file_flush.cpp
     file_init.cpp
     file_other.cpp
@@ -22,18 +21,18 @@ add_library(sgxsecurefile STATIC
     crypto.c
     getkey.c)
 
-target_include_directories(sgxsecurefile PRIVATE 
+target_include_directories(sfenclave PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${LINUX_SGX_DIR}
     ${LINUX_SGX_DIR}/linux-sgx/common/inc
     ${LINUX_SGX_DIR}/linux-sgx/common/inc/internal
     ${LINUX_SGX_DIR}/linux-sgx/sdk/protected_fs/sgx_tprotected_fs)
 
-target_link_libraries(sgxsecurefile 
+target_link_libraries(sfenclave 
     PUBLIC oelibcxx oeenclave mbedcrypto oelibc)
 
-set_property(TARGET sgxsecurefile PROPERTY 
+set_property(TARGET sfenclave PROPERTY 
     ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
-install(TARGETS sgxsecurefile 
+install(TARGETS sfenclave 
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)

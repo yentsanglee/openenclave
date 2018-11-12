@@ -3,7 +3,7 @@
 #include "common.h"
 #include "../3rdparty/linux-sgx/linux-sgx/sdk/protected_fs/sgx_tprotected_fs/sgx_tprotected_fs_t.h"
 #include "sgx_error.h"
-#include "securefile.h"
+#include "../common/securefile.h"
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <string.h>
