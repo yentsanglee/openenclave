@@ -25,35 +25,6 @@ typedef struct _blkdev
     fs_blkdev_t* next;
 } blkdev_t;
 
-#if 0
-static int _compute_sha256(
-    const void* data,
-    size_t size,
-    uint8_t hash[SHA256_SIZE])
-{
-    int ret = -1;
-    mbedtls_sha256_context ctx;
-
-    mbedtls_sha256_init(&ctx);
-
-    if (mbedtls_sha256_starts_ret(&ctx, 0) != 0)
-        goto done;
-
-    if (mbedtls_sha256_update_ret(&ctx, data, size) != 0)
-        goto done;
-
-    if (mbedtls_sha256_finish_ret(&ctx, hash) != 0)
-        goto done;
-
-    ret = 0;
-
-done:
-
-    mbedtls_sha256_free(&ctx);
-    return ret;
-}
-#endif
-
 static int _generate_initialization_vector(
     const uint8_t key[FS_KEY_SIZE],
     uint64_t blkno,
