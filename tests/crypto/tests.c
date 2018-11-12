@@ -11,4 +11,5 @@ void TestAll()
     TestRandom();
     TestRSA();
     TestSHA();
+    TestRandreturn();
 }

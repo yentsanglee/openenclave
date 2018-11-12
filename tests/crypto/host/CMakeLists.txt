@@ -11,6 +11,8 @@ add_executable(hostcrypto
     ../random_tests.c
     ../rsa_tests.c
     ../sha_tests.c
+    ../random_return_tests.c
+    ../../../common/rand.c
     ../tests.c)
 
 # ========================= TestCRL & TestASN1 ================================

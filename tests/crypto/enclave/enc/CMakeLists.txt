@@ -15,6 +15,7 @@ add_executable(cryptoenc
     ../../random_tests.c
     ../../rsa_tests.c
     ../../sha_tests.c
+    ../../random_return_tests.c
     ../../tests.c
      ${gen})
 
