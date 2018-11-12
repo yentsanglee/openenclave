@@ -1,28 +1,28 @@
-#ifndef _OE_SECUREFILE_H
-#define _OE_SECUREFILE_H
+#ifndef _OE_PROTECTEDFS_HOST_PROTECTEDFS_H
+#define _OE_PROTECTEDFS_HOST_PROTECTEDFS_H
 
 #define SECURE_FILE_MAX_PATH 1024
 
 #include <stddef.h>
 #include <stdint.h>
 
-typedef enum _sgx_secure_file_op {
-    sgx_secure_file_op_none,
-    sgx_secure_file_op_exclusive_file_open,
-    sgx_secure_file_op_check_if_file_exists,
-    sgx_secure_file_op_fread_node,
-    sgx_secure_file_op_fwrite_node,
-    sgx_secure_file_op_fclose,
-    sgx_secure_file_op_fflush,
-    sgx_secure_file_op_remove,
-    sgx_secure_file_op_recovery_file_open,
-    sgx_secure_file_op_fwrite_recovery_node,
-    sgx_secure_file_op_do_file_recovery,
-} sgx_secure_file_op_t;
+typedef enum _oe_protectedfs_op {
+    oe_protectedfs_op_none,
+    oe_protectedfs_op_exclusive_file_open,
+    oe_protectedfs_op_check_if_file_exists,
+    oe_protectedfs_op_fread_node,
+    oe_protectedfs_op_fwrite_node,
+    oe_protectedfs_op_fclose,
+    oe_protectedfs_op_fflush,
+    oe_protectedfs_op_remove,
+    oe_protectedfs_op_recovery_file_open,
+    oe_protectedfs_op_fwrite_recovery_node,
+    oe_protectedfs_op_do_file_recovery,
+} oe_protectedfs_op_t;
 
-typedef struct _sgx_secure_file_args
+typedef struct _oe_protectedfs_args
 {
-    sgx_secure_file_op_t op;
+    oe_protectedfs_op_t op;
     union {
         struct
         {
@@ -89,6 +89,6 @@ typedef struct _sgx_secure_file_args
         } do_file_recovery;
     } u;
     uint8_t buffer[];
-} sgx_secure_file_args_t;
+} oe_protectedfs_args_t;
 
-#endif /* _OE_SECUREFILE_H */
+#endif /* _OE_PROTECTEDFS_COMMON_PROTECTEDFS_H */

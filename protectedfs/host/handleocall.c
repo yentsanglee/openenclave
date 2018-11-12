@@ -1,17 +1,17 @@
-#include "../common/securefile.h"
+#include "../common/protectedfs.h"
 #include "sgx_tprotected_fs_u.h"
 
-void sgx_handle_secure_file_ocall(void* args_)
+static void _handle_protectedfs_ocall(void* args_)
 {
-    sgx_secure_file_args_t* args = (sgx_secure_file_args_t*)args_;
+    oe_protectedfs_args_t* args = (oe_protectedfs_args_t*)args_;
 
     switch (args->op)
     {
-        case sgx_secure_file_op_none:
+        case oe_protectedfs_op_none:
         {
             break;
         }
-        case sgx_secure_file_op_exclusive_file_open:
+        case oe_protectedfs_op_exclusive_file_open:
         {
             args->u.exclusive_file_open.retval =
                 u_sgxprotectedfs_exclusive_file_open(
@@ -21,14 +21,14 @@ void sgx_handle_secure_file_ocall(void* args_)
                     &args->u.exclusive_file_open.error_code);
             break;
         }
-        case sgx_secure_file_op_check_if_file_exists:
+        case oe_protectedfs_op_check_if_file_exists:
         {
             args->u.check_if_file_exists.retval =
                 u_sgxprotectedfs_check_if_file_exists(
                     args->u.check_if_file_exists.filename);
             break;
         }
-        case sgx_secure_file_op_fread_node:
+        case oe_protectedfs_op_fread_node:
         {
             args->u.fread_node.retval = u_sgxprotectedfs_fread_node(
                 args->u.fread_node.file,
@@ -37,7 +37,7 @@ void sgx_handle_secure_file_ocall(void* args_)
                 args->u.fread_node.node_size);
             break;
         }
-        case sgx_secure_file_op_fwrite_node:
+        case oe_protectedfs_op_fwrite_node:
         {
             args->u.fwrite_node.retval = u_sgxprotectedfs_fwrite_node(
                 args->u.fwrite_node.file,
@@ -46,31 +46,31 @@ void sgx_handle_secure_file_ocall(void* args_)
                 args->u.fwrite_node.node_size);
             break;
         }
-        case sgx_secure_file_op_fclose:
+        case oe_protectedfs_op_fclose:
         {
             args->u.fclose.retval =
                 u_sgxprotectedfs_fclose(args->u.fclose.file);
             break;
         }
-        case sgx_secure_file_op_fflush:
+        case oe_protectedfs_op_fflush:
         {
             args->u.fflush.retval =
                 u_sgxprotectedfs_fflush(args->u.fflush.file);
             break;
         }
-        case sgx_secure_file_op_remove:
+        case oe_protectedfs_op_remove:
         {
             args->u.remove.retval =
                 u_sgxprotectedfs_remove(args->u.remove.filename);
             break;
         }
-        case sgx_secure_file_op_recovery_file_open:
+        case oe_protectedfs_op_recovery_file_open:
         {
             args->u.recovery_file_open.retval =
                 u_sgxprotectedfs_recovery_file_open(args->u.remove.filename);
             break;
         }
-        case sgx_secure_file_op_fwrite_recovery_node:
+        case oe_protectedfs_op_fwrite_recovery_node:
         {
             args->u.fwrite_recovery_node.retval =
                 u_sgxprotectedfs_fwrite_recovery_node(
@@ -79,14 +79,20 @@ void sgx_handle_secure_file_ocall(void* args_)
                     args->u.fwrite_recovery_node.data_length);
             break;
         }
-        case sgx_secure_file_op_do_file_recovery:
+        case oe_protectedfs_op_do_file_recovery:
         {
-            args->u.do_file_recovery.retval =
-                u_sgxprotectedfs_do_file_recovery(
-                    args->u.do_file_recovery.filename,
-                    args->u.do_file_recovery.recovery_filename,
-                    args->u.do_file_recovery.node_size);
+            args->u.do_file_recovery.retval = u_sgxprotectedfs_do_file_recovery(
+                args->u.do_file_recovery.filename,
+                args->u.do_file_recovery.recovery_filename,
+                args->u.do_file_recovery.node_size);
             break;
         }
     }
+}
+
+extern void (*oe_handle_protectedfs_ocall_callback)(void*);
+
+void oe_install_protectedfs(void)
+{
+    oe_handle_protectedfs_ocall_callback = _handle_protectedfs_ocall;
 }

@@ -1,5 +1,5 @@
-#ifndef _OE_SGXFS_COMMON_H
-#define _OE_SGXFS_COMMON_H
+#ifndef _OE_PROTECTEDFS_COMMON_H
+#define _OE_PROTECTEDFS_COMMON_H
 
 typedef void FILE;
 #define __DEFINED_FILE
@@ -20,4 +20,4 @@ errno_t memset_s(void* s, size_t smax, int c, size_t n);
 }
 #endif
 
-#endif /* _OE_SGXFS_COMMON_H */
+#endif /* _OE_PROTECTEDFS_COMMON_H */
