@@ -425,7 +425,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_do_file_recovery(
     }
 
     if (!_copy_path(
-        args->u.do_file_recovery.recovery_filename, recovery_filename))
+            args->u.do_file_recovery.recovery_filename, recovery_filename))
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
