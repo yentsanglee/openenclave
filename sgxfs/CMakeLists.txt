@@ -15,11 +15,11 @@ add_library(sgxfs STATIC
     ocalls.c
     thread.c
     memset_s.c
-    consttime_memequal.c
-    sgx_is_outside_enclave.c
-    sgx_read_rand.c
-    tcrypto.c
-    key.c)
+    memequal.c
+    isoutside.c
+    rand.c
+    crypto.c
+    getkey.c)
 
 target_include_directories(sgxfs PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
