@@ -218,7 +218,8 @@ void _test_strdup(void)
 void _test_strerror_r(void)
 {
 	char buf[1024];
-	char * s1 = strerror_r(EAGAIN, buf, 1024);
+	int ret = strerror_r(EAGAIN, buf, 1024);
+	TEST(ret == 0);
 	TEST(strcmp(buf, "Resource temporarily unavailable") == 0);
 }
 
@@ -236,37 +237,69 @@ void _test_strlcat(void)
 
 void _test_strlcpy(void)
 {
-
+	char buf[8] = { 0 };
+	buf[0] = 'Z';
+	const char * s = "0123456789abcdef";
+	size_t ret = strlcpy(buf, s, 8);
+	TEST(ret == 16);
+	TEST(buf[0] == '0');
+	TEST(buf[3] == '3');
+	TEST(buf[7] == '\0');
 }
 
 void _test_strlen(void)
 {
-
+	const char * s = "Cwm fjord bank glyphs vext quiz";
+	size_t ret = strlen(s);
+	TEST(ret == 31);
 }
 
 void _test_strncasecmp(void)
 {
-
+	const char * s1 = "aBc";
+	const char * s2 = "abz";
+	TEST(strncasecmp(s1, s2, 2) == 0);
+	TEST(strncasecmp(s1, s2, 3) != 0);
 }
 
 void _test_strncat(void)
 {
-
+	char buf[8] = {0};
+	strcpy(buf, "0123");
+	const char * s = "abcdefgh";
+	const char * ret = strncat(buf, s, 4);
+	TEST(ret == buf);
+	TEST(buf[0] == '0');
+	TEST(buf[4] == 'a');
+	TEST(buf[8] == '\0');
 }
 
 void _test_strncmp(void)
 {
-
+	const char * s1 = "abcdZ";
+	const char * s2 = "abcdY";
+	TEST(strncmp(s1, s2, 4) == 0);
+	TEST(strncmp(s1, s2, 5) != 0);
 }
 
 void _test_strncpy(void)
 {
-
+	char buf[8] = {0};
+	const char * s = "Squdgy fez, blank jimp crwth vox";
+	strncpy(buf, s, 6);
+	TEST(buf[0] == 'S');
+	TEST(buf[5] == 'y');
+	TEST(buf[6] == '\0');
 }
 
 void _test_strndup(void)
 {
-
+	const char * s1 = "Junky qoph-flags vext crwd zimb";
+	const char * s2 = strndup(s1, 5);
+	TEST(s2 != s1);
+	TEST(s2[0] == 'J');
+	TEST(s2[4] == 'y');
+	TEST(s2[5] == '\0');
 }
 
 void _test_strnlen(void)
