@@ -90,7 +90,7 @@ static void _handle_protectedfs_ocall(void* args_)
     }
 }
 
-extern void (*oe_handle_protectedfs_ocall_callback)(void*);
+void (*oe_handle_protectedfs_ocall_callback)(void*);
 
 void oe_install_protectedfs(void)
 {

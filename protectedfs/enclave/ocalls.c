@@ -10,6 +10,7 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <string.h>
+#include <stdio.h>
 
 typedef oe_protectedfs_args_t args_t;
 
@@ -27,6 +28,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_exclusive_file_open(
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+
 
     if (!retval || !filename || !file_size || !error_code)
     {
@@ -73,6 +75,7 @@ u_sgxprotectedfs_check_if_file_exists(uint8_t* retval, const char* filename)
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+
 
     if (!retval || !filename)
     {
