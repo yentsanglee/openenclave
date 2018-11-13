@@ -20,7 +20,7 @@
 
 #define TAGS_PER_BLOCK (FS_BLOCK_SIZE / sizeof(tag_t))
 
-#define KEY_SIZE 256
+#define KEY_BITS 256
 
 typedef struct _tag
 {
@@ -115,7 +115,7 @@ static int _encrypt(
 
     memset(tag, 0, sizeof(tag_t));
 
-    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, KEY_SIZE) != 0)
+    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, KEY_BITS) != 0)
         goto done;
 
     if (_generate_initialization_vector(key, blkno, iv) != 0)
@@ -159,7 +159,7 @@ static int _decrypt(
 
     mbedtls_gcm_init(&gcm);
 
-    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, KEY_SIZE) != 0)
+    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, KEY_BITS) != 0)
         goto done;
 
     if (_generate_initialization_vector(key, blkno, iv) != 0)

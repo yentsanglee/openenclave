@@ -2594,12 +2594,7 @@ done:
     return err;
 }
 
-#define USE_CACHE_BLKDEV
-#define USE_MERKLE_BLKDEV
-#define USE_AUTH_CRYPTO_BLKDEV
-//#define USE_CRYPTO_BLKDEV
-
-int fs_create_oefs(
+int fs_oefs_new(
     fs_t** fs_out,
     const char* source,
     uint32_t flags,
@@ -2630,24 +2625,15 @@ int fs_create_oefs(
 
     next = host_dev;
 
-#if defined(USE_MERKLE_BLKDEV)
-    /* Create the number of extra blocks needed by the Merkle block device. */
-    if (fs_merkle_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
-        goto done;
-#endif
-
-#if defined(USE_CRYPTO_BLKDEV)
-    /* Create a crypto block device. */
+    /* Get the number of extra blocks needed by the Merkle block device. */
+    if ((flags & FS_FLAG_INTEGRITY))
     {
-        if (fs_crypto_blkdev_open(&crypto_dev, key, next) != 0)
+        if (fs_merkle_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
             goto done;
-
-        next = crypto_dev;
     }
-#endif
 
-#if defined(USE_AUTH_CRYPTO_BLKDEV)
     /* Create an authenticated crypto block device. */
+    if ((flags & FS_FLAG_ENCRYPTION) && (flags & FS_FLAG_AUTHENTICATION))
     {
         bool initialize = (flags & FS_FLAG_MKFS);
 
@@ -2659,10 +2645,18 @@ int fs_create_oefs(
 
         next = crypto_dev;
     }
-#endif
 
-#if defined(USE_MERKLE_BLKDEV)
+    /* Create a crypto block device. */
+    if ((flags & FS_FLAG_ENCRYPTION) && !(flags & FS_FLAG_AUTHENTICATION))
+    {
+        if (fs_crypto_blkdev_open(&crypto_dev, key, next) != 0)
+            goto done;
+
+        next = crypto_dev;
+    }
+
     /* Create a Merkle block device. */
+    if ((flags & FS_FLAG_INTEGRITY))
     {
         bool initialize = (flags & FS_FLAG_MKFS);
 
@@ -2674,17 +2668,15 @@ int fs_create_oefs(
 
         next = merkle_dev;
     }
-#endif
 
-#if defined(USE_CACHE_BLKDEV)
     /* Create a cache block device. */
+    if ((flags & FS_FLAG_CACHING))
     {
         if (fs_cache_blkdev_open(&cache_dev, next) != 0)
             goto done;
 
         next = cache_dev;
     }
-#endif
 
     /* Set the top-level block device. */
     dev = next;
@@ -2723,12 +2715,12 @@ done:
     return ret;
 }
 
-int fs_create_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks)
+int fs_ramfs_new(fs_t** fs_out, uint32_t flags, size_t nblks)
 {
     int ret = -1;
-    fs_blkdev_t* ram_dev = NULL;
     fs_blkdev_t* dev = NULL;
     fs_t* fs = NULL;
+    size_t size;
     
     if (fs_out)
         *fs_out = NULL;
@@ -2736,21 +2728,28 @@ int fs_create_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks)
     if (!fs_out || nblks < 2 || !_is_power_of_two(nblks))
         goto done;
 
-    /* Open an oefs device within enclave memory. */
+    /* Fail if any of these flags are set. */
     {
-        size_t size;
-
-        if (flags & FS_FLAG_CRYPTO)
+        if (flags & FS_FLAG_ENCRYPTION)
             goto done;
 
-        if (oefs_size(nblks, &size) != 0)
+        if (flags & FS_FLAG_AUTHENTICATION)
             goto done;
 
-        if (fs_ram_blkdev_open(&ram_dev, size) != 0)
+        if (flags & FS_FLAG_INTEGRITY)
             goto done;
 
-        dev = ram_dev;
+        if (flags & FS_FLAG_CACHING)
+            goto done;
     }
+
+    /* Calculate the size in bytes of the RAMFS block device. */
+    if (oefs_size(nblks, &size) != 0)
+        goto done;
+
+    /* Open the RAM block device. */
+    if (fs_ram_blkdev_open(&dev, size) != 0)
+        goto done;
 
     if (flags & FS_FLAG_MKFS)
     {
@@ -2762,13 +2761,14 @@ int fs_create_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks)
         goto done;
 
     *fs_out = fs;
+    dev = NULL;
     fs = NULL;
     ret = 0;
 
 done:
 
-    if (ram_dev)
-        ram_dev->release(ram_dev);
+    if (dev)
+        dev->release(dev);
 
     if (fs)
         fs->fs_release(fs);

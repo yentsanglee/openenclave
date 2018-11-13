@@ -13,8 +13,10 @@
 /* File system creating flags. */
 #define FS_FLAG_NONE 0
 #define FS_FLAG_MKFS 1
-#define FS_FLAG_CRYPTO 2
-#define FS_KEY_SIZE 32
+#define FS_FLAG_ENCRYPTION 2
+#define FS_FLAG_AUTHENTICATION 4
+#define FS_FLAG_INTEGRITY 8
+#define FS_FLAG_CACHING 16
 
 /* fs_dirent_t.d_type -- the file type. */
 #define FS_DT_UNKNOWN 0
@@ -236,11 +238,11 @@ int fs_unmount(const char* path);
 
 fs_t* fs_lookup(const char* path, char suffix[FS_PATH_MAX]);
 
-int fs_create_hostfs(fs_t** fs_out);
+int fs_hostfs_new(fs_t** fs_out);
 
-int fs_create_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks);
+int fs_ramfs_new(fs_t** fs_out, uint32_t flags, size_t nblks);
 
-int fs_create_oefs(
+int fs_oefs_new(
     fs_t** fs_out,
     const char* source,
     uint32_t flags,

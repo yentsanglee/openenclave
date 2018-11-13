@@ -63,4 +63,7 @@
 #define FS_PACK_END __pragma(pack(pop))
 #endif
 
+/* The key size in bytes. */
+#define FS_KEY_SIZE 32
+
 #endif /* _FS_DEFS_H */

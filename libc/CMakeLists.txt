@@ -30,6 +30,7 @@ add_library(oelibc STATIC
     ../fs/commands.c
     ../fs/oefs.c
     ../fs/merkleblkdev.c
+    ../fs/mount.c
     ../fs/ramblkdev.c
     ../fs/sha.c
     ../fs/syscall.c

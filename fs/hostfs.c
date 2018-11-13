@@ -940,7 +940,7 @@ int fs_hostfs_ocall(fs_hostfs_ocall_args_t* args)
     return 0;
 }
 
-int fs_create_hostfs(fs_t** fs_out)
+int fs_hostfs_new(fs_t** fs_out)
 {
     int ret = -1;
     fs_t* fs = NULL;

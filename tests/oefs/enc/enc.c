@@ -21,6 +21,7 @@
 #include "../../../fs/commands.h"
 #include "../../../fs/cpio.h"
 #include "../../../fs/fs.h"
+#include "../../../fs/mount.h"
 #include "oefs_t.h"
 
 #define INIT
@@ -1093,11 +1094,9 @@ static void _test_hostfs()
 {
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     struct stat buf;
-    fs_t* hostfs = NULL;
 
     /* Mount the file system. */
-    OE_TEST(fs_create_hostfs(&hostfs) == 0);
-    OE_TEST(fs_mount(hostfs, "/mnt/hostfs") == 0);
+    OE_TEST(fs_mount_hostfs("/mnt/hostfs") == 0);
 
     /* Remove the file if it exists. */
     unlink("/mnt/hostfs/tmp/myfile");
@@ -1186,8 +1185,6 @@ static void _test_hostfs()
 
     /* Unmount the file system. */
     OE_TEST(fs_unmount("/mnt/hostfs") == 0);
-
-    fs_release(hostfs);
 }
 
 void _test_merkle(void)
@@ -1244,7 +1241,8 @@ void _test_merkle(void)
 
 int test_oefs(const char* src_dir, const char* bin_dir)
 {
-    const uint32_t flags = FS_FLAG_MKFS;
+    uint32_t oefs_flags = 0;
+    uint32_t ramfs_flags = 0;
     size_t num_bytes = 4194304;
     size_t num_blocks = num_bytes / FS_BLOCK_SIZE;
     int rc;
@@ -1255,11 +1253,18 @@ int test_oefs(const char* src_dir, const char* bin_dir)
         0x3c, 0x55, 0x11, 0xac, 0x52, 0x9e, 0xd4, 0xb1, 0xad, 0x10, 0x16,
         0x4f, 0xd9, 0x92, 0x19, 0x93, 0xcc, 0xa9, 0x0e, 0xcb, 0xed,
     };
-    fs_t* oefs = NULL;
-    fs_t* ramfs = NULL;
-    fs_t* hostfs = NULL;
 
     _test_merkle();
+
+    /* Set the flags for the OEFS file system. */
+    oefs_flags |= FS_FLAG_MKFS;
+    oefs_flags |= FS_FLAG_ENCRYPTION;
+    oefs_flags |= FS_FLAG_AUTHENTICATION;
+    oefs_flags |= FS_FLAG_CACHING;
+    oefs_flags |= FS_FLAG_INTEGRITY;
+
+    /* Set the flags for the RAMFS file system. */
+    ramfs_flags |= FS_FLAG_MKFS;
 
     /* Mount the host OEFS file. */
     {
@@ -1268,19 +1273,16 @@ int test_oefs(const char* src_dir, const char* bin_dir)
         strlcpy(path, bin_dir, sizeof(path));
         strlcat(path, "/tests/oefs/tests.oefs", sizeof(path));
 
-        OE_TEST(fs_create_oefs(&oefs, path, flags, num_blocks, key) == 0);
-        OE_TEST(fs_mount(oefs, target1) == 0);
+        OE_TEST(fs_mount_oefs(path, target1, oefs_flags, num_blocks, key) == 0);
     }
 
     /* Mount enclave memory. */
-    OE_TEST(fs_create_ramfs(&ramfs, flags, num_blocks) == 0);
-    OE_TEST(fs_mount(ramfs, target2) == 0);
+    OE_TEST(fs_mount_ramfs(target2, ramfs_flags, num_blocks) == 0);
 
     run_tests(target1);
     run_tests(target2);
 
-    OE_TEST(fs_create_hostfs(&hostfs) == 0);
-    OE_TEST(fs_mount(hostfs, "/mnt/hostfs") == 0);
+    OE_TEST(fs_mount_hostfs("/mnt/hostfs") == 0);
 
     _test_cpio_host_to_host(src_dir, bin_dir);
     _test_cpio_host_to_enclave(src_dir, bin_dir);
@@ -1288,10 +1290,6 @@ int test_oefs(const char* src_dir, const char* bin_dir)
     rc = fs_unmount(target1);
     rc = fs_unmount(target2);
     rc = fs_unmount("/mnt/hostfs");
-
-    fs_release(ramfs);
-    fs_release(hostfs);
-    fs_release(oefs);
 
     _test_hostfs();
 
