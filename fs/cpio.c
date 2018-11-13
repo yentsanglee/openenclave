@@ -15,6 +15,7 @@
 #include "fs.h"
 #include "strarr.h"
 #include "strings.h"
+#include "utils.h"
 
 #define CPIO_BLOCK_SIZE 512
 
@@ -193,11 +194,6 @@ static void _uint_to_hex(char buf[8], unsigned int x)
     buf[7] = _hex_digit((x & 0x0000000F) >> 0);
 }
 
-static size_t _round_to_multiple(size_t x, size_t m)
-{
-    return (size_t)((x + (m - 1)) / m * m);
-}
-
 static ssize_t _get_mode(const cpio_header_t* header)
 {
     return _hex_to_ssize(header->mode, 8);
@@ -222,7 +218,7 @@ static int _skip_padding(FILE* stream)
     if ((pos = ftell(stream)) < 0)
         goto done;
 
-    new_pos = _round_to_multiple(pos, 4);
+    new_pos = fs_round_to_multiple(pos, 4);
 
     if (new_pos != pos && fseek(stream, new_pos, SEEK_SET) != 0)
         goto done;
@@ -243,7 +239,7 @@ static int _write_padding(FILE* stream, size_t n)
     if ((pos = ftell(stream)) < 0)
         goto done;
 
-    new_pos = _round_to_multiple(pos, n);
+    new_pos = fs_round_to_multiple(pos, n);
 
     for (size_t i = pos; i < new_pos; i++)
     {

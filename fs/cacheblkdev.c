@@ -8,10 +8,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "atomic.h"
 #include "blkdev.h"
 #include "common.h"
 #include "list.h"
-#include "atomic.h"
 
 #define TABLE_SIZE 1093
 #define MAX_ENTRIES 64

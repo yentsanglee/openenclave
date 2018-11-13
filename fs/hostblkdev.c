@@ -6,11 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "atomic.h"
 #include "blkdev.h"
 #include "hostbatch.h"
 #include "hostcalls.h"
 #include "list.h"
-#include "atomic.h"
 
 #define MAX_NODES 16
 

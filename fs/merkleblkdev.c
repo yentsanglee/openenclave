@@ -6,9 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "atomic.h"
 #include "blkdev.h"
 #include "sha.h"
-#include "atomic.h"
+#include "utils.h"
 
 #define HASHES_PER_BLOCK (FS_BLOCK_SIZE / sizeof(fs_sha256_t))
 
@@ -27,11 +28,6 @@ typedef struct _blkdev
     /* Keeps track of dirty hash blocks. */
     uint8_t* dirty;
 } blkdev_t;
-
-FS_INLINE bool _is_power_of_two(size_t n)
-{
-    return (n & (n - 1)) == 0;
-}
 
 /* Get the index of the left child of the given node in the hash tree. */
 FS_INLINE size_t _left_child_index(size_t i)
@@ -52,16 +48,6 @@ FS_INLINE size_t _parent_index(size_t i)
         return -1;
 
     return (i - 1) / 2;
-}
-
-FS_INLINE size_t _round_to_multiple(size_t x, size_t m)
-{
-    return (size_t)((x + (m - 1)) / m * m);
-}
-
-FS_INLINE size_t _min(size_t x, size_t y)
-{
-    return (x < y) ? x : y;
 }
 
 FS_INLINE int _hash(fs_sha256_t* hash, const void* data, size_t size)
@@ -138,14 +124,14 @@ static int read_hash_tree(blkdev_t* dev)
 {
     int ret = -1;
     size_t nbytes = dev->nhashes * sizeof(fs_sha256_t);
-    size_t nblks = _round_to_multiple(nbytes, FS_BLOCK_SIZE) / FS_BLOCK_SIZE;
+    size_t nblks = fs_round_to_multiple(nbytes, FS_BLOCK_SIZE) / FS_BLOCK_SIZE;
     uint8_t* ptr = (uint8_t*)dev->hashes;
     size_t rem = dev->nhashes * sizeof(fs_sha256_t);
 
     for (size_t i = 0; i < nblks; i++)
     {
         fs_blk_t blk;
-        size_t n = _min(rem, sizeof(blk));
+        size_t n = fs_min_size(rem, sizeof(blk));
         size_t offset = dev->nblks;
 
         if (dev->next->get(dev->next, i + offset, &blk) != 0)
@@ -406,7 +392,7 @@ int fs_merkle_blkdev_open(
         goto done;
 
     /* nblks must be greater than 1 and a power of 2. */
-    if (!(nblks > 1 && _is_power_of_two(nblks)))
+    if (!(nblks > 1 && fs_is_pow_of_2(nblks)))
         goto done;
 
     /* Calculate the number of nodes (hashes) in the hash tree. */
@@ -420,7 +406,7 @@ int fs_merkle_blkdev_open(
     {
         size_t size = nhashes * sizeof(fs_sha256_t);
 
-        size = _round_to_multiple(size, FS_BLOCK_SIZE);
+        size = fs_round_to_multiple(size, FS_BLOCK_SIZE);
 
         if (!(hashes = calloc(1, size)))
             goto done;
@@ -428,7 +414,7 @@ int fs_merkle_blkdev_open(
 
     /* Calculate the number of hash blocks. */
     dev->n_hash_blks =
-        _round_to_multiple(nhashes, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
+        fs_round_to_multiple(nhashes, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
 
     /* Allocate the dirty bytes for the hash tree. */
     if (!(dirty = calloc(1, dev->n_hash_blks)))
@@ -546,15 +532,15 @@ int fs_merkle_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks)
         goto done;
 
     /* nblks must be greater than 1 and a power of 2. */
-    if (!(nblks > 1 && _is_power_of_two(nblks)))
+    if (!(nblks > 1 && fs_is_pow_of_2(nblks)))
         goto done;
 
     /* Calculate the number of hash nodes in a Merkle tree. */
     nhashes = (nblks * 2) - 1;
 
     /* Calculate the number of blocks needed by a Merkle hash tree. */
-    *extra_nblks = 
-        _round_to_multiple(nhashes, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
+    *extra_nblks =
+        fs_round_to_multiple(nhashes, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
 
     ret = 0;
 

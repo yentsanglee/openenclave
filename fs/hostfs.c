@@ -6,11 +6,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include "atomic.h"
 #include "hostbatch.h"
 #include "hostcalls.h"
 #include "hostfs.h"
 #include "raise.h"
-#include "atomic.h"
 
 #define HOSTFS_MAGIC 0xff646572
 
@@ -946,7 +946,7 @@ int fs_hostfs_new(fs_t** fs_out)
     fs_t* fs = NULL;
 
     if (fs_out)
-        *fs_out =NULL;
+        *fs_out = NULL;
 
     if (!fs_out)
         goto done;

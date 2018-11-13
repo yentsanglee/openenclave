@@ -10,9 +10,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "atomic.h"
 #include "buf.h"
 #include "raise.h"
-#include "atomic.h"
+#include "utils.h"
 
 /*
 **==============================================================================
@@ -45,7 +46,7 @@
 
 #define INLINE static __inline
 
-#define BITS_PER_BLOCK (FS_BLOCK_SIZE * 8)
+#define BITS_PER_BLK (FS_BLOCK_SIZE * 8)
 
 #define SUPER_BLOCK_MAGIC 0x0EF51234
 
@@ -238,16 +239,6 @@ struct _fs_dir
     fs_dirent_t ent;
 };
 
-FS_INLINE bool _is_power_of_two(size_t n)
-{
-    return (n & (n - 1)) == 0;
-}
-
-static size_t _round_to_multiple(size_t x, size_t m)
-{
-    return (size_t)((x + (m - 1)) / m * m);
-}
-
 static bool _valid_dir(fs_dir_t* dir)
 {
     return dir && dir->magic == DIR_MAGIC && dir->file && dir->file->oefs;
@@ -327,7 +318,7 @@ INLINE void _clr_bit(uint8_t* data, uint32_t size, uint32_t index)
 
 INLINE size_t _num_bitmap_blocks(size_t nblks)
 {
-    return _round_to_multiple(nblks, BITS_PER_BLOCK) / BITS_PER_BLOCK;
+    return fs_round_to_multiple(nblks, BITS_PER_BLK) / BITS_PER_BLK;
 }
 
 /* Get the physical block number from a logical block number. */
@@ -2296,7 +2287,7 @@ fs_errno_t oefs_mkfs(fs_blkdev_t* dev, size_t nblks)
     if (dev)
         dev->begin(dev);
 
-    if (!dev || nblks < 2 || !_is_power_of_two(nblks))
+    if (!dev || nblks < 2 || !fs_is_pow_of_2(nblks))
         FS_RAISE(FS_EINVAL);
 
     /* Initialize an empty block. */
@@ -2431,7 +2422,7 @@ fs_errno_t oefs_size(size_t nblks, size_t* size)
     if (size)
         *size = 0;
 
-    if (nblks < 2 || !_is_power_of_two(nblks) || !size)
+    if (nblks < 2 || !fs_is_pow_of_2(nblks) || !size)
         goto done;
 
     /* Count the first two empty blocks. */
@@ -2441,7 +2432,7 @@ fs_errno_t oefs_size(size_t nblks, size_t* size)
     total_blocks++;
 
     /* Count the bitmap blocks. */
-    total_blocks += _round_to_multiple(nblks, BITS_PER_BLOCK) / BITS_PER_BLOCK;
+    total_blocks += fs_round_to_multiple(nblks, BITS_PER_BLK) / BITS_PER_BLK;
 
     /* Count the data blocks. */
     total_blocks += nblks;
@@ -2616,7 +2607,7 @@ int fs_oefs_new(
     if (fs_out)
         *fs_out = NULL;
 
-    if (!fs_out || !source || nblks < 2 || !_is_power_of_two(nblks))
+    if (!fs_out || !source || nblks < 2 || !fs_is_pow_of_2(nblks))
         goto done;
 
     /* Open a host device. */
@@ -2638,7 +2629,7 @@ int fs_oefs_new(
         bool initialize = (flags & FS_FLAG_MKFS);
 
         if (fs_auth_crypto_blkdev_open(
-            &crypto_dev, initialize, nblks + extra_nblks, key, next) != 0)
+                &crypto_dev, initialize, nblks + extra_nblks, key, next) != 0)
         {
             goto done;
         }
@@ -2660,8 +2651,7 @@ int fs_oefs_new(
     {
         bool initialize = (flags & FS_FLAG_MKFS);
 
-        if (fs_merkle_blkdev_open(
-                &merkle_dev, initialize, nblks, next) != 0)
+        if (fs_merkle_blkdev_open(&merkle_dev, initialize, nblks, next) != 0)
         {
             goto done;
         }
@@ -2721,11 +2711,11 @@ int fs_ramfs_new(fs_t** fs_out, uint32_t flags, size_t nblks)
     fs_blkdev_t* dev = NULL;
     fs_t* fs = NULL;
     size_t size;
-    
+
     if (fs_out)
         *fs_out = NULL;
 
-    if (!fs_out || nblks < 2 || !_is_power_of_two(nblks))
+    if (!fs_out || nblks < 2 || !fs_is_pow_of_2(nblks))
         goto done;
 
     /* Fail if any of these flags are set. */

@@ -6,9 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "atomic.h"
 #include "blkdev.h"
 #include "sha.h"
-#include "atomic.h"
+#include "utils.h"
 
 #define NODES_PER_BLOCK (FS_BLOCK_SIZE / sizeof(node_t))
 
@@ -23,8 +24,7 @@ typedef struct _node
 
     /* The index of a leaf node (or zero for null). */
     uint32_t right;
-}
-node_t;
+} node_t;
 
 FS_STATIC_ASSERT(sizeof(node_t) == 40);
 
@@ -44,7 +44,7 @@ typedef struct _blkdev
     uint8_t* dirty;
 } blkdev_t;
 
-FS_INLINE bool _is_power_of_two(size_t n)
+FS_INLINE bool fs_is_pow_of_2(size_t n)
 {
     return (n & (n - 1)) == 0;
 }
@@ -70,13 +70,11 @@ FS_INLINE size_t _parent(size_t i)
     return (i - 1) / 2;
 }
 
-typedef enum _direction
-{
+typedef enum _direction {
     D_NONE,
     D_LEFT = 'L',
     D_RIGHT = 'R',
-}
-direction_t;
+} direction_t;
 
 /* Get the direction of node n in relative to root (left, right, or none). */
 static direction_t _direction(size_t root, size_t n)
@@ -100,7 +98,7 @@ static direction_t _direction(size_t root, size_t n)
         if (i == right)
             return D_RIGHT;
 
-        i =  _parent(i);
+        i = _parent(i);
     }
 
     return D_NONE;
@@ -111,12 +109,7 @@ FS_INLINE bool _is_null_node(const node_t* node)
     return node->left == 0 && node->right == 0;
 }
 
-FS_INLINE size_t _round_to_multiple(size_t x, size_t m)
-{
-    return (size_t)((x + (m - 1)) / m * m);
-}
-
-FS_INLINE size_t _min(size_t x, size_t y)
+FS_INLINE size_t fs_min_size(size_t x, size_t y)
 {
     return (x < y) ? x : y;
 }
@@ -148,8 +141,8 @@ done:
 }
 
 static void _set_node(
-    blkdev_t* dev, 
-    size_t i, 
+    blkdev_t* dev,
+    size_t i,
     const fs_sha256_t* hash,
     uint32_t left,
     uint32_t right)
@@ -209,14 +202,14 @@ static int read_mtree(blkdev_t* dev)
 {
     int ret = -1;
     size_t nbytes = dev->nnodes * sizeof(node_t);
-    size_t nblks = _round_to_multiple(nbytes, FS_BLOCK_SIZE) / FS_BLOCK_SIZE;
+    size_t nblks = fs_round_to_multiple(nbytes, FS_BLOCK_SIZE) / FS_BLOCK_SIZE;
     uint8_t* ptr = (uint8_t*)dev->nodes;
     size_t rem = dev->nnodes * sizeof(node_t);
 
     for (size_t i = 0; i < nblks; i++)
     {
         fs_blk_t blk;
-        size_t n = _min(rem, sizeof(blk));
+        size_t n = fs_min_size(rem, sizeof(blk));
 
         if (dev->next->get(dev->next, i + dev->nblks, &blk) != 0)
             goto done;
@@ -354,7 +347,7 @@ done:
 }
 
 static int _update_down(
-    blkdev_t* dev, 
+    blkdev_t* dev,
     uint32_t root, /* null node to be updated. */
     uint32_t old,  /* old leaf node index. */
     uint32_t new)  /* new leaf node index. */
@@ -374,7 +367,7 @@ static int _update_down(
 
     if (root >= dev->nnodes || d_old == D_NONE || d_new == D_NONE)
         goto done;
-    
+
     if (d_old == D_LEFT && d_new == D_LEFT) /* two left shoes */
     {
         if (_update_down(dev, _lchild(root), old, new) != 0)
@@ -406,10 +399,7 @@ done:
     return ret;
 }
 
-static int _update_mtree(
-    blkdev_t* dev,
-    uint32_t blkno,
-    const fs_sha256_t* hash)
+static int _update_mtree(blkdev_t* dev, uint32_t blkno, const fs_sha256_t* hash)
 {
     int ret = -1;
     size_t leaf = (dev->nblks - 1) + blkno;
@@ -674,7 +664,7 @@ int fs_merkle_blkdev_open(
         goto done;
 
     /* nblks must be greater than 1 and a power of 2. */
-    if (!(nblks > 1 && _is_power_of_two(nblks)))
+    if (!(nblks > 1 && fs_is_pow_of_2(nblks)))
         goto done;
 
     /* Calculate the number of nodes in the Merkle tree. */
@@ -688,7 +678,7 @@ int fs_merkle_blkdev_open(
     {
         size_t size = nnodes * sizeof(node_t);
 
-        size = _round_to_multiple(size, FS_BLOCK_SIZE);
+        size = fs_round_to_multiple(size, FS_BLOCK_SIZE);
 
         if (!(nodes = calloc(1, size)))
             goto done;

@@ -5,7 +5,7 @@ int fs_mount_hostfs(const char* target)
 {
     int ret = -1;
     fs_t* fs = NULL;
-    
+
     if (!target)
         goto done;
 
@@ -29,7 +29,7 @@ int fs_mount_ramfs(const char* target, uint32_t flags, size_t nblks)
 {
     int ret = -1;
     fs_t* fs = NULL;
-    
+
     if (!target)
         goto done;
 
@@ -58,7 +58,7 @@ int fs_mount_oefs(
 {
     int ret = -1;
     fs_t* fs = NULL;
-    
+
     if (!target)
         goto done;
 

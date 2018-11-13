@@ -1191,7 +1191,7 @@ void _test_merkle(void)
 {
     fs_blkdev_t* ram_dev;
     fs_blkdev_t* dev;
-    //size_t nblks = 512;
+    // size_t nblks = 512;
     size_t nblks = 8;
     size_t size = (nblks * FS_BLOCK_SIZE) * 2;
 
@@ -1297,9 +1297,9 @@ int test_oefs(const char* src_dir, const char* bin_dir)
 }
 
 OE_SET_ENCLAVE_SGX(
-    1,    /* ProductID */
-    1,    /* SecurityVersion */
-    true, /* AllowDebug */
-    4*4096, /* HeapPageCount */
-    4096, /* StackPageCount */
-    2);   /* TCSCount */
+    1,        /* ProductID */
+    1,        /* SecurityVersion */
+    true,     /* AllowDebug */
+    4 * 4096, /* HeapPageCount */
+    4096,     /* StackPageCount */
+    2);       /* TCSCount */

@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "blkdev.h"
 #include "atomic.h"
+#include "blkdev.h"
 
 typedef struct _blkdev
 {

@@ -1,18 +1,19 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <assert.h>
 #include <mbedtls/aes.h>
-#include <mbedtls/sha256.h>
-#include <mbedtls/gcm.h>
 #include <mbedtls/cmac.h>
+#include <mbedtls/gcm.h>
+#include <mbedtls/sha256.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
+#include "atomic.h"
 #include "blkdev.h"
 #include "sha.h"
-#include "atomic.h"
+#include "utils.h"
 
 #define SHA256_SIZE 32
 
@@ -25,8 +26,7 @@
 typedef struct _tag
 {
     uint8_t data[16];
-}
-tag_t;
+} tag_t;
 
 typedef struct _blkdev
 {
@@ -38,11 +38,6 @@ typedef struct _blkdev
     tag_t* tags;
     uint8_t* dirty;
 } blkdev_t;
-
-FS_INLINE size_t _round_to_multiple(size_t x, size_t m)
-{
-    return (size_t)((x + (m - 1)) / m * m);
-}
 
 #if 0
 static void _dump(const void* data_, size_t size)
@@ -282,11 +277,11 @@ static int _blkdev_get(fs_blkdev_t* blkdev, uint32_t blkno, fs_blk_t* blk)
 
     /* Decrypt the block */
     if (_decrypt(
-        dev->key, 
-        blkno, 
-        &dev->tags[blkno],
-        (const uint8_t*)&encrypted, 
-        (uint8_t*)blk) != 0)
+            dev->key,
+            blkno,
+            &dev->tags[blkno],
+            (const uint8_t*)&encrypted,
+            (uint8_t*)blk) != 0)
     {
         goto done;
     }
@@ -312,11 +307,8 @@ static int _blkdev_put(fs_blkdev_t* blkdev, uint32_t blkno, const fs_blk_t* blk)
 
     /* Encrypt the block */
     if (_encrypt(
-        dev->key, 
-        blkno, 
-        (const uint8_t*)blk, 
-        (uint8_t*)&encrypted,
-        &tag) != 0)
+            dev->key, blkno, (const uint8_t*)blk, (uint8_t*)&encrypted, &tag) !=
+        0)
     {
         goto done;
     }
@@ -417,7 +409,7 @@ int fs_auth_crypto_blkdev_open(
     /* Allocates tags array (must be a multiple of the block size). */
     {
         size_t size = sizeof(nblks * sizeof(tags));
-        size = _round_to_multiple(size, FS_BLOCK_SIZE);
+        size = fs_round_to_multiple(size, FS_BLOCK_SIZE);
 
         if (!(tags = calloc(nblks, size)))
             goto done;
