@@ -66,14 +66,14 @@ done:
     return result;
 }
 
-#define OE_ADD_SIZE(total, size)                \
-    do                                          \
-    {                                           \
-        if (oe_add_size(&total, size) != OE_OK) \
-        {                                       \
-            _result = OE_INTEGER_OVERFLOW;      \
-            goto done;                          \
-        }                                       \
+#define OE_ADD_SIZE(total, size)                         \
+    do                                                   \
+    {                                                    \
+        if (oe_add_size(&total, (size_t) size) != OE_OK) \
+        {                                                \
+            _result = OE_INTEGER_OVERFLOW;               \
+            goto done;                                   \
+        }                                                \
     } while (0)
 
 /**
