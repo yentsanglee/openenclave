@@ -28,6 +28,12 @@ Next, the file system is mounted as follows.
 fs_mount(fs, "/mnt/hostfs");
 ```
 
+Of course both steps could be performed by a single convenience function.
+
+```
+fs_mount_hostfs("/mnt/hostfs");
+```
+
 Once mounted, file systems are manipulated with the standard POSIX libc
 functions. For example:
 
@@ -213,7 +219,7 @@ systems may opt to use these block devices in their implementation. For
 example, **oefs** uses the following chain of block devices.
 
 ```
-cache_blkdev -> merkle_blkdev -> host_blkdev
+cache_blkdev -> merkle_blkdev -> auth_crypto_blkdev -> host_blkdev
 ```
 
 The block device interface is defined as follows.
@@ -238,7 +244,10 @@ fs_blkdev_t;
 
 Here is a list of existing block device implementations.
 
+- **ram_blkdev** -- Enclave memory block device
+- **host_blkdev** -- Host file block device
 - **cache_blkdev** -- Buffer cache block device
 - **merkle_blkdev** -- Merkle tree block device
-- **crypto_blkdev** -- Length-preserving block encryption device.
+- **crypto_blkdev** -- Length-preserving block encryption device
+- **auth_crypto_blkdev** -- Authenticated block encryption device
 
