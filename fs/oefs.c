@@ -2595,8 +2595,9 @@ done:
 }
 
 #define USE_CACHE_BLKDEV
-#define USE_MERKLE_BLKDEV
-#define USE_CRYPTO_BLKDEV
+//#define USE_MERKLE_BLKDEV
+#define USE_AUTH_CRYPTO_BLKDEV
+//#define USE_CRYPTO_BLKDEV
 
 int fs_create_oefs(
     fs_t** fs_out,
@@ -2639,12 +2640,26 @@ int fs_create_oefs(
         }
 #endif
 
+#if defined(USE_AUTH_CRYPTO_BLKDEV)
+        {
+            bool initialize = (flags & FS_FLAG_MKFS);
+
+            if (fs_open_auth_crypto_blkdev(
+                &crypto_dev, initialize, nblks, key, next) != 0)
+            {
+                goto done;
+            }
+
+            next = crypto_dev;
+        }
+#endif
+
 #if defined(USE_MERKLE_BLKDEV)
         {
             bool initialize = (flags & FS_FLAG_MKFS);
 
             if (fs_open_merkle_blkdev(
-                    &merkle_dev, nblks, initialize, next) != 0)
+                    &merkle_dev, initialize, nblks, next) != 0)
             {
                 goto done;
             }

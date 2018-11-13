@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <string.h>
 #include "blkdev.h"
 #include "sha.h"
@@ -18,6 +19,8 @@
 #define AES_GCM_IV_SIZE 12
 
 #define TAGS_PER_BLOCK (FS_BLOCK_SIZE / sizeof(tag_t))
+
+#define KEY_SIZE 256
 
 typedef struct _tag
 {
@@ -41,22 +44,37 @@ FS_INLINE size_t _round_to_multiple(size_t x, size_t m)
     return (size_t)((x + (m - 1)) / m * m);
 }
 
+#if 0
+static void _dump(const void* data_, size_t size)
+{
+    const uint8_t* data = (const uint8_t*)data_;
+    for (size_t i = 0; i < size; i++)
+    {
+        uint8_t byte = data[i];
+        printf("%02x", byte);
+    }
+
+    printf("\n");
+}
+#endif
+
 static int _generate_initialization_vector(
     const uint8_t key[FS_KEY_SIZE],
     uint64_t blkno,
     uint8_t iv[AES_GCM_IV_SIZE])
 {
     int ret = -1;
-    uint8_t buf[AES_GCM_IV_SIZE];
+    uint8_t in[16];
+    uint8_t out[16];
     fs_sha256_t khash;
     mbedtls_aes_context aes;
 
     mbedtls_aes_init(&aes);
-    memset(iv, 0, sizeof(AES_GCM_IV_SIZE));
+    memset(iv, 0x00, AES_GCM_IV_SIZE);
 
     /* The input buffer contains the block number followed by zeros. */
-    memset(buf, 0, sizeof(buf));
-    memcpy(buf, &blkno, sizeof(blkno));
+    memset(in, 0, sizeof(in));
+    memcpy(in, &blkno, sizeof(blkno));
 
     /* Compute the hash of the key. */
     if (fs_sha256(&khash, key, FS_KEY_SIZE) != 0)
@@ -67,8 +85,12 @@ static int _generate_initialization_vector(
         goto done;
 
     /* Encrypt the buffer with the hash of the key, yielding the IV. */
-    if (mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, buf, iv) != 0)
+    if (mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, in, out) != 0)
         goto done;
+
+    /* Use the first 12 bytes of the 16-byte buffer. */
+
+    memcpy(iv, out, AES_GCM_IV_SIZE);
 
     ret = 0;
 
@@ -93,7 +115,7 @@ static int _encrypt(
 
     memset(tag, 0, sizeof(tag_t));
 
-    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, 256) != 0)
+    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, KEY_SIZE) != 0)
         goto done;
 
     if (_generate_initialization_vector(key, blkno, iv) != 0)
@@ -137,7 +159,7 @@ static int _decrypt(
 
     mbedtls_gcm_init(&gcm);
 
-    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, 256) != 0)
+    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, KEY_SIZE) != 0)
         goto done;
 
     if (_generate_initialization_vector(key, blkno, iv) != 0)
@@ -178,7 +200,9 @@ static int _write_tags(blkdev_t* dev)
     {
         if (dev->dirty[i])
         {
-            if (dev->next->put(dev->next, i + dev->nblks, p) != 0)
+            size_t off = dev->nblks;
+
+            if (dev->next->put(dev->next, i + off, p) != 0)
                 goto done;
 
             dev->dirty[i] = 0;
@@ -202,7 +226,9 @@ static int _read_tags(blkdev_t* dev)
 
     for (size_t i = 0; i < n; i++)
     {
-        if (dev->next->get(dev->next, i + dev->nblks, p) != 0)
+        size_t off = dev->nblks;
+
+        if (dev->next->get(dev->next, i + off, p) != 0)
             goto done;
 
         dev->dirty[i] = 0;
@@ -227,6 +253,8 @@ static int _blkdev_release(fs_blkdev_t* blkdev)
     if (fs_atomic_decrement(&dev->ref_count) == 0)
     {
         dev->next->release(dev->next);
+        free(dev->tags);
+        free(dev->dirty);
         free(dev);
     }
 
@@ -274,6 +302,8 @@ static int _blkdev_put(fs_blkdev_t* blkdev, uint32_t blkno, const fs_blk_t* blk)
     fs_blk_t encrypted;
     tag_t tag;
 
+    assert(blkno < dev->nblks);
+
     if (!dev || !blk || blkno >= dev->nblks)
         goto done;
 
@@ -291,6 +321,9 @@ static int _blkdev_put(fs_blkdev_t* blkdev, uint32_t blkno, const fs_blk_t* blk)
     /* Delegate to the next block dev in the chain. */
     if (dev->next->put(dev->next, blkno, &encrypted) != 0)
         goto done;
+
+    /* Save the tag. */
+    dev->tags[blkno] = tag;
 
     /* Set the dirty byte for this block's tag. */
     dev->dirty[blkno] = 1;

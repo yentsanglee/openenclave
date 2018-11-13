@@ -116,7 +116,9 @@ static int _write_hash_tree(blkdev_t* dev)
     {
         if (dev->dirty[i])
         {
-            if (dev->next->put(dev->next, i + dev->nblks, p) != 0)
+            size_t offset = dev->nblks;
+
+            if (dev->next->put(dev->next, i + offset, p) != 0)
                 goto done;
 
             dev->dirty[i] = 0;
@@ -144,8 +146,9 @@ static int read_hash_tree(blkdev_t* dev)
     {
         fs_blk_t blk;
         size_t n = _min(rem, sizeof(blk));
+        size_t offset = dev->nblks;
 
-        if (dev->next->get(dev->next, i + dev->nblks, &blk) != 0)
+        if (dev->next->get(dev->next, i + offset, &blk) != 0)
             goto done;
 
         memcpy(ptr, &blk, n);
@@ -388,8 +391,8 @@ done:
 
 int fs_open_merkle_blkdev(
     fs_blkdev_t** blkdev,
-    size_t nblks,
     bool initialize,
+    size_t nblks,
     fs_blkdev_t* next)
 {
     int ret = -1;

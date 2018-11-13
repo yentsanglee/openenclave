@@ -51,8 +51,8 @@ int fs_open_auth_crypto_blkdev(
 
 int fs_open_merkle_blkdev(
     fs_blkdev_t** blkdev,
-    size_t nblks,
     bool initialize,
+    size_t nblks,
     fs_blkdev_t* next);
 
 #endif /* _FS_BLKDEV_H */

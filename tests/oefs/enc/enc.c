@@ -1202,7 +1202,7 @@ void _test_merkle(void)
 
     /* Test initialization. */
     {
-        OE_TEST(fs_open_merkle_blkdev(&dev, nblks, true, ram_dev) == 0);
+        OE_TEST(fs_open_merkle_blkdev(&dev, true, nblks, ram_dev) == 0);
 
         for (size_t i = 0; i < nblks; i++)
         {
@@ -1223,7 +1223,7 @@ void _test_merkle(void)
 
     /* Test load. */
     {
-        OE_TEST(fs_open_merkle_blkdev(&dev, nblks, false, ram_dev) == 0);
+        OE_TEST(fs_open_merkle_blkdev(&dev, false, nblks, ram_dev) == 0);
 
         for (size_t i = 0; i < nblks; i++)
         {
