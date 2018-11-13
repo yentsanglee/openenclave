@@ -15,7 +15,8 @@ add_executable(hostcrypto
     ../random_tests.c
     ../rsa_tests.c
     ../sha_tests.c
-    ../tests.c)
+    ../tests.c
+    ../utils.c)
 else()
 add_executable(hostcrypto
     main.c
@@ -23,7 +24,8 @@ add_executable(hostcrypto
     ../hmac_tests.c
     ../kdf_tests.c
     ../sha_tests.c
-    ../tests.c)
+    ../tests.c
+    ../utils.c)
 endif()
 
 # ========================= TestCRL & TestASN1 ================================
