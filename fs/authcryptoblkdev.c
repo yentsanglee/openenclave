@@ -93,7 +93,7 @@ static int _encrypt(
 
     memset(tag, 0, sizeof(tag_t));
 
-    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, 128) != 0)
+    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, 256) != 0)
         goto done;
 
     if (_generate_initialization_vector(key, blkno, iv) != 0)
@@ -137,7 +137,7 @@ static int _decrypt(
 
     mbedtls_gcm_init(&gcm);
 
-    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, 128) != 0)
+    if (mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, 256) != 0)
         goto done;
 
     if (_generate_initialization_vector(key, blkno, iv) != 0)
@@ -151,7 +151,7 @@ static int _decrypt(
             NULL,
             0,
             (const unsigned char*)tag,
-            16,
+            sizeof(tag_t),
             in,
             out) != 0)
     {
@@ -323,12 +323,15 @@ done:
 static int _blkdev_end(fs_blkdev_t* d)
 {
     int ret = -1;
-    blkdev_t* blkdev = (blkdev_t*)d;
+    blkdev_t* dev = (blkdev_t*)d;
 
-    if (!blkdev || !blkdev->next)
+    if (!dev || !dev->next)
         goto done;
 
-    if (blkdev->next->end(blkdev->next) != 0)
+    if (dev->next->end(dev->next) != 0)
+        goto done;
+
+    if (_write_tags(dev) != 0)
         goto done;
 
     ret = 0;
