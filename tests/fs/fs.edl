@@ -3,7 +3,7 @@
 
 enclave {
     trusted {
-        public int test_oefs(
+        public int test_fs(
             [string, in] const char* src_dir,
             [string, in] const char* bin_dir);
     };

@@ -22,7 +22,7 @@
 #include "../../../fs/cpio.h"
 #include "../../../fs/fs.h"
 #include "../../../fs/mount.h"
-#include "oefs_t.h"
+#include "fs_t.h"
 
 #define INIT
 
@@ -1239,7 +1239,7 @@ void _test_merkle(void)
     ram_dev->release(ram_dev);
 }
 
-int test_oefs(const char* src_dir, const char* bin_dir)
+int test_fs(const char* src_dir, const char* bin_dir)
 {
     uint32_t oefs_flags = 0;
     uint32_t ramfs_flags = 0;

@@ -8,8 +8,8 @@ if (UNIX)
 endif()
 
 add_test(
-    tests/oefs 
-    ./host/oefs_host 
-    ./enc/oefs_enc 
+    tests/fs 
+    ./host/fs_host 
+    ./enc/fs_enc 
     "${PROJECT_SOURCE_DIR}"
     "${CMAKE_BINARY_DIR}")

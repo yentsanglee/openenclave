@@ -8,7 +8,7 @@
 #include <string.h>
 #include "../../../fs/cpio.h"
 #include "../../../fs/strings.h"
-#include "oefs_u.h"
+#include "fs_u.h"
 
 static void _create_cpio_archive(const char* src_dir, const char* bin_dir)
 {
@@ -61,17 +61,17 @@ int main(int argc, const char* argv[])
     /* Truncate or create the OEFS file. */
     _truncate_oefs_file(bin_dir);
 
-    r = oe_create_oefs_enclave(argv[1], type, flags, NULL, 0, &enclave);
+    r = oe_create_fs_enclave(argv[1], type, flags, NULL, 0, &enclave);
     if (r != OE_OK)
     {
         fprintf(stderr, "%s: oe_create_oefs_enclave() failed\n", argv[0]);
         exit(1);
     }
 
-    r = test_oefs(enclave, &ret, src_dir, bin_dir);
+    r = test_fs(enclave, &ret, src_dir, bin_dir);
     if (r != OE_OK || ret != 0)
     {
-        fprintf(stderr, "%s: test_oefs() failed\n", argv[0]);
+        fprintf(stderr, "%s: test_fs() failed\n", argv[0]);
         exit(1);
     }
 
