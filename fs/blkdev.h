@@ -31,25 +31,28 @@ struct _fs_blkdev
     int (*release)(fs_blkdev_t* dev);
 };
 
-int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* path);
+int fs_host_blkdev_open(fs_blkdev_t** blkdev, const char* path);
 
-int fs_open_ram_blkdev(fs_blkdev_t** blkdev, size_t size);
+int fs_ram_blkdev_open(fs_blkdev_t** blkdev, size_t size);
 
-int fs_open_cache_blkdev(fs_blkdev_t** blkdev, fs_blkdev_t* next);
+int fs_cache_blkdev_open(fs_blkdev_t** blkdev, fs_blkdev_t* next);
 
-int fs_open_crypto_blkdev(
+int fs_crypto_blkdev_open(
     fs_blkdev_t** blkdev,
     const uint8_t key[FS_KEY_SIZE],
     fs_blkdev_t* next);
 
-int fs_open_auth_crypto_blkdev(
+int fs_auth_crypto_blkdev_open(
     fs_blkdev_t** blkdev,
     bool initialize,
     size_t nblks,
     const uint8_t key[FS_KEY_SIZE],
     fs_blkdev_t* next);
 
-int fs_open_merkle_blkdev(
+/* Get the number of extra blocks needed by a Merkle block device. */
+int fs_merkle_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks);
+
+int fs_merkle_blkdev_open(
     fs_blkdev_t** blkdev,
     bool initialize,
     size_t nblks,

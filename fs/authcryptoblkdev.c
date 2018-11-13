@@ -252,6 +252,9 @@ static int _blkdev_release(fs_blkdev_t* blkdev)
 
     if (fs_atomic_decrement(&dev->ref_count) == 0)
     {
+        if (_write_tags(dev) != 0)
+            goto done;
+
         dev->next->release(dev->next);
         free(dev->tags);
         free(dev->dirty);
@@ -390,7 +393,7 @@ done:
     return ret;
 }
 
-int fs_open_auth_crypto_blkdev(
+int fs_auth_crypto_blkdev_open(
     fs_blkdev_t** blkdev,
     bool initialize,
     size_t nblks,

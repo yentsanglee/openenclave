@@ -358,10 +358,8 @@ static int _blkdev_end(fs_blkdev_t* d)
     if (!dev || !dev->next)
         goto done;
 
-#if 1
     if (_write_hash_tree(dev) != 0)
         goto done;
-#endif
 
     if (dev->next->end(dev->next) != 0)
         goto done;
@@ -389,7 +387,7 @@ done:
     return ret;
 }
 
-int fs_open_merkle_blkdev(
+int fs_merkle_blkdev_open(
     fs_blkdev_t** blkdev,
     bool initialize,
     size_t nblks,
@@ -536,5 +534,30 @@ done:
     if (dirty)
         free(dirty);
 
+    return ret;
+}
+
+int fs_merkle_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks)
+{
+    int ret = -1;
+    size_t nhashes;
+
+    if (!extra_nblks)
+        goto done;
+
+    /* nblks must be greater than 1 and a power of 2. */
+    if (!(nblks > 1 && _is_power_of_two(nblks)))
+        goto done;
+
+    /* Calculate the number of hash nodes in a Merkle tree. */
+    nhashes = (nblks * 2) - 1;
+
+    /* Calculate the number of blocks needed by a Merkle hash tree. */
+    *extra_nblks = 
+        _round_to_multiple(nhashes, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
+
+    ret = 0;
+
+done:
     return ret;
 }

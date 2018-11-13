@@ -161,7 +161,7 @@ done:
     return ret;
 }
 
-int fs_open_host_blkdev(fs_blkdev_t** blkdev, const char* path)
+int fs_host_blkdev_open(fs_blkdev_t** blkdev, const char* path)
 {
     int ret = -1;
     blkdev_t* dev = NULL;

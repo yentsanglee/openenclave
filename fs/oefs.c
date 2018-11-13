@@ -2595,7 +2595,7 @@ done:
 }
 
 #define USE_CACHE_BLKDEV
-//#define USE_MERKLE_BLKDEV
+#define USE_MERKLE_BLKDEV
 #define USE_AUTH_CRYPTO_BLKDEV
 //#define USE_CRYPTO_BLKDEV
 
@@ -2610,11 +2610,13 @@ int fs_create_oefs(
     fs_blkdev_t* host_dev = NULL;
     fs_blkdev_t* crypto_dev = NULL;
     fs_blkdev_t* cache_dev = NULL;
-    fs_blkdev_t* ram_dev = NULL;
     fs_blkdev_t* merkle_dev = NULL;
     fs_blkdev_t* dev = NULL;
     fs_blkdev_t* next = NULL;
     fs_t* fs = NULL;
+    size_t extra_nblks = 0;
+
+    (void)extra_nblks;
 
     if (fs_out)
         *fs_out = NULL;
@@ -2623,62 +2625,68 @@ int fs_create_oefs(
         goto done;
 
     /* Open a host device. */
-    if (fs_open_host_blkdev(&host_dev, source) != 0)
+    if (fs_host_blkdev_open(&host_dev, source) != 0)
         goto done;
 
     next = host_dev;
 
-    /* If a key was provided, then open a crypto device. */
-    if (key)
-    {
-#if defined(USE_CRYPTO_BLKDEV)
-        {
-            if (fs_open_crypto_blkdev(&crypto_dev, key, next) != 0)
-                goto done;
+#if defined(USE_MERKLE_BLKDEV)
+    /* Create the number of extra blocks needed by the Merkle block device. */
+    if (fs_merkle_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
+        goto done;
+#endif
 
-            next = crypto_dev;
-        }
+#if defined(USE_CRYPTO_BLKDEV)
+    /* Create a crypto block device. */
+    {
+        if (fs_crypto_blkdev_open(&crypto_dev, key, next) != 0)
+            goto done;
+
+        next = crypto_dev;
+    }
 #endif
 
 #if defined(USE_AUTH_CRYPTO_BLKDEV)
+    /* Create an authenticated crypto block device. */
+    {
+        bool initialize = (flags & FS_FLAG_MKFS);
+
+        if (fs_auth_crypto_blkdev_open(
+            &crypto_dev, initialize, nblks + extra_nblks, key, next) != 0)
         {
-            bool initialize = (flags & FS_FLAG_MKFS);
-
-            if (fs_open_auth_crypto_blkdev(
-                &crypto_dev, initialize, nblks, key, next) != 0)
-            {
-                goto done;
-            }
-
-            next = crypto_dev;
+            goto done;
         }
+
+        next = crypto_dev;
+    }
 #endif
 
 #if defined(USE_MERKLE_BLKDEV)
+    /* Create a Merkle block device. */
+    {
+        bool initialize = (flags & FS_FLAG_MKFS);
+
+        if (fs_merkle_blkdev_open(
+                &merkle_dev, initialize, nblks, next) != 0)
         {
-            bool initialize = (flags & FS_FLAG_MKFS);
-
-            if (fs_open_merkle_blkdev(
-                    &merkle_dev, initialize, nblks, next) != 0)
-            {
-                goto done;
-            }
-
-            next = merkle_dev;
+            goto done;
         }
+
+        next = merkle_dev;
+    }
 #endif
 
 #if defined(USE_CACHE_BLKDEV)
-        /* cache_dev */
-        {
-            if (fs_open_cache_blkdev(&cache_dev, next) != 0)
-                goto done;
+    /* Create a cache block device. */
+    {
+        if (fs_cache_blkdev_open(&cache_dev, next) != 0)
+            goto done;
 
-            next = cache_dev;
-        }
-#endif
+        next = cache_dev;
     }
+#endif
 
+    /* Set the top-level block device. */
     dev = next;
 
     if (flags & FS_FLAG_MKFS)
@@ -2705,9 +2713,6 @@ done:
 
     if (cache_dev)
         cache_dev->release(cache_dev);
-
-    if (ram_dev)
-        ram_dev->release(ram_dev);
 
     if (merkle_dev)
         merkle_dev->release(merkle_dev);
@@ -2741,7 +2746,7 @@ int fs_create_ramfs(fs_t** fs_out, uint32_t flags, size_t nblks)
         if (oefs_size(nblks, &size) != 0)
             goto done;
 
-        if (fs_open_ram_blkdev(&ram_dev, size) != 0)
+        if (fs_ram_blkdev_open(&ram_dev, size) != 0)
             goto done;
 
         dev = ram_dev;

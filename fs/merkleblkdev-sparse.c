@@ -655,7 +655,7 @@ done:
     return ret;
 }
 
-int fs_open_merkle_blkdev(
+int fs_merkle_blkdev_open(
     fs_blkdev_t** blkdev,
     size_t nblks,
     bool initialize,

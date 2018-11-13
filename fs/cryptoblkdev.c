@@ -226,7 +226,7 @@ done:
     return ret;
 }
 
-int fs_open_crypto_blkdev(
+int fs_crypto_blkdev_open(
     fs_blkdev_t** blkdev,
     const uint8_t key[FS_KEY_SIZE],
     fs_blkdev_t* next)

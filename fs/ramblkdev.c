@@ -105,7 +105,7 @@ static int _blkdev_add_ref(fs_blkdev_t* dev)
 done:
     return ret;
 }
-int fs_open_ram_blkdev(fs_blkdev_t** blkdev, size_t size)
+int fs_ram_blkdev_open(fs_blkdev_t** blkdev, size_t size)
 {
     int ret = -1;
     blkdev_t* device = NULL;

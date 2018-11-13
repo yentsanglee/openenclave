@@ -1198,11 +1198,11 @@ void _test_merkle(void)
     size_t nblks = 8;
     size_t size = (nblks * FS_BLOCK_SIZE) * 2;
 
-    OE_TEST(fs_open_ram_blkdev(&ram_dev, size) == 0);
+    OE_TEST(fs_ram_blkdev_open(&ram_dev, size) == 0);
 
     /* Test initialization. */
     {
-        OE_TEST(fs_open_merkle_blkdev(&dev, true, nblks, ram_dev) == 0);
+        OE_TEST(fs_merkle_blkdev_open(&dev, true, nblks, ram_dev) == 0);
 
         for (size_t i = 0; i < nblks; i++)
         {
@@ -1223,7 +1223,7 @@ void _test_merkle(void)
 
     /* Test load. */
     {
-        OE_TEST(fs_open_merkle_blkdev(&dev, false, nblks, ram_dev) == 0);
+        OE_TEST(fs_merkle_blkdev_open(&dev, false, nblks, ram_dev) == 0);
 
         for (size_t i = 0; i < nblks; i++)
         {

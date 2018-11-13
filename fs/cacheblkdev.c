@@ -352,7 +352,7 @@ done:
     return ret;
 }
 
-int fs_open_cache_blkdev(fs_blkdev_t** dev_out, fs_blkdev_t* next)
+int fs_cache_blkdev_open(fs_blkdev_t** dev_out, fs_blkdev_t* next)
 {
     int ret = -1;
     blkdev_t* dev = NULL;
