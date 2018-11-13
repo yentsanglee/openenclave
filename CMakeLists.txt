@@ -100,4 +100,6 @@ if (UNIX)
   add_subdirectory(libcxx)
   add_subdirectory(pkgconfig)
   add_subdirectory(samples)
+  add_subdirectory(libsocket)
 endif ()
+
