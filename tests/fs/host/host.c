@@ -19,7 +19,7 @@ static void _create_cpio_archive(const char* src_dir, const char* bin_dir)
     fs_strlcat(source, "/tests", sizeof(source));
 
     fs_strlcpy(target, bin_dir, sizeof(target));
-    fs_strlcat(target, "/tests/oefs/host.tests.cpio", sizeof(target));
+    fs_strlcat(target, "/tests/fs/host.tests.cpio", sizeof(target));
 
     OE_TEST(fs_cpio_pack(source, target) == 0);
 }
@@ -30,7 +30,7 @@ static void _truncate_oefs_file(const char* bin_dir)
     FILE* os;
 
     fs_strlcpy(path, bin_dir, sizeof(path));
-    fs_strlcat(path, "/tests/oefs/tests.oefs", sizeof(path));
+    fs_strlcat(path, "/tests/fs/tests.oefs", sizeof(path));
 
     OE_TEST((os = fopen(path, "wb")) != NULL);
     fclose(os);

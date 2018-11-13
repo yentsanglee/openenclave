@@ -2751,7 +2751,6 @@ int fs_ramfs_new(fs_t** fs_out, uint32_t flags, size_t nblks)
         goto done;
 
     *fs_out = fs;
-    dev = NULL;
     fs = NULL;
     ret = 0;
 

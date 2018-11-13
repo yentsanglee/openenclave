@@ -1055,11 +1055,11 @@ static void _test_cpio_host_to_host(const char* src_dir, const char* bin_dir)
 
     strlcpy(target, "/mnt/hostfs", sizeof(target));
     strlcat(target, bin_dir, sizeof(target));
-    strlcat(target, "/tests/oefs/enclave.tests.cpio", sizeof(target));
+    strlcat(target, "/tests/fs/enclave.tests.cpio", sizeof(target));
 
     strlcpy(target2, "/mnt/hostfs", sizeof(target2));
     strlcat(target2, bin_dir, sizeof(target2));
-    strlcat(target2, "/tests/oefs/enclave.test.cpio.dir", sizeof(target2));
+    strlcat(target2, "/tests/fs/enclave.test.cpio.dir", sizeof(target2));
 
     unlink(target);
     rmdir(target2);
@@ -1245,7 +1245,6 @@ int test_fs(const char* src_dir, const char* bin_dir)
     uint32_t ramfs_flags = 0;
     size_t num_bytes = 4194304;
     size_t num_blocks = num_bytes / FS_BLOCK_SIZE;
-    int rc;
     const char target1[] = "/mnt/oefs";
     const char target2[] = "/mnt/ramfs";
     uint8_t key[FS_KEY_SIZE] = {
@@ -1271,7 +1270,7 @@ int test_fs(const char* src_dir, const char* bin_dir)
         char path[PATH_MAX];
 
         strlcpy(path, bin_dir, sizeof(path));
-        strlcat(path, "/tests/oefs/tests.oefs", sizeof(path));
+        strlcat(path, "/tests/fs/tests.oefs", sizeof(path));
 
         OE_TEST(fs_mount_oefs(path, target1, oefs_flags, num_blocks, key) == 0);
     }
@@ -1287,9 +1286,9 @@ int test_fs(const char* src_dir, const char* bin_dir)
     _test_cpio_host_to_host(src_dir, bin_dir);
     _test_cpio_host_to_enclave(src_dir, bin_dir);
 
-    rc = fs_unmount(target1);
-    rc = fs_unmount(target2);
-    rc = fs_unmount("/mnt/hostfs");
+    OE_TEST(fs_unmount(target1) == 0);
+    OE_TEST(fs_unmount(target2) == 0);
+    OE_TEST(fs_unmount("/mnt/hostfs") == 0);
 
     _test_hostfs();
 
