@@ -17,7 +17,11 @@
 #define PFS_MAGIC 0x5042e4e1
 #define FILE_MAGIC 0x82c485d3
 
+#if 0
 #define D(X) X
+#else
+#define D(X)
+#endif
 
 typedef struct _pfs pfs_t;
 
