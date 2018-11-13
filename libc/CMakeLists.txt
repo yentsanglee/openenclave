@@ -20,6 +20,7 @@ add_library(oelibc STATIC
     ../fs/cacheblkdev.c
     ../fs/cpio.c
     ../fs/cryptoblkdev.c
+    ../fs/authcryptoblkdev.c
     ../fs/fs.c
     ../fs/guid.c
     ../fs/hostbatch.c
