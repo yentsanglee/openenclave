@@ -11,6 +11,8 @@
         NULL, 0, 0            \
     }
 
+FS_EXTERN_C_BEGIN
+
 typedef struct _fs_strarr
 {
     char** data;
@@ -23,5 +25,7 @@ void fs_strarr_release(fs_strarr_t* self);
 int fs_strarr_append(fs_strarr_t* self, const char* data);
 
 int fs_strarr_remove(fs_strarr_t* self, size_t index);
+
+FS_EXTERN_C_END
 
 #endif /* _FS_STRARR_H */

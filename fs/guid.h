@@ -6,6 +6,8 @@
 
 #include "common.h"
 
+FS_EXTERN_C_BEGIN
+
 #define FS_GUID_STRING_SIZE 37
 
 typedef struct _fs_guid
@@ -17,5 +19,7 @@ typedef struct _fs_guid
 } fs_guid_t;
 
 void fs_format_guid(char buf[FS_GUID_STRING_SIZE], const fs_guid_t* guid);
+
+FS_EXTERN_C_END
 
 #endif /* _FS_GUID_H */

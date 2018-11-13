@@ -1,9 +1,11 @@
 #include <errno.h>
+#include <openenclave/internal/tests.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
-#include <openenclave/internal/tests.h>
 #include "protectedfs_t.h"
+#include "../../../protectedfs/common/protectedfs.h"
 
 #ifdef FILENAME_MAX
 #undef FILENAME_MAX
@@ -15,7 +17,7 @@
 
 #include "../../../3rdparty/linux-sgx/linux-sgx/common/inc/sgx_tprotected_fs.h"
 
-void enc_test()
+static void _test1()
 {
     const char path[] = "/tmp/pfs.test";
 
@@ -81,6 +83,48 @@ void enc_test()
             "Failed to open file. errno=%d, \"%s\"\n", errno, strerror(errno));
         OE_TEST(false);
     }
+}
+
+static void _test2()
+{
+    const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+    char buf[sizeof(alphabet)];
+    const size_t N = 16;
+    FILE* stream;
+
+    OE_TEST(fs_mount_protectedfs("/mnt/pfs") == 0);
+
+    OE_TEST((stream = fopen("/mnt/pfs/tmp/myfile", "w")) != NULL);
+
+    /* Write to the file */
+    for (size_t i = 0; i < N; i++)
+    {
+        ssize_t n = fwrite(alphabet, 1, sizeof(alphabet), stream);
+        OE_TEST(n == sizeof(alphabet));
+    }
+
+    /* Close and reopen the file. */
+    fclose(stream);
+    OE_TEST((stream = fopen("/mnt/pfs/tmp/myfile", "r")) != NULL);
+
+    /* Read from the file. */
+    for (size_t i = 0; i < N; i++)
+    {
+        ssize_t n = fread(buf, 1, sizeof(buf), stream);
+        OE_TEST(n == sizeof(buf));
+        OE_TEST(memcmp(buf, alphabet, sizeof(alphabet)) == 0);
+        printf("buf{%s}\n", buf);
+    }
+
+    fclose(stream);
+
+    fs_unmount("/mnt/pfs");
+}
+
+void enc_test()
+{
+    _test1();
+    _test2();
 }
 
 OE_SET_ENCLAVE_SGX(

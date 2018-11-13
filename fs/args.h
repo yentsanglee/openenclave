@@ -7,9 +7,13 @@
 #include "common.h"
 #include "guid.h"
 
+FS_EXTERN_C_BEGIN
+
 typedef struct _fs_args
 {
     fs_guid_t guid;
 } fs_args_t;
+
+FS_EXTERN_C_END
 
 #endif /* _FS_ARGS_H */

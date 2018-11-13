@@ -6,6 +6,8 @@
 
 #include "common.h"
 
+FS_EXTERN_C_BEGIN
+
 /*
 **==============================================================================
 **
@@ -74,5 +76,7 @@ ssize_t fs_cpio_write_data(fs_cpio_t* cpio, const void* data, size_t size);
 int fs_cpio_pack(const char* source, const char* target);
 
 int fs_cpio_unpack(const char* source, const char* target);
+
+FS_EXTERN_C_END
 
 #endif /* _FS_CPIO_H */

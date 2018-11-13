@@ -6,6 +6,8 @@
 
 #include "common.h"
 
+FS_EXTERN_C_BEGIN
+
 typedef struct _fs_sha256
 {
     union {
@@ -31,5 +33,7 @@ FS_INLINE bool fs_sha256_eq(const fs_sha256_t* x, const fs_sha256_t* y)
     return x->u.words[0] == y->u.words[0] && x->u.words[1] == y->u.words[1] &&
            x->u.words[2] == y->u.words[2] && x->u.words[3] == y->u.words[3];
 }
+
+FS_EXTERN_C_END
 
 #endif /* _FS_SHA_H */

@@ -6,6 +6,9 @@
 
 #include "args.h"
 #include "blkdev.h"
+#include "common.h"
+
+FS_EXTERN_C_BEGIN
 
 /* ac765314-ef16-4014-9c4e-7c9e2c2781da */
 #define FS_HOSTBLKDEV_GUID                                 \
@@ -53,5 +56,7 @@ typedef struct _fs_hostblkdev_ocall_args
 } fs_hostblkdev_ocall_args_t;
 
 void fs_handle_hostblkdev_ocall(fs_hostblkdev_ocall_args_t* arg);
+
+FS_EXTERN_C_END
 
 #endif /* _FS_HOSTBLKDEV_H */

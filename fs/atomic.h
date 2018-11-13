@@ -10,6 +10,8 @@
 #include <windows.h>
 #endif
 
+FS_EXTERN_C_BEGIN
+
 /* Atomically increment x and return its new value. */
 FS_INLINE uint64_t fs_atomic_increment(volatile uint64_t* x)
 {
@@ -29,5 +31,7 @@ FS_INLINE uint64_t fs_atomic_decrement(volatile uint64_t* x)
     return InterlockedDecrement64(x);
 #endif
 }
+
+FS_EXTERN_C_END
 
 #endif /* _FS_ATOMIC_H */

@@ -5,6 +5,11 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "../../fs/fs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum _oe_protectedfs_op {
     oe_protectedfs_op_none,
@@ -90,5 +95,13 @@ typedef struct _oe_protectedfs_args
     } u;
     uint8_t buffer[];
 } oe_protectedfs_args_t;
+
+int protectedfs_new(fs_t** fs_out);
+
+int fs_mount_protectedfs(const char* target);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _OE_PROTECTEDFS_COMMON_PROTECTEDFS_H */

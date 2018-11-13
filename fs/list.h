@@ -6,6 +6,8 @@
 
 #include "common.h"
 
+FS_EXTERN_C_BEGIN
+
 typedef struct _fs_list_node fs_list_node_t;
 
 typedef struct _fs_list fs_list_t;
@@ -91,5 +93,7 @@ FS_INLINE void fs_list_free(fs_list_t* list)
     list->tail = NULL;
     list->size = 0;
 }
+
+FS_EXTERN_C_END
 
 #endif /* _FS_LIST_H */

@@ -6,6 +6,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "common.h"
+
+FS_EXTERN_C_BEGIN
 
 /*
 **==============================================================================
@@ -64,5 +67,7 @@ void fs_bufu32_clear(fs_bufu32_t* buf);
 int fs_bufu32_resize(fs_bufu32_t* buf, uint32_t new_size);
 
 int fs_bufu32_append(fs_bufu32_t* buf, const uint32_t* data, uint32_t size);
+
+FS_EXTERN_C_END
 
 #endif /* _FS_BUF_H */

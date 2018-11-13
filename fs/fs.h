@@ -10,6 +10,8 @@
 #include "common.h"
 #include "errno.h"
 
+FS_EXTERN_C_BEGIN
+
 /* File system creating flags. */
 #define FS_FLAG_NONE 0
 #define FS_FLAG_MKFS 1
@@ -248,5 +250,7 @@ int fs_oefs_new(
     uint32_t flags,
     size_t nblks,
     const uint8_t key[FS_KEY_SIZE]);
+
+FS_EXTERN_C_END
 
 #endif /* _FS_H */

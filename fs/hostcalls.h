@@ -8,6 +8,8 @@
 #include "common.h"
 #include "guid.h"
 
+FS_EXTERN_C_BEGIN
+
 typedef struct _fs_host_calls fs_host_calls_t;
 
 struct _fs_host_calls
@@ -45,5 +47,7 @@ FS_INLINE int fs_host_call(const fs_guid_t* guid, fs_args_t* args)
 {
     return fs_host_calls.call(&fs_host_calls, guid, args);
 }
+
+FS_EXTERN_C_END
 
 #endif /* _FS_HOSTCALLS_H */

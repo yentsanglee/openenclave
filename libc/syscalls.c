@@ -225,8 +225,8 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
     }
 
     {
-        long ret;
-        fs_errno_t err;
+        long ret = -1;
+        fs_errno_t err = 0;
 
         if (fs_handle_syscall(n, x1, x2, x3, x4, x5, x6, &ret, &err) == 0)
         {

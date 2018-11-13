@@ -4,6 +4,10 @@
 #ifndef _FS_ERRNO_H
 #define _FS_ERRNO_H
 
+#include "common.h"
+
+FS_EXTERN_C_BEGIN
+
 typedef enum _fs_errno {
     FS_EOK = 0,
     FS_EPERM = 1,
@@ -141,5 +145,7 @@ typedef enum _fs_errno {
     FS_ERFKILL = 132,
     FS_EHWPOISON = 133,
 } fs_errno_t;
+
+FS_EXTERN_C_END
 
 #endif /* _FS_ERRNO_H */

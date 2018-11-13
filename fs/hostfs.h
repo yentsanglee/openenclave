@@ -8,6 +8,9 @@
 #include "args.h"
 #include "fs.h"
 #include "guid.h"
+#include "common.h"
+
+FS_EXTERN_C_BEGIN
 
 /* 20efd84e-af47-43e4-b7eb-f1cf0d057009 */
 #define FS_HOSTFS_GUID                                     \
@@ -138,5 +141,7 @@ typedef struct _fs_hostfs_ocall_args
 int fs_hostfs_ocall(fs_hostfs_ocall_args_t* args);
 
 void fs_handle_hostfs_ocall(fs_hostfs_ocall_args_t* args);
+
+FS_EXTERN_C_END
 
 #endif /* _FS_HOSTFS_H */

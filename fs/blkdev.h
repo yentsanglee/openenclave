@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include "common.h"
 
+FS_EXTERN_C_BEGIN
+
 #define FS_KEY_SIZE 32
 
 typedef struct _fs_blk
@@ -57,5 +59,7 @@ int fs_merkle_blkdev_open(
     bool initialize,
     size_t nblks,
     fs_blkdev_t* next);
+
+FS_EXTERN_C_END
 
 #endif /* _FS_BLKDEV_H */

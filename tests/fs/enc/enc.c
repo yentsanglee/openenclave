@@ -566,7 +566,7 @@ static void _read_alphabet_file(const char* target, const char* path)
 
     OE_TEST(m == FILE_SIZE);
 
-    fclose(is);
+    OE_TEST(fclose(is) == 0);
 
     /* Stat the file. */
     {
@@ -602,7 +602,7 @@ static void _write_alphabet_file(const char* target, const char* path)
     ssize_t n = fwrite(buf.data, 1, buf.size, is);
     OE_TEST(n == buf.size);
 
-    fclose(is);
+    OE_TEST(fclose(is) == 0);
     fs_buf_release(&buf);
 }
 
@@ -628,7 +628,7 @@ static void _test_truncate(const char* target)
                 OE_TEST(false);
         }
 
-        fclose(os);
+        OE_TEST(fclose(os) == 0);
     }
 
     /* Check the file size. */
@@ -653,7 +653,7 @@ static void _test_truncate(const char* target)
             n++;
         }
 
-        fclose(os);
+        OE_TEST(fclose(os) == 0);
 
         OE_TEST(n == file_size);
     }
@@ -693,7 +693,7 @@ static void _test_truncate(const char* target)
 
         OE_TEST(fread(&byte, 1, 1, os) == 0);
         OE_TEST(feof(os));
-        fclose(os);
+        OE_TEST(fclose(os) == 0);
 
         OE_TEST(n == file_size / 8);
     }
@@ -976,7 +976,7 @@ void run_tests(const char* target)
         OE_TEST(n == 13);
         OE_TEST(strcmp(buf, "Hello World!") == 0);
 
-        fclose(is);
+        OE_TEST(fclose(is) == 0);
     }
 
     _remove_file(fs, "/aaa/bbb/ccc/myfile");

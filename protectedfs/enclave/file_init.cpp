@@ -8,9 +8,9 @@
 // clang-format on
 
 sgx_status_t __sgx_create_report__(
-    const sgx_target_info_t *target_info,
-    const sgx_report_data_t *report_data,
-    sgx_report_t *report)
+    const sgx_target_info_t* target_info,
+    const sgx_report_data_t* report_data,
+    sgx_report_t* report)
 {
     uint8_t tmp[OE_MAX_REPORT_SIZE];
     size_t tmp_used = sizeof(sgx_report_t) + 16;

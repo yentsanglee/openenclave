@@ -7,6 +7,10 @@
 #include "args.h"
 #include "common.h"
 
+FS_EXTERN_C_BEGIN
+
 void fs_handle_ocall(fs_args_t* args);
+
+FS_EXTERN_C_END
 
 #endif /* _FS_OCALL_H */

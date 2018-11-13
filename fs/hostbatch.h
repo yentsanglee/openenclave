@@ -5,6 +5,9 @@
 #define _FS_HOSTBATCH_H
 
 #include <stdint.h>
+#include "common.h"
+
+FS_EXTERN_C_BEGIN
 
 typedef struct _fs_host_batch fs_host_batch_t;
 
@@ -21,5 +24,7 @@ char* fs_host_batch_strdup(fs_host_batch_t* batch, const char* str);
 int fs_host_batch_free(fs_host_batch_t* batch);
 
 void dump_lock(fs_host_batch_t* batch);
+
+FS_EXTERN_C_END
 
 #endif /* _FS_HOSTBATCH_H */
