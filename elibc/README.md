@@ -27,21 +27,21 @@ with the **elibc** headers.
 **Elibc** implements functions from following headers. A quick inspection
 of these headers will reveal the subset of functions supported.
 
-- [**assert.h**](./assert.h)
-- [**ctype.h**](./ctype.h)
-- [**errno.h**](./errno.h)
-- [**limits.h**](./limits.h)
-- [**pthread.h**](./pthread.h)
-- [**sched.h**](./sched.h)
-- [**setjmp.h**](./setjmp.h)
-- [**stdarg.h**](./stdarg.h)
-- [**stddef.h**](./stddef.h)
-- [**stdint.h**](./stdint.h)
-- [**stdio.h**](./stdio.h)
-- [**stdlib.h**](./stdlib.h)
-- [**string.h**](./string.h)
-- [**time.h**](./time.h)
-- [**unistd.h**](./unistd.h)
+- [**assert.h**](../include/openenclave/elibc/assert.h)
+- [**ctype.h**](../include/openenclave/elibc/ctype.h)
+- [**errno.h**](../include/openenclave/elibc/errno.h)
+- [**limits.h**](../include/openenclave/elibc/limits.h)
+- [**pthread.h**](../include/openenclave/elibc/pthread.h)
+- [**sched.h**](../include/openenclave/elibc/sched.h)
+- [**setjmp.h**](../include/openenclave/elibc/setjmp.h)
+- [**stdarg.h**](../include/openenclave/elibc/stdarg.h)
+- [**stddef.h**](../include/openenclave/elibc/stddef.h)
+- [**stdint.h**](../include/openenclave/elibc/stdint.h)
+- [**stdio.h**](../include/openenclave/elibc/stdio.h)
+- [**stdlib.h**](../include/openenclave/elibc/stdlib.h)
+- [**string.h**](../include/openenclave/elibc/string.h)
+- [**time.h**](../include/openenclave/elibc/time.h)
+- [**unistd.h**](../include/openenclave/elibc/unistd.h)
 
 **Elibc** supports building of the **Open Enclave** core libraries, which 
 may be linked in the following order.
