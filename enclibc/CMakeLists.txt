@@ -23,6 +23,7 @@ target_link_libraries(oeenclibc oecore)
 target_compile_options(oeenclibc INTERFACE -nostdinc)
 
 target_include_directories(oeenclibc PRIVATE 
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include/openenclave/enclibc)
 
 set_property(TARGET oeenclibc 

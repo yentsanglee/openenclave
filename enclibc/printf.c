@@ -25,7 +25,8 @@ int enclibc_vprintf(const char* fmt, enclibc_va_list ap_)
 {
     char buf[256];
     char* p = buf;
-    int n;
+    char* new_buf = NULL;
+    int n = -1;
 
     /* Try first with a fixed-length scratch buffer */
     {
@@ -43,7 +44,9 @@ int enclibc_vprintf(const char* fmt, enclibc_va_list ap_)
 
     /* If string was truncated, retry with correctly sized buffer */
     {
-        char new_buf[n + 1];
+        if (!(new_buf = malloc(n + 1)))
+            goto done;
+
         p = new_buf;
 
         va_list ap;
@@ -55,6 +58,10 @@ int enclibc_vprintf(const char* fmt, enclibc_va_list ap_)
     }
 
 done:
+
+    if (new_buf)
+        free(new_buf);
+
     return n;
 }
 

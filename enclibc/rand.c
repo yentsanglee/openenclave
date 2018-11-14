@@ -4,6 +4,7 @@
 #include <openenclave/internal/enclavelibc.h>
 
 /* ATTN: WINPORT */
+#if defined(__linux__)
 int enclibc_rand(void)
 {
     uint64_t r;
@@ -13,3 +14,4 @@ int enclibc_rand(void)
     /* Return a positive integer */
     return (int)(r & 0x000000007fffffff);
 }
+#endif
