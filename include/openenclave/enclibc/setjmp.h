@@ -8,7 +8,8 @@
 
 ENCLIBC_EXTERNC_BEGIN
 
-typedef struct _oe_jmp_buf
+#if defined(__linux__)
+typedef struct _enclibc_jmp_buf
 {
     // These are the registers that are preserved across function calls
     // according to the 'System V AMD64 ABI' calling conventions:
@@ -23,6 +24,32 @@ typedef struct _oe_jmp_buf
     uint64_t r14;
     uint64_t r15;
 } enclibc_jmp_buf[1];
+#elif defined(_MSC_VER)
+typedef struct _enclibc_jmp_buf {
+    uint64_t frame;
+    uint64_t rbx;
+    uint64_t rsp;
+    uint64_t rbp;
+    uint64_t rsi;
+    uint64_t rdi;
+    uint64_t r12;
+    uint64_t r13;
+    uint64_t r14;
+    uint64_t r15;
+    uint64_t rip;
+    uint64_t spare;
+    int128_t xmm6;
+    int128_t xmm7;
+    int128_t xmm8;
+    int128_t xmm9;
+    int128_t xmm10;
+    int128_t xmm11;
+    int128_t xmm12;
+    int128_t xmm13;
+    int128_t xmm14;
+    int128_t xmm15;
+} enclibc_jmp_buf;
+#endif
 
 int enclibc_setjmp(enclibc_jmp_buf env);
 

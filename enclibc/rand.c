@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <setjmp.h>
 #include <openenclave/internal/enclavelibc.h>
 
 /* ATTN: WINPORT */

@@ -72,6 +72,12 @@ typedef long long intptr_t;
 typedef long long ptrdiff_t;
 typedef long long time_t;
 typedef long long suseconds_t;
+typedef struct _int128
+{
+    uint64_t x;
+    uint64_t y;
+}
+int128_t;
 #endif
 
 typedef int clockid_t;
