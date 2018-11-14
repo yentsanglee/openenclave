@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <setjmp.h>
-#include <openenclave/internal/enclavelibc.h>
+#include <stdlib.h>
 
 int enclibc_rand(void)
 {
@@ -25,25 +24,13 @@ int enclibc_rand(void)
     u;
     uint64_t r;
 
-    while (_rdrand64_step(&r) == 0)
-        ;
+    for (size_t i = 0; i < 4; i++)
+    {
+        while (_rdrand64_step(&r) == 0)
+            ;
 
-    u.bytes[0] = (r & 0xff);
-
-    while (_rdrand64_step(&r) == 0)
-        ;
-
-    u.bytes[1] = (r & 0xff);
-
-    while (_rdrand64_step(&r) == 0)
-        ;
-
-    u.bytes[2] = (r & 0xff);
-
-    while (_rdrand64_step(&r) == 0)
-        ;
-
-    u.bytes[3] = (r & 0xff);
+        u.bytes[i] = (r & 0xff);
+    }
 
     return u.x & 0x7fffffff;
 

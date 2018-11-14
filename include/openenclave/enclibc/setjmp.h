@@ -68,7 +68,7 @@ int setjmp(jmp_buf env)
 ENCLIBC_INLINE
 void longjmp(jmp_buf env, int val)
 {
-    return enclibc_longjmp(env, val);
+    enclibc_longjmp(env, val);
 }
 
 #endif /* defined(ENCLIBC_NEED_STDC_NAMES) */
