@@ -14,6 +14,7 @@ add_library(oeelibc STATIC
     ctype.c
     errno.c
     gmtime.c
+    intstr.c
     malloc.c
     printf.c
     pthread.c
