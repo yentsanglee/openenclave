@@ -27,21 +27,21 @@ with the **elibc** headers.
 **Elibc** implements functions from following headers. A quick inspection
 of these headers will reveal the subset of functions supported.
 
-- **assert.h**
-- **ctype.h**
-- **errno.h**
-- **limits.h**
-- **pthread.h**
-- **sched.h**
-- **setjmp.h**
-- **stdarg.h**
-- **stddef.h**
-- **stdint.h**
-- **stdio.h**
-- **stdlib.h**
-- **string.h**
-- **time.h**
-- **unistd.h**
+- [**assert.h**](assert.h)
+- [**ctype.h**](ctype.h)
+- [**errno.h**](errno.h)
+- [**limits.h**](limits.h)
+- [**pthread.h**](pthread.h)
+- [**sched.h**](sched.h)
+- [**setjmp.h**](setjmp.h)
+- [**stdarg.h**](stdarg.h)
+- [**stddef.h**](stddef.h)
+- [**stdint.h**](stdint.h)
+- [**stdio.h**](stdio.h)
+- [**stdlib.h**](stdlib.h)
+- [**string.h**](string.h)
+- [**time.h**](time.h)
+- [**unistd.h**](unistd.h)
 
 **Elibc** supports building of the **Open Enclave** core libraries, which 
 may be linked in the following order.
