@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
@@ -44,7 +45,7 @@ int enclibc_vprintf(const char* fmt, enclibc_va_list ap_)
 
     /* If string was truncated, retry with correctly sized buffer */
     {
-        if (!(new_buf = malloc(n + 1)))
+        if (!(new_buf = (char*)malloc(n + 1)))
             goto done;
 
         p = new_buf;
