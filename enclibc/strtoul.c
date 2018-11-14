@@ -52,11 +52,10 @@ ENCLIBC_INLINE bool _isdigit(char c, int base)
     return _digit[(unsigned char)c] < base;
 }
 
-/* ATTN: look for size conversions in Windows. */
 unsigned long int enclibc_strtoul(const char* nptr, char** endptr, int base)
 {
     const char* p;
-    uint64_t x = 0;
+    unsigned long x = 0;
     bool negative = false;
 
     if (endptr)
@@ -120,10 +119,10 @@ unsigned long int enclibc_strtoul(const char* nptr, char** endptr, int base)
 
         /* Add digit */
         {
-            const uint64_t digit = _digit[(unsigned char)*p];
+            const unsigned long digit = _digit[(unsigned char)*p];
 
             /* Check for overflow */
-            if (digit > ENCLIBC_UINT64_MAX - x)
+            if (digit > ENCLIBC_ULONG_MAX - x)
             {
                 if (endptr)
                     *endptr = (char*)p;
@@ -148,7 +147,7 @@ unsigned long int enclibc_strtoul(const char* nptr, char** endptr, int base)
         x = -(int64_t)x;
     }
 
-    return (unsigned long)x;
+    return x;
 }
 
 /*

@@ -54,6 +54,8 @@ typedef unsigned long uint64_t;
 typedef unsigned long uintptr_t;
 typedef long intptr_t;
 typedef long ptrdiff_t;
+typedef long time_t;
+typedef long suseconds_t;
 #elif defined(_MSC_VER)
 typedef long long ssize_t;
 typedef unsigned long long size_t;
@@ -68,10 +70,10 @@ typedef unsigned long long uint64_t;
 typedef unsigned long long uintptr_t;
 typedef long long intptr_t;
 typedef long long ptrdiff_t;
+typedef long long time_t;
+typedef long long suseconds_t;
 #endif
 
-typedef long time_t;
-typedef long suseconds_t;
 typedef int clockid_t;
 
 #if defined(ENCLIBC_NEED_STDC_NAMES)
