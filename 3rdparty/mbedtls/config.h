@@ -212,7 +212,9 @@
  * Uncomment to get warnings on using deprecated functions.
  */
 // Open Enclave: Enable deprecations warnings
+#if defined(__GNUC__) || defined(__CLANG__)
 #define MBEDTLS_DEPRECATED_WARNING
+#endif
 
 /**
  * \def MBEDTLS_DEPRECATED_REMOVED
