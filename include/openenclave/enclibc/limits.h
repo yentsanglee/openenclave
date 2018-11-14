@@ -19,7 +19,7 @@
 #define ENCLIBC_INT_MAX 0x7fffffff
 #define ENCLIBC_UINT_MAX 0xffffffffU
 
-#ifndef _MSC_VER
+#ifdef _MSC_VER
 #define ENCLIBC_LONG_MAX 0x7fffffffL
 #elif __linux__
 #define ENCLIBC_LONG_MAX 0x7fffffffffffffffL
