@@ -10,7 +10,7 @@
 
 void TestRandreturn()
 {
-    uint64_t rand_num;
+    uint64_t rand_num = 0;
     printf("=== begin %s()\n", __FUNCTION__);
     for (uint64_t i = 0; i < MAX_LOOP_SIZE; i++)
     {

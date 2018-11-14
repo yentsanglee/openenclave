@@ -13,7 +13,8 @@ endif()
 
 add_library(oecore STATIC
     ../../common/safecrt.c
-    ../../common/rand.c
+    #../../common/rand.c
+    ../../common/rand.s
     assert.c
     atexit.c
     backtrace.c
