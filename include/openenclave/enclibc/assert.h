@@ -12,18 +12,18 @@ void __enclibc_assert_fail(
     int line,
     const char* func);
 
-#if !defined(enclibc_assert)
+// clang-format off
 #ifndef NDEBUG
 #define enclibc_assert(EXPR)                                                \
-    do                                                                 \
-    {                                                                  \
-        if (!(EXPR))                                                   \
+    do                                                                      \
+    {                                                                       \
+        if (!(EXPR))                                                        \
             __enclibc_assert_fail(#EXPR, __FILE__, __LINE__, __FUNCTION__); \
     } while (0)
 #else
 #define enclibc_assert(EXPR)
 #endif
-#endif /* !defined(enclibc_assert) */
+// clang-format on
 
 #if defined(ENCLIBC_NEED_STDC_NAMES)
 

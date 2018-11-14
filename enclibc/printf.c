@@ -1,14 +1,17 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 int enclibc_vsnprintf(
-    char* str, size_t size, const char* fmt, enclibc_va_list ap)
+    char* str,
+    size_t size,
+    const char* fmt,
+    enclibc_va_list ap)
 {
     return oe_vsnprintf(str, size, fmt, ap);
 }

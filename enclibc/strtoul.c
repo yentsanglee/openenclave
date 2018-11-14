@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <string.h>
 #include <ctype.h>
 #include <limits.h>
-#include <stdint.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/enclavelibc.h>
+#include <stdint.h>
+#include <string.h>
 
 //
 // If c is a digit character:

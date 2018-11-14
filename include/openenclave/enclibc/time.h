@@ -32,7 +32,9 @@ time_t enclibc_time(time_t* tloc);
 
 struct enclibc_tm* enclibc_gmtime(const time_t* timep);
 
-struct enclibc_tm* enclibc_gmtime_r(const time_t* timep, struct enclibc_tm* result);
+struct enclibc_tm* enclibc_gmtime_r(
+    const time_t* timep,
+    struct enclibc_tm* result);
 
 #if defined(ENCLIBC_NEED_STDC_NAMES)
 

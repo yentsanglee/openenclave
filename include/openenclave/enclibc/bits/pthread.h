@@ -37,7 +37,8 @@ pthread_t pthread_self()
 ENCLIBC_INLINE
 int pthread_equal(pthread_t thread1, pthread_t thread2)
 {
-    return enclibc_pthread_equal((enclibc_pthread_t)thread1, (enclibc_pthread_t)thread2);
+    return enclibc_pthread_equal(
+        (enclibc_pthread_t)thread1, (enclibc_pthread_t)thread2);
 }
 
 ENCLIBC_INLINE
@@ -75,7 +76,8 @@ int pthread_once(pthread_once_t* once, void (*func)(void))
 ENCLIBC_INLINE
 int pthread_spin_init(pthread_spinlock_t* spinlock, int pshared)
 {
-    return enclibc_pthread_spin_init((enclibc_pthread_spinlock_t*)spinlock, pshared);
+    return enclibc_pthread_spin_init(
+        (enclibc_pthread_spinlock_t*)spinlock, pshared);
 }
 
 ENCLIBC_INLINE
@@ -105,13 +107,15 @@ int pthread_mutexattr_init(pthread_mutexattr_t* attr)
 ENCLIBC_INLINE
 int pthread_mutexattr_settype(pthread_mutexattr_t* attr, int type)
 {
-    return enclibc_pthread_mutexattr_settype((enclibc_pthread_mutexattr_t*)attr, type);
+    return enclibc_pthread_mutexattr_settype(
+        (enclibc_pthread_mutexattr_t*)attr, type);
 }
 
 ENCLIBC_INLINE
 int pthread_mutexattr_destroy(pthread_mutexattr_t* attr)
 {
-    return enclibc_pthread_mutexattr_destroy((enclibc_pthread_mutexattr_t*)attr);
+    return enclibc_pthread_mutexattr_destroy(
+        (enclibc_pthread_mutexattr_t*)attr);
 }
 
 ENCLIBC_INLINE

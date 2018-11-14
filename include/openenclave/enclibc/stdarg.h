@@ -9,7 +9,8 @@
 #if defined(_MSC_VER)
 typedef char* enclibc_va_list;
 #define enclibc_va_start(ap, x) __va_start(&ap, x)
-#define enclibc_va_arg(ap, type) *((type*)((ap += sizeof(__int64)) - sizeof(__int64)))
+#define enclibc_va_arg(ap, type) \
+    *((type*)((ap += sizeof(__int64)) - sizeof(__int64)))
 #define enclibc_va_end(ap) (ap = (va_list)0)
 #define enclibc_va_copy(ap1, ap2) (ap1 = ap2)
 #elif defined(__linux__)

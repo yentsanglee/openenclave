@@ -1,12 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <pthread.h>
 #include <assert.h>
 #include <errno.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/thread.h>
+#include <pthread.h>
 
 enclibc_pthread_t enclibc_pthread_self()
 {
@@ -114,7 +114,9 @@ int enclibc_pthread_mutexattr_init(enclibc_pthread_mutexattr_t* attr)
     return 0;
 }
 
-int enclibc_pthread_mutexattr_settype(enclibc_pthread_mutexattr_t* attr, int type)
+int enclibc_pthread_mutexattr_settype(
+    enclibc_pthread_mutexattr_t* attr,
+    int type)
 {
     return 0;
 }
@@ -201,7 +203,9 @@ int enclibc_pthread_cond_init(
     return _to_errno(oe_cond_init((oe_cond_t*)cond));
 }
 
-int enclibc_pthread_cond_wait(enclibc_pthread_cond_t* cond, enclibc_pthread_mutex_t* mutex)
+int enclibc_pthread_cond_wait(
+    enclibc_pthread_cond_t* cond,
+    enclibc_pthread_mutex_t* mutex)
 {
     return _to_errno(oe_cond_wait((oe_cond_t*)cond, (oe_mutex_t*)mutex));
 }

@@ -73,7 +73,9 @@ int enclibc_pthread_detach(enclibc_pthread_t thread);
 
 int enclibc_pthread_once(enclibc_pthread_once_t* once, void (*func)(void));
 
-int enclibc_pthread_spin_init(enclibc_pthread_spinlock_t* spinlock, int pshared);
+int enclibc_pthread_spin_init(
+    enclibc_pthread_spinlock_t* spinlock,
+    int pshared);
 
 int enclibc_pthread_spin_lock(enclibc_pthread_spinlock_t* spinlock);
 
@@ -83,7 +85,9 @@ int enclibc_pthread_spin_destroy(enclibc_pthread_spinlock_t* spinlock);
 
 int enclibc_pthread_mutexattr_init(enclibc_pthread_mutexattr_t* attr);
 
-int enclibc_pthread_mutexattr_settype(enclibc_pthread_mutexattr_t* attr, int type);
+int enclibc_pthread_mutexattr_settype(
+    enclibc_pthread_mutexattr_t* attr,
+    int type);
 
 int enclibc_pthread_mutexattr_destroy(enclibc_pthread_mutexattr_t* attr);
 
@@ -115,7 +119,9 @@ int enclibc_pthread_cond_init(
     enclibc_pthread_cond_t* cond,
     const enclibc_pthread_condattr_t* attr);
 
-int enclibc_pthread_cond_wait(enclibc_pthread_cond_t* cond, enclibc_pthread_mutex_t* mutex);
+int enclibc_pthread_cond_wait(
+    enclibc_pthread_cond_t* cond,
+    enclibc_pthread_mutex_t* mutex);
 
 int enclibc_pthread_cond_timedwait(
     enclibc_pthread_cond_t* cond,

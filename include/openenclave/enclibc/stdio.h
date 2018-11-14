@@ -14,7 +14,11 @@ extern ENCLIBC_FILE* const enclibc_stdin;
 extern ENCLIBC_FILE* const enclibc_stdout;
 extern ENCLIBC_FILE* const enclibc_stderr;
 
-int enclibc_vsnprintf(char* str, size_t size, const char* format, enclibc_va_list ap);
+int enclibc_vsnprintf(
+    char* str,
+    size_t size,
+    const char* format,
+    enclibc_va_list ap);
 
 ENCLIBC_PRINTF_FORMAT(3, 4)
 int enclibc_snprintf(char* str, size_t size, const char* format, ...);

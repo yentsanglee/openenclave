@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <string.h>
 #include <errno.h>
 #include <openenclave/internal/enclavelibc.h>
+#include <string.h>
 
 struct pair
 {

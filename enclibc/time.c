@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <time.h>
 #include <openenclave/internal/time.h>
+#include <time.h>
 
 time_t enclibc_time(time_t* tloc)
 {

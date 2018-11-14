@@ -25,9 +25,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ----------------------------------------------------------------------
 */
 
+#include <limits.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/enclavelibc.h>
-#include <limits.h>
 #include <time.h>
 
 /* 2000-03-01 (mod 400 year, immediately after feb29 */
@@ -124,7 +124,9 @@ struct enclibc_tm* enclibc_gmtime(const time_t* timep)
     return enclibc_gmtime_r(timep, &_tm);
 }
 
-struct enclibc_tm* enclibc_gmtime_r(const time_t* timep, struct enclibc_tm* result)
+struct enclibc_tm* enclibc_gmtime_r(
+    const time_t* timep,
+    struct enclibc_tm* result)
 {
     if (!timep || !result || _secs_to_tm(*timep, result) != 0)
         return NULL;
