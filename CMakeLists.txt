@@ -85,7 +85,7 @@ enable_testing()
 include(add_enclave_test)
 
 # Recurse through subdirectories
-add_subdirectory(enclibc)
+add_subdirectory(elibc)
 add_subdirectory(host)
 add_subdirectory(include)
 add_subdirectory(tests)
