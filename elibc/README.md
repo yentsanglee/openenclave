@@ -52,5 +52,5 @@ may be linked in the following order.
 - **oeelibc**
 - **oecore**
 
-Note that the **elibc** library (**oelibc**) may be replaced with the **MUSL**
+Note that the **elibc** library (**oeelibc**) may be replaced with the **MUSL**
 library (**oelibc**).
