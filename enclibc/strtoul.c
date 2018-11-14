@@ -52,6 +52,7 @@ ENCLIBC_INLINE bool _isdigit(char c, int base)
     return _digit[(unsigned char)c] < base;
 }
 
+/* ATTN: look for size conversions in Windows. */
 unsigned long int enclibc_strtoul(const char* nptr, char** endptr, int base)
 {
     const char* p;
@@ -144,10 +145,10 @@ unsigned long int enclibc_strtoul(const char* nptr, char** endptr, int base)
     /* Invert if negative */
     if (negative)
     {
-        x = -x;
+        x = -(int64_t)x;
     }
 
-    return x;
+    return (unsigned long)x;
 }
 
 /*

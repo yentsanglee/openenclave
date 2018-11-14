@@ -47,7 +47,7 @@ void* malloc(size_t size)
 ENCLIBC_INLINE
 void free(void* ptr)
 {
-    return enclibc_free(ptr);
+    enclibc_free(ptr);
 }
 
 ENCLIBC_INLINE

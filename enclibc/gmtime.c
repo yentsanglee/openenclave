@@ -64,8 +64,9 @@ static int _secs_to_tm(long long t, struct enclibc_tm* tm)
     if (wday < 0)
         wday += 7;
 
-    qc_cycles = days / DAYS_PER_400Y;
-    remdays = days % DAYS_PER_400Y;
+    /* ATTN: size conversion. */
+    qc_cycles = (int)(days / DAYS_PER_400Y);
+    remdays = (int)(days % DAYS_PER_400Y);
     if (remdays < 0)
     {
         remdays += DAYS_PER_400Y;

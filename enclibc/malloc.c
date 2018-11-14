@@ -11,7 +11,7 @@ void* enclibc_malloc(size_t size)
 
 void enclibc_free(void* ptr)
 {
-    return oe_free(ptr);
+    oe_free(ptr);
 }
 
 void* enclibc_calloc(size_t nmemb, size_t size)
