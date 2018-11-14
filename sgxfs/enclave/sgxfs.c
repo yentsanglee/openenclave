@@ -1,4 +1,4 @@
-#include "../common/protectedfs.h"
+#include "../common/sgxfs.h"
 #include "../../fs/fs.h"
 #include "../../fs/raise.h"
 #include "../../fs/atomic.h"
@@ -57,7 +57,7 @@ static fs_errno_t _fs_read(
     fs_errno_t err = FS_EOK;
     ssize_t n;
 
-    D( printf("ENTER: protectedfs.read()\n"); )
+    D( printf("ENTER: sgxfs.read()\n"); )
 
     if (!file || !data || !nread)
         FS_RAISE(FS_EINVAL);
@@ -88,7 +88,7 @@ static fs_errno_t _fs_write(
     fs_errno_t err = FS_EOK;
     ssize_t n;
 
-    D( printf("ENTER: protectedfs.write()\n"); )
+    D( printf("ENTER: sgxfs.write()\n"); )
 
     if (!file || !data || !nwritten)
         FS_RAISE(FS_EINVAL);
@@ -114,7 +114,7 @@ static fs_errno_t _fs_close(fs_file_t* file)
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.close()\n"); )
+    D( printf("ENTER: sgxfs.close()\n"); )
 
     if (!_valid_file(file))
         FS_RAISE(FS_EINVAL);
@@ -142,7 +142,7 @@ static fs_errno_t _fs_release(fs_t* fs)
     fs_errno_t err = FS_EOK;
     pfs_t* pfs = (pfs_t*)fs;
 
-    D( printf("ENTER: protectedfs.release()\n"); )
+    D( printf("ENTER: sgxfs.release()\n"); )
 
     if (!_valid_pfs(fs))
         FS_RAISE(FS_EINVAL);
@@ -178,7 +178,7 @@ static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir)
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.opendir()\n"); )
+    D( printf("ENTER: sgxfs.opendir()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -194,7 +194,7 @@ static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.readdir()\n"); )
+    D( printf("ENTER: sgxfs.readdir()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -208,7 +208,7 @@ static fs_errno_t _fs_closedir(fs_dir_t* dir)
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.closedir()\n"); )
+    D( printf("ENTER: sgxfs.closedir()\n"); )
 
     FS_RAISE(FS_EINVAL);
     FS_RAISE(FS_EINVAL);
@@ -294,7 +294,7 @@ static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.mkdir()\n"); )
+    D( printf("ENTER: sgxfs.mkdir()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -311,7 +311,7 @@ static fs_errno_t _fs_creat(
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.creat()\n"); )
+    D( printf("ENTER: sgxfs.creat()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -324,7 +324,7 @@ static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.link()\n"); )
+    D( printf("ENTER: sgxfs.link()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -340,7 +340,7 @@ static fs_errno_t _fs_rename(
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.rename()\n"); )
+    D( printf("ENTER: sgxfs.rename()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -353,7 +353,7 @@ static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.unlink()\n"); )
+    D( printf("ENTER: sgxfs.unlink()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -366,7 +366,7 @@ static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.truncate()\n"); )
+    D( printf("ENTER: sgxfs.truncate()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -379,7 +379,7 @@ static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.rmdir()\n"); )
+    D( printf("ENTER: sgxfs.rmdir()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -392,7 +392,7 @@ static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.stat()\n"); )
+    D( printf("ENTER: sgxfs.stat()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -409,7 +409,7 @@ static fs_errno_t _fs_lseek(
 {
     fs_errno_t err = FS_EOK;
 
-    D( printf("ENTER: protectedfs.lseek()\n"); )
+    D( printf("ENTER: sgxfs.lseek()\n"); )
 
     FS_RAISE(FS_EINVAL);
 
@@ -426,7 +426,7 @@ done:
 **==============================================================================
 */
 
-int protectedfs_new(fs_t** fs_out)
+int sgxfs_new(fs_t** fs_out)
 {
     int ret = -1;
     pfs_t* pfs = NULL;
@@ -474,7 +474,7 @@ done:
     return ret;
 }
 
-int fs_mount_protectedfs(const char* target)
+int fs_mount_sgxfs(const char* target)
 {
     int ret = -1;
     fs_t* fs = NULL;
@@ -482,7 +482,7 @@ int fs_mount_protectedfs(const char* target)
     if (!target)
         goto done;
 
-    if (protectedfs_new(&fs) != 0)
+    if (sgxfs_new(&fs) != 0)
         goto done;
 
     if (fs_mount(fs, target) != 0)

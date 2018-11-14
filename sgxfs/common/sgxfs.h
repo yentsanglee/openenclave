@@ -11,23 +11,23 @@
 extern "C" {
 #endif
 
-typedef enum _oe_protectedfs_op {
-    oe_protectedfs_op_none,
-    oe_protectedfs_op_exclusive_file_open,
-    oe_protectedfs_op_check_if_file_exists,
-    oe_protectedfs_op_fread_node,
-    oe_protectedfs_op_fwrite_node,
-    oe_protectedfs_op_fclose,
-    oe_protectedfs_op_fflush,
-    oe_protectedfs_op_remove,
-    oe_protectedfs_op_recovery_file_open,
-    oe_protectedfs_op_fwrite_recovery_node,
-    oe_protectedfs_op_do_file_recovery,
-} oe_protectedfs_op_t;
+typedef enum _oe_sgxfs_op {
+    oe_sgxfs_op_none,
+    oe_sgxfs_op_exclusive_file_open,
+    oe_sgxfs_op_check_if_file_exists,
+    oe_sgxfs_op_fread_node,
+    oe_sgxfs_op_fwrite_node,
+    oe_sgxfs_op_fclose,
+    oe_sgxfs_op_fflush,
+    oe_sgxfs_op_remove,
+    oe_sgxfs_op_recovery_file_open,
+    oe_sgxfs_op_fwrite_recovery_node,
+    oe_sgxfs_op_do_file_recovery,
+} oe_sgxfs_op_t;
 
-typedef struct _oe_protectedfs_args
+typedef struct _oe_sgxfs_args
 {
-    oe_protectedfs_op_t op;
+    oe_sgxfs_op_t op;
     union {
         struct
         {
@@ -94,11 +94,11 @@ typedef struct _oe_protectedfs_args
         } do_file_recovery;
     } u;
     uint8_t buffer[];
-} oe_protectedfs_args_t;
+} oe_sgxfs_args_t;
 
-int protectedfs_new(fs_t** fs_out);
+int sgxfs_new(fs_t** fs_out);
 
-int fs_mount_protectedfs(const char* target);
+int fs_mount_sgxfs(const char* target);
 
 #ifdef __cplusplus
 }

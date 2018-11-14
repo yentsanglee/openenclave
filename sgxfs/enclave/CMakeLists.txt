@@ -11,7 +11,7 @@ add_library(pfsenclave STATIC
     file_read_write.cpp
     file_version.cpp
     lru_cache.cpp
-    protectedfs.c
+    sgxfs.c
     sgx_tprotected_fs.cpp
     ocalls.c
     thread.c

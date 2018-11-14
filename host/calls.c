@@ -31,7 +31,7 @@
 #include "enclave.h"
 #include "ocalls.h"
 
-void (*oe_handle_protectedfs_ocall_callback)(void* args);
+void (*oe_handle_sgxfs_ocall_callback)(void* args);
 
 /*
 **==============================================================================
@@ -503,8 +503,8 @@ static oe_result_t _handle_ocall(
 
         case OE_OCALL_PROTECTEDFS:
         {
-            if (oe_handle_protectedfs_ocall_callback)
-                oe_handle_protectedfs_ocall_callback((void*)arg_in);
+            if (oe_handle_sgxfs_ocall_callback)
+                oe_handle_sgxfs_ocall_callback((void*)arg_in);
             else
                 OE_RAISE(OE_NOT_FOUND);
 

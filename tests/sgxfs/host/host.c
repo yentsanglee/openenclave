@@ -1,5 +1,5 @@
 #include <openenclave/host.h>
-#include "protectedfs_u.h"
+#include "sgxfs_u.h"
 
 void host_test()
 {
@@ -14,18 +14,18 @@ int main(int argc, const char* argv[])
 
     /* Install the protected file system. */
     {
-        extern void oe_install_protectedfs(void);
-        oe_install_protectedfs();
+        extern void oe_install_sgxfs(void);
+        oe_install_sgxfs();
     }
 
     printf("Starting enclave with %s\n", argv[1]);
-    result = oe_create_protectedfs_enclave(
+    result = oe_create_sgxfs_enclave(
         argv[1], OE_ENCLAVE_TYPE_SGX, flags, NULL, 0, &enclave);
     if (result != OE_OK)
     {
         fprintf(
             stderr,
-            "oe_create_protectedfs_enclave(): result=%u (%s)\n",
+            "oe_create_sgxfs_enclave(): result=%u (%s)\n",
             result,
             oe_result_str(result));
         goto exit;

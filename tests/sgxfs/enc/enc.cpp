@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include "protectedfs_t.h"
-#include "../../../protectedfs/common/protectedfs.h"
+#include "sgxfs_t.h"
+#include "../../../sgxfs/common/sgxfs.h"
 
 #ifdef FILENAME_MAX
 #undef FILENAME_MAX
@@ -92,7 +92,7 @@ static void _test2()
     const size_t N = 16;
     FILE* stream;
 
-    OE_TEST(fs_mount_protectedfs("/mnt/pfs") == 0);
+    OE_TEST(fs_mount_sgxfs("/mnt/pfs") == 0);
 
     OE_TEST((stream = fopen("/mnt/pfs/tmp/myfile", "w")) != NULL);
 
