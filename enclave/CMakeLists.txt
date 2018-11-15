@@ -32,9 +32,12 @@ if(USE_LIBSGX)
 target_compile_definitions(oeenclave PUBLIC OE_USE_LIBSGX)
 endif()    
 
+target_include_directories(oeenclave PRIVATE ${PROJECT_SOURCE_DIR}/include/openenclave/elibc)
+
 target_link_libraries(oeenclave PUBLIC
+    oe_includes
     mbedcrypto
-    oelibc)
+    oeelibc)
 
 set_property(TARGET oeenclave PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 

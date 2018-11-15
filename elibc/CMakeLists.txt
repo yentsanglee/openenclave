@@ -29,7 +29,9 @@ add_library(oeelibc STATIC
 
 target_link_libraries(oeelibc oecore)
 
-target_compile_options(oeelibc INTERFACE -nostdinc)
+if (UNIX)
+  target_compile_options(oeelibc INTERFACE -nostdinc)
+endif()
 
 target_include_directories(oeelibc PRIVATE 
     ${CMAKE_SOURCE_DIR}/include
