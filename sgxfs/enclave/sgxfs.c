@@ -1,499 +1,203 @@
-#include "../common/sgxfs.h"
-#include "../../fs/fs.h"
-#include "../../fs/raise.h"
-#include "../../fs/atomic.h"
-#include <errno.h>
-
-#ifdef FILENAME_MAX
-#undef FILENAME_MAX
-#endif
-
-#ifdef FOPEN_MAX
-#undef FOPEN_MAX
-#endif
-
+// clang-format off
 #include "linux-sgx/common/inc/sgx_tprotected_fs.h"
+#undef FILENAME_MAX
+#undef FOPEN_MAX
+// clang-format on
 
-#define PFS_MAGIC 0x5042e4e1
-#define FILE_MAGIC 0x82c485d3
+#include <stdlib.h>
+#include <stdio.h>
+#include "../common/sgxfs.h"
 
-#if 0
-#define D(X) X
-#else
-#define D(X)
-#endif
-
-typedef struct _pfs pfs_t;
-
-struct _pfs
+typedef struct _file
 {
-    fs_t base;
-    uint32_t magic;
-    volatile uint64_t ref_count;
-};
-
-struct _fs_file
-{
-    uint32_t magic;
+    oe_file_t base;
     SGX_FILE* sgx_file;
-};
-
-FS_INLINE bool _valid_pfs(fs_t* fs)
-{
-    return fs && ((pfs_t*)fs)->magic == PFS_MAGIC;
 }
+file_t;
 
-static bool _valid_file(fs_file_t* file)
+static int32_t _f_fclose(oe_file_t* base)
 {
-    return file && file->magic == FILE_MAGIC && file->sgx_file;
-}
+    int ret = -1;
+    file_t* file = (file_t*)base;
 
-static fs_errno_t _fs_read(
-    fs_file_t* file,
-    void* data,
-    size_t size,
-    ssize_t* nread)
-{
-    fs_errno_t err = FS_EOK;
-    ssize_t n;
+    if (!file || !file->sgx_file)
+        goto done;
 
-    D( printf("ENTER: sgxfs.read()\n"); )
-
-    if (!file || !data || !nread)
-        FS_RAISE(FS_EINVAL);
-
-    errno = 0;
-    n = sgx_fread(data, 1, size, file->sgx_file);
-
-    if (n < 0)
-    {
-        if (errno)
-            FS_RAISE(errno);
-
-        FS_RAISE(FS_EBADF);
-    }
-
-    *nread = n;
-
-done:
-    return err;
-}
-
-static fs_errno_t _fs_write(
-    fs_file_t* file,
-    const void* data,
-    size_t size,
-    ssize_t* nwritten)
-{
-    fs_errno_t err = FS_EOK;
-    ssize_t n;
-
-    D( printf("ENTER: sgxfs.write()\n"); )
-
-    if (!file || !data || !nwritten)
-        FS_RAISE(FS_EINVAL);
-
-    errno = 0;
-    n = sgx_fwrite(data, 1, size, file->sgx_file);
-
-    if (n != size)
-    {
-        if (errno)
-            FS_RAISE(errno);
-
-        FS_RAISE(FS_EBADF);
-    }
-
-    *nwritten = n;
-
-done:
-    return err;
-}
-
-static fs_errno_t _fs_close(fs_file_t* file)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.close()\n"); )
-
-    if (!_valid_file(file))
-        FS_RAISE(FS_EINVAL);
-
-    errno = 0;
-    int r = sgx_fclose(file->sgx_file);
-
-    if (r != 0)
-    {
-        if (errno)
-            FS_RAISE(errno);
-
-        FS_RAISE(FS_EBADF);
-    }
+    if (sgx_fclose(file->sgx_file) != 0)
+        goto done;
 
     free(file);
 
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_release(fs_t* fs)
-{
-    fs_errno_t err = FS_EOK;
-    pfs_t* pfs = (pfs_t*)fs;
-
-    D( printf("ENTER: sgxfs.release()\n"); )
-
-    if (!_valid_pfs(fs))
-        FS_RAISE(FS_EINVAL);
-
-
-    if (fs_atomic_decrement(&pfs->ref_count) == 0)
-    {
-        memset(pfs, 0xdd, sizeof(pfs_t));
-        free(pfs);
-    }
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_add_ref(fs_t* fs)
-{
-    fs_errno_t err = FS_EOK;
-    pfs_t* pfs = (pfs_t*)fs;
-
-    if (!_valid_pfs(fs))
-        FS_RAISE(FS_EINVAL);
-
-    fs_atomic_increment(&pfs->ref_count);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_opendir(fs_t* fs, const char* path, fs_dir_t** dir)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.opendir()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-    if (!_valid_pfs(fs))
-        FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_readdir(fs_dir_t* dir, fs_dirent_t** ent)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.readdir()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_closedir(fs_dir_t* dir)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.closedir()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-    FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_open(
-    fs_t* fs,
-    const char* path,
-    int flags,
-    uint32_t mode,
-    fs_file_t** file_out)
-{
-    fs_errno_t err = FS_EOK;
-    SGX_FILE* sgx_file = NULL;
-    fs_file_t* file = NULL;
-    const char* mode_string = NULL;
-    if (!_valid_pfs(fs) || !path || !file_out)
-        FS_RAISE(FS_EINVAL);
-
-    /* Convert the flags to an fopen-style flags string. */
-    {
-        /*
-         *  w  : FLAGS=00001101 FS_O_WRONLY (FS_O_TRUNC | FS_O_CREAT)
-         *  a  : FLAGS=00002101 FS_O_WRONLY (FS_O_APPEND | FS_O_CREAT)
-         *  w+ : FLAGS=00001102 FS_O_RDWR   (FS_O_TRUNC | FS_O_CREAT)
-         *  a+ : FLAGS=00002102 FS_O_RDWR   (FS_O_APPEND | FS_O_CREAT)
-         *  r+ : FLAGS=00000002 FS_O_RDWR
-         *  r  : FLAGS=00000000 FS_O_RDONLY
-         */
-
-        if ((flags & FS_O_WRONLY))
-        {
-            if ((flags & FS_O_TRUNC) && (flags & FS_O_CREAT))
-                mode_string = "w";
-            else if ((flags & FS_O_APPEND) && (flags & FS_O_CREAT))
-                mode_string = "a";
-            else
-                goto done;
-        }
-        else if ((flags & FS_O_RDWR))
-        {
-            if ((flags & FS_O_TRUNC) && (flags & FS_O_CREAT))
-                mode_string = "w+";
-            else if ((flags & FS_O_APPEND) && (flags & FS_O_CREAT))
-                mode_string = "a+";
-            else
-                mode_string = "r+";
-        }
-        else /* FS_O_RDONLY */
-        {
-            mode_string = "r";
-        }
-    }
-
-    errno = 0;
-
-    if (!(sgx_file = sgx_fopen_auto_key(path, mode_string)))
-    {
-        if (errno)
-            FS_RAISE(errno);
-
-        FS_RAISE(FS_ENOENT);
-    }
-
-    if (!(file = calloc(1, sizeof(fs_file_t))))
-        FS_RAISE(FS_ENOMEM);
-
-    file->magic = FILE_MAGIC;
-    file->sgx_file = sgx_file;
-
-    *file_out = file;
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_mkdir(fs_t* fs, const char* path, uint32_t mode)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.mkdir()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_creat(
-    fs_t* fs,
-    const char* path,
-    uint32_t mode,
-    fs_file_t** file_out)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.creat()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_link(fs_t* fs, const char* old_path, const char* new_path)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.link()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_rename(
-    fs_t* fs,
-    const char* old_path,
-    const char* new_path)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.rename()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_unlink(fs_t* fs, const char* path)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.unlink()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_truncate(fs_t* fs, const char* path, ssize_t length)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.truncate()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_rmdir(fs_t* fs, const char* path)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.rmdir()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_stat(fs_t* fs, const char* path, fs_stat_t* stat)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.stat()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-static fs_errno_t _fs_lseek(
-    fs_file_t* file,
-    ssize_t offset,
-    int whence,
-    ssize_t* offset_out)
-{
-    fs_errno_t err = FS_EOK;
-
-    D( printf("ENTER: sgxfs.lseek()\n"); )
-
-    FS_RAISE(FS_EINVAL);
-
-done:
-
-    return err;
-}
-
-/*
-**==============================================================================
-**
-** Public interface:
-**
-**==============================================================================
-*/
-
-int sgxfs_new(fs_t** fs_out)
-{
-    int ret = -1;
-    pfs_t* pfs = NULL;
-
-    if (fs_out)
-        *fs_out = NULL;
-
-    if (!fs_out)
-        goto done;
-
-    if (!(pfs = calloc(1, sizeof(pfs_t))))
-        goto done;
-
-    pfs->base.fs_release = _fs_release;
-    pfs->base.fs_add_ref = _fs_add_ref;
-    pfs->base.fs_creat = _fs_creat;
-    pfs->base.fs_open = _fs_open;
-    pfs->base.fs_lseek = _fs_lseek;
-    pfs->base.fs_read = _fs_read;
-    pfs->base.fs_write = _fs_write;
-    pfs->base.fs_close = _fs_close;
-    pfs->base.fs_opendir = _fs_opendir;
-    pfs->base.fs_readdir = _fs_readdir;
-    pfs->base.fs_closedir = _fs_closedir;
-    pfs->base.fs_stat = _fs_stat;
-    pfs->base.fs_link = _fs_link;
-    pfs->base.fs_unlink = _fs_unlink;
-    pfs->base.fs_rename = _fs_rename;
-    pfs->base.fs_truncate = _fs_truncate;
-    pfs->base.fs_mkdir = _fs_mkdir;
-    pfs->base.fs_rmdir = _fs_rmdir;
-    pfs->magic = PFS_MAGIC;
-    pfs->ref_count = 1;
-
-    *fs_out = &pfs->base;
-    pfs = NULL;
-
     ret = 0;
 
 done:
+    return ret;
+}
 
-    if (pfs)
-        free(pfs);
+static size_t _f_fread(void* ptr, size_t size, size_t nmemb, oe_file_t* base)
+{
+    size_t ret = 0;
+    file_t* file = (file_t*)base;
+
+    if (!ptr || !file || !file->sgx_file)
+        goto done;
+
+    ret = sgx_fread(ptr, size, nmemb, file->sgx_file);
+
+done:
 
     return ret;
 }
 
-int fs_mount_sgxfs(const char* target)
+static size_t _f_fwrite(
+    const void* ptr, size_t size, size_t nmemb, oe_file_t* base)
 {
-    int ret = -1;
-    fs_t* fs = NULL;
+    size_t ret = 0;
+    file_t* file = (file_t*)base;
 
-    if (!target)
+    if (!ptr || !file || !file->sgx_file)
         goto done;
 
-    if (sgxfs_new(&fs) != 0)
-        goto done;
-
-    if (fs_mount(fs, target) != 0)
-        goto done;
-
-    ret = 0;
+    ret = sgx_fwrite(ptr, size, nmemb, file->sgx_file);
 
 done:
 
-    if (fs)
-        fs->fs_release(fs);
+    return ret;
+}
+
+static int64_t _f_ftell(oe_file_t* base)
+{
+    int64_t ret = -1;
+    file_t* file = (file_t*)base;
+
+    if (!file || !file->sgx_file)
+        goto done;
+
+    ret = sgx_fclose(file->sgx_file);
+
+done:
+    return ret;
+}
+
+static int32_t _f_fseek(oe_file_t* base, int64_t offset, int whence)
+{
+    int32_t ret = -1;
+    file_t* file = (file_t*)base;
+
+    if (!file || !file->sgx_file)
+        goto done;
+
+    ret = sgx_fseek(file->sgx_file, offset, whence);
+
+done:
+    return ret;
+}
+
+static int32_t _f_fflush(oe_file_t* base)
+{
+    int ret = -1;
+    file_t* file = (file_t*)base;
+
+    if (!file || !file->sgx_file)
+        goto done;
+
+    ret = sgx_fflush(file->sgx_file);
+
+done:
+    return ret;
+}
+
+static int32_t _f_ferror(oe_file_t* base)
+{
+    int ret = -1;
+    file_t* file = (file_t*)base;
+
+    if (!file || !file->sgx_file)
+        goto done;
+
+    ret = sgx_ferror(file->sgx_file);
+
+done:
+    return ret;
+}
+
+static int32_t _f_feof(oe_file_t* base)
+{
+    int ret = -1;
+    file_t* file = (file_t*)base;
+
+    if (!file || !file->sgx_file)
+        goto done;
+
+    ret = sgx_feof(file->sgx_file);
+
+done:
+    return ret;
+}
+
+static int32_t _f_clearerr(oe_file_t* base)
+{
+    int ret = -1;
+    file_t* file = (file_t*)base;
+
+    if (!file || !file->sgx_file)
+        goto done;
+
+    sgx_clearerr(file->sgx_file);
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static oe_file_t* _fs_fopen(
+    oe_fs_t* fs,
+    const char* path,
+    const char* mode,
+    const void* args)
+{
+    oe_file_t* ret = NULL;
+    file_t* file = NULL;
+
+    if (!path || !mode)
+        goto done;
+
+    if (!(file = calloc(1, sizeof(file_t))))
+        goto done;
+    
+    if (args)
+    {
+        if (!(file->sgx_file = sgx_fopen(path, mode, args)))
+            return NULL;
+    }
+    else
+    {
+        if (!(file->sgx_file = sgx_fopen_auto_key(path, mode)))
+            return NULL;
+    }
+    
+    file->base.f_fclose = _f_fclose;
+    file->base.f_fread = _f_fread;
+    file->base.f_fwrite = _f_fwrite;
+    file->base.f_ftell = _f_ftell;
+    file->base.f_fseek = _f_fseek;
+    file->base.f_fflush = _f_fflush;
+    file->base.f_ferror = _f_ferror;
+    file->base.f_feof = _f_feof;
+    file->base.f_clearerr = _f_clearerr;
+
+    ret = &file->base;
+    file = NULL;
+
+done:
+
+    if (file)
+        free(file);
 
     return ret;
 }
+
+oe_fs_t oe_sgxfs =
+{
+    .fs_fopen = _fs_fopen
+};

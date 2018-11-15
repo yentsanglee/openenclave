@@ -32,6 +32,7 @@
 #include "ocalls.h"
 
 void (*oe_handle_sgxfs_ocall_callback)(void* args);
+void (*oe_handle_hostfs_ocall_callback)(void* args);
 
 /*
 **==============================================================================
@@ -497,11 +498,17 @@ static oe_result_t _handle_ocall(
             oe_handle_backtrace_symbols(enclave, arg_in);
             break;
 
-        case OE_OCALL_FS:
-            fs_handle_ocall((fs_args_t*)arg_in);
-            break;
+        case OE_OCALL_HOSTFS:
+        {
+            if (oe_handle_hostfs_ocall_callback)
+                oe_handle_hostfs_ocall_callback((void*)arg_in);
+            else
+                OE_RAISE(OE_NOT_FOUND);
 
-        case OE_OCALL_PROTECTEDFS:
+            break;
+        }
+
+        case OE_OCALL_SGXFS:
         {
             if (oe_handle_sgxfs_ocall_callback)
                 oe_handle_sgxfs_ocall_callback((void*)arg_in);

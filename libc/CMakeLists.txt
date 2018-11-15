@@ -13,29 +13,8 @@ add_library(oelibc STATIC
     arc4random.c
     atexit.c
     dladdr.c
-    dirent.c
-    fshostcalls.c
+    fs.c
     exp2l.S
-    ../fs/buf.c
-    ../fs/cacheblkdev.c
-    ../fs/cpio.c
-    ../fs/cryptoblkdev.c
-    ../fs/authcryptoblkdev.c
-    ../fs/fs.c
-    ../fs/guid.c
-    ../fs/hostbatch.c
-    ../fs/hostblkdev.c
-    ../fs/hostfs.c
-    ../fs/list.c
-    ../fs/commands.c
-    ../fs/oefs.c
-    ../fs/merkleblkdev.c
-    ../fs/mount.c
-    ../fs/ramblkdev.c
-    ../fs/sha.c
-    ../fs/syscall.c
-    ../fs/strarr.c
-    ../fs/strings.c
     libunwind_stubs.c
     link.c
     locale.c

@@ -4,10 +4,10 @@
 #include "syscall.h"
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <unistd.h>
-#include <stdio.h>
 #include "errno.h"
 #include "fs.h"
 

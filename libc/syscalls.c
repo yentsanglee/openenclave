@@ -3,7 +3,6 @@
 
 #define __OE_NEED_TIME_CALLS
 #define _GNU_SOURCE
-#include "../fs/syscall.h"
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -25,7 +24,6 @@
 #include <time.h>
 #include <time.h>
 #include <unistd.h>
-#include "../fs/fs.h"
 
 static oe_syscall_hook_t _hook;
 static oe_spinlock_t _lock;
@@ -222,17 +220,6 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         }
 
         /* The hook ignored the syscall so fall through */
-    }
-
-    {
-        long ret = -1;
-        fs_errno_t err = 0;
-
-        if (fs_handle_syscall(n, x1, x2, x3, x4, x5, x6, &ret, &err) == 0)
-        {
-            errno = err;
-            return ret;
-        }
     }
 
     switch (n)

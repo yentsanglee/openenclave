@@ -1,11 +1,11 @@
 #include <errno.h>
+#include <errno.h>
 #include <openenclave/internal/tests.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <errno.h>
 #include <string.h>
-#include "sgxfs_t.h"
 #include "../../../sgxfs/common/sgxfs.h"
+#include "sgxfs_t.h"
 
 #ifdef FILENAME_MAX
 #undef FILENAME_MAX
@@ -71,8 +71,7 @@ static void _test1()
             sgx_fclose(file);
             printf("Closed file\n");
         }
-        else
-        {
+        else {
             printf("Failed to open file for read\n");
             OE_TEST(false);
         }
@@ -90,35 +89,35 @@ static void _test2()
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     char buf[sizeof(alphabet)];
     const size_t N = 16;
-    FILE* stream;
+    oe_file_t* stream;
 
-    OE_TEST(fs_mount_sgxfs("/mnt/pfs") == 0);
-
-    OE_TEST((stream = fopen("/mnt/pfs/tmp/myfile", "w")) != NULL);
+    stream = oe_fopen(&oe_sgxfs, "/tmp/sgxfs/myfile", "w", NULL);
+    OE_TEST(stream != NULL);
 
     /* Write to the file */
     for (size_t i = 0; i < N; i++)
     {
-        ssize_t n = fwrite(alphabet, 1, sizeof(alphabet), stream);
+        ssize_t n = oe_fwrite(alphabet, 1, sizeof(alphabet), stream);
         OE_TEST(n == sizeof(alphabet));
     }
 
-    /* Close and reopen the file. */
-    fclose(stream);
-    OE_TEST((stream = fopen("/mnt/pfs/tmp/myfile", "r")) != NULL);
+    OE_TEST(oe_fflush(stream) == 0);
+    OE_TEST(oe_fclose(stream) == 0);
+
+    /* Reopen the file for read. */
+    stream = oe_fopen(&oe_sgxfs, "/tmp/sgxfs/myfile", "r", NULL);
+    OE_TEST(stream != NULL);
 
     /* Read from the file. */
     for (size_t i = 0; i < N; i++)
     {
-        ssize_t n = fread(buf, 1, sizeof(buf), stream);
+        ssize_t n = oe_fread(buf, 1, sizeof(buf), stream);
         OE_TEST(n == sizeof(buf));
         OE_TEST(memcmp(buf, alphabet, sizeof(alphabet)) == 0);
         printf("buf{%s}\n", buf);
     }
 
-    fclose(stream);
-
-    fs_unmount("/mnt/pfs");
+    oe_fclose(stream);
 }
 
 void enc_test()

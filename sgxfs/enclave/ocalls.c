@@ -7,6 +7,7 @@
 
 #include "sgx_error.h"
 #include "../common/sgxfs.h"
+#include "../common/sgxfsargs.h"
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <string.h>
@@ -51,7 +52,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_exclusive_file_open(
 
     args->u.exclusive_file_open.read_only = read_only;
 
-    if (oe_ocall(OE_OCALL_PROTECTEDFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_SGXFS, (uint64_t)args, NULL) != OE_OK)
     {
         err = SGX_ERROR_UNEXPECTED;
         goto done;
@@ -95,7 +96,7 @@ u_sgxprotectedfs_check_if_file_exists(uint8_t* retval, const char* filename)
         goto done;
     }
 
-    if (oe_ocall(OE_OCALL_PROTECTEDFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_SGXFS, (uint64_t)args, NULL) != OE_OK)
     {
         err = SGX_ERROR_UNEXPECTED;
         goto done;
@@ -139,7 +140,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fread_node(
     args->u.fread_node.buffer = args->buffer;
     args->u.fread_node.node_size = node_size;
 
-    if (oe_ocall(OE_OCALL_PROTECTEDFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_SGXFS, (uint64_t)args, NULL) != OE_OK)
     {
         err = SGX_ERROR_UNEXPECTED;
         goto done;
@@ -185,7 +186,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fwrite_node(
     args->u.fwrite_node.buffer = args->buffer;
     args->u.fwrite_node.node_size = node_size;
 
-    if (oe_ocall(OE_OCALL_PROTECTEDFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_SGXFS, (uint64_t)args, NULL) != OE_OK)
     {
         err = SGX_ERROR_UNEXPECTED;
         goto done;
@@ -221,7 +222,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fclose(int32_t* retval, void* file)
     args->op = oe_sgxfs_op_fclose;
     args->u.fclose.file = file;
 
-    if (oe_ocall(OE_OCALL_PROTECTEDFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_SGXFS, (uint64_t)args, NULL) != OE_OK)
     {
         err = SGX_ERROR_UNEXPECTED;
         goto done;
@@ -257,7 +258,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fflush(uint8_t* retval, void* file)
     args->op = oe_sgxfs_op_fflush;
     args->u.fflush.file = file;
 
-    if (oe_ocall(OE_OCALL_PROTECTEDFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_SGXFS, (uint64_t)args, NULL) != OE_OK)
     {
         err = SGX_ERROR_UNEXPECTED;
         goto done;
@@ -299,7 +300,7 @@ u_sgxprotectedfs_remove(int32_t* retval, const char* filename)
         goto done;
     }
 
-    if (oe_ocall(OE_OCALL_PROTECTEDFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_SGXFS, (uint64_t)args, NULL) != OE_OK)
     {
         err = SGX_ERROR_UNEXPECTED;
         goto done;
@@ -341,7 +342,7 @@ u_sgxprotectedfs_recovery_file_open(void** retval, const char* filename)
         goto done;
     }
 
-    if (oe_ocall(OE_OCALL_PROTECTEDFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_SGXFS, (uint64_t)args, NULL) != OE_OK)
     {
         err = SGX_ERROR_UNEXPECTED;
         goto done;
@@ -384,7 +385,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fwrite_recovery_node(
     args->u.fwrite_recovery_node.data = args->buffer;
     args->u.fwrite_recovery_node.data_length = data_length;
 
-    if (oe_ocall(OE_OCALL_PROTECTEDFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_SGXFS, (uint64_t)args, NULL) != OE_OK)
     {
         err = SGX_ERROR_UNEXPECTED;
         goto done;
@@ -437,7 +438,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_do_file_recovery(
     args->op = oe_sgxfs_op_do_file_recovery;
     args->u.do_file_recovery.node_size = node_size;
 
-    if (oe_ocall(OE_OCALL_PROTECTEDFS, (uint64_t)args, NULL) != OE_OK)
+    if (oe_ocall(OE_OCALL_SGXFS, (uint64_t)args, NULL) != OE_OK)
     {
         err = SGX_ERROR_UNEXPECTED;
         goto done;

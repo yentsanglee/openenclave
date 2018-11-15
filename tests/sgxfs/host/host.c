@@ -12,7 +12,13 @@ int main(int argc, const char* argv[])
     oe_enclave_t* enclave = NULL; // Create the enclave
     uint32_t flags = OE_ENCLAVE_FLAG_DEBUG;
 
-    /* Install the protected file system. */
+    /* Install hostfs */
+    {
+        extern void oe_install_hostfs(void);
+        oe_install_hostfs();
+    }
+
+    /* Install sgxfs */
     {
         extern void oe_install_sgxfs(void);
         oe_install_sgxfs();

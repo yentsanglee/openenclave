@@ -12,4 +12,4 @@ add_executable(sgxfs_host
 target_include_directories(sgxfs_host 
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(sgxfs_host pfshost oehostapp)
+target_link_libraries(sgxfs_host oesgxfshost oehostfshost oehostapp)

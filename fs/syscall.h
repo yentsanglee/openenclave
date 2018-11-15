@@ -4,8 +4,8 @@
 #ifndef _FS_SYSCALL_H
 #define _FS_SYSCALL_H
 
-#include "errno.h"
 #include "common.h"
+#include "errno.h"
 
 FS_EXTERN_C_BEGIN
 
