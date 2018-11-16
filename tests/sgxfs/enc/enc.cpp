@@ -151,9 +151,6 @@ void enc_test()
     _test_fs(&oe_hostfs);
 
     _test_dirs(&oe_hostfs);
-
-    oe_release(&oe_hostfs);
-    oe_release(&oe_sgxfs);
 }
 
 OE_SET_ENCLAVE_SGX(

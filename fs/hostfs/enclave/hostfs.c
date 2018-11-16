@@ -615,7 +615,7 @@ static DIR* _fs_opendir(oe_fs_t* fs, const char* name, const void* args_)
             goto done;
 
         args->op = OE_HOSTFS_OP_OPENDIR;
-        args->u.fopen.ret = NULL;
+        args->u.opendir.ret = NULL;
         strlcpy(args->u.opendir.name, name, sizeof(args->u.opendir.name));
     }
 
@@ -665,8 +665,228 @@ done:
     return ret;
 }
 
+static int32_t _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
+{
+    int32_t ret = -1;
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    if (!fs || !path || !stat || !batch)
+        goto done;
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->op = OE_HOSTFS_OP_STAT;
+        args->u.stat.ret = -1;
+        strlcpy(args->u.stat.path, path, sizeof(args->u.stat.path));
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+    }
+
+    /* Output */
+    {
+        if ((ret = args->u.stat.ret) == 0)
+        {
+            stat->st_dev = args->u.stat.buf.st_dev;
+            stat->st_ino = args->u.stat.buf.st_ino;
+            stat->st_mode = args->u.stat.buf.st_mode;
+            stat->st_nlink = args->u.stat.buf.st_nlink;
+            stat->st_uid = args->u.stat.buf.st_uid;
+            stat->st_gid = args->u.stat.buf.st_gid;
+            stat->st_rdev = args->u.stat.buf.st_rdev;
+            stat->st_size = args->u.stat.buf.st_size;
+            stat->st_blksize = args->u.stat.buf.st_blksize;
+            stat->st_blocks = args->u.stat.buf.st_blocks;
+        }
+    }
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
+static int32_t _fs_rename(
+    oe_fs_t* fs, const char* old_path, const char* new_path)
+{
+    int32_t ret = -1;
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    if (!fs || !old_path || !new_path || !batch)
+        goto done;
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->op = OE_HOSTFS_OP_RENAME;
+        args->u.rename.ret = -1;
+        strlcpy(args->u.rename.old_path, 
+            old_path, sizeof(args->u.rename.old_path));
+        strlcpy(args->u.rename.new_path, 
+            new_path, sizeof(args->u.rename.new_path));
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+    }
+
+    /* Output */
+    {
+        ret = args->u.rename.ret;
+    }
+
+    ret = 0;
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
+static int32_t _fs_unlink(oe_fs_t* fs, const char* path)
+{
+    int32_t ret = -1;
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    if (!fs || !path || !batch)
+        goto done;
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->op = OE_HOSTFS_OP_UNLINK;
+        args->u.unlink.ret = -1;
+        strlcpy(args->u.unlink.path, path, sizeof(args->u.unlink.path));
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+    }
+
+    /* Output */
+    {
+        ret = args->u.unlink.ret;
+    }
+
+    ret = 0;
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
+static int32_t _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
+{
+    int32_t ret = -1;
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    if (!fs || !path || !batch)
+        goto done;
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->op = OE_HOSTFS_OP_MKDIR;
+        args->u.mkdir.ret = -1;
+        args->u.mkdir.mode = mode;
+        strlcpy(args->u.mkdir.path, path, sizeof(args->u.mkdir.path));
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+    }
+
+    /* Output */
+    {
+        ret = args->u.mkdir.ret;
+    }
+
+    ret = 0;
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
+static int32_t _fs_rmdir(oe_fs_t* fs, const char* path)
+{
+    int32_t ret = -1;
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    if (!fs || !path || !batch)
+        goto done;
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->op = OE_HOSTFS_OP_RMDIR;
+        args->u.rmdir.ret = -1;
+        strlcpy(args->u.rmdir.path, path, sizeof(args->u.rmdir.path));
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+    }
+
+    /* Output */
+    {
+        ret = args->u.rmdir.ret;
+    }
+
+    ret = 0;
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
 oe_fs_t oe_hostfs = {
+    .fs_release = _fs_release,
     .fs_fopen = _fs_fopen,
     .fs_opendir = _fs_opendir,
-    .fs_release = _fs_release,
+    .fs_stat = _fs_stat,
+    .fs_unlink = _fs_unlink,
+    .fs_rename = _fs_rename,
+    .fs_mkdir = _fs_mkdir,
+    .fs_rmdir = _fs_rmdir,
 };
