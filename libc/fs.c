@@ -2,7 +2,7 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/fsinternal.h>
 
-oe_file_t* oe_fopen(
+FILE* oe_fopen(
     oe_fs_t* fs,
     const char* path,
     const char* mode,
@@ -14,7 +14,7 @@ oe_file_t* oe_fopen(
     return fs->fs_fopen(fs, path, mode, args);
 }
 
-int32_t oe_fclose(oe_file_t* file)
+int32_t oe_fclose(FILE* file)
 {
     if (!file || !file->f_fclose)
         return -1;
@@ -22,7 +22,7 @@ int32_t oe_fclose(oe_file_t* file)
     return file->f_fclose(file);
 }
 
-size_t oe_fread(void* ptr, size_t size, size_t nmemb, oe_file_t* file)
+size_t oe_fread(void* ptr, size_t size, size_t nmemb, FILE* file)
 {
     if (!file || !file->f_fread)
         return -1;
@@ -30,7 +30,7 @@ size_t oe_fread(void* ptr, size_t size, size_t nmemb, oe_file_t* file)
     return file->f_fread(ptr, size, nmemb, file);
 }
 
-size_t oe_fwrite(const void* ptr, size_t size, size_t nmemb, oe_file_t* file)
+size_t oe_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* file)
 {
     if (!file || !file->f_fwrite)
         return -1;
@@ -38,7 +38,7 @@ size_t oe_fwrite(const void* ptr, size_t size, size_t nmemb, oe_file_t* file)
     return file->f_fwrite(ptr, size, nmemb, file);
 }
 
-int64_t oe_ftell(oe_file_t* file)
+int64_t oe_ftell(FILE* file)
 {
     if (!file || !file->f_ftell)
         return -1;
@@ -46,7 +46,7 @@ int64_t oe_ftell(oe_file_t* file)
     return file->f_ftell(file);
 }
 
-int32_t oe_fseek(oe_file_t* file, int64_t offset, int whence)
+int32_t oe_fseek(FILE* file, int64_t offset, int whence)
 {
     if (!file || !file->f_fseek)
         return -1;
@@ -54,7 +54,7 @@ int32_t oe_fseek(oe_file_t* file, int64_t offset, int whence)
     return file->f_fseek(file, offset, whence);
 }
 
-int32_t oe_fflush(oe_file_t* file)
+int32_t oe_fflush(FILE* file)
 {
     if (!file || !file->f_fflush)
         return -1;
@@ -62,7 +62,7 @@ int32_t oe_fflush(oe_file_t* file)
     return file->f_fflush(file);
 }
 
-int32_t oe_ferror(oe_file_t* file)
+int32_t oe_ferror(FILE* file)
 {
     if (!file || !file->f_ferror)
         return -1;
@@ -70,7 +70,7 @@ int32_t oe_ferror(oe_file_t* file)
     return file->f_ferror(file);
 }
 
-int32_t oe_feof(oe_file_t* file)
+int32_t oe_feof(FILE* file)
 {
     if (!file || !file->f_feof)
         return -1;
@@ -78,7 +78,7 @@ int32_t oe_feof(oe_file_t* file)
     return file->f_feof(file);
 }
 
-int32_t oe_clearerr(oe_file_t* file)
+int32_t oe_clearerr(FILE* file)
 {
     if (!file || !file->f_clearerr)
         return -1;

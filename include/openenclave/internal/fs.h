@@ -1,6 +1,9 @@
 #ifndef _OE_FS_H
 #define _OE_FS_H
 
+#include <stdio.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
 
@@ -9,9 +12,9 @@ OE_EXTERNC_BEGIN
 #define OE_FS_PATH_MAX 256
 
 typedef struct _oe_fs oe_fs_t;
-typedef struct _oe_file oe_file_t;
+typedef struct _IO_FILE FILE;
 typedef struct _oe_stat oe_stat_t;
-typedef struct _oe_dir oe_dir_t;
+typedef struct __dirstream oe_dir_t;
 typedef struct _oe_dirent oe_dirent_t;
 
 typedef struct _oe_dirent
@@ -34,42 +37,9 @@ typedef struct _oe_stat
     uint32_t st_blocks;
 } oe_stat_t;
 
-#if 0
-struct _oe_file
-{
-    int32_t (*f_fclose)(oe_file_t* file);
-
-    size_t (*f_fread)(void* ptr, size_t size, size_t nmemb, oe_file_t* file);
-
-    size_t (
-        *f_fwrite)(const void* ptr, size_t size, size_t nmemb, oe_file_t* file);
-
-    int64_t (*f_ftell)(oe_file_t* file);
-
-    int32_t (*f_fseek)(oe_file_t* file, int64_t offset, int whence);
-
-    int32_t (*f_fflush)(oe_file_t* file);
-
-    int32_t (*f_ferror)(oe_file_t* file);
-
-    int32_t (*f_feof)(oe_file_t* file);
-
-    int32_t (*f_clearerr)(oe_file_t* file);
-};
-#endif
-
-#if 0
-struct _oe_dir
-{
-    int32_t (*d_readdir)(oe_dir_t* dir, oe_dirent_t* entry, oe_dirent_t** result);
-
-    int32_t (*d_closedir)(oe_dir_t* dir);
-};
-#endif
-
 struct _oe_fs
 {
-    oe_file_t* (*fs_fopen)(
+    FILE* (*fs_fopen)(
         oe_fs_t* fs,
         const char* path,
         const char* mode,
@@ -90,29 +60,29 @@ struct _oe_fs
     int32_t (*fs_rmdir)(oe_fs_t* fs, const char* path);
 };
 
-oe_file_t* oe_fopen(
+FILE* oe_fopen(
     oe_fs_t* fs,
     const char* path,
     const char* mode,
     const void* args);
 
-int32_t oe_fclose(oe_file_t* file);
+int32_t oe_fclose(FILE* file);
 
-size_t oe_fread(void* ptr, size_t size, size_t nmemb, oe_file_t* file);
+size_t oe_fread(void* ptr, size_t size, size_t nmemb, FILE* file);
 
-size_t oe_fwrite(const void* ptr, size_t size, size_t nmemb, oe_file_t* file);
+size_t oe_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* file);
 
-int64_t oe_ftell(oe_file_t* file);
+int64_t oe_ftell(FILE* file);
 
-int32_t oe_fseek(oe_file_t* file, int64_t offset, int whence);
+int32_t oe_fseek(FILE* file, int64_t offset, int whence);
 
-int32_t oe_fflush(oe_file_t* file);
+int32_t oe_fflush(FILE* file);
 
-int32_t oe_ferror(oe_file_t* file);
+int32_t oe_ferror(FILE* file);
 
-int32_t oe_feof(oe_file_t* file);
+int32_t oe_feof(FILE* file);
 
-int32_t oe_clearerr(oe_file_t* file);
+int32_t oe_clearerr(FILE* file);
 
 oe_dir_t* oe_opendir(oe_fs_t* fs, const char* name, const void* args);
 

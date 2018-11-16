@@ -11,12 +11,12 @@
 
 typedef struct _file
 {
-    oe_file_t base;
+    FILE base;
     SGX_FILE* sgx_file;
 }
 file_t;
 
-static int32_t _f_fclose(oe_file_t* base)
+static int32_t _f_fclose(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -35,7 +35,7 @@ done:
     return ret;
 }
 
-static size_t _f_fread(void* ptr, size_t size, size_t nmemb, oe_file_t* base)
+static size_t _f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
 {
     size_t ret = 0;
     file_t* file = (file_t*)base;
@@ -51,7 +51,7 @@ done:
 }
 
 static size_t _f_fwrite(
-    const void* ptr, size_t size, size_t nmemb, oe_file_t* base)
+    const void* ptr, size_t size, size_t nmemb, FILE* base)
 {
     size_t ret = 0;
     file_t* file = (file_t*)base;
@@ -66,7 +66,7 @@ done:
     return ret;
 }
 
-static int64_t _f_ftell(oe_file_t* base)
+static int64_t _f_ftell(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -80,7 +80,7 @@ done:
     return ret;
 }
 
-static int32_t _f_fseek(oe_file_t* base, int64_t offset, int whence)
+static int32_t _f_fseek(FILE* base, int64_t offset, int whence)
 {
     int32_t ret = -1;
     file_t* file = (file_t*)base;
@@ -94,7 +94,7 @@ done:
     return ret;
 }
 
-static int32_t _f_fflush(oe_file_t* base)
+static int32_t _f_fflush(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -108,7 +108,7 @@ done:
     return ret;
 }
 
-static int32_t _f_ferror(oe_file_t* base)
+static int32_t _f_ferror(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -122,7 +122,7 @@ done:
     return ret;
 }
 
-static int32_t _f_feof(oe_file_t* base)
+static int32_t _f_feof(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -136,7 +136,7 @@ done:
     return ret;
 }
 
-static int32_t _f_clearerr(oe_file_t* base)
+static int32_t _f_clearerr(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -151,13 +151,13 @@ done:
     return ret;
 }
 
-static oe_file_t* _fs_fopen(
+static FILE* _fs_fopen(
     oe_fs_t* fs,
     const char* path,
     const char* mode,
     const void* args)
 {
-    oe_file_t* ret = NULL;
+    FILE* ret = NULL;
     file_t* file = NULL;
 
     if (!path || !mode)

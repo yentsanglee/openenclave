@@ -91,7 +91,7 @@ static void _test_fs(oe_fs_t* fs)
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     char buf[sizeof(alphabet)];
     const size_t N = 16;
-    oe_file_t* stream;
+    FILE* stream;
     size_t m = 0;
 
     stream = oe_fopen(fs, "/tmp/sgxfs/myfile", "w", NULL);

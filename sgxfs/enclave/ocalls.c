@@ -1,11 +1,14 @@
 #define _GNU_SOURCE
 
 // clang-format off
+#include <stdio.h>
+#define FILE RENAME_FILE
 #include "common.h"
 #include "linux-sgx/sdk/protected_fs/sgx_tprotected_fs/sgx_tprotected_fs_t.h"
+#include "sgx_error.h"
+#undef FILE
 // clang-format on
 
-#include "sgx_error.h"
 #include "../common/sgxfs.h"
 #include "../common/sgxfsargs.h"
 #include <openenclave/enclave.h>
