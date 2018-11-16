@@ -16,6 +16,14 @@ typedef oe_hostfs_args_t args_t;
 static oe_host_batch_t* _batch;
 static pthread_spinlock_t _lock;
 
+static void _atexit_handler()
+{
+    pthread_spin_lock(&_lock);
+    oe_host_batch_delete(_batch);
+    _batch = NULL;
+    pthread_spin_unlock(&_lock);
+}
+
 static oe_host_batch_t* _get_host_batch(void)
 {
     if (_batch == NULL)
@@ -23,7 +31,10 @@ static oe_host_batch_t* _get_host_batch(void)
         pthread_spin_lock(&_lock);
 
         if (_batch == NULL)
+        {
             _batch = oe_host_batch_new(BATCH_SIZE);
+            atexit(_atexit_handler);
+        }
 
         pthread_spin_unlock(&_lock);
     }
@@ -477,11 +488,6 @@ static int32_t _fs_release(oe_fs_t* fs)
 
     if (!fs)
         goto done;
-
-    pthread_spin_lock(&_lock);
-    oe_host_batch_delete(_batch);
-    _batch = NULL;
-    pthread_spin_unlock(&_lock);
 
     ret = 0;
 

@@ -1,4 +1,5 @@
 #include <openenclave/host.h>
+#include <openenclave/internal/tests.h>
 #include "sgxfs_u.h"
 
 void host_test()
@@ -53,7 +54,7 @@ int main(int argc, const char* argv[])
 exit:
     // Clean up the enclave if we created one
     if (enclave)
-        oe_terminate_enclave(enclave);
+        OE_TEST(oe_terminate_enclave(enclave) == 0);
 
     return ret;
 }
