@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "../common/sgxfs.h"
+#include <openenclave/internal/fsinternal.h>
 
 typedef struct _file
 {

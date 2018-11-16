@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/fsinternal.h>
 
 oe_file_t* oe_fopen(
     oe_fs_t* fs,

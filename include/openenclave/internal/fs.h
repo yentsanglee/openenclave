@@ -34,6 +34,7 @@ typedef struct _oe_stat
     uint32_t st_blocks;
 } oe_stat_t;
 
+#if 0
 struct _oe_file
 {
     int32_t (*f_fclose)(oe_file_t* file);
@@ -55,13 +56,16 @@ struct _oe_file
 
     int32_t (*f_clearerr)(oe_file_t* file);
 };
+#endif
 
+#if 0
 struct _oe_dir
 {
     int32_t (*d_readdir)(oe_dir_t* dir, oe_dirent_t* entry, oe_dirent_t** result);
 
     int32_t (*d_closedir)(oe_dir_t* dir);
 };
+#endif
 
 struct _oe_fs
 {

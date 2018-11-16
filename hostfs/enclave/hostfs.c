@@ -7,6 +7,7 @@
 #include "../common/hostfs.h"
 #include "hostbatch.h"
 #include <openenclave/internal/calls.h>
+#include <openenclave/internal/fsinternal.h>
 
 #define BATCH_SIZE 4096
 
