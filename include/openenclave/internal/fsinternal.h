@@ -11,6 +11,9 @@ typedef struct __dirstream DIR;
 
 struct _IO_FILE
 {
+    /* Padding to prevent overlap with MUSL _IO_FILE struct. */
+    uint8_t padding[256];
+
     int32_t (*f_fclose)(FILE* file);
 
     size_t (*f_fread)(void* ptr, size_t size, size_t nmemb, FILE* file);
