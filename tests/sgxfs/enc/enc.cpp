@@ -92,6 +92,7 @@ static void _test_fs(oe_fs_t* fs)
     char buf[sizeof(alphabet)];
     const size_t N = 16;
     oe_file_t* stream;
+    size_t m = 0;
 
     stream = oe_fopen(fs, "/tmp/sgxfs/myfile", "w", NULL);
     OE_TEST(stream != NULL);
@@ -101,8 +102,10 @@ static void _test_fs(oe_fs_t* fs)
     {
         ssize_t n = oe_fwrite(alphabet, 1, sizeof(alphabet), stream);
         OE_TEST(n == sizeof(alphabet));
+        m += n;
     }
 
+    OE_TEST(m == sizeof(alphabet) * N);
     OE_TEST(oe_fflush(stream) == 0);
     OE_TEST(oe_fclose(stream) == 0);
 
@@ -111,13 +114,16 @@ static void _test_fs(oe_fs_t* fs)
     OE_TEST(stream != NULL);
 
     /* Read from the file. */
-    for (size_t i = 0; i < N; i++)
+    for (size_t i = 0, m = 0; i < N; i++)
     {
         ssize_t n = oe_fread(buf, 1, sizeof(buf), stream);
         OE_TEST(n == sizeof(buf));
         OE_TEST(memcmp(buf, alphabet, sizeof(alphabet)) == 0);
         printf("buf{%s}\n", buf);
+        m += n;
     }
+
+    OE_TEST(m == sizeof(alphabet) * N);
 
     oe_fclose(stream);
 }
