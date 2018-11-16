@@ -4,6 +4,9 @@
 include ksamd64.inc
 
 extern __oe_handle_main_wrap:proc
+extern __security_cookie:qword
+extern __security_cookie_complement:qword
+extern oe_cookie_initialized:dword
 
 OE_WORD_SIZE                    EQU 8
 OE_PAGE_SIZE                    EQU 01000h
@@ -70,7 +73,18 @@ enc_args_t ends
 ;;==============================================================================
 
 LEAF_ENTRY oe_entry, _TEXT$00
-
+	;; avoid interlocked operation unless necessary.
+    cmp     dword ptr [oe_cookie_initialized], 0
+	jne		@f
+	mov		r8d, 1
+	lock xchg dword ptr [oe_cookie_initialized], r8d
+	jnz		@f
+    ;; Initizlie security cookie upon 1st entrance.
+	rdrand	r8
+	mov		qword ptr[__security_cookie], r8
+	not		r8
+	mov		qword ptr[__security_cookie_complement], r8
+@@:
     ;; Do a one-time update to last_sp such that we can always use last_sp
     ;; upon regular entrance.
     ;; TODO: Update td_init and td_clear to not change last_sp.

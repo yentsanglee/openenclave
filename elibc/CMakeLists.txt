@@ -2,9 +2,14 @@
 # Licensed under the MIT License.
 
 if(UNIX)
-    set(SOURCES setjmp.S longjmp.S)
+    set(SOURCES
+	    linux/setjmp.S
+		linux/longjmp.S)
 elseif (WIN32)
-    set(SOURCES windows.c)
+    set(SOURCES
+	    windows/gshandler.c
+	    windows/windows.c
+		../enclave/core/windows/jump.asm)
 endif()
 
 

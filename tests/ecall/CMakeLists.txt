@@ -2,9 +2,10 @@
 # Licensed under the MIT License.
 
 add_subdirectory(host)
+add_subdirectory(enc)
+
 
 if (UNIX)
-	add_subdirectory(enc)
+add_enclave_test(tests/ecall ./host ecall_host ./enc ecall_enc)
 endif()
 
-add_enclave_test(tests/ecall ./host ecall_host ./enc ecall_enc)
