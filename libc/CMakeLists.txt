@@ -14,6 +14,7 @@ add_library(oelibc STATIC
     atexit.c
     dladdr.c
     fs.c
+    fwrite.c
     exp2l.S
     libunwind_stubs.c
     link.c
@@ -22,6 +23,7 @@ add_library(oelibc STATIC
     pthread.c
     realpath.c
     sched_yield.c
+    stdio.c
     stdlib.c
     strerror.c
     syscalls.c
@@ -461,7 +463,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/fputs.c
     ${MUSLSRC}/stdio/fputwc.c
     ${MUSLSRC}/stdio/fputws.c
-    ${MUSLSRC}/stdio/fread.c
+    #${MUSLSRC}/stdio/fread.c
     ${MUSLSRC}/stdio/freopen.c
     ${MUSLSRC}/stdio/fscanf.c
     ${MUSLSRC}/stdio/fseek.c
@@ -471,7 +473,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/funlockfile.c
     ${MUSLSRC}/stdio/fwide.c
     ${MUSLSRC}/stdio/fwprintf.c
-    ${MUSLSRC}/stdio/fwrite.c
+    #${MUSLSRC}/stdio/fwrite.c
     ${MUSLSRC}/stdio/fwscanf.c
     ${MUSLSRC}/stdio/getc.c
     ${MUSLSRC}/stdio/getchar.c

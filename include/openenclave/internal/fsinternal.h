@@ -1,8 +1,10 @@
 #ifndef _OE_FSINTERNAL_H
 #define _OE_FSINTERNAL_H
 
+#include <dirent.h>
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <stdio.h>
 
 OE_EXTERNC_BEGIN
 

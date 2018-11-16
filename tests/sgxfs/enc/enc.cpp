@@ -101,7 +101,7 @@ static void _test_fs(oe_fs_t* fs)
     /* Write to the file */
     for (size_t i = 0; i < N; i++)
     {
-        ssize_t n = oe_fwrite(alphabet, 1, sizeof(alphabet), stream);
+        ssize_t n = fwrite(alphabet, 1, sizeof(alphabet), stream);
         OE_TEST(n == sizeof(alphabet));
         m += n;
     }
@@ -117,7 +117,7 @@ static void _test_fs(oe_fs_t* fs)
     /* Read from the file. */
     for (size_t i = 0, m = 0; i < N; i++)
     {
-        ssize_t n = oe_fread(buf, 1, sizeof(buf), stream);
+        ssize_t n = fread(buf, 1, sizeof(buf), stream);
         OE_TEST(n == sizeof(buf));
         OE_TEST(memcmp(buf, alphabet, sizeof(alphabet)) == 0);
         printf("buf{%s}\n", buf);
