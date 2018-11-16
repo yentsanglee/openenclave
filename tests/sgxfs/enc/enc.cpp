@@ -91,7 +91,7 @@ static void _test_fs(oe_fs_t* fs)
 {
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     char buf[sizeof(alphabet)];
-    const size_t N = 16;
+    const size_t N = 1600;
     FILE* stream;
     size_t m = 0;
 
@@ -125,7 +125,6 @@ static void _test_fs(oe_fs_t* fs)
     }
 
     OE_TEST(m == sizeof(alphabet) * N);
-
     oe_fclose(stream);
 }
 

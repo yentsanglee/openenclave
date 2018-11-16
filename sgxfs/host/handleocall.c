@@ -67,7 +67,8 @@ static void _handle_sgxfs_ocall(void* args_)
         case oe_sgxfs_op_recovery_file_open:
         {
             args->u.recovery_file_open.retval =
-                u_sgxprotectedfs_recovery_file_open(args->u.remove.filename);
+                u_sgxprotectedfs_recovery_file_open(
+                    args->u.recovery_file_open.filename);
             break;
         }
         case oe_sgxfs_op_fwrite_recovery_node:
