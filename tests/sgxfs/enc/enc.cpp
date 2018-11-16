@@ -5,8 +5,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../../hostfs/common/hostfs.h"
-#include "../../../sgxfs/common/sgxfs.h"
+#include "../../../fs/hostfs/common/hostfs.h"
+#include "../../../fs/sgxfs/common/sgxfs.h"
 #include "sgxfs_t.h"
 
 #ifdef FILENAME_MAX
