@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
+#include <stdio.h>
 #include "../common/hostfsargs.h"
 #include "../common/hostfs.h"
 #include "hostbatch.h"
@@ -11,22 +12,22 @@
 
 typedef oe_hostfs_args_t args_t;
 
+static oe_host_batch_t* _batch;
+static pthread_spinlock_t _lock;
+
 static oe_host_batch_t* _get_host_batch(void)
 {
-    static oe_host_batch_t* batch;
-    static pthread_spinlock_t lock;
-
-    if (batch == NULL)
+    if (_batch == NULL)
     {
-        pthread_spin_lock(&lock);
+        pthread_spin_lock(&_lock);
 
-        if (batch == NULL)
-            batch = oe_host_batch_new(BATCH_SIZE);
+        if (_batch == NULL)
+            _batch = oe_host_batch_new(BATCH_SIZE);
 
-        pthread_spin_unlock(&lock);
+        pthread_spin_unlock(&_lock);
     }
 
-    return batch;
+    return _batch;
 }
 
 typedef struct _file
@@ -101,6 +102,7 @@ static size_t _f_fread(void* ptr, size_t size, size_t nmemb, oe_file_t* base)
         args->u.fread.size = size;
         args->u.fread.nmemb = nmemb;
         args->u.fread.file = file->host_file;
+        args->u.fread.ptr = args->buf;
     }
     
     /* Call */
@@ -146,6 +148,7 @@ static size_t _f_fwrite(
         args->u.fwrite.size = size;
         args->u.fwrite.nmemb = nmemb;
         args->u.fwrite.file = file->host_file;
+        args->u.fwrite.ptr = args->buf;
         memcpy(args->buf, ptr, n);
     }
     
@@ -469,7 +472,26 @@ done:
     return ret;
 }
 
+static int32_t _fs_release(oe_fs_t* fs)
+{
+    uint32_t ret = -1;
+
+    if (!fs)
+        goto done;
+
+    pthread_spin_lock(&_lock);
+    oe_host_batch_delete(_batch);
+    _batch = NULL;
+    pthread_spin_unlock(&_lock);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 oe_fs_t oe_hostfs =
 {
-    .fs_fopen = _fs_fopen
+    .fs_fopen = _fs_fopen,
+    .fs_release = _fs_release,
 };

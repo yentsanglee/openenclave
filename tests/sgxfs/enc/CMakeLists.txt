@@ -10,4 +10,4 @@ add_executable(sgxfs_enc enc.cpp ${gen})
 
 target_include_directories(sgxfs_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(sgxfs_enc oesgxfsenclave oeenclave)
+target_link_libraries(sgxfs_enc oesgxfsenclave oehostfsenclave oeenclave)

@@ -1,10 +1,12 @@
 #include <errno.h>
 #include <errno.h>
 #include <openenclave/internal/tests.h>
+#include <openenclave/internal/fs.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include "../../../sgxfs/common/sgxfs.h"
+#include "../../../hostfs/common/hostfs.h"
 #include "sgxfs_t.h"
 
 #ifdef FILENAME_MAX
@@ -84,14 +86,14 @@ static void _test1()
     }
 }
 
-static void _test2()
+static void _test_fs(oe_fs_t* fs)
 {
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     char buf[sizeof(alphabet)];
     const size_t N = 16;
     oe_file_t* stream;
 
-    stream = oe_fopen(&oe_sgxfs, "/tmp/sgxfs/myfile", "w", NULL);
+    stream = oe_fopen(fs, "/tmp/sgxfs/myfile", "w", NULL);
     OE_TEST(stream != NULL);
 
     /* Write to the file */
@@ -105,7 +107,7 @@ static void _test2()
     OE_TEST(oe_fclose(stream) == 0);
 
     /* Reopen the file for read. */
-    stream = oe_fopen(&oe_sgxfs, "/tmp/sgxfs/myfile", "r", NULL);
+    stream = oe_fopen(fs, "/tmp/sgxfs/myfile", "r", NULL);
     OE_TEST(stream != NULL);
 
     /* Read from the file. */
@@ -123,7 +125,11 @@ static void _test2()
 void enc_test()
 {
     _test1();
-    _test2();
+    _test_fs(&oe_sgxfs);
+    _test_fs(&oe_hostfs);
+
+    oe_release(&oe_hostfs);
+    oe_release(&oe_sgxfs);
 }
 
 OE_SET_ENCLAVE_SGX(

@@ -5,7 +5,7 @@
 
 OE_EXTERNC_BEGIN
 
-extern oe_fs_t hostfs;
+extern oe_fs_t oe_hostfs;
 
 void oe_install_hostfs(void);
 

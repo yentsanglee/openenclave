@@ -197,7 +197,21 @@ done:
     return ret;
 }
 
+static int32_t _fs_release(oe_fs_t* fs)
+{
+    uint32_t ret = -1;
+    
+    if (!fs)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 oe_fs_t oe_sgxfs =
 {
-    .fs_fopen = _fs_fopen
+    .fs_fopen = _fs_fopen,
+    .fs_release = _fs_release,
 };
