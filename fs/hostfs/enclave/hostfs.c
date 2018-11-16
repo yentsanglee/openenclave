@@ -54,6 +54,11 @@ typedef struct _dir
     void* host_dir;
 } dir_t;
 
+OE_INLINE bool _valid_file(file_t* file)
+{
+    return file && file->base.magic == OE_FILE_MAGIC;
+}
+
 static int32_t _f_fclose(FILE* base)
 {
     int32_t ret = -1;
@@ -61,7 +66,7 @@ static int32_t _f_fclose(FILE* base)
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    if (!file || !file->host_file || !batch)
+    if (!_valid_file(file) || !batch)
         goto done;
 
     /* Input */
@@ -103,7 +108,7 @@ static size_t _f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    if (!ptr || !file || !file->host_file)
+    if (!ptr || !_valid_file(file) || !batch)
         goto done;
 
     /* Input */
@@ -149,7 +154,7 @@ static size_t _f_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* base)
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    if (!ptr || !file || !file->host_file || !batch)
+    if (!ptr || !_valid_file(file) || !batch)
         goto done;
 
     /* Input */
@@ -194,7 +199,7 @@ static int64_t _f_ftell(FILE* base)
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    if (!file || !file->host_file || !batch)
+    if (!_valid_file(file) || !batch)
         goto done;
 
     /* Input */
@@ -233,7 +238,7 @@ static int32_t _f_fseek(FILE* base, int64_t offset, int whence)
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    if (!file || !file->host_file || !batch)
+    if (!_valid_file(file) || !batch)
         goto done;
 
     /* Input */
@@ -274,7 +279,7 @@ static int32_t _f_fflush(FILE* base)
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    if (!file || !file->host_file || !batch)
+    if (!_valid_file(file) || !batch)
         goto done;
 
     /* Input */
@@ -313,7 +318,7 @@ static int32_t _f_ferror(FILE* base)
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    if (!file || !file->host_file || !batch)
+    if (!_valid_file(file) || !batch)
         goto done;
 
     /* Input */
@@ -352,7 +357,7 @@ static int32_t _f_feof(FILE* base)
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    if (!file || !file->host_file || !batch)
+    if (!_valid_file(file) || !batch)
         goto done;
 
     /* Input */
@@ -391,7 +396,7 @@ static int32_t _f_clearerr(FILE* base)
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    if (!file || !file->host_file || !batch)
+    if (!_valid_file(file) || !batch)
         goto done;
 
     /* Input */
@@ -462,6 +467,7 @@ static FILE* _fs_fopen(
         if (!(file = calloc(1, sizeof(file_t))))
             goto done;
 
+        file->base.magic = OE_FILE_MAGIC;
         file->base.f_fclose = _f_fclose;
         file->base.f_fread = _f_fread;
         file->base.f_fwrite = _f_fwrite;

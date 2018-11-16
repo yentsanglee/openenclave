@@ -15,12 +15,17 @@ typedef struct _file
     SGX_FILE* sgx_file;
 } file_t;
 
+OE_INLINE bool _valid_file(file_t* file)
+{
+    return file && file->base.magic == OE_FILE_MAGIC;
+}
+
 static int32_t _f_fclose(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
 
-    if (!file || !file->sgx_file)
+    if (!_valid_file(file))
         goto done;
 
     if (sgx_fclose(file->sgx_file) != 0)
@@ -39,7 +44,7 @@ static size_t _f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
     size_t ret = 0;
     file_t* file = (file_t*)base;
 
-    if (!ptr || !file || !file->sgx_file)
+    if (!ptr || !_valid_file(file))
         goto done;
 
     ret = sgx_fread(ptr, size, nmemb, file->sgx_file);
@@ -54,7 +59,7 @@ static size_t _f_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* base)
     size_t ret = 0;
     file_t* file = (file_t*)base;
 
-    if (!ptr || !file || !file->sgx_file)
+    if (!ptr || !_valid_file(file))
         goto done;
 
     ret = sgx_fwrite(ptr, size, nmemb, file->sgx_file);
@@ -69,7 +74,7 @@ static int64_t _f_ftell(FILE* base)
     int64_t ret = -1;
     file_t* file = (file_t*)base;
 
-    if (!file || !file->sgx_file)
+    if (!_valid_file(file))
         goto done;
 
     ret = sgx_fclose(file->sgx_file);
@@ -83,7 +88,7 @@ static int32_t _f_fseek(FILE* base, int64_t offset, int whence)
     int32_t ret = -1;
     file_t* file = (file_t*)base;
 
-    if (!file || !file->sgx_file)
+    if (!_valid_file(file))
         goto done;
 
     ret = sgx_fseek(file->sgx_file, offset, whence);
@@ -97,7 +102,7 @@ static int32_t _f_fflush(FILE* base)
     int ret = -1;
     file_t* file = (file_t*)base;
 
-    if (!file || !file->sgx_file)
+    if (!_valid_file(file))
         goto done;
 
     ret = sgx_fflush(file->sgx_file);
@@ -111,7 +116,7 @@ static int32_t _f_ferror(FILE* base)
     int ret = -1;
     file_t* file = (file_t*)base;
 
-    if (!file || !file->sgx_file)
+    if (!_valid_file(file))
         goto done;
 
     ret = sgx_ferror(file->sgx_file);
@@ -125,7 +130,7 @@ static int32_t _f_feof(FILE* base)
     int ret = -1;
     file_t* file = (file_t*)base;
 
-    if (!file || !file->sgx_file)
+    if (!_valid_file(file))
         goto done;
 
     ret = sgx_feof(file->sgx_file);
@@ -139,7 +144,7 @@ static int32_t _f_clearerr(FILE* base)
     int ret = -1;
     file_t* file = (file_t*)base;
 
-    if (!file || !file->sgx_file)
+    if (!_valid_file(file))
         goto done;
 
     sgx_clearerr(file->sgx_file);
@@ -175,6 +180,7 @@ static FILE* _fs_fopen(
             return NULL;
     }
 
+    file->base.magic = OE_FILE_MAGIC;
     file->base.f_fclose = _f_fclose;
     file->base.f_fread = _f_fread;
     file->base.f_fwrite = _f_fwrite;

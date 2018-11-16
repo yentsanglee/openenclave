@@ -11,10 +11,15 @@ OE_EXTERNC_BEGIN
 typedef struct _IO_FILE FILE;
 typedef struct __dirstream DIR;
 
+#define OE_FILE_MAGIC 0x0EF55FE0
+
 struct _IO_FILE
 {
+    /* Contains OE_FILE_MAGIC. */
+    uint32_t magic;
+
     /* Padding to prevent overlap with MUSL _IO_FILE struct. */
-    uint8_t padding[256];
+    uint8_t padding[252];
 
     int32_t (*f_fclose)(FILE* file);
 
