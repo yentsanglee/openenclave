@@ -13,10 +13,10 @@ OE_EXTERNC_BEGIN
 
 typedef struct _oe_fs oe_fs_t;
 
-/* Use the same name as MUSL */
+/* Use the same struct name as MUSL */
 typedef struct _IO_FILE FILE;
 
-/* Use the same name as MUSL */
+/* Use the same struct name as MUSL */
 typedef struct __dirstream DIR;
 
 struct _oe_fs
