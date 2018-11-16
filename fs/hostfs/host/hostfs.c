@@ -95,6 +95,11 @@ static void _handle_hostfs_ocall(void* args_)
 
             if (args->u.readdir.ret == 0 && result)
             {
+                args->u.readdir.entry.d_ino = result->d_ino;
+                args->u.readdir.entry.d_off = result->d_off;
+                args->u.readdir.entry.d_reclen = result->d_reclen;
+                args->u.readdir.entry.d_type = result->d_type;
+
                 *args->u.readdir.entry.d_name = '\0';
 
                 strncat(
@@ -102,12 +107,14 @@ static void _handle_hostfs_ocall(void* args_)
                     result->d_name,
                     sizeof(args->u.readdir.entry.d_name) - 1);
 
-                args->u.readdir.entry.d_type = result->d_type;
+                args->u.readdir.result = &args->u.readdir.entry;
             }
             else
             {
                 memset(
                     &args->u.readdir.entry, 0, sizeof(args->u.readdir.entry));
+
+                args->u.readdir.result = NULL;
             }
             break;
         }

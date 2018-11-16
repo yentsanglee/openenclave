@@ -21,6 +21,8 @@ typedef struct __dirstream DIR;
 
 struct _oe_fs
 {
+    int32_t (*fs_release)(oe_fs_t* fs);
+
     FILE* (*fs_fopen)(
         oe_fs_t* fs,
         const char* path,
@@ -28,8 +30,6 @@ struct _oe_fs
         const void* args);
 
     DIR* (*fs_opendir)(oe_fs_t* fs, const char* name, const void* args);
-
-    int32_t (*fs_release)(oe_fs_t* fs);
 
     int32_t (*fs_stat)(oe_fs_t* fs, const char* path, struct stat* stat);
 
@@ -42,6 +42,8 @@ struct _oe_fs
 
     int32_t (*fs_rmdir)(oe_fs_t* fs, const char* path);
 };
+
+int32_t oe_release(oe_fs_t* fs);
 
 FILE* oe_fopen(
     oe_fs_t* fs,
@@ -72,8 +74,6 @@ DIR* oe_opendir(oe_fs_t* fs, const char* name, const void* args);
 int32_t oe_readdir(DIR* dir, struct dirent* entry, struct dirent** result);
 
 int32_t oe_closedir(DIR* dir);
-
-int32_t oe_release(oe_fs_t* fs);
 
 int32_t oe_stat(oe_fs_t* fs, const char* path, struct stat* stat);
 

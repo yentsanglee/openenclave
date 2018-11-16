@@ -128,11 +128,29 @@ static void _test_fs(oe_fs_t* fs)
     oe_fclose(stream);
 }
 
+static void _test_dirs(oe_fs_t* fs)
+{
+    DIR* dir;
+    struct dirent entry;
+    struct dirent* result;
+
+    OE_TEST((dir = oe_opendir(fs, "/tmp", NULL)) != NULL);
+
+    while (oe_readdir(dir, &entry, &result) == 0 && result)
+    {
+        printf("d_name{%s}\n", entry.d_name);
+    }
+
+    oe_closedir(dir);
+}
+
 void enc_test()
 {
     _test1();
     _test_fs(&oe_sgxfs);
     _test_fs(&oe_hostfs);
+
+    _test_dirs(&oe_hostfs);
 
     oe_release(&oe_hostfs);
     oe_release(&oe_sgxfs);

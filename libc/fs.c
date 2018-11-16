@@ -2,6 +2,14 @@
 #include <openenclave/internal/fsinternal.h>
 #include <stdio.h>
 
+int32_t oe_release(oe_fs_t* fs)
+{
+    if (!fs || !fs->fs_release)
+        return -1;
+
+    return fs->fs_release(fs);
+}
+
 FILE* oe_fopen(
     oe_fs_t* fs,
     const char* path,
@@ -108,14 +116,6 @@ int32_t oe_closedir(DIR* dir)
         return -1;
 
     return dir->d_closedir(dir);
-}
-
-int32_t oe_release(oe_fs_t* fs)
-{
-    if (!fs || !fs->fs_release)
-        return -1;
-
-    return fs->fs_release(fs);
 }
 
 int32_t oe_stat(oe_fs_t* fs, const char* path, struct stat* stat)

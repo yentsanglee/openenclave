@@ -48,6 +48,12 @@ typedef struct _file
     void* host_file;
 } file_t;
 
+typedef struct _dir
+{
+    DIR base;
+    void* host_dir;
+} dir_t;
+
 static int32_t _f_fclose(FILE* base)
 {
     int32_t ret = -1;
@@ -482,6 +488,164 @@ done:
     return ret;
 }
 
+int32_t _d_readdir(DIR* base, struct dirent* entry, struct dirent** result)
+{
+    int32_t ret = -1;
+    dir_t* dir = (dir_t*)base;
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    if (entry)
+        memset(entry, 0, sizeof(struct dirent));
+
+    if (result)
+        *result = NULL;
+
+    if (!dir || !dir->host_dir || !entry || !result || !batch)
+        goto done;
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->u.readdir.ret = -1;
+        args->op = OE_HOSTFS_OP_READDIR;
+        args->u.readdir.dir = dir->host_dir;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+    }
+
+    /* Output */
+    {
+        if ((ret = args->u.readdir.ret) == 0 && args->u.readdir.result)
+        {
+            entry->d_ino = args->u.readdir.entry.d_ino;
+            entry->d_off = args->u.readdir.entry.d_off;
+            entry->d_reclen = args->u.readdir.entry.d_reclen;
+            entry->d_type = args->u.readdir.entry.d_type;
+            strlcpy(
+                entry->d_name,
+                args->u.readdir.entry.d_name,
+                sizeof(entry->d_name));
+
+            *result = entry;
+        }
+        else
+        {
+            goto done;
+        }
+    }
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
+int32_t _d_closedir(DIR* base)
+{
+    int32_t ret = -1;
+    dir_t* dir = (dir_t*)base;
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    if (!dir || !dir->host_dir || !batch)
+        goto done;
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->u.closedir.ret = -1;
+        args->op = OE_HOSTFS_OP_CLOSEDIR;
+        args->u.closedir.dir = dir->host_dir;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+    }
+
+    /* Output */
+    {
+        if ((ret = args->u.closedir.ret) != 0)
+            goto done;
+    }
+
+    free(dir);
+
+    ret = 0;
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
+static DIR* _fs_opendir(oe_fs_t* fs, const char* name, const void* args_)
+{
+    DIR* ret = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+    dir_t* dir = NULL;
+
+    if (!fs || !name || !batch)
+        goto done;
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->op = OE_HOSTFS_OP_OPENDIR;
+        args->u.fopen.ret = NULL;
+        strlcpy(args->u.opendir.name, name, sizeof(args->u.opendir.name));
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+
+        if (args->u.opendir.ret == NULL)
+            goto done;
+    }
+
+    /* Output */
+    {
+        if (!(dir = calloc(1, sizeof(dir_t))))
+            goto done;
+
+        dir->base.d_readdir = _d_readdir;
+        dir->base.d_closedir = _d_closedir;
+        dir->host_dir = args->u.opendir.ret;
+    }
+
+    ret = &dir->base;
+    dir = NULL;
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    if (dir)
+        free(dir);
+
+    return ret;
+}
+
 static int32_t _fs_release(oe_fs_t* fs)
 {
     uint32_t ret = -1;
@@ -497,5 +661,6 @@ done:
 
 oe_fs_t oe_hostfs = {
     .fs_fopen = _fs_fopen,
+    .fs_opendir = _fs_opendir,
     .fs_release = _fs_release,
 };

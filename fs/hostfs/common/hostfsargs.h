@@ -106,9 +106,13 @@ typedef struct _oe_hostfs_args
             void* dir;
             struct
             {
+                uint64_t d_ino;
+                int64_t d_off;
+                unsigned short d_reclen;
                 uint8_t d_type;
                 char d_name[OE_FS_PATH_MAX];
             } entry;
+            void* result;
         } readdir;
         struct
         {
