@@ -3,47 +3,92 @@
 #include <openenclave/internal/fsinternal.h>
 #include <stdio.h>
 
+size_t musl_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream);
+
+size_t musl_fread(void* ptr, size_t size, size_t nmemb, FILE* stream);
+
+int musl_fclose(FILE *stream);
+
+long musl_ftell(FILE *stream);
+
+int musl_fseek(FILE *stream, long offset, int whence);
+
+int musl_fflush(FILE *stream);
+
+int musl_ferror(FILE *stream);
+
+int musl_feof(FILE *stream);
+
+void musl_clearerr(FILE *stream);
+
 size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
-    return oe_fwrite(ptr, size, nmemb, stream);
+    if (stream && stream->magic == OE_FILE_MAGIC)
+        return oe_fwrite(ptr, size, nmemb, stream);
+
+    return musl_fwrite(ptr, size, nmemb, stream);
 }
 
 size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
-    return oe_fread(ptr, size, nmemb, stream);
+    if (stream && stream->magic == OE_FILE_MAGIC)
+        return oe_fread(ptr, size, nmemb, stream);
+
+    return musl_fread(ptr, size, nmemb, stream);
 }
 
 int fclose(FILE* stream)
 {
-    return oe_fclose(stream);
+    if (stream && stream->magic == OE_FILE_MAGIC)
+        return oe_fclose(stream);
+
+    return musl_fclose(stream);
 }
 
 long ftell(FILE* stream)
 {
-    return oe_ftell(stream);
+    if (stream && stream->magic == OE_FILE_MAGIC)
+        return oe_ftell(stream);
+
+    return musl_ftell(stream);
 }
 
 int fseek(FILE* stream, long offset, int whence)
 {
-    return oe_fseek(stream, offset, whence);
+    if (stream && stream->magic == OE_FILE_MAGIC)
+        return oe_fseek(stream, offset, whence);
+
+    return musl_fseek(stream, offset, whence);
 }
 
 int fflush(FILE* stream)
 {
-    return oe_fflush(stream);
+    if (stream && stream->magic == OE_FILE_MAGIC)
+        return oe_fflush(stream);
+
+    return musl_fflush(stream);
 }
 
 int ferror(FILE* stream)
 {
-    return oe_ferror(stream);
+    if (stream && stream->magic == OE_FILE_MAGIC)
+        return oe_ferror(stream);
+
+    return musl_ferror(stream);
 }
 
 int feof(FILE* stream)
 {
-    return oe_feof(stream);
+    if (stream && stream->magic == OE_FILE_MAGIC)
+        return oe_feof(stream);
+
+    return musl_feof(stream);
 }
 
 void clearerr(FILE* stream)
 {
-    oe_clearerr(stream);
+    if (stream && stream->magic == OE_FILE_MAGIC)
+        oe_clearerr(stream);
+
+    musl_clearerr(stream);
 }

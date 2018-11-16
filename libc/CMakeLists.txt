@@ -12,9 +12,17 @@ add_library(oelibc STATIC
     abort.S
     arc4random.c
     atexit.c
+    clearerr.c
     dladdr.c
     fs.c
+    fclose.c
+    feof.c
+    ferror.c
+    fread.c
+    fseek.c
+    ftell.c
     fwrite.c
+    fflush.c
     exp2l.S
     libunwind_stubs.c
     link.c
@@ -439,12 +447,8 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/dprintf.c
     ${MUSLSRC}/stdio/ext2.c
     ${MUSLSRC}/stdio/ext.c
-    ${MUSLSRC}/stdio/fclose.c
     ${MUSLSRC}/stdio/__fclose_ca.c
     ${MUSLSRC}/stdio/__fdopen.c
-    ${MUSLSRC}/stdio/feof.c
-    ${MUSLSRC}/stdio/ferror.c
-    ${MUSLSRC}/stdio/fflush.c
     ${MUSLSRC}/stdio/fgetc.c
     ${MUSLSRC}/stdio/fgetln.c
     ${MUSLSRC}/stdio/fgetpos.c
@@ -466,9 +470,7 @@ add_library(oelibc STATIC
     #${MUSLSRC}/stdio/fread.c
     ${MUSLSRC}/stdio/freopen.c
     ${MUSLSRC}/stdio/fscanf.c
-    ${MUSLSRC}/stdio/fseek.c
     ${MUSLSRC}/stdio/fsetpos.c
-    ${MUSLSRC}/stdio/ftell.c
     ${MUSLSRC}/stdio/ftrylockfile.c
     ${MUSLSRC}/stdio/funlockfile.c
     ${MUSLSRC}/stdio/fwide.c
