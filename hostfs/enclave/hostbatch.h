@@ -4,9 +4,9 @@
 #ifndef _OE_HOSTBATCH_H
 #define _OE_HOSTBATCH_H
 
-#include <stdint.h>
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <stdint.h>
 
 OE_EXTERNC_BEGIN
 

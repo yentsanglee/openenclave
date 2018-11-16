@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include "hostbatch.h"
-#include <openenclave/enclave.h>
 #include <assert.h>
+#include <openenclave/enclave.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>

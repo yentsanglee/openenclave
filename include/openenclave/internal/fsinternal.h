@@ -7,7 +7,7 @@
 OE_EXTERNC_BEGIN
 
 typedef struct _IO_FILE FILE;
-typedef struct __dirstream oe_dir_t;
+typedef struct __dirstream DIR;
 
 struct _IO_FILE
 {
@@ -15,8 +15,7 @@ struct _IO_FILE
 
     size_t (*f_fread)(void* ptr, size_t size, size_t nmemb, FILE* file);
 
-    size_t (
-        *f_fwrite)(const void* ptr, size_t size, size_t nmemb, FILE* file);
+    size_t (*f_fwrite)(const void* ptr, size_t size, size_t nmemb, FILE* file);
 
     int64_t (*f_ftell)(FILE* file);
 
@@ -33,9 +32,10 @@ struct _IO_FILE
 
 struct __dirstream
 {
-    int32_t (*d_readdir)(oe_dir_t* dir, oe_dirent_t* entry, oe_dirent_t** result);
+    int32_t (
+        *d_readdir)(DIR* dir, struct dirent* entry, struct dirent** result);
 
-    int32_t (*d_closedir)(oe_dir_t* dir);
+    int32_t (*d_closedir)(DIR* dir);
 };
 
 OE_EXTERNC_END

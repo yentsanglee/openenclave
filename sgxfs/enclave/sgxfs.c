@@ -13,8 +13,7 @@ typedef struct _file
 {
     FILE base;
     SGX_FILE* sgx_file;
-}
-file_t;
+} file_t;
 
 static int32_t _f_fclose(FILE* base)
 {
@@ -50,8 +49,7 @@ done:
     return ret;
 }
 
-static size_t _f_fwrite(
-    const void* ptr, size_t size, size_t nmemb, FILE* base)
+static size_t _f_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* base)
 {
     size_t ret = 0;
     file_t* file = (file_t*)base;
@@ -165,7 +163,7 @@ static FILE* _fs_fopen(
 
     if (!(file = calloc(1, sizeof(file_t))))
         goto done;
-    
+
     if (args)
     {
         if (!(file->sgx_file = sgx_fopen(path, mode, args)))
@@ -176,7 +174,7 @@ static FILE* _fs_fopen(
         if (!(file->sgx_file = sgx_fopen_auto_key(path, mode)))
             return NULL;
     }
-    
+
     file->base.f_fclose = _f_fclose;
     file->base.f_fread = _f_fread;
     file->base.f_fwrite = _f_fwrite;
@@ -201,7 +199,7 @@ done:
 static int32_t _fs_release(oe_fs_t* fs)
 {
     uint32_t ret = -1;
-    
+
     if (!fs)
         goto done;
 
@@ -211,8 +209,7 @@ done:
     return ret;
 }
 
-oe_fs_t oe_sgxfs =
-{
+oe_fs_t oe_sgxfs = {
     .fs_fopen = _fs_fopen,
     .fs_release = _fs_release,
 };

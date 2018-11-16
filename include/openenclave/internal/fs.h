@@ -1,41 +1,23 @@
 #ifndef _OE_FS_H
 #define _OE_FS_H
 
-#include <stdio.h>
 #include <dirent.h>
-#include <sys/stat.h>
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <stdio.h>
+#include <sys/stat.h>
 
 OE_EXTERNC_BEGIN
 
 #define OE_FS_PATH_MAX 256
 
 typedef struct _oe_fs oe_fs_t;
+
+/* Use the same name as MUSL */
 typedef struct _IO_FILE FILE;
-typedef struct _oe_stat oe_stat_t;
-typedef struct __dirstream oe_dir_t;
-typedef struct _oe_dirent oe_dirent_t;
 
-typedef struct _oe_dirent
-{
-    uint8_t d_type;
-    char d_name[OE_FS_PATH_MAX];
-} oe_dirent_t;
-
-typedef struct _oe_stat
-{
-    uint32_t st_dev;
-    uint32_t st_ino;
-    uint16_t st_mode;
-    uint32_t st_nlink;
-    uint16_t st_uid;
-    uint16_t st_gid;
-    uint32_t st_rdev;
-    uint32_t st_size;
-    uint32_t st_blksize;
-    uint32_t st_blocks;
-} oe_stat_t;
+/* Use the same name as MUSL */
+typedef struct __dirstream DIR;
 
 struct _oe_fs
 {
@@ -45,15 +27,16 @@ struct _oe_fs
         const char* mode,
         const void* args);
 
-    oe_dir_t* (*fs_opendir)(oe_fs_t* fs, const char* name, const void* args);
+    DIR* (*fs_opendir)(oe_fs_t* fs, const char* name, const void* args);
 
     int32_t (*fs_release)(oe_fs_t* fs);
 
-    int32_t (*fs_stat)(oe_fs_t* fs, const char* path, oe_stat_t* stat);
+    int32_t (*fs_stat)(oe_fs_t* fs, const char* path, struct stat* stat);
 
     int32_t (*fs_unlink)(oe_fs_t* fs, const char* path);
 
-    int32_t (*fs_rename)(oe_fs_t* fs, const char* old_path, const char* new_path);
+    int32_t (
+        *fs_rename)(oe_fs_t* fs, const char* old_path, const char* new_path);
 
     int32_t (*fs_mkdir)(oe_fs_t* fs, const char* path, unsigned int mode);
 
@@ -84,15 +67,15 @@ int32_t oe_feof(FILE* file);
 
 int32_t oe_clearerr(FILE* file);
 
-oe_dir_t* oe_opendir(oe_fs_t* fs, const char* name, const void* args);
+DIR* oe_opendir(oe_fs_t* fs, const char* name, const void* args);
 
-int32_t oe_readdir(oe_dir_t* dir, oe_dirent_t* entry, oe_dirent_t** result);
+int32_t oe_readdir(DIR* dir, struct dirent* entry, struct dirent** result);
 
-int32_t oe_closedir(oe_dir_t* dir);
+int32_t oe_closedir(DIR* dir);
 
 int32_t oe_release(oe_fs_t* fs);
 
-int32_t oe_stat(oe_fs_t* fs, const char* path, oe_stat_t* stat);
+int32_t oe_stat(oe_fs_t* fs, const char* path, struct stat* stat);
 
 int32_t oe_unlink(oe_fs_t* fs, const char* path);
 

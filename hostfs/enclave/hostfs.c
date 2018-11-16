@@ -1,13 +1,13 @@
 #define _GNU_SOURCE
-#include <stdlib.h>
-#include <pthread.h>
-#include <string.h>
-#include <stdio.h>
-#include "../common/hostfsargs.h"
 #include "../common/hostfs.h"
-#include "hostbatch.h"
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/fsinternal.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "../common/hostfsargs.h"
+#include "hostbatch.h"
 
 #define BATCH_SIZE 4096
 
@@ -35,8 +35,7 @@ typedef struct _file
 {
     FILE base;
     void* host_file;
-}
-file_t;
+} file_t;
 
 static int32_t _f_fclose(FILE* base)
 {
@@ -57,7 +56,7 @@ static int32_t _f_fclose(FILE* base)
         args->op = OE_HOSTFS_OP_FCLOSE;
         args->u.fclose.file = file->host_file;
     }
-    
+
     /* Call */
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
@@ -69,7 +68,7 @@ static int32_t _f_fclose(FILE* base)
         if ((ret = args->u.fclose.ret) != 0)
             goto done;
     }
-    
+
     free(file);
 
 done:
@@ -105,7 +104,7 @@ static size_t _f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
         args->u.fread.file = file->host_file;
         args->u.fread.ptr = args->buf;
     }
-    
+
     /* Call */
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
@@ -126,8 +125,7 @@ done:
     return ret;
 }
 
-static size_t _f_fwrite(
-    const void* ptr, size_t size, size_t nmemb, FILE* base)
+static size_t _f_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* base)
 {
     size_t ret = 0;
     file_t* file = (file_t*)base;
@@ -152,7 +150,7 @@ static size_t _f_fwrite(
         args->u.fwrite.ptr = args->buf;
         memcpy(args->buf, ptr, n);
     }
-    
+
     /* Call */
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
@@ -191,7 +189,7 @@ static int64_t _f_ftell(FILE* base)
         args->op = OE_HOSTFS_OP_FTELL;
         args->u.ftell.file = file->host_file;
     }
-    
+
     /* Call */
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
@@ -232,7 +230,7 @@ static int32_t _f_fseek(FILE* base, int64_t offset, int whence)
         args->u.fseek.offset = offset;
         args->u.fseek.whence = whence;
     }
-    
+
     /* Call */
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
@@ -271,7 +269,7 @@ static int32_t _f_fflush(FILE* base)
         args->op = OE_HOSTFS_OP_FFLUSH;
         args->u.fflush.file = file->host_file;
     }
-    
+
     /* Call */
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
@@ -310,7 +308,7 @@ static int32_t _f_ferror(FILE* base)
         args->op = OE_HOSTFS_OP_FERROR;
         args->u.ferror.file = file->host_file;
     }
-    
+
     /* Call */
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
@@ -349,7 +347,7 @@ static int32_t _f_feof(FILE* base)
         args->op = OE_HOSTFS_OP_FEOF;
         args->u.feof.file = file->host_file;
     }
-    
+
     /* Call */
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
@@ -388,7 +386,7 @@ static int32_t _f_clearerr(FILE* base)
         args->op = OE_HOSTFS_OP_CLEARERR;
         args->u.clearerr.file = file->host_file;
     }
-    
+
     /* Call */
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
@@ -432,7 +430,7 @@ static FILE* _fs_fopen(
         strlcpy(args->u.fopen.path, path, sizeof(args->u.fopen.path));
         strlcpy(args->u.fopen.mode, mode, sizeof(args->u.fopen.mode));
     }
-    
+
     /* Call */
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
@@ -441,7 +439,7 @@ static FILE* _fs_fopen(
         if (args->u.fopen.ret == NULL)
             goto done;
     }
-    
+
     /* Output */
     {
         if (!(file = calloc(1, sizeof(file_t))))
@@ -491,8 +489,7 @@ done:
     return ret;
 }
 
-oe_fs_t oe_hostfs =
-{
+oe_fs_t oe_hostfs = {
     .fs_fopen = _fs_fopen,
     .fs_release = _fs_release,
 };

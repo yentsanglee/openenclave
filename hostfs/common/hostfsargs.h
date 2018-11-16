@@ -9,8 +9,7 @@ OE_EXTERNC_BEGIN
 
 #define OE_HOSTFS_MODE_MAX 8
 
-typedef enum _oe_hostfs_op
-{
+typedef enum _oe_hostfs_op {
     OE_HOSTFS_OP_NONE,
     OE_HOSTFS_OP_FOPEN,
     OE_HOSTFS_OP_FCLOSE,
@@ -30,15 +29,13 @@ typedef enum _oe_hostfs_op
     OE_HOSTFS_OP_RENAME,
     OE_HOSTFS_OP_MKDIR,
     OE_HOSTFS_OP_RMDIR,
-}
-oe_hostfs_op_t;
+} oe_hostfs_op_t;
 
 typedef struct _oe_hostfs_args
 {
     oe_hostfs_op_t op;
     int32_t err;
-    union
-    {
+    union {
         struct
         {
             void* ret;
@@ -107,7 +104,11 @@ typedef struct _oe_hostfs_args
         {
             int32_t ret;
             void* dir;
-            oe_dirent_t entry;
+            struct
+            {
+                uint8_t d_type;
+                char d_name[OE_FS_PATH_MAX];
+            } entry;
         } readdir;
         struct
         {
@@ -118,40 +119,45 @@ typedef struct _oe_hostfs_args
         {
             int32_t ret;
             char path[OE_FS_PATH_MAX];
-            oe_stat_t buf;
-        }
-        stat;
+            struct
+            {
+                uint32_t st_dev;
+                uint32_t st_ino;
+                uint16_t st_mode;
+                uint32_t st_nlink;
+                uint16_t st_uid;
+                uint16_t st_gid;
+                uint32_t st_rdev;
+                uint32_t st_size;
+                uint32_t st_blksize;
+                uint32_t st_blocks;
+            } buf;
+        } stat;
         struct
         {
             int32_t ret;
             char path[OE_FS_PATH_MAX];
-        }
-        unlink;
+        } unlink;
         struct
         {
             int32_t ret;
             char old_path[OE_FS_PATH_MAX];
             char new_path[OE_FS_PATH_MAX];
-        }
-        rename;
+        } rename;
         struct
         {
             int32_t ret;
             char path[OE_FS_PATH_MAX];
             unsigned int mode;
-        }
-        mkdir;
+        } mkdir;
         struct
         {
             int32_t ret;
             char path[OE_FS_PATH_MAX];
-        }
-        rmdir;
-    }
-    u;
+        } rmdir;
+    } u;
     uint8_t buf[];
-}
-oe_hostfs_args_t;
+} oe_hostfs_args_t;
 
 OE_EXTERNC_END
 

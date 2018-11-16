@@ -1,6 +1,6 @@
-#include <stdio.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/fsinternal.h>
+#include <stdio.h>
 
 FILE* oe_fopen(
     oe_fs_t* fs,
@@ -86,7 +86,7 @@ int32_t oe_clearerr(FILE* file)
     return file->f_clearerr(file);
 }
 
-oe_dir_t* oe_opendir(oe_fs_t* fs, const char* name, const void* args)
+DIR* oe_opendir(oe_fs_t* fs, const char* name, const void* args)
 {
     if (!fs || !fs->fs_opendir)
         return NULL;
@@ -94,7 +94,7 @@ oe_dir_t* oe_opendir(oe_fs_t* fs, const char* name, const void* args)
     return fs->fs_opendir(fs, name, args);
 }
 
-int32_t oe_readdir(oe_dir_t* dir, oe_dirent_t* entry, oe_dirent_t** result)
+int32_t oe_readdir(DIR* dir, struct dirent* entry, struct dirent** result)
 {
     if (!dir || !dir->d_readdir)
         return -1;
@@ -102,7 +102,7 @@ int32_t oe_readdir(oe_dir_t* dir, oe_dirent_t* entry, oe_dirent_t** result)
     return dir->d_readdir(dir, entry, result);
 }
 
-int32_t oe_closedir(oe_dir_t* dir)
+int32_t oe_closedir(DIR* dir)
 {
     if (!dir || !dir->d_closedir)
         return -1;
@@ -118,7 +118,7 @@ int32_t oe_release(oe_fs_t* fs)
     return fs->fs_release(fs);
 }
 
-int32_t oe_stat(oe_fs_t* fs, const char* path, oe_stat_t* stat)
+int32_t oe_stat(oe_fs_t* fs, const char* path, struct stat* stat)
 {
     if (!fs || !fs->fs_stat)
         return -1;

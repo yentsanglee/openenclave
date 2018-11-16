@@ -1,10 +1,10 @@
-#include "../common/hostfsargs.h"
 #include "../common/hostfs.h"
-#include <stdio.h>
-#include <sys/stat.h>
 #include <dirent.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include "../common/hostfsargs.h"
 
 void (*oe_handle_hostfs_ocall_callback)(void*);
 
@@ -56,8 +56,8 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_FSEEK:
         {
-            args->u.fseek.ret = fseek(args->u.fseek.file,
-                args->u.fseek.offset, args->u.fseek.whence);
+            args->u.fseek.ret = fseek(
+                args->u.fseek.file, args->u.fseek.offset, args->u.fseek.whence);
             break;
         }
         case OE_HOSTFS_OP_FFLUSH:
@@ -90,8 +90,8 @@ static void _handle_hostfs_ocall(void* args_)
         {
             struct dirent entry;
             struct dirent* result = NULL;
-            args->u.readdir.ret = readdir_r(
-                args->u.readdir.dir, &entry, &result);
+            args->u.readdir.ret =
+                readdir_r(args->u.readdir.dir, &entry, &result);
 
             if (args->u.readdir.ret == 0 && result)
             {
@@ -106,8 +106,8 @@ static void _handle_hostfs_ocall(void* args_)
             }
             else
             {
-                memset(&args->u.readdir.entry, 0, 
-                    sizeof(args->u.readdir.entry));
+                memset(
+                    &args->u.readdir.entry, 0, sizeof(args->u.readdir.entry));
             }
             break;
         }
@@ -146,9 +146,8 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_RENAME:
         {
-            args->u.rename.ret = rename(
-                args->u.rename.old_path,
-                args->u.rename.new_path);
+            args->u.rename.ret =
+                rename(args->u.rename.old_path, args->u.rename.new_path);
             break;
         }
         case OE_HOSTFS_OP_MKDIR:

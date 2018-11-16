@@ -1,12 +1,12 @@
 #include <errno.h>
 #include <errno.h>
-#include <openenclave/internal/tests.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/tests.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../../sgxfs/common/sgxfs.h"
 #include "../../../hostfs/common/hostfs.h"
+#include "../../../sgxfs/common/sgxfs.h"
 #include "sgxfs_t.h"
 
 #ifdef FILENAME_MAX
@@ -73,7 +73,8 @@ static void _test1()
             sgx_fclose(file);
             printf("Closed file\n");
         }
-        else {
+        else
+        {
             printf("Failed to open file for read\n");
             OE_TEST(false);
         }
