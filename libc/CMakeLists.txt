@@ -505,7 +505,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/putwchar.c
     ${MUSLSRC}/stdio/remove.c
     ${MUSLSRC}/stdio/rename.c
-    ${MUSLSRC}/stdio/rewind.c
+    #${MUSLSRC}/stdio/rewind.c
     ${MUSLSRC}/stdio/scanf.c
     ${MUSLSRC}/stdio/setbuf.c
     ${MUSLSRC}/stdio/setbuffer.c

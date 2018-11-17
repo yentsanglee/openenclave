@@ -4,8 +4,6 @@
 
     (*) Implement fgetc/fputc.
 
-    (*) Implement rewind()
-
     (*) Implement default versions of:
 
         - fopen
