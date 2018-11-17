@@ -151,10 +151,13 @@ static void _test_dirs(oe_fs_t* fs)
 
 static void _test_cpio(oe_fs_t* fs)
 {
-    OE_TEST(oe_cpio_pack(fs, "/root/openenclave/tests", "/tmp/tests.cpio") == 0);
-    oe_mkdir(fs, "/tmp/tests.cpio.dir", 0777);
+    oe_fs_set_default(fs);
 
-    OE_TEST(oe_cpio_unpack(fs, "/tmp/tests.cpio", "/tmp/tests.cpio.dir") == 0);
+    OE_TEST(oe_cpio_pack("/root/openenclave/tests", "/tmp/tests.cpio") == 0);
+    mkdir("/tmp/tests.cpio.dir", 0777);
+    OE_TEST(oe_cpio_unpack("/tmp/tests.cpio", "/tmp/tests.cpio.dir") == 0);
+
+    oe_fs_set_default(NULL);
 }
 
 void enc_test()

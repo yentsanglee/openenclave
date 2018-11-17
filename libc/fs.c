@@ -2,6 +2,19 @@
 #include <openenclave/internal/fsinternal.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
+
+oe_fs_t* __oe_default_fs;
+
+void oe_fs_set_default(oe_fs_t* fs)
+{
+    __oe_default_fs = fs;
+}
+
+oe_fs_t* oe_fs_get_default(void)
+{
+    return __oe_default_fs;
+}
 
 int32_t oe_release(oe_fs_t* fs)
 {
@@ -103,6 +116,19 @@ DIR* oe_opendir(oe_fs_t* fs, const char* name, const void* args)
     return fs->fs_opendir(fs, name, args);
 }
 
+DIR* opendir(const char* name)
+{
+    oe_fs_t* fs = oe_fs_get_default();
+
+    if (!fs)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    return oe_opendir(fs, name, NULL);
+}
+
 int32_t oe_readdir(DIR* dir, struct dirent* entry, struct dirent** result)
 {
     if (!dir || !dir->d_readdir)
@@ -125,6 +151,19 @@ int32_t oe_stat(oe_fs_t* fs, const char* path, struct stat* stat)
         return -1;
 
     return fs->fs_stat(fs, path, stat);
+}
+
+int stat(const char *path, struct stat *buf)
+{
+    oe_fs_t* fs = oe_fs_get_default();
+
+    if (!fs)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return oe_stat(fs, path, buf);
 }
 
 int32_t oe_unlink(oe_fs_t* fs, const char* path)
@@ -151,6 +190,19 @@ int32_t oe_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
     return fs->fs_mkdir(fs, path, mode);
 }
 
+int mkdir(const char *pathname, mode_t mode)
+{
+    oe_fs_t* fs = oe_fs_get_default();
+
+    if (!fs)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return oe_mkdir(fs, pathname, mode);
+}
+
 int32_t oe_rmdir(oe_fs_t* fs, const char* path)
 {
     if (!fs || !fs->fs_rmdir)
@@ -172,4 +224,17 @@ int oe_access(oe_fs_t* fs, const char* path, int mode)
     /* TODO: resolve R_OK, W_OK, and X_OK (need uid/gid) */
 
     return -1;
+}
+
+int access(const char *pathname, int mode)
+{
+    oe_fs_t* fs = oe_fs_get_default();
+
+    if (!fs)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return oe_access(fs, pathname, mode);
 }

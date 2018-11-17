@@ -20,6 +20,7 @@ add_library(oelibc STATIC
     ferror.c
     fputc.c
     fgetc.c
+    fopen.c
     fread.c
     fseek.c
     ftell.c
@@ -441,7 +442,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/search/tsearch_avl.c
     ${MUSLSRC}/setjmp/x86_64/longjmp.s
     ${MUSLSRC}/setjmp/x86_64/setjmp.s
-    ${MUSLSRC}/stat/stat.c
+    #${MUSLSRC}/stat/stat.c
     ${MUSLSRC}/stat/mkdir.c
     ${MUSLSRC}/stdio/asprintf.c
     ${MUSLSRC}/stdio/asprintf.c
@@ -461,7 +462,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/flockfile.c
     ${MUSLSRC}/stdio/fmemopen.c
     ${MUSLSRC}/stdio/__fmodeflags.c
-    ${MUSLSRC}/stdio/fopen.c
+    #${MUSLSRC}/stdio/fopen.c
     ${MUSLSRC}/stdio/fopencookie.c
     ${MUSLSRC}/stdio/__fopen_rb_ca.c
     ${MUSLSRC}/stdio/fprintf.c

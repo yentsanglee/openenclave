@@ -87,6 +87,10 @@ int32_t oe_rmdir(oe_fs_t* fs, const char* path);
 
 int oe_access(oe_fs_t* fs, const char* path, int mode);
 
+void oe_fs_set_default(oe_fs_t* fs);
+
+oe_fs_t* oe_fs_get_default(void);
+
 OE_EXTERNC_END
 
 #endif /* _OE_FS_H */

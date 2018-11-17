@@ -21,6 +21,8 @@
 #include "strarr.h"
 #include "strings.h"
 #include "utils.h"
+#include <openenclave/internal/fs.h>
+#include <openenclave/internal/fsinternal.h>
 
 #define CPIO_BLOCK_SIZE 512
 
@@ -258,7 +260,7 @@ done:
     return ret;
 }
 
-oe_cpio_t* oe_cpio_open(oe_fs_t* fs, const char* path, uint32_t flags)
+oe_cpio_t* oe_cpio_open(const char* path, uint32_t flags)
 {
     oe_cpio_t* ret = NULL;
     oe_cpio_t* cpio = NULL;
@@ -272,7 +274,7 @@ oe_cpio_t* oe_cpio_open(oe_fs_t* fs, const char* path, uint32_t flags)
 
     if ((flags & OE_CPIO_FLAG_CREATE))
     {
-        if (!(stream = oe_fopen(fs, path, "wb", NULL)))
+        if (!(stream = fopen(path, "wb")))
             goto done;
 
         if (fwrite(&_dot, 1, _dot.size, stream) != _dot.size)
@@ -284,7 +286,7 @@ oe_cpio_t* oe_cpio_open(oe_fs_t* fs, const char* path, uint32_t flags)
     }
     else
     {
-        if (!(stream = oe_fopen(fs, path, "rb", NULL)))
+        if (!(stream = fopen(path, "rb")))
             goto done;
 
         cpio->stream = stream;
@@ -539,7 +541,14 @@ done:
     return ret;
 }
 
-int oe_cpio_unpack(oe_fs_t* fs, const char* source, const char* target)
+/* Clang optimization causes this function to crash while attempting to
+ * call fwrite. The fwrite function address is correct but the function
+ * is never reached.
+ */
+#ifdef __clang__
+__attribute__((optnone))
+#endif
+int oe_cpio_unpack(const char* source, const char* target)
 {
     int ret = -1;
     oe_cpio_t* cpio = NULL;
@@ -551,14 +560,13 @@ int oe_cpio_unpack(oe_fs_t* fs, const char* source, const char* target)
     if (!source || !target)
         goto done;
 
-    if (!(cpio = oe_cpio_open(fs, source, 0)))
+    if (!(cpio = oe_cpio_open(source, 0)))
         goto done;
 
-    if (oe_access(fs, target, R_OK) != 0 && oe_mkdir(fs, target, 0766) != 0)
+    if (access(target, R_OK) != 0 && mkdir(target, 0766) != 0)
     {
         goto done;
     }
-
 
     while ((r = oe_cpio_read_entry(cpio, &entry)) > 0)
     {
@@ -571,7 +579,7 @@ int oe_cpio_unpack(oe_fs_t* fs, const char* source, const char* target)
 
         if (S_ISDIR(entry.mode))
         {
-            if (oe_access(fs, path, R_OK) && oe_mkdir(fs, path, entry.mode) != 0)
+            if (access(path, R_OK) && mkdir(path, entry.mode) != 0)
                 goto done;
         }
         else
@@ -579,13 +587,15 @@ int oe_cpio_unpack(oe_fs_t* fs, const char* source, const char* target)
             char data[512];
             ssize_t n;
 
-            if (!(os = oe_fopen(fs, path, "wb", NULL)))
+            if (!(os = fopen(path, "wb")))
                 goto done;
 
             while ((n = oe_cpio_read_data(cpio, data, sizeof(data))) > 0)
             {
                 if (fwrite(data, 1, n, os) != n)
+                {
                     goto done;
+                }
             }
 
             fclose(os);
@@ -606,8 +616,7 @@ done:
     return ret;
 }
 
-static int _append_file(
-    oe_fs_t* fs, oe_cpio_t* cpio, const char* path, const char* name)
+static int _append_file(oe_cpio_t* cpio, const char* path, const char* name)
 {
     int ret = -1;
     struct stat st;
@@ -618,7 +627,7 @@ static int _append_file(
         goto done;
 
     /* Stat the file to get the size and mode. */
-    if (oe_stat(fs, path, &st) != 0)
+    if (stat(path, &st) != 0)
         goto done;
 
     /* Write the CPIO header. */
@@ -648,7 +657,7 @@ static int _append_file(
     {
         char buf[512];
 
-        if (!(is = oe_fopen(fs, path, "rb", NULL)))
+        if (!(is = fopen(path, "rb")))
             goto done;
 
         while ((n = fread(buf, 1, sizeof(buf), is)) > 0)
@@ -674,8 +683,7 @@ done:
     return ret;
 }
 
-static int _pack(
-    oe_fs_t* fs, oe_cpio_t* cpio, const char* dirname, const char* root)
+static int _pack(oe_cpio_t* cpio, const char* dirname, const char* root)
 {
     int ret = -1;
     DIR* dir = NULL;
@@ -684,7 +692,7 @@ static int _pack(
     char path[CPIO_PATH_MAX];
     oe_strarr_t dirs = OE_STRARR_INITIALIZER;
 
-    if (!(dir = oe_opendir(fs, root, NULL)))
+    if (!(dir = opendir(root)))
         goto done;
 
     /* Append this directory to the CPIO archive. */
@@ -697,7 +705,7 @@ static int _pack(
         if (*p == '/')
             p++;
 
-        if (_append_file(fs, cpio, root, p) != 0)
+        if (_append_file(cpio, root, p) != 0)
             goto done;
     }
 
@@ -734,7 +742,7 @@ static int _pack(
             if (*p == '/')
                 p++;
 
-            if (_append_file(fs, cpio, path, p) != 0)
+            if (_append_file(cpio, path, p) != 0)
                 goto done;
         }
     }
@@ -745,7 +753,7 @@ static int _pack(
 
         for (i = 0; i < dirs.size; i++)
         {
-            if (_pack(fs, cpio, dirname, dirs.data[i]) != 0)
+            if (_pack(cpio, dirname, dirs.data[i]) != 0)
                 goto done;
         }
     }
@@ -762,7 +770,7 @@ done:
     return ret;
 }
 
-int oe_cpio_pack(oe_fs_t* fs, const char* source, const char* target)
+int oe_cpio_pack(const char* source, const char* target)
 {
     int ret = -1;
     oe_cpio_t* cpio = NULL;
@@ -771,10 +779,10 @@ int oe_cpio_pack(oe_fs_t* fs, const char* source, const char* target)
     if (!source || !target)
         goto done;
 
-    if (!(cpio = oe_cpio_open(fs, target, OE_CPIO_FLAG_CREATE)))
+    if (!(cpio = oe_cpio_open(target, OE_CPIO_FLAG_CREATE)))
         goto done;
 
-    if (_pack(fs, cpio, source, source) != 0)
+    if (_pack(cpio, source, source) != 0)
         goto done;
 
     ret = 0;

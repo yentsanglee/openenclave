@@ -6,7 +6,6 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
-#include <openenclave/internal/fs.h>
 
 OE_EXTERNC_BEGIN
 
@@ -65,7 +64,7 @@ typedef struct _oe_cpio_entry
     char name[CPIO_PATH_MAX];
 } oe_cpio_entry_t;
 
-oe_cpio_t* oe_cpio_open(oe_fs_t* fs, const char* path, uint32_t flags);
+oe_cpio_t* oe_cpio_open(const char* path, uint32_t flags);
 
 int oe_cpio_close(oe_cpio_t* cpio);
 
@@ -77,9 +76,9 @@ int oe_cpio_write_entry(oe_cpio_t* cpio, const oe_cpio_entry_t* entry);
 
 ssize_t oe_cpio_write_data(oe_cpio_t* cpio, const void* data, size_t size);
 
-int oe_cpio_pack(oe_fs_t* fs, const char* source, const char* target);
+int oe_cpio_pack(const char* source, const char* target);
 
-int oe_cpio_unpack(oe_fs_t* fs, const char* source, const char* target);
+int oe_cpio_unpack(const char* source, const char* target);
 
 OE_EXTERNC_END
 

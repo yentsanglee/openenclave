@@ -2,6 +2,9 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/fsinternal.h>
 #include <stdio.h>
+#include <openenclave/enclave.h>
+#include <openenclave/internal/print.h>
+#include <assert.h>
 
 size_t musl_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream);
 
@@ -24,6 +27,8 @@ void musl_clearerr(FILE *stream);
 int musl_fputc(int c, FILE *stream);
 
 int musl_fgetc(FILE *stream);
+
+FILE *musl_fopen(const char *path, const char *mode);
 
 size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
@@ -140,4 +145,14 @@ int fgetc(FILE *stream)
     }
 
     return musl_fgetc(stream);
+}
+
+FILE *fopen(const char *path, const char *mode)
+{
+    oe_fs_t* fs = oe_fs_get_default();
+
+    if (fs)
+        return oe_fopen(fs, path, mode, NULL);
+
+    return musl_fopen(path, mode);
 }
