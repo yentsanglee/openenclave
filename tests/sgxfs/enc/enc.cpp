@@ -7,6 +7,7 @@
 #include <string.h>
 #include "../../../fs/hostfs/common/hostfs.h"
 #include "../../../fs/sgxfs/common/sgxfs.h"
+#include "../../../fs/cpio/cpio.h"
 #include "sgxfs_t.h"
 
 #ifdef FILENAME_MAX
@@ -144,6 +145,14 @@ static void _test_dirs(oe_fs_t* fs)
     oe_closedir(dir);
 }
 
+static void _test_cpio(oe_fs_t* fs)
+{
+    OE_TEST(oe_cpio_pack(fs, "/root/openenclave/tests", "/tmp/tests.cpio") == 0);
+    OE_TEST(oe_rmdir(fs, "/tmp/tests.cpio.dir") == 0);
+
+    OE_TEST(oe_cpio_unpack(fs, "/tmp/tests.cpio", "/tmp/tests.cpio.dir") == 0);
+}
+
 void enc_test()
 {
     _test1();
@@ -151,6 +160,9 @@ void enc_test()
     _test_fs(&oe_hostfs);
 
     _test_dirs(&oe_hostfs);
+    _test_dirs(&oe_sgxfs);
+
+    _test_cpio(&oe_hostfs);
 }
 
 OE_SET_ENCLAVE_SGX(

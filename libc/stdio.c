@@ -92,3 +92,23 @@ void clearerr(FILE* stream)
 
     musl_clearerr(stream);
 }
+
+int readdir_r(DIR* dir, struct dirent* entry, struct dirent** result)
+{
+    return oe_readdir(dir, entry, result);
+}
+
+int closedir(DIR* dir)
+{
+    return oe_closedir(dir);
+}
+
+int fputc(int c, FILE *stream)
+{
+    char ch = (char)c;
+
+    if (fwrite(&ch, 1, 1, stream) != 1)
+        return EOF;
+
+    return c;
+}

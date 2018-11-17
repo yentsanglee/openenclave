@@ -9,6 +9,8 @@
 #include "../common/sgxfs.h"
 #include <openenclave/internal/fsinternal.h>
 
+extern oe_fs_t oe_hostfs;
+
 typedef struct _file
 {
     FILE base;
@@ -213,7 +215,44 @@ done:
     return ret;
 }
 
+static DIR* _fs_opendir(oe_fs_t* fs, const char* name, const void* args)
+{
+    return oe_opendir(&oe_hostfs, name, args);
+}
+
+static int32_t _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
+{
+    return oe_stat(&oe_hostfs, path, stat);
+}
+
+static int32_t _fs_rename(
+    oe_fs_t* fs, const char* old_path, const char* new_path)
+{
+    return oe_rename(&oe_hostfs, old_path, new_path);
+}
+
+static int32_t _fs_unlink(oe_fs_t* fs, const char* path)
+{
+    return oe_unlink(&oe_hostfs, path);
+}
+
+static int32_t _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
+{
+    return oe_mkdir(&oe_hostfs, path, mode);
+}
+
+static int32_t _fs_rmdir(oe_fs_t* fs, const char* path)
+{
+    return oe_rmdir(&oe_hostfs, path);
+}
+
 oe_fs_t oe_sgxfs = {
     .fs_fopen = _fs_fopen,
+    .fs_opendir = _fs_opendir,
     .fs_release = _fs_release,
+    .fs_stat = _fs_stat,
+    .fs_unlink = _fs_unlink,
+    .fs_rename = _fs_rename,
+    .fs_mkdir = _fs_mkdir,
+    .fs_rmdir = _fs_rmdir,
 };

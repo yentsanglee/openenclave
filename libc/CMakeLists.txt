@@ -463,7 +463,6 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/fopencookie.c
     ${MUSLSRC}/stdio/__fopen_rb_ca.c
     ${MUSLSRC}/stdio/fprintf.c
-    ${MUSLSRC}/stdio/fputc.c
     ${MUSLSRC}/stdio/fputs.c
     ${MUSLSRC}/stdio/fputwc.c
     ${MUSLSRC}/stdio/fputws.c
