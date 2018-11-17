@@ -1,6 +1,7 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/fsinternal.h>
 #include <stdio.h>
+#include <unistd.h>
 
 int32_t oe_release(oe_fs_t* fs)
 {
@@ -156,4 +157,19 @@ int32_t oe_rmdir(oe_fs_t* fs, const char* path)
         return -1;
 
     return fs->fs_rmdir(fs, path);
+}
+
+int oe_access(oe_fs_t* fs, const char* path, int mode)
+{
+    struct stat buf;
+
+    if (oe_stat(fs, path, &buf) != 0)
+        return -1;
+
+    if (mode == F_OK)
+        return 0;
+
+    /* TODO: resolve R_OK, W_OK, and X_OK (need uid/gid) */
+
+    return -1;
 }

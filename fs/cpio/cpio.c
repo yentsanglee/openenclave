@@ -554,8 +554,11 @@ int oe_cpio_unpack(oe_fs_t* fs, const char* source, const char* target)
     if (!(cpio = oe_cpio_open(fs, source, 0)))
         goto done;
 
-    if (access(target, R_OK) != 0 && oe_mkdir(fs, target, 0766) != 0)
+    if (oe_access(fs, target, R_OK) != 0 && oe_mkdir(fs, target, 0766) != 0)
+    {
         goto done;
+    }
+
 
     while ((r = oe_cpio_read_entry(cpio, &entry)) > 0)
     {
@@ -568,7 +571,7 @@ int oe_cpio_unpack(oe_fs_t* fs, const char* source, const char* target)
 
         if (S_ISDIR(entry.mode))
         {
-            if (access(path, R_OK) && oe_mkdir(fs, path, entry.mode) != 0)
+            if (oe_access(fs, path, R_OK) && oe_mkdir(fs, path, entry.mode) != 0)
                 goto done;
         }
         else

@@ -85,6 +85,8 @@ int32_t oe_mkdir(oe_fs_t* fs, const char* path, unsigned int mode);
 
 int32_t oe_rmdir(oe_fs_t* fs, const char* path);
 
+int oe_access(oe_fs_t* fs, const char* path, int mode);
+
 OE_EXTERNC_END
 
 #endif /* _OE_FS_H */
