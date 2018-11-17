@@ -1,0 +1,18 @@
+
+
+    (*) Implement the fprintf/fscanf family of functions.
+
+    (*) Implement fgetc/fputc.
+
+    (*) Implement rewind()
+
+    (*) Implement default versions of:
+
+        - fopen
+        - opendir
+        - unlink
+        - rename
+        - mkdir
+        - rmdir
+        - stat
+
