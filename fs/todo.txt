@@ -2,7 +2,7 @@
 
     (*) Implement the fprintf/fscanf family of functions.
 
-    (*) Implement fgetc/fputc.
+    (*) Implement fgets/fputs.
 
     (*) Implement default versions of:
 

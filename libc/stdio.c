@@ -21,6 +21,10 @@ int musl_feof(FILE *stream);
 
 void musl_clearerr(FILE *stream);
 
+int musl_fputc(int c, FILE *stream);
+
+int musl_fgetc(FILE *stream);
+
 size_t fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
     if (stream && stream->magic == OE_FILE_MAGIC)
@@ -59,6 +63,11 @@ int fseek(FILE* stream, long offset, int whence)
         return oe_fseek(stream, offset, whence);
 
     return musl_fseek(stream, offset, whence);
+}
+
+void rewind(FILE *stream)
+{
+    fseek(stream, 0L, SEEK_SET);
 }
 
 int fflush(FILE* stream)
@@ -105,15 +114,30 @@ int closedir(DIR* dir)
 
 int fputc(int c, FILE *stream)
 {
-    char ch = (char)c;
+    if (stream && stream->magic == OE_FILE_MAGIC)
+    {
+        char ch = (char)c;
 
-    if (fwrite(&ch, 1, 1, stream) != 1)
-        return EOF;
+        if (fwrite(&ch, 1, 1, stream) != 1)
+            return EOF;
 
-    return c;
+        return c;
+    }
+
+    return musl_fputc(c, stream);
 }
 
-void rewind(FILE *stream)
+int fgetc(FILE *stream)
 {
-    fseek(stream, 0L, SEEK_SET);
+    if (stream && stream->magic == OE_FILE_MAGIC)
+    {
+        char ch;
+
+        if (fread(&ch, 1, 1, stream) != 1)
+            return EOF;
+
+        return ch;
+    }
+
+    return musl_fgetc(stream);
 }

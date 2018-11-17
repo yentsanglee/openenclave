@@ -18,6 +18,8 @@ add_library(oelibc STATIC
     fclose.c
     feof.c
     ferror.c
+    fputc.c
+    fgetc.c
     fread.c
     fseek.c
     ftell.c
@@ -449,7 +451,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/ext.c
     ${MUSLSRC}/stdio/__fclose_ca.c
     ${MUSLSRC}/stdio/__fdopen.c
-    ${MUSLSRC}/stdio/fgetc.c
+    #${MUSLSRC}/stdio/fgetc.c
     ${MUSLSRC}/stdio/fgetln.c
     ${MUSLSRC}/stdio/fgetpos.c
     ${MUSLSRC}/stdio/fgets.c
