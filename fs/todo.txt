@@ -14,3 +14,4 @@
         - rmdir
         - stat
 
+    (*) Fix tests to work out of output directory.
