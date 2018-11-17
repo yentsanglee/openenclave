@@ -95,10 +95,10 @@ int oe_cmp(oe_fs_t* fs, const char* path1, const char* path2)
     if (!path1 || !path2)
         goto done;
 
-    if (stat(path1, &st1) != 0)
+    if (oe_stat(fs, path1, &st1) != 0)
         goto done;
 
-    if (stat(path2, &st2) != 0)
+    if (oe_stat(fs, path2, &st2) != 0)
         goto done;
 
     if (S_ISDIR(st1.st_mode) && !S_ISDIR(st2.st_mode))

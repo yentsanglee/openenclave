@@ -121,7 +121,7 @@ static void _test_fs(oe_fs_t* fs)
         ssize_t n = fread(buf, 1, sizeof(buf), stream);
         OE_TEST(n == sizeof(buf));
         OE_TEST(memcmp(buf, alphabet, sizeof(alphabet)) == 0);
-        printf("buf{%s}\n", buf);
+        //printf("buf{%s}\n", buf);
         m += n;
     }
 
@@ -134,13 +134,17 @@ static void _test_dirs(oe_fs_t* fs)
     DIR* dir;
     struct dirent entry;
     struct dirent* result;
+    size_t m = 0;
 
-    OE_TEST((dir = oe_opendir(fs, "/tmp", NULL)) != NULL);
+    OE_TEST((dir = oe_opendir(fs, "/etc", NULL)) != NULL);
 
     while (oe_readdir(dir, &entry, &result) == 0 && result)
     {
-        printf("d_name{%s}\n", entry.d_name);
+        m++;
+        // printf("d_name{%s}\n", entry.d_name);
     }
+
+    OE_TEST(m != 0);
 
     oe_closedir(dir);
 }
