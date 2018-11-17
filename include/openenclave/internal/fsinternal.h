@@ -37,7 +37,7 @@ struct _IO_FILE
 
     int32_t (*f_feof)(FILE* file);
 
-    int32_t (*f_clearerr)(FILE* file);
+    void (*f_clearerr)(FILE* file);
 };
 
 struct __dirstream

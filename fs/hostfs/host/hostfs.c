@@ -78,7 +78,6 @@ static void _handle_hostfs_ocall(void* args_)
         case OE_HOSTFS_OP_CLEARERR:
         {
             clearerr(args->u.clearerr.file);
-            args->u.clearerr.ret = 0;
             break;
         }
         case OE_HOSTFS_OP_OPENDIR:

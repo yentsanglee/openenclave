@@ -139,19 +139,17 @@ done:
     return ret;
 }
 
-static int32_t _f_clearerr(FILE* base)
+static void _f_clearerr(FILE* base)
 {
-    int ret = -1;
     file_t* file = (file_t*)base;
 
     if (!_valid_file(file))
         goto done;
 
     sgx_clearerr(file->sgx_file);
-    ret = 0;
 
 done:
-    return ret;
+    return;
 }
 
 static FILE* _fs_fopen(

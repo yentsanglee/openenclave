@@ -389,9 +389,8 @@ done:
     return ret;
 }
 
-static int32_t _f_clearerr(FILE* base)
+static void _f_clearerr(FILE* base)
 {
-    int64_t ret = -1;
     file_t* file = (file_t*)base;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
@@ -404,7 +403,6 @@ static int32_t _f_clearerr(FILE* base)
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
             goto done;
 
-        args->u.clearerr.ret = -1;
         args->op = OE_HOSTFS_OP_CLEARERR;
         args->u.clearerr.file = file->host_file;
     }
@@ -417,7 +415,6 @@ static int32_t _f_clearerr(FILE* base)
 
     /* Output */
     {
-        ret = args->u.clearerr.ret;
     }
 
 done:
@@ -425,7 +422,7 @@ done:
     if (args)
         oe_host_batch_free(batch);
 
-    return ret;
+    return;
 }
 
 static FILE* _fs_fopen(

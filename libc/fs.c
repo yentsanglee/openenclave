@@ -86,12 +86,12 @@ int32_t oe_feof(FILE* file)
     return file->f_feof(file);
 }
 
-int32_t oe_clearerr(FILE* file)
+void oe_clearerr(FILE* file)
 {
     if (!file || !file->f_clearerr)
-        return -1;
+        return;
 
-    return file->f_clearerr(file);
+    file->f_clearerr(file);
 }
 
 DIR* oe_opendir(oe_fs_t* fs, const char* name, const void* args)

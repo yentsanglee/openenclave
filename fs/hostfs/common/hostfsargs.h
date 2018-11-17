@@ -92,7 +92,6 @@ typedef struct _oe_hostfs_args
         } feof;
         struct
         {
-            int32_t ret;
             void* file;
         } clearerr;
         struct

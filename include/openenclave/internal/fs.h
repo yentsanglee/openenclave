@@ -67,7 +67,7 @@ int32_t oe_ferror(FILE* file);
 
 int32_t oe_feof(FILE* file);
 
-int32_t oe_clearerr(FILE* file);
+void oe_clearerr(FILE* file);
 
 DIR* oe_opendir(oe_fs_t* fs, const char* name, const void* args);
 
