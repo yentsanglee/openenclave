@@ -548,6 +548,12 @@ done:
 #ifdef __clang__
 __attribute__((optnone))
 #endif
+static size_t _fwrite(
+    const void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
+    return fwrite(ptr, size, nmemb, stream);
+}
+
 int oe_cpio_unpack(const char* source, const char* target)
 {
     int ret = -1;
@@ -592,7 +598,7 @@ int oe_cpio_unpack(const char* source, const char* target)
 
             while ((n = oe_cpio_read_data(cpio, data, sizeof(data))) > 0)
             {
-                if (fwrite(data, 1, n, os) != n)
+                if (_fwrite(data, 1, (size_t)n, os) != n)
                 {
                     goto done;
                 }
