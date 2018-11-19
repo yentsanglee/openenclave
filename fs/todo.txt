@@ -1,8 +1,5 @@
 
-
-    (*) Fix tests to work out of output directory.
-
     (*) Implement the fprintf/fscanf family of functions.
 
-    (*) getgid/getuid needed to support file permissions.
+    (*) Handle file permission checks.
 
