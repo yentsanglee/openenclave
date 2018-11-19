@@ -116,21 +116,6 @@ int oe_rmdir(oe_fs_t* fs, const char* path)
     return fs->fs_rmdir(fs, path);
 }
 
-int oe_access(oe_fs_t* fs, const char* path, int mode)
-{
-    struct stat buf;
-
-    if (oe_stat(fs, path, &buf) != 0)
-        return -1;
-
-    if (mode == F_OK)
-        return 0;
-
-    /* TODO: resolve R_OK, W_OK, and X_OK (need uid/gid) */
-
-    return -1;
-}
-
 /*
 **==============================================================================
 **
@@ -329,6 +314,7 @@ int rmdir(const char *pathname)
 int access(const char *pathname, int mode)
 {
     oe_fs_t* fs = oe_fs_get_default();
+    struct stat buf;
 
     if (!fs)
     {
@@ -336,7 +322,16 @@ int access(const char *pathname, int mode)
         return -1;
     }
 
-    return oe_access(fs, pathname, mode);
+    if (oe_stat(fs, pathname, &buf) != 0)
+        return -1;
+
+    if (mode == F_OK)
+        return 0;
+
+    /* TODO: resolve R_OK, W_OK, and X_OK (need uid/gid) */
+
+    errno = EINVAL;
+    return -1;
 }
 
 int fputc(int c, FILE *stream)
