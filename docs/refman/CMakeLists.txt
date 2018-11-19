@@ -28,4 +28,6 @@ else()
             html ${OE_DOCDIR}/openenclave/html
         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}
     )
+
+    ExternalProject_Add_StepDependencies(refman build oe_includes) 
 endif()
