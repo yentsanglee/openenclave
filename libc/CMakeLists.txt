@@ -456,7 +456,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/__fdopen.c
     #${MUSLSRC}/stdio/fgetc.c
     ${MUSLSRC}/stdio/fgetln.c
-    ${MUSLSRC}/stdio/fgetpos.c
+    #${MUSLSRC}/stdio/fgetpos.c
     #${MUSLSRC}/stdio/fgets.c
     ${MUSLSRC}/stdio/fgetwc.c
     ${MUSLSRC}/stdio/fgetws.c
@@ -474,7 +474,7 @@ add_library(oelibc STATIC
     #${MUSLSRC}/stdio/fread.c
     ${MUSLSRC}/stdio/freopen.c
     ${MUSLSRC}/stdio/fscanf.c
-    ${MUSLSRC}/stdio/fsetpos.c
+    #${MUSLSRC}/stdio/fsetpos.c
     ${MUSLSRC}/stdio/ftrylockfile.c
     ${MUSLSRC}/stdio/funlockfile.c
     ${MUSLSRC}/stdio/fwide.c
