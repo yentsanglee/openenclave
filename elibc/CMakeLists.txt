@@ -7,7 +7,6 @@ if(UNIX)
 		linux/longjmp.S)
 elseif (WIN32)
     set(SOURCES
-	    windows/gshandler.c
 	    windows/windows.c
 		../enclave/core/windows/jump.asm)
 endif()

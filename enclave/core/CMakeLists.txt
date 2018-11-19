@@ -12,11 +12,12 @@ set(PLATFORM_SRC
 elseif (WIN32)
 set(PLATFORM_SRC
     windows/crtstub.c
-	windows/gssupport.c
+    windows/gshandler.c
+    windows/gssupport.c
     windows/reloc.c
     windows/dispatch.asm
-	windows/jump.asm
-	windows/misc.asm
+    windows/jump.asm
+    windows/misc.asm
     )
 endif()
 

@@ -10,10 +10,6 @@
 #include <openenclave/internal/tests.h>
 #include "../args.h"
 
-void oe_continue_execution(oe_context_t* oe_context)
-{
-}
-
 void __cdecl _RTC_Shutdown(void)
 {
 }
