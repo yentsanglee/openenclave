@@ -1,17 +1,8 @@
 
 
+    (*) Fix tests to work out of output directory.
+
     (*) Implement the fprintf/fscanf family of functions.
 
-    (*) Implement fgets/fputs.
+    (*) getgid/getuid needed to support file permissions.
 
-    (*) Implement default versions of:
-
-        - fopen
-        - opendir
-        - unlink
-        - rename
-        - mkdir
-        - rmdir
-        - stat
-
-    (*) Fix tests to work out of output directory.

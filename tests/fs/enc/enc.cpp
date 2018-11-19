@@ -5,10 +5,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 #include "../../../fs/hostfs/common/hostfs.h"
 #include "../../../fs/sgxfs/common/sgxfs.h"
 #include "../../../fs/cpio/cpio.h"
-#include "sgxfs_t.h"
+#include "fs_t.h"
 
 #ifdef FILENAME_MAX
 #undef FILENAME_MAX
@@ -20,9 +21,18 @@
 
 #include "../../../3rdparty/linux-sgx/linux-sgx/common/inc/sgx_tprotected_fs.h"
 
-static void _test1()
+static const char* _mkpath(
+    char buf[PATH_MAX], const char* target, const char* path)
 {
-    const char path[] = "/tmp/pfs.test";
+    strlcpy(buf, target, PATH_MAX);
+    strlcat(buf, path, PATH_MAX);
+    return buf;
+}
+
+static void _test1(const char* tmp_dir)
+{
+    char path[PATH_MAX];
+    _mkpath(path, tmp_dir, "/test1");
 
     printf("About to open a file\n");
     SGX_FILE* file = sgx_fopen_auto_key(path, "w");
@@ -88,17 +98,18 @@ static void _test1()
     }
 }
 
-static void _test_fs(oe_fs_t* fs)
+static void _test2(oe_fs_t* fs, const char* tmp_dir)
 {
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     char buf[sizeof(alphabet)];
     const size_t N = 1600;
     FILE* stream;
     size_t m = 0;
+    char path[PATH_MAX];
 
-    oe_mkdir(fs, "/tmp/sgxfs", 0777);
+    _mkpath(path, tmp_dir, "/test2");
 
-    stream = oe_fopen(fs, "/tmp/sgxfs/myfile", "w", NULL);
+    stream = oe_fopen(fs, path, "w", NULL);
     OE_TEST(stream != NULL);
 
     /* Write to the file */
@@ -114,7 +125,7 @@ static void _test_fs(oe_fs_t* fs)
     OE_TEST(fclose(stream) == 0);
 
     /* Reopen the file for read. */
-    stream = oe_fopen(fs, "/tmp/sgxfs/myfile", "r", NULL);
+    stream = oe_fopen(fs, path, "r", NULL);
     OE_TEST(stream != NULL);
 
     /* Read from the file. */
@@ -131,47 +142,81 @@ static void _test_fs(oe_fs_t* fs)
     fclose(stream);
 }
 
-static void _test_dirs(oe_fs_t* fs)
+static void _test3(oe_fs_t* fs, const char* tmp_dir)
 {
     DIR* dir;
     struct dirent entry;
     struct dirent* result;
     size_t m = 0;
 
-    OE_TEST((dir = oe_opendir(fs, "/etc", NULL)) != NULL);
+    OE_TEST((dir = oe_opendir(fs, tmp_dir, NULL)) != NULL);
 
     while (readdir_r(dir, &entry, &result) == 0 && result)
     {
         m++;
-        // printf("d_name{%s}\n", entry.d_name);
+
+        if (strcmp(entry.d_name, ".") == 0)
+            continue;
+
+        if (strcmp(entry.d_name, "..") == 0)
+            continue;
+
+        if (strcmp(entry.d_name, "test1") == 0)
+            continue;
+
+        if (strcmp(entry.d_name, "test2") == 0)
+            continue;
+
+        if (strcmp(entry.d_name, "cpio.file") == 0)
+            continue;
+
+        if (strcmp(entry.d_name, "cpio.dir") == 0)
+            continue;
+
+        OE_TEST(false);
     }
 
-    OE_TEST(m != 0);
+    OE_TEST(m >= 4);
 
     closedir(dir);
 }
 
-static void _test_cpio(oe_fs_t* fs)
+static void _test4(oe_fs_t* fs, const char* src_dir, const char* tmp_dir)
 {
+    char tests_dir[PATH_MAX];
+    char cpio_file[PATH_MAX];
+    char cpio_dir[PATH_MAX];
+
+    _mkpath(tests_dir, src_dir, "/tests");
+    _mkpath(cpio_file, tmp_dir, "/cpio.file");
+    _mkpath(cpio_dir, tmp_dir, "/cpio.dir");
+
     oe_fs_set_default(fs);
-
-    OE_TEST(oe_cpio_pack("/root/openenclave/tests", "/tmp/tests.cpio") == 0);
-    mkdir("/tmp/tests.cpio.dir", 0777);
-    OE_TEST(oe_cpio_unpack("/tmp/tests.cpio", "/tmp/tests.cpio.dir") == 0);
-
+    OE_TEST(oe_cpio_pack(tests_dir, cpio_file) == 0);
+    mkdir(cpio_dir, 0777);
+    OE_TEST(oe_cpio_unpack(cpio_file, cpio_dir) == 0);
     oe_fs_set_default(NULL);
 }
 
-void enc_test()
+void enc_test(const char* src_dir, const char* bin_dir)
 {
-    _test1();
-    _test_fs(&oe_sgxfs);
-    _test_fs(&oe_hostfs);
+    static char tmp_dir[PATH_MAX];
+    struct stat buf;
 
-    _test_dirs(&oe_hostfs);
-    _test_dirs(&oe_sgxfs);
+    /* Create the temporary directory (if it does not already exist). */
+    {
+        _mkpath(tmp_dir, bin_dir, "/tests/fs/tmp");
 
-    _test_cpio(&oe_hostfs);
+        if  (oe_stat(&oe_hostfs, tmp_dir, &buf) != 0)
+            OE_TEST(oe_mkdir(&oe_hostfs, tmp_dir, 0777) == 0);
+    }
+
+    _test1(tmp_dir);
+    _test2(&oe_sgxfs, tmp_dir);
+    _test2(&oe_hostfs, tmp_dir);
+    _test3(&oe_hostfs, tmp_dir);
+    _test3(&oe_sgxfs, tmp_dir);
+    _test4(&oe_hostfs, src_dir, tmp_dir);
 }
 
 OE_SET_ENCLAVE_SGX(

@@ -1,6 +1,6 @@
 #include <openenclave/host.h>
 #include <openenclave/internal/tests.h>
-#include "sgxfs_u.h"
+#include "fs_u.h"
 
 void host_test()
 {
@@ -12,6 +12,13 @@ int main(int argc, const char* argv[])
     int ret = 1;
     oe_enclave_t* enclave = NULL; // Create the enclave
     uint32_t flags = OE_ENCLAVE_FLAG_DEBUG;
+
+    /* Check command-line arguments. */
+    if (argc != 4)
+    {
+        fprintf(stderr, "Usage: %s enclave source-dir binary-dir\n", argv[0]);
+        exit(1);
+    }
 
     /* Install hostfs */
     {
@@ -26,7 +33,7 @@ int main(int argc, const char* argv[])
     }
 
     printf("Starting enclave with %s\n", argv[1]);
-    result = oe_create_sgxfs_enclave(
+    result = oe_create_fs_enclave(
         argv[1], OE_ENCLAVE_TYPE_SGX, flags, NULL, 0, &enclave);
     if (result != OE_OK)
     {
@@ -38,7 +45,7 @@ int main(int argc, const char* argv[])
         goto exit;
     }
 
-    result = enc_test(enclave);
+    result = enc_test(enclave, argv[2], argv[3]);
     if (result != OE_OK)
     {
         fprintf(

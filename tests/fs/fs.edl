@@ -1,0 +1,11 @@
+enclave {
+    trusted {
+        public void enc_test(
+            [string, in] const char* src_dir, 
+            [string, in] const char* bin_dir);
+    };
+
+    untrusted {
+        void host_test();
+    };
+};

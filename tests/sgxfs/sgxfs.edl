@@ -1,9 +1,0 @@
-enclave {
-    trusted {
-        public void enc_test();
-    };
-
-    untrusted {
-        void host_test();
-    };
-};

@@ -4,5 +4,9 @@
 add_subdirectory(host)
 add_subdirectory(enc)
 
-add_enclave_test(tests/sgxfs 
-    ./host sgxfs_host ./enc sgxfs_enc)
+add_enclave_test(tests/fs 
+    ./host fs_host 
+    ./enc fs_enc
+    "${PROJECT_SOURCE_DIR}"
+    "${CMAKE_BINARY_DIR}")
+

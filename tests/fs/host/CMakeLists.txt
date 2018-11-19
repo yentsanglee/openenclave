@@ -3,13 +3,13 @@
 
 include(oeedl_file)
 
-oeedl_file(../sgxfs.edl host gen)
+oeedl_file(../fs.edl host gen)
 
-add_executable(sgxfs_host 
+add_executable(fs_host 
     host.c 
     ${gen})
 
-target_include_directories(sgxfs_host 
+target_include_directories(fs_host 
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(sgxfs_host oesgxfshost oehostfshost oehostapp)
+target_link_libraries(fs_host oesgxfshost oehostfshost oehostapp)
