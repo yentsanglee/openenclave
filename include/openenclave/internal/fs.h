@@ -21,7 +21,7 @@ typedef struct __dirstream DIR;
 
 struct _oe_fs
 {
-    int32_t (*fs_release)(oe_fs_t* fs);
+    int (*fs_release)(oe_fs_t* fs);
 
     FILE* (*fs_fopen)(
         oe_fs_t* fs,
@@ -31,19 +31,22 @@ struct _oe_fs
 
     DIR* (*fs_opendir)(oe_fs_t* fs, const char* name, const void* args);
 
-    int32_t (*fs_stat)(oe_fs_t* fs, const char* path, struct stat* stat);
+    int (*fs_stat)(oe_fs_t* fs, const char* path, struct stat* stat);
 
-    int32_t (*fs_unlink)(oe_fs_t* fs, const char* path);
+    int (*fs_unlink)(oe_fs_t* fs, const char* path);
 
-    int32_t (
-        *fs_rename)(oe_fs_t* fs, const char* old_path, const char* new_path);
+    int (*fs_rename)(oe_fs_t* fs, const char* old_path, const char* new_path);
 
-    int32_t (*fs_mkdir)(oe_fs_t* fs, const char* path, unsigned int mode);
+    int (*fs_mkdir)(oe_fs_t* fs, const char* path, unsigned int mode);
 
-    int32_t (*fs_rmdir)(oe_fs_t* fs, const char* path);
+    int (*fs_rmdir)(oe_fs_t* fs, const char* path);
 };
 
-int32_t oe_release(oe_fs_t* fs);
+int oe_release(oe_fs_t* fs);
+
+void oe_fs_set_default(oe_fs_t* fs);
+
+oe_fs_t* oe_fs_get_default(void);
 
 FILE* oe_fopen(
     oe_fs_t* fs,
@@ -51,45 +54,19 @@ FILE* oe_fopen(
     const char* mode,
     const void* args);
 
-int32_t oe_fclose(FILE* file);
-
-size_t oe_fread(void* ptr, size_t size, size_t nmemb, FILE* file);
-
-size_t oe_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* file);
-
-int64_t oe_ftell(FILE* file);
-
-int32_t oe_fseek(FILE* file, int64_t offset, int whence);
-
-int32_t oe_fflush(FILE* file);
-
-int32_t oe_ferror(FILE* file);
-
-int32_t oe_feof(FILE* file);
-
-void oe_clearerr(FILE* file);
-
 DIR* oe_opendir(oe_fs_t* fs, const char* name, const void* args);
 
-int32_t oe_readdir(DIR* dir, struct dirent* entry, struct dirent** result);
+int oe_stat(oe_fs_t* fs, const char* path, struct stat* stat);
 
-int32_t oe_closedir(DIR* dir);
+int oe_unlink(oe_fs_t* fs, const char* path);
 
-int32_t oe_stat(oe_fs_t* fs, const char* path, struct stat* stat);
+int oe_rename(oe_fs_t* fs, const char* old_path, const char* new_path);
 
-int32_t oe_unlink(oe_fs_t* fs, const char* path);
+int oe_mkdir(oe_fs_t* fs, const char* path, unsigned int mode);
 
-int32_t oe_rename(oe_fs_t* fs, const char* old_path, const char* new_path);
-
-int32_t oe_mkdir(oe_fs_t* fs, const char* path, unsigned int mode);
-
-int32_t oe_rmdir(oe_fs_t* fs, const char* path);
+int oe_rmdir(oe_fs_t* fs, const char* path);
 
 int oe_access(oe_fs_t* fs, const char* path, int mode);
-
-void oe_fs_set_default(oe_fs_t* fs);
-
-oe_fs_t* oe_fs_get_default(void);
 
 OE_EXTERNC_END
 

@@ -59,9 +59,9 @@ OE_INLINE bool _valid_file(file_t* file)
     return file && file->base.magic == OE_FILE_MAGIC;
 }
 
-static int32_t _f_fclose(FILE* base)
+static int _f_fclose(FILE* base)
 {
-    int32_t ret = -1;
+    int ret = -1;
     file_t* file = (file_t*)base;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
@@ -231,7 +231,7 @@ done:
     return ret;
 }
 
-static int32_t _f_fseek(FILE* base, int64_t offset, int whence)
+static int _f_fseek(FILE* base, int64_t offset, int whence)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -272,7 +272,7 @@ done:
     return ret;
 }
 
-static int32_t _f_fflush(FILE* base)
+static int _f_fflush(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -311,7 +311,7 @@ done:
     return ret;
 }
 
-static int32_t _f_ferror(FILE* base)
+static int _f_ferror(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -350,7 +350,7 @@ done:
     return ret;
 }
 
-static int32_t _f_feof(FILE* base)
+static int _f_feof(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -491,9 +491,9 @@ done:
     return ret;
 }
 
-int32_t _d_readdir(DIR* base, struct dirent* entry, struct dirent** result)
+int _d_readdir(DIR* base, struct dirent* entry, struct dirent** result)
 {
-    int32_t ret = -1;
+    int ret = -1;
     dir_t* dir = (dir_t*)base;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
@@ -552,9 +552,9 @@ done:
     return ret;
 }
 
-int32_t _d_closedir(DIR* base)
+int _d_closedir(DIR* base)
 {
-    int32_t ret = -1;
+    int ret = -1;
     dir_t* dir = (dir_t*)base;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
@@ -649,7 +649,7 @@ done:
     return ret;
 }
 
-static int32_t _fs_release(oe_fs_t* fs)
+static int _fs_release(oe_fs_t* fs)
 {
     uint32_t ret = -1;
 
@@ -662,9 +662,9 @@ done:
     return ret;
 }
 
-static int32_t _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
+static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
 {
-    int32_t ret = -1;
+    int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -712,10 +712,10 @@ done:
     return ret;
 }
 
-static int32_t _fs_rename(
+static int _fs_rename(
     oe_fs_t* fs, const char* old_path, const char* new_path)
 {
-    int32_t ret = -1;
+    int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -756,9 +756,9 @@ done:
     return ret;
 }
 
-static int32_t _fs_unlink(oe_fs_t* fs, const char* path)
+static int _fs_unlink(oe_fs_t* fs, const char* path)
 {
-    int32_t ret = -1;
+    int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -796,9 +796,9 @@ done:
     return ret;
 }
 
-static int32_t _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
+static int _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
 {
-    int32_t ret = -1;
+    int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -837,9 +837,9 @@ done:
     return ret;
 }
 
-static int32_t _fs_rmdir(oe_fs_t* fs, const char* path)
+static int _fs_rmdir(oe_fs_t* fs, const char* path)
 {
-    int32_t ret = -1;
+    int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 

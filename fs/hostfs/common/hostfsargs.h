@@ -34,7 +34,7 @@ typedef enum _oe_hostfs_op {
 typedef struct _oe_hostfs_args
 {
     oe_hostfs_op_t op;
-    int32_t err;
+    int err;
     union {
         struct
         {
@@ -44,7 +44,7 @@ typedef struct _oe_hostfs_args
         } fopen;
         struct
         {
-            int32_t ret;
+            int ret;
             void* file;
         } fclose;
         struct
@@ -70,24 +70,24 @@ typedef struct _oe_hostfs_args
         } ftell;
         struct
         {
-            int32_t ret;
+            int ret;
             void* file;
             int64_t offset;
             int whence;
         } fseek;
         struct
         {
-            int32_t ret;
+            int ret;
             void* file;
         } fflush;
         struct
         {
-            int32_t ret;
+            int ret;
             void* file;
         } ferror;
         struct
         {
-            int32_t ret;
+            int ret;
             void* file;
         } feof;
         struct
@@ -101,7 +101,7 @@ typedef struct _oe_hostfs_args
         } opendir;
         struct
         {
-            int32_t ret;
+            int ret;
             void* dir;
             struct
             {
@@ -115,12 +115,12 @@ typedef struct _oe_hostfs_args
         } readdir;
         struct
         {
-            int32_t ret;
+            int ret;
             void* dir;
         } closedir;
         struct
         {
-            int32_t ret;
+            int ret;
             char path[OE_FS_PATH_MAX];
             struct
             {
@@ -138,24 +138,24 @@ typedef struct _oe_hostfs_args
         } stat;
         struct
         {
-            int32_t ret;
+            int ret;
             char path[OE_FS_PATH_MAX];
         } unlink;
         struct
         {
-            int32_t ret;
+            int ret;
             char old_path[OE_FS_PATH_MAX];
             char new_path[OE_FS_PATH_MAX];
         } rename;
         struct
         {
-            int32_t ret;
+            int ret;
             char path[OE_FS_PATH_MAX];
             unsigned int mode;
         } mkdir;
         struct
         {
-            int32_t ret;
+            int ret;
             char path[OE_FS_PATH_MAX];
         } rmdir;
     } u;

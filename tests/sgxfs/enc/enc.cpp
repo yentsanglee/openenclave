@@ -110,8 +110,8 @@ static void _test_fs(oe_fs_t* fs)
     }
 
     OE_TEST(m == sizeof(alphabet) * N);
-    OE_TEST(oe_fflush(stream) == 0);
-    OE_TEST(oe_fclose(stream) == 0);
+    OE_TEST(fflush(stream) == 0);
+    OE_TEST(fclose(stream) == 0);
 
     /* Reopen the file for read. */
     stream = oe_fopen(fs, "/tmp/sgxfs/myfile", "r", NULL);
@@ -128,7 +128,7 @@ static void _test_fs(oe_fs_t* fs)
     }
 
     OE_TEST(m == sizeof(alphabet) * N);
-    oe_fclose(stream);
+    fclose(stream);
 }
 
 static void _test_dirs(oe_fs_t* fs)
@@ -140,7 +140,7 @@ static void _test_dirs(oe_fs_t* fs)
 
     OE_TEST((dir = oe_opendir(fs, "/etc", NULL)) != NULL);
 
-    while (oe_readdir(dir, &entry, &result) == 0 && result)
+    while (readdir_r(dir, &entry, &result) == 0 && result)
     {
         m++;
         // printf("d_name{%s}\n", entry.d_name);
@@ -148,7 +148,7 @@ static void _test_dirs(oe_fs_t* fs)
 
     OE_TEST(m != 0);
 
-    oe_closedir(dir);
+    closedir(dir);
 }
 
 static void _test_cpio(oe_fs_t* fs)

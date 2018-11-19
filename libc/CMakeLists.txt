@@ -442,7 +442,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/setjmp/x86_64/longjmp.s
     ${MUSLSRC}/setjmp/x86_64/setjmp.s
     #${MUSLSRC}/stat/stat.c
-    ${MUSLSRC}/stat/mkdir.c
+    #${MUSLSRC}/stat/mkdir.c
     ${MUSLSRC}/stdio/asprintf.c
     ${MUSLSRC}/stdio/asprintf.c
     ${MUSLSRC}/stdio/clearerr.c
@@ -506,7 +506,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/putwc.c
     ${MUSLSRC}/stdio/putwchar.c
     ${MUSLSRC}/stdio/remove.c
-    ${MUSLSRC}/stdio/rename.c
+    #${MUSLSRC}/stdio/rename.c
     #${MUSLSRC}/stdio/rewind.c
     ${MUSLSRC}/stdio/scanf.c
     ${MUSLSRC}/stdio/setbuf.c
@@ -657,7 +657,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/unistd/dup.c
     ${MUSLSRC}/unistd/getcwd.c
     ${MUSLSRC}/unistd/chdir.c
-    ${MUSLSRC}/unistd/rmdir.c
+    #${MUSLSRC}/unistd/rmdir.c
     ${MUSLSRC}/unistd/dup3.c
     ${MUSLSRC}/unistd/truncate.c
     ${MUSLSRC}/unistd/link.c

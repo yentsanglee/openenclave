@@ -34,7 +34,7 @@ typedef struct _oe_sgxfs_args
             char filename[SECURE_FILE_MAX_PATH];
             uint8_t read_only;
             int64_t file_size;
-            int32_t error_code;
+            int error_code;
         } exclusive_file_open;
         struct
         {
@@ -43,7 +43,7 @@ typedef struct _oe_sgxfs_args
         } check_if_file_exists;
         struct
         {
-            int32_t retval;
+            int retval;
             void* file;
             uint64_t node_number;
             uint8_t* buffer;
@@ -51,7 +51,7 @@ typedef struct _oe_sgxfs_args
         } fread_node;
         struct
         {
-            int32_t retval;
+            int retval;
             void* file;
             uint64_t node_number;
             uint8_t* buffer;
@@ -59,17 +59,17 @@ typedef struct _oe_sgxfs_args
         } fwrite_node;
         struct
         {
-            int32_t retval;
+            int retval;
             void* file;
         } fclose;
         struct
         {
-            int32_t retval;
+            int retval;
             void* file;
         } fflush;
         struct
         {
-            int32_t retval;
+            int retval;
             char filename[SECURE_FILE_MAX_PATH];
         } remove;
         struct
@@ -86,7 +86,7 @@ typedef struct _oe_sgxfs_args
         } fwrite_recovery_node;
         struct
         {
-            int32_t retval;
+            int retval;
             char filename[SECURE_FILE_MAX_PATH];
             char recovery_filename[SECURE_FILE_MAX_PATH];
             uint32_t node_size;

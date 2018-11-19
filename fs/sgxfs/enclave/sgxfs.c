@@ -22,7 +22,7 @@ OE_INLINE bool _valid_file(file_t* file)
     return file && file->base.magic == OE_FILE_MAGIC;
 }
 
-static int32_t _f_fclose(FILE* base)
+static int _f_fclose(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -85,9 +85,9 @@ done:
     return ret;
 }
 
-static int32_t _f_fseek(FILE* base, int64_t offset, int whence)
+static int _f_fseek(FILE* base, int64_t offset, int whence)
 {
-    int32_t ret = -1;
+    int ret = -1;
     file_t* file = (file_t*)base;
 
     if (!_valid_file(file))
@@ -99,7 +99,7 @@ done:
     return ret;
 }
 
-static int32_t _f_fflush(FILE* base)
+static int _f_fflush(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -113,7 +113,7 @@ done:
     return ret;
 }
 
-static int32_t _f_ferror(FILE* base)
+static int _f_ferror(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -127,7 +127,7 @@ done:
     return ret;
 }
 
-static int32_t _f_feof(FILE* base)
+static int _f_feof(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -202,7 +202,7 @@ done:
     return ret;
 }
 
-static int32_t _fs_release(oe_fs_t* fs)
+static int _fs_release(oe_fs_t* fs)
 {
     uint32_t ret = -1;
 
@@ -220,28 +220,28 @@ static DIR* _fs_opendir(oe_fs_t* fs, const char* name, const void* args)
     return oe_opendir(&oe_hostfs, name, args);
 }
 
-static int32_t _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
+static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
 {
     return oe_stat(&oe_hostfs, path, stat);
 }
 
-static int32_t _fs_rename(
+static int _fs_rename(
     oe_fs_t* fs, const char* old_path, const char* new_path)
 {
     return oe_rename(&oe_hostfs, old_path, new_path);
 }
 
-static int32_t _fs_unlink(oe_fs_t* fs, const char* path)
+static int _fs_unlink(oe_fs_t* fs, const char* path)
 {
     return oe_unlink(&oe_hostfs, path);
 }
 
-static int32_t _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
+static int _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
 {
     return oe_mkdir(&oe_hostfs, path, mode);
 }
 
-static int32_t _fs_rmdir(oe_fs_t* fs, const char* path)
+static int _fs_rmdir(oe_fs_t* fs, const char* path)
 {
     return oe_rmdir(&oe_hostfs, path);
 }
