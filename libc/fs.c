@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
 
 size_t musl_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream);
 
@@ -24,9 +25,15 @@ void musl_clearerr(FILE *stream);
 
 int musl_fputc(int c, FILE *stream);
 
+int musl_putc(int c, FILE *stream);
+
 int musl_fgetc(FILE *stream);
 
+int musl_getc(FILE *stream);
+
 FILE *musl_fopen(const char *path, const char *mode);
+
+char *musl_fgets(char *s, int size, FILE *stream);
 
 /*
 **==============================================================================
@@ -84,12 +91,12 @@ int oe_stat(oe_fs_t* fs, const char* path, struct stat* stat)
     return fs->fs_stat(fs, path, stat);
 }
 
-int oe_unlink(oe_fs_t* fs, const char* path)
+int oe_remove(oe_fs_t* fs, const char* path)
 {
-    if (!fs || !fs->fs_unlink)
+    if (!fs || !fs->fs_remove)
         return -1;
 
-    return fs->fs_unlink(fs, path);
+    return fs->fs_remove(fs, path);
 }
 
 int oe_rename(oe_fs_t* fs, const char* old_path, const char* new_path)
@@ -166,12 +173,44 @@ long ftell(FILE* stream)
     return musl_ftell(stream);
 }
 
+int fgetpos(FILE *stream, fpos_t *pos)
+{
+    long off;
+
+    if (!stream || !pos)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if ((off = ftell(stream)) < 0)
+        return -1;
+
+    *((long long *)pos) = off;
+
+    return 0;
+}
+
 int fseek(FILE* stream, long offset, int whence)
 {
     if (stream && stream->magic == OE_FILE_MAGIC)
         return stream->f_fseek(stream, offset, whence);
 
     return musl_fseek(stream, offset, whence);
+}
+
+int fsetpos(FILE *stream, const fpos_t *pos)
+{
+    if (!stream || !pos)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (fseek(stream, *(const long long *)pos, SEEK_SET) != 0)
+        return -1;
+
+    return 0;
 }
 
 void rewind(FILE *stream)
@@ -259,7 +298,7 @@ int stat(const char *path, struct stat *buf)
     return oe_stat(fs, path, buf);
 }
 
-int unlink(const char *pathname)
+int remove(const char *pathname)
 {
     oe_fs_t* fs = oe_fs_get_default();
 
@@ -269,7 +308,7 @@ int unlink(const char *pathname)
         return -1;
     }
 
-    return oe_unlink(fs, pathname);
+    return oe_remove(fs, pathname);
 }
 
 int rename(const char *oldpath, const char *newpath)
@@ -349,6 +388,21 @@ int fputc(int c, FILE *stream)
     return musl_fputc(c, stream);
 }
 
+int putc(int c, FILE *stream)
+{
+    if (stream && stream->magic == OE_FILE_MAGIC)
+    {
+        char ch = (char)c;
+
+        if (fwrite(&ch, 1, 1, stream) != 1)
+            return EOF;
+
+        return c;
+    }
+
+    return musl_putc(c, stream);
+}
+
 int fgetc(FILE *stream)
 {
     if (stream && stream->magic == OE_FILE_MAGIC)
@@ -362,4 +416,60 @@ int fgetc(FILE *stream)
     }
 
     return musl_fgetc(stream);
+}
+
+int getc(FILE *stream)
+{
+    if (stream && stream->magic == OE_FILE_MAGIC)
+    {
+        char ch;
+
+        if (fread(&ch, 1, 1, stream) != 1)
+            return EOF;
+
+        return ch;
+    }
+
+    return musl_getc(stream);
+}
+
+int fputs(const char *s, FILE *stream)
+{
+    if (!s)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    size_t len = strlen(s);
+
+    if (fwrite(s, 1, len, stream ) == len)
+        return 0;
+
+    return EOF;
+}
+
+char *fgets(char *s, int size, FILE *stream)
+{
+    size_t i;
+
+    if (!s || !size || !stream)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    for (i = 0; i < size - 1; i++)
+    {
+        int c = fgetc(stream);
+
+        if (c == EOF)
+            break;
+
+        s[i] = c;
+    }
+
+    s[i] = '\0';
+
+    return s;
 }

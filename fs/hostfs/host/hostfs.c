@@ -145,9 +145,9 @@ static void _handle_hostfs_ocall(void* args_)
             }
             break;
         }
-        case OE_HOSTFS_OP_UNLINK:
+        case OE_HOSTFS_OP_REMOVE:
         {
-            args->u.unlink.ret = unlink(args->u.unlink.path);
+            args->u.remove.ret = remove(args->u.remove.path);
             break;
         }
         case OE_HOSTFS_OP_RENAME:

@@ -25,7 +25,7 @@ typedef enum _oe_hostfs_op {
     OE_HOSTFS_OP_READDIR,
     OE_HOSTFS_OP_CLOSEDIR,
     OE_HOSTFS_OP_STAT,
-    OE_HOSTFS_OP_UNLINK,
+    OE_HOSTFS_OP_REMOVE,
     OE_HOSTFS_OP_RENAME,
     OE_HOSTFS_OP_MKDIR,
     OE_HOSTFS_OP_RMDIR,
@@ -140,7 +140,7 @@ typedef struct _oe_hostfs_args
         {
             int ret;
             char path[OE_FS_PATH_MAX];
-        } unlink;
+        } remove;
         struct
         {
             int ret;

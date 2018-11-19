@@ -20,17 +20,20 @@ add_library(oelibc STATIC
     ferror.c
     fputc.c
     fgetc.c
+    fgets.c
     fopen.c
     fread.c
     fseek.c
     ftell.c
     fwrite.c
     fflush.c
+    getc.c
     exp2l.S
     libunwind_stubs.c
     link.c
     locale.c
     malloc.c
+    putc.c
     pthread.c
     realpath.c
     sched_yield.c
@@ -454,7 +457,7 @@ add_library(oelibc STATIC
     #${MUSLSRC}/stdio/fgetc.c
     ${MUSLSRC}/stdio/fgetln.c
     ${MUSLSRC}/stdio/fgetpos.c
-    ${MUSLSRC}/stdio/fgets.c
+    #${MUSLSRC}/stdio/fgets.c
     ${MUSLSRC}/stdio/fgetwc.c
     ${MUSLSRC}/stdio/fgetws.c
     ${MUSLSRC}/stdio/fileno.c
@@ -465,7 +468,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/fopencookie.c
     ${MUSLSRC}/stdio/__fopen_rb_ca.c
     ${MUSLSRC}/stdio/fprintf.c
-    ${MUSLSRC}/stdio/fputs.c
+    #${MUSLSRC}/stdio/fputs.c
     ${MUSLSRC}/stdio/fputwc.c
     ${MUSLSRC}/stdio/fputws.c
     #${MUSLSRC}/stdio/fread.c
@@ -478,7 +481,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/fwprintf.c
     #${MUSLSRC}/stdio/fwrite.c
     ${MUSLSRC}/stdio/fwscanf.c
-    ${MUSLSRC}/stdio/getc.c
+    #${MUSLSRC}/stdio/getc.c
     ${MUSLSRC}/stdio/getchar.c
     ${MUSLSRC}/stdio/getchar_unlocked.c
     ${MUSLSRC}/stdio/getc_unlocked.c
@@ -497,7 +500,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/pclose.c
     ${MUSLSRC}/stdio/perror.c
     ${MUSLSRC}/stdio/printf.c
-    ${MUSLSRC}/stdio/putc.c
+    #${MUSLSRC}/stdio/putc.c
     ${MUSLSRC}/stdio/putchar.c
     ${MUSLSRC}/stdio/putchar_unlocked.c
     ${MUSLSRC}/stdio/putc_unlocked.c
@@ -505,7 +508,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/stdio/putw.c
     ${MUSLSRC}/stdio/putwc.c
     ${MUSLSRC}/stdio/putwchar.c
-    ${MUSLSRC}/stdio/remove.c
+    #${MUSLSRC}/stdio/remove.c
     #${MUSLSRC}/stdio/rename.c
     #${MUSLSRC}/stdio/rewind.c
     ${MUSLSRC}/stdio/scanf.c

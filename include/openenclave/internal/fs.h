@@ -33,7 +33,7 @@ struct _oe_fs
 
     int (*fs_stat)(oe_fs_t* fs, const char* path, struct stat* stat);
 
-    int (*fs_unlink)(oe_fs_t* fs, const char* path);
+    int (*fs_remove)(oe_fs_t* fs, const char* path);
 
     int (*fs_rename)(oe_fs_t* fs, const char* old_path, const char* new_path);
 
@@ -58,7 +58,7 @@ DIR* oe_opendir(oe_fs_t* fs, const char* name, const void* args);
 
 int oe_stat(oe_fs_t* fs, const char* path, struct stat* stat);
 
-int oe_unlink(oe_fs_t* fs, const char* path);
+int oe_remove(oe_fs_t* fs, const char* path);
 
 int oe_rename(oe_fs_t* fs, const char* old_path, const char* new_path);
 

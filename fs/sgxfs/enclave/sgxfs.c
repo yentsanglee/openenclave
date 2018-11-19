@@ -231,9 +231,9 @@ static int _fs_rename(
     return oe_rename(&oe_hostfs, old_path, new_path);
 }
 
-static int _fs_unlink(oe_fs_t* fs, const char* path)
+static int _fs_remove(oe_fs_t* fs, const char* path)
 {
-    return oe_unlink(&oe_hostfs, path);
+    return oe_remove(&oe_hostfs, path);
 }
 
 static int _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
@@ -251,7 +251,7 @@ oe_fs_t oe_sgxfs = {
     .fs_opendir = _fs_opendir,
     .fs_release = _fs_release,
     .fs_stat = _fs_stat,
-    .fs_unlink = _fs_unlink,
+    .fs_remove = _fs_remove,
     .fs_rename = _fs_rename,
     .fs_mkdir = _fs_mkdir,
     .fs_rmdir = _fs_rmdir,

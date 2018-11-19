@@ -756,7 +756,7 @@ done:
     return ret;
 }
 
-static int _fs_unlink(oe_fs_t* fs, const char* path)
+static int _fs_remove(oe_fs_t* fs, const char* path)
 {
     int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
@@ -770,9 +770,9 @@ static int _fs_unlink(oe_fs_t* fs, const char* path)
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
             goto done;
 
-        args->op = OE_HOSTFS_OP_UNLINK;
-        args->u.unlink.ret = -1;
-        strlcpy(args->u.unlink.path, path, sizeof(args->u.unlink.path));
+        args->op = OE_HOSTFS_OP_REMOVE;
+        args->u.remove.ret = -1;
+        strlcpy(args->u.remove.path, path, sizeof(args->u.remove.path));
     }
 
     /* Call */
@@ -783,7 +783,7 @@ static int _fs_unlink(oe_fs_t* fs, const char* path)
 
     /* Output */
     {
-        ret = args->u.unlink.ret;
+        ret = args->u.remove.ret;
     }
 
     ret = 0;
@@ -882,7 +882,7 @@ oe_fs_t oe_hostfs = {
     .fs_fopen = _fs_fopen,
     .fs_opendir = _fs_opendir,
     .fs_stat = _fs_stat,
-    .fs_unlink = _fs_unlink,
+    .fs_remove = _fs_remove,
     .fs_rename = _fs_rename,
     .fs_mkdir = _fs_mkdir,
     .fs_rmdir = _fs_rmdir,
