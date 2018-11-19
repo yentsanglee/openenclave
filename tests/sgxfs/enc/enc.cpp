@@ -96,6 +96,8 @@ static void _test_fs(oe_fs_t* fs)
     FILE* stream;
     size_t m = 0;
 
+    oe_mkdir(fs, "/tmp/sgxfs", 0777);
+
     stream = oe_fopen(fs, "/tmp/sgxfs/myfile", "w", NULL);
     OE_TEST(stream != NULL);
 

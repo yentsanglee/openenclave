@@ -34,7 +34,6 @@ add_library(oelibc STATIC
     pthread.c
     realpath.c
     sched_yield.c
-    stdio.c
     stdlib.c
     strerror.c
     syscalls.c
