@@ -20,6 +20,7 @@ else()
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxygen.conf ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
     ExternalProject_Add(refman
+        DEPENDS oe_includes
         DOWNLOAD_COMMAND ""
         COMMENT "Generating refman HTML documentation"
         CONFIGURE_COMMAND ""
@@ -29,5 +30,4 @@ else()
         BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}
     )
 
-    ExternalProject_Add_StepDependencies(refman build oe_includes) 
 endif()
