@@ -248,9 +248,10 @@ static int _fs_rmdir(oe_fs_t* fs, const char* path)
 }
 
 oe_fs_t oe_sgxfs = {
+    .fs_magic = OE_FS_MAGIC,
+    .fs_release = _fs_release,
     .fs_fopen = _fs_fopen,
     .fs_opendir = _fs_opendir,
-    .fs_release = _fs_release,
     .fs_stat = _fs_stat,
     .fs_remove = _fs_remove,
     .fs_rename = _fs_rename,

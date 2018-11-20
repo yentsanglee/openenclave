@@ -11,6 +11,8 @@ OE_EXTERNC_BEGIN
 
 #define OE_FS_PATH_MAX 256
 
+#define OE_FS_MAGIC 0x0EF55FE00EF55FE0
+
 typedef struct _oe_fs oe_fs_t;
 
 /* Use the same struct name as MUSL */
@@ -23,6 +25,8 @@ struct _oe_fs
 {
     /* File-system specific internal implementation. */
     uint64_t __impl[16];
+
+    uint64_t fs_magic;
 
     int (*fs_release)(oe_fs_t* fs);
 

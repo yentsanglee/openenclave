@@ -22,12 +22,37 @@
 
 #include "../../../3rdparty/linux-sgx/linux-sgx/common/inc/sgx_tprotected_fs.h"
 
+oe_fs_t oe_default_fs = oe_hostfs;
+
 static const char* _mkpath(
     char buf[PATH_MAX], const char* target, const char* path)
 {
     strlcpy(buf, target, PATH_MAX);
     strlcat(buf, path, PATH_MAX);
     return buf;
+}
+
+__attribute__((optnone))
+static void _test_default_fs(const char* tmp_dir)
+{
+    char path[PATH_MAX];
+    const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+    char buf[sizeof(alphabet)];
+    FILE* os;
+
+    _mkpath(path, tmp_dir, "/default_fs.test");
+
+    OE_TEST((os = fopen(path, "wb")) != NULL);
+    OE_TEST(fwrite(alphabet, 1, sizeof(alphabet), os) == sizeof(alphabet));
+    OE_TEST(fclose(os) == 0);
+
+    OE_TEST((os = fopen(path, "rb")) != NULL);
+    OE_TEST(fread(buf, 1, sizeof(alphabet), os) == sizeof(alphabet));
+    OE_TEST(fclose(os) == 0);
+
+    OE_TEST(memcmp(buf, alphabet, sizeof(buf)) == 0);
+
+    OE_TEST(remove(path) == 0);
 }
 
 static void _test1(const char* tmp_dir)
@@ -212,6 +237,7 @@ void enc_test(const char* src_dir, const char* bin_dir)
             OE_TEST(oe_mkdir(&oe_hostfs, tmp_dir, 0777) == 0);
     }
 
+    _test_default_fs(tmp_dir);
     _test1(tmp_dir);
     _test2(&oe_sgxfs, tmp_dir);
     _test2(&oe_hostfs, tmp_dir);

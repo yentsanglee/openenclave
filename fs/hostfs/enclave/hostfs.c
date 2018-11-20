@@ -878,6 +878,7 @@ done:
 }
 
 oe_fs_t oe_hostfs = {
+    .fs_magic = OE_FS_MAGIC,
     .fs_release = _fs_release,
     .fs_fopen = _fs_fopen,
     .fs_opendir = _fs_opendir,
