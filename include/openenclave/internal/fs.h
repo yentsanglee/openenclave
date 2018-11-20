@@ -21,6 +21,9 @@ typedef struct __dirstream DIR;
 
 struct _oe_fs
 {
+    /* File-system specific internal implementation. */
+    uint64_t __impl[16];
+
     int (*fs_release)(oe_fs_t* fs);
 
     FILE* (*fs_fopen)(
