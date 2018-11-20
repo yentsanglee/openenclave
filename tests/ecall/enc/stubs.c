@@ -26,10 +26,6 @@ void __cdecl _RTC_UninitUse(const char* varname)
 {
 }
 
-void __fastcall __security_check_cookie(uint64_t cookie)
-{
-}
-
 void memset(void* dst, const int c, size_t size)
 {
     char* p = (char*)dst;
@@ -47,10 +43,6 @@ void memcpy(void* dst, const void *src, size_t size)
     {
         p[i] = q[i];
     }
-}
-
-void __cdecl __report_rangecheckfailure(void)
-{
 }
 
 #pragma pack(push, 1)

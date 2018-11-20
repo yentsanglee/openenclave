@@ -5,7 +5,7 @@
 
 if(WIN32)
     set(LIBC_DIR "${PROJECT_SOURCE_DIR}/include/openenclave/elibc")
-    set(CFLAGS "-X")
+    set(CFLAGS "-W3 -WX -GS")
     set(LIBMBEDTLS "mbedtls.lib")
     set(LIBMBEDCRYPTO "mbedcrypto.lib")
     set(LIBMBEDX509 "mbedx509.lib")

@@ -14,10 +14,12 @@ set(PLATFORM_SRC
     windows/crtstub.c
     windows/gshandler.c
     windows/gssupport.c
+    windows/gs_report.c
     windows/reloc.c
     windows/dispatch.asm
     windows/jump.asm
     windows/misc.asm
+    windows/secgs.asm
     )
 endif()
 
