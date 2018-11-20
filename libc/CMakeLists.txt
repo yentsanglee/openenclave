@@ -31,6 +31,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif ()
 
 add_library(oelibc STATIC
+    $<TARGET_OBJECTS:oelibasm>
     #../common/rand.c
     ../common/rand.s
     abort.S
