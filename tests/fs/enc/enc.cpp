@@ -6,8 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
-#include "../../../fs/hostfs/common/hostfs.h"
-#include "../../../fs/sgxfs/common/sgxfs.h"
+#include <openenclave/internal/sgxfs.h>
+#include <openenclave/internal/hostfs.h>
+#include <openenclave/internal/muxfs.h>
 #include "../../../fs/cpio/cpio.h"
 #include "fs_t.h"
 
@@ -217,6 +218,24 @@ void enc_test(const char* src_dir, const char* bin_dir)
     _test3(&oe_hostfs, tmp_dir);
     _test3(&oe_sgxfs, tmp_dir);
     _test4(&oe_hostfs, src_dir, tmp_dir);
+
+    /* Test the multiplexer: hostfs -> hostfs */
+    {
+        char mux_src_dir[PATH_MAX];
+        char mux_tmp_dir[PATH_MAX];
+        _mkpath(mux_src_dir, "/hostfs", src_dir);
+        _mkpath(mux_tmp_dir, "/hostfs", tmp_dir);
+        _test4(&oe_muxfs, mux_src_dir, mux_tmp_dir);
+    }
+
+    /* Test the multiplexer: hostfs -> sgxfs */
+    {
+        char mux_src_dir[PATH_MAX];
+        char mux_tmp_dir[PATH_MAX];
+        _mkpath(mux_src_dir, "/hostfs", src_dir);
+        _mkpath(mux_tmp_dir, "/sgxfs", tmp_dir);
+        _test4(&oe_muxfs, mux_src_dir, mux_tmp_dir);
+    }
 }
 
 OE_SET_ENCLAVE_SGX(

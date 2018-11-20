@@ -1,4 +1,5 @@
 #include "../common/sgxfsargs.h"
+#include <openenclave/internal/hostfs.h>
 #include "sgx_tprotected_fs_u.h"
 
 static void _handle_sgxfs_ocall(void* args_)
@@ -96,4 +97,5 @@ void (*oe_handle_sgxfs_ocall_callback)(void*);
 void oe_install_sgxfs(void)
 {
     oe_handle_sgxfs_ocall_callback = _handle_sgxfs_ocall;
+    oe_install_hostfs();
 }

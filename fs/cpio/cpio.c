@@ -26,6 +26,8 @@
 
 #define CPIO_BLOCK_SIZE 512
 
+#define GOTO(LABEL) goto LABEL
+
 typedef struct _cpio_header
 {
     char magic[6];
@@ -113,6 +115,19 @@ static void _dump(const uint8_t* data, size_t size)
     printf("\n");
 }
 #endif
+
+/* Clang optimization causes this function to crash while attempting to
+ * call fwrite. The fwrite function address is correct but the function
+ * is never reached.
+ */
+#ifdef __clang__
+__attribute__((optnone))
+#endif
+static size_t _fwrite(
+    const void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
+    return fwrite(ptr, size, nmemb, stream);
+}
 
 static bool _valid_header(const cpio_header_t* header)
 {
@@ -223,15 +238,14 @@ static int _skip_padding(FILE* stream)
     long new_pos;
 
     if ((pos = ftell(stream)) < 0)
-        goto done;
+        GOTO(done);
 
     new_pos = oe_round_to_multiple(pos, 4);
 
     if (new_pos != pos && fseek(stream, new_pos, SEEK_SET) != 0)
-        goto done;
+        GOTO(done);
 
     ret = 0;
-    goto done;
 
 done:
     return ret;
@@ -244,14 +258,14 @@ static int _write_padding(FILE* stream, size_t n)
     long new_pos;
 
     if ((pos = ftell(stream)) < 0)
-        goto done;
+        GOTO(done);
 
     new_pos = oe_round_to_multiple(pos, n);
 
     for (size_t i = pos; i < new_pos; i++)
     {
         if (fputc('\0', stream) == EOF)
-            goto done;
+            GOTO(done);
     }
 
     ret = 0;
@@ -267,18 +281,18 @@ oe_cpio_t* oe_cpio_open(const char* path, uint32_t flags)
     FILE* stream = NULL;
 
     if (!path)
-        goto done;
+        GOTO(done);
 
     if (!(cpio = calloc(1, sizeof(oe_cpio_t))))
-        goto done;
+        GOTO(done);
 
     if ((flags & OE_CPIO_FLAG_CREATE))
     {
         if (!(stream = fopen(path, "wb")))
-            goto done;
+            GOTO(done);
 
         if (fwrite(&_dot, 1, _dot.size, stream) != _dot.size)
-            goto done;
+            GOTO(done);
 
         cpio->stream = stream;
         cpio->write = true;
@@ -287,7 +301,7 @@ oe_cpio_t* oe_cpio_open(const char* path, uint32_t flags)
     else
     {
         if (!(stream = fopen(path, "rb")))
-            goto done;
+            GOTO(done);
 
         cpio->stream = stream;
         stream = NULL;
@@ -312,18 +326,18 @@ int oe_cpio_close(oe_cpio_t* cpio)
     int ret = -1;
 
     if (!cpio || !cpio->stream)
-        goto done;
+        GOTO(done);
 
     /* If file was open for write, then pad and write out the header. */
     if (cpio->write)
     {
         /* Write the trailer. */
         if (fwrite(&_trailer, 1, _trailer.size, cpio->stream) != _trailer.size)
-            goto done;
+            GOTO(done);
 
         /* Pad the trailer out to the block size boundary. */
         if (_write_padding(cpio->stream, CPIO_BLOCK_SIZE) != 0)
-            goto done;
+            GOTO(done);
     }
 
     fclose(cpio->stream);
@@ -350,22 +364,22 @@ int oe_cpio_read_entry(oe_cpio_t* cpio, oe_cpio_entry_t* entry_out)
         memset(entry_out, 0, sizeof(oe_cpio_entry_t));
 
     if (!cpio || !cpio->stream)
-        goto done;
+        GOTO(done);
 
     /* Set the position to the next entry. */
     if (fseek(cpio->stream, cpio->offset, SEEK_SET) != 0)
-        goto done;
+        GOTO(done);
 
     if (fread(&header, 1, sizeof(header), cpio->stream) != sizeof(header))
-        goto done;
+        GOTO(done);
 
     if (!_valid_header(&header))
-        goto done;
+        GOTO(done);
 
     /* Get the file size. */
     {
         if ((r = _get_filesize(&header)) < 0)
-            goto done;
+            GOTO(done);
 
         entry.size = (size_t)r;
     }
@@ -373,7 +387,7 @@ int oe_cpio_read_entry(oe_cpio_t* cpio, oe_cpio_entry_t* entry_out)
     /* Get the file mode. */
     {
         if ((r = _get_mode(&header)) < 0 || r >= UINT32_MAX)
-            goto done;
+            GOTO(done);
 
         entry.mode = (uint32_t)r;
     }
@@ -381,39 +395,39 @@ int oe_cpio_read_entry(oe_cpio_t* cpio, oe_cpio_entry_t* entry_out)
     /* Get the name size. */
     {
         if ((r = _get_namesize(&header)) < 0 || r >= CPIO_PATH_MAX)
-            goto done;
+            GOTO(done);
 
         namesize = (size_t)r;
     }
 
     /* Read the name. */
     if (fread(&entry.name, 1, namesize, cpio->stream) != namesize)
-        goto done;
+        GOTO(done);
 
     /* Skip any padding after the name. */
     if (_skip_padding(cpio->stream) != 0)
-        goto done;
+        GOTO(done);
 
     /* Save the file offset. */
     file_offset = ftell(cpio->stream);
 
     /* Skip over the file data. */
     if (fseek(cpio->stream, entry.size, SEEK_CUR) != 0)
-        goto done;
+        GOTO(done);
 
     /* Save the file offset. */
     cpio->eof_offset = ftell(cpio->stream);
 
     /* Skip any padding after the file data. */
     if (_skip_padding(cpio->stream) != 0)
-        goto done;
+        GOTO(done);
 
     /* Save the offset of the next entry. */
     cpio->offset = ftell(cpio->stream);
 
     /* Rewind to the file offset. */
     if (fseek(cpio->stream, file_offset, SEEK_SET) != 0)
-        goto done;
+        GOTO(done);
 
     /* Check for end-of-file. */
     if (strcmp(entry.name, "TRAILER!!!") == 0)
@@ -438,12 +452,12 @@ ssize_t oe_cpio_read_data(oe_cpio_t* cpio, void* data, size_t size)
     long offset;
 
     if (!cpio || !cpio->stream || !data)
-        goto done;
+        GOTO(done);
 
     offset = ftell(cpio->stream);
 
     if (offset > cpio->eof_offset)
-        goto done;
+        GOTO(done);
 
     rem = cpio->eof_offset - offset;
 
@@ -451,7 +465,7 @@ ssize_t oe_cpio_read_data(oe_cpio_t* cpio, void* data, size_t size)
         size = rem;
 
     if ((n = fread(data, 1, size, cpio->stream)) != size)
-        goto done;
+        GOTO(done);
 
     ret = n;
 
@@ -466,18 +480,18 @@ int oe_cpio_write_entry(oe_cpio_t* cpio, const oe_cpio_entry_t* entry)
     size_t namesize;
 
     if (!cpio || !cpio->stream || !entry)
-        goto done;
+        GOTO(done);
 
     /* Check file type. */
     if (!(entry->mode & OE_CPIO_MODE_IFREG) &&
         !(entry->mode & OE_CPIO_MODE_IFDIR))
     {
-        goto done;
+        GOTO(done);
     }
 
     /* Calculate the size of the name */
     if ((namesize = strlen(entry->name) + 1) > CPIO_PATH_MAX)
-        goto done;
+        GOTO(done);
 
     /* Write the CPIO header */
     {
@@ -498,17 +512,17 @@ int oe_cpio_write_entry(oe_cpio_t* cpio, const oe_cpio_entry_t* entry)
         _uint_to_hex(h.check, 0);
 
         if (fwrite(&h, 1, sizeof(h), cpio->stream) != sizeof(h))
-            goto done;
+            GOTO(done);
     }
 
     /* Write the file name. */
     {
         if (fwrite(entry->name, 1, namesize, cpio->stream) != namesize)
-            goto done;
+            GOTO(done);
 
         /* Pad to four-byte boundary. */
         if (_write_padding(cpio->stream, 4) != 0)
-            goto done;
+            GOTO(done);
     }
 
     ret = 0;
@@ -522,36 +536,23 @@ ssize_t oe_cpio_write_data(oe_cpio_t* cpio, const void* data, size_t size)
     ssize_t ret = -1;
 
     if (!cpio || !cpio->stream || (size && !data) || !cpio->write)
-        goto done;
+        GOTO(done);
 
     if (size)
     {
         if (fwrite(data, 1, size, cpio->stream) != size)
-            goto done;
+            GOTO(done);
     }
     else
     {
         if (_write_padding(cpio->stream, 4) != 0)
-            goto done;
+            GOTO(done);
     }
 
     ret = 0;
 
 done:
     return ret;
-}
-
-/* Clang optimization causes this function to crash while attempting to
- * call fwrite. The fwrite function address is correct but the function
- * is never reached.
- */
-#ifdef __clang__
-__attribute__((optnone))
-#endif
-static size_t _fwrite(
-    const void *ptr, size_t size, size_t nmemb, FILE *stream)
-{
-    return fwrite(ptr, size, nmemb, stream);
 }
 
 int oe_cpio_unpack(const char* source, const char* target)
@@ -564,14 +565,14 @@ int oe_cpio_unpack(const char* source, const char* target)
     FILE* os = NULL;
 
     if (!source || !target)
-        goto done;
+        GOTO(done);
 
     if (!(cpio = oe_cpio_open(source, 0)))
-        goto done;
+        GOTO(done);
 
     if (access(target, R_OK) != 0 && mkdir(target, 0766) != 0)
     {
-        goto done;
+        GOTO(done);
     }
 
     while ((r = oe_cpio_read_entry(cpio, &entry)) > 0)
@@ -586,7 +587,7 @@ int oe_cpio_unpack(const char* source, const char* target)
         if (S_ISDIR(entry.mode))
         {
             if (access(path, R_OK) && mkdir(path, entry.mode) != 0)
-                goto done;
+                GOTO(done);
         }
         else
         {
@@ -594,13 +595,13 @@ int oe_cpio_unpack(const char* source, const char* target)
             ssize_t n;
 
             if (!(os = fopen(path, "wb")))
-                goto done;
+                GOTO(done);
 
             while ((n = oe_cpio_read_data(cpio, data, sizeof(data))) > 0)
             {
                 if (_fwrite(data, 1, (size_t)n, os) != n)
                 {
-                    goto done;
+                    GOTO(done);
                 }
             }
 
@@ -630,11 +631,11 @@ static int _append_file(oe_cpio_t* cpio, const char* path, const char* name)
     ssize_t n;
 
     if (!cpio || !path)
-        goto done;
+        GOTO(done);
 
     /* Stat the file to get the size and mode. */
     if (stat(path, &st) != 0)
-        goto done;
+        GOTO(done);
 
     /* Write the CPIO header. */
     {
@@ -650,11 +651,11 @@ static int _append_file(oe_cpio_t* cpio, const char* path, const char* name)
         ent.mode = st.st_mode;
 
         if (strlcpy(ent.name, name, sizeof(ent.name)) >= sizeof(ent.name))
-            goto done;
+            GOTO(done);
 
         if (oe_cpio_write_entry(cpio, &ent) != 0)
         {
-            goto done;
+            GOTO(done);
         }
     }
 
@@ -664,20 +665,20 @@ static int _append_file(oe_cpio_t* cpio, const char* path, const char* name)
         char buf[512];
 
         if (!(is = fopen(path, "rb")))
-            goto done;
+            GOTO(done);
 
         while ((n = fread(buf, 1, sizeof(buf), is)) > 0)
         {
             if (oe_cpio_write_data(cpio, buf, n) != 0)
-                goto done;
+                GOTO(done);
         }
 
         if (n < 0)
-            goto done;
+            GOTO(done);
     }
 
     if (oe_cpio_write_data(cpio, NULL, 0) != 0)
-        goto done;
+        GOTO(done);
 
     ret = 0;
 
@@ -699,7 +700,7 @@ static int _pack(oe_cpio_t* cpio, const char* dirname, const char* root)
     oe_strarr_t dirs = OE_STRARR_INITIALIZER;
 
     if (!(dir = opendir(root)))
-        goto done;
+        GOTO(done);
 
     /* Append this directory to the CPIO archive. */
     if (strcmp(dirname, root) != 0)
@@ -712,7 +713,7 @@ static int _pack(oe_cpio_t* cpio, const char* dirname, const char* root)
             p++;
 
         if (_append_file(cpio, root, p) != 0)
-            goto done;
+            GOTO(done);
     }
 
     /* Find all children of this directory. */
@@ -735,7 +736,7 @@ static int _pack(oe_cpio_t* cpio, const char* dirname, const char* root)
         if (ent.d_type & DT_DIR)
         {
             if (oe_strarr_append(&dirs, path) != 0)
-                goto done;
+                GOTO(done);
         }
         else
         {
@@ -749,7 +750,7 @@ static int _pack(oe_cpio_t* cpio, const char* dirname, const char* root)
                 p++;
 
             if (_append_file(cpio, path, p) != 0)
-                goto done;
+                GOTO(done);
         }
     }
 
@@ -760,7 +761,7 @@ static int _pack(oe_cpio_t* cpio, const char* dirname, const char* root)
         for (i = 0; i < dirs.size; i++)
         {
             if (_pack(cpio, dirname, dirs.data[i]) != 0)
-                goto done;
+                GOTO(done);
         }
     }
 
@@ -783,13 +784,13 @@ int oe_cpio_pack(const char* source, const char* target)
     FILE* os = NULL;
 
     if (!source || !target)
-        goto done;
+        GOTO(done);
 
     if (!(cpio = oe_cpio_open(target, OE_CPIO_FLAG_CREATE)))
-        goto done;
+        GOTO(done);
 
     if (_pack(cpio, source, source) != 0)
-        goto done;
+        GOTO(done);
 
     ret = 0;
 

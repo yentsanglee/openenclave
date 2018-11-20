@@ -1,71 +1,113 @@
 #include <openenclave/internal/fsinternal.h>
+#include <openenclave/internal/defs.h>
+#include <openenclave/bits/properties.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/muxfs.h>
+#include <openenclave/internal/hostfs.h>
+#include <openenclave/internal/sgxfs.h>
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <limits.h>
 
-#define MAGIC 0x114c4d21
+#define MAGIC 0x114c4d216581d07c
 
-typedef struct _entry entry_t;
-
-struct _entry
+typedef struct _entry
 {
-    entry_t* next;
     char path[PATH_MAX];
     oe_fs_t* fs;
-};
-
-typedef struct _impl
-{
-    uint64_t magic;
-    pthread_spinlock_t lock;
-    entry_t* entries;
 }
-impl_t;
+entry_t;
 
-static entry_t* _find_entry(impl_t* impl, const char* path, entry_t** prev)
+/* Global spinlock across all instance of muxfs. */
+static pthread_spinlock_t _lock;
+
+#define FS_MAGIC(fs)    fs->__impl[0]
+#define FS_NENTRIES(fs) fs->__impl[1]
+#define FS_ENTRIES(fs)  ((entry_t*)fs->__impl[2])
+
+OE_INLINE bool _valid_muxfs(const oe_fs_t* fs)
 {
-    if (prev)
-        *prev = NULL;
+    return fs && (FS_MAGIC(fs) == MAGIC);
+}
 
-    for (entry_t* p = impl->entries; p; p = p->next)
+static oe_fs_t* _find_fs(oe_fs_t* fs, const char* path, char suffix[PATH_MAX])
+{
+    oe_fs_t* ret = NULL;
+    size_t match_len = 0;
+    bool locked = false;
+
+    if (!_valid_muxfs(fs) || !path || !suffix)
+        goto done;
+
+    pthread_spin_lock(&_lock);
+    locked = true;
+
+    /* Find the longest target that contains this path. */
+    for (size_t i = 0; i < FS_NENTRIES(fs); i++)
     {
-        if (strcmp(p->path, path) == 0)
-            return p;
+        entry_t* entry = &FS_ENTRIES(fs)[i];
+        size_t len = strlen(entry->path);
 
-        if (prev)
-            *prev = p;
+        if (strncmp(entry->path, path, len) == 0 &&
+            (path[len] == '/' || path[len] == '\0'))
+        {
+            if (len > match_len)
+            {
+                if (suffix)
+                    strlcpy(suffix, path + len, PATH_MAX);
+
+                match_len = len;
+                ret = entry->fs;
+            }
+        }
     }
 
-    if (prev)
-        *prev = NULL;
+done:
 
-    return NULL;
+    if (locked)
+        pthread_spin_unlock(&_lock);
+
+    return ret;
 }
 
 static FILE* _fs_fopen(
-    oe_fs_t* fs,
+    oe_fs_t* muxfs,
     const char* path,
     const char* mode,
     const void* args)
 {
     FILE* ret = NULL;
+    oe_fs_t* fs;
+    char suffix[PATH_MAX];
 
-    if (!path || !mode)
+    if (!(fs = _find_fs(muxfs, path, suffix)))
+    {
+        errno = EINVAL;
         goto done;
+    }
+
+    ret = fs->fs_fopen(fs, suffix, mode, args);
 
 done:
 
     return ret;
 }
 
-static DIR* _fs_opendir(oe_fs_t* fs, const char* name, const void* args)
+static DIR* _fs_opendir(oe_fs_t* muxfs, const char* name, const void* args)
 {
     DIR* ret = NULL;
+    oe_fs_t* fs;
+    char suffix[PATH_MAX];
 
-    if (!fs || !name)
+    if (!(fs = _find_fs(muxfs, name, suffix)))
+    {
+        errno = EINVAL;
         goto done;
+    }
+
+    ret = fs->fs_opendir(fs, suffix, args);
 
 done:
 
@@ -85,12 +127,19 @@ done:
     return ret;
 }
 
-static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
+static int _fs_stat(oe_fs_t* muxfs, const char* path, struct stat* stat)
 {
     int ret = -1;
+    oe_fs_t* fs;
+    char suffix[PATH_MAX];
 
-    if (!fs || !path || !stat)
+    if (!(fs = _find_fs(muxfs, path, suffix)))
+    {
+        errno = EINVAL;
         goto done;
+    }
+
+    ret = fs->fs_stat(fs, suffix, stat);
 
 done:
 
@@ -98,56 +147,116 @@ done:
 }
 
 static int _fs_rename(
-    oe_fs_t* fs, const char* old_path, const char* new_path)
+    oe_fs_t* muxfs, const char* old_path, const char* new_path)
 {
     int ret = -1;
+    oe_fs_t* old_fs;
+    oe_fs_t* new_fs;
+    char old_suffix[PATH_MAX];
+    char new_suffix[PATH_MAX];
 
-    if (!fs || !old_path || !new_path)
+    if (!(old_fs = _find_fs(muxfs, old_path, old_suffix)))
+    {
+        errno = EINVAL;
         goto done;
+    }
+
+    if (!(new_fs = _find_fs(muxfs, new_path, new_suffix)))
+    {
+        errno = EINVAL;
+        goto done;
+    }
+
+    if (old_fs != new_fs)
+    {
+        errno = EINVAL;
+        goto done;
+    }
+
+    ret = old_fs->fs_rename(old_fs, old_suffix, new_suffix);
 
 done:
 
     return ret;
 }
 
-static int _fs_remove(oe_fs_t* fs, const char* path)
+static int _fs_remove(oe_fs_t* muxfs, const char* path)
 {
     int ret = -1;
+    oe_fs_t* fs;
+    char suffix[PATH_MAX];
 
-    if (!fs || !path)
+    if (!(fs = _find_fs(muxfs, path, suffix)))
+    {
+        errno = EINVAL;
         goto done;
+    }
+
+    ret = fs->fs_remove(fs, suffix);
 
 done:
 
     return ret;
 }
 
-static int _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
+static int _fs_mkdir(oe_fs_t* muxfs, const char* path, unsigned int mode)
 {
     int ret = -1;
+    oe_fs_t* fs;
+    char suffix[PATH_MAX];
 
-    if (!fs || !path)
+    if (!(fs = _find_fs(muxfs, path, suffix)))
+    {
+        errno = EINVAL;
         goto done;
+    }
+
+    ret = fs->fs_mkdir(fs, suffix, mode);
 
 done:
 
     return ret;
 }
 
-static int _fs_rmdir(oe_fs_t* fs, const char* path)
+static int _fs_rmdir(oe_fs_t* muxfs, const char* path)
 {
     int ret = -1;
+    oe_fs_t* fs;
+    char suffix[PATH_MAX];
 
-    if (!fs || !path)
+    if (!(fs = _find_fs(muxfs, path, suffix)))
+    {
+        errno = EINVAL;
         goto done;
+    }
+
+    ret = fs->fs_rmdir(fs, suffix);
 
 done:
 
     return ret;
 }
 
+static entry_t _fs_entries[] =
+{
+    {
+        "/hostfs",
+        &oe_hostfs,
+    },
+    {
+        "/sgxfs",
+        &oe_sgxfs,
+    },
+};
+
+// clang-format off
 oe_fs_t oe_muxfs = {
-    .__impl = { MAGIC },
+    .__impl = 
+    { 
+        MAGIC,
+        OE_COUNTOF(_fs_entries),
+        (uint64_t)_fs_entries,
+    },
     .fs_release = _fs_release,
     .fs_fopen = _fs_fopen,
     .fs_opendir = _fs_opendir,
@@ -157,88 +266,4 @@ oe_fs_t oe_muxfs = {
     .fs_mkdir = _fs_mkdir,
     .fs_rmdir = _fs_rmdir,
 };
-
-int oe_muxfs_register_fs(oe_fs_t* muxfs, const char* path, oe_fs_t* fs)
-{
-    impl_t* impl = (impl_t*)&muxfs->__impl;
-    int ret = -1;
-    bool locked = false;
-    entry_t* entry = NULL;
-
-    if (!muxfs || !path || !fs || impl->magic != MAGIC)
-        goto done;
-
-    pthread_spin_lock(&impl->lock);
-    locked = true;
-
-    /* Check for duplicate. */
-    if (_find_entry(impl, path, NULL))
-        goto done;
-
-    /* Insert a new entry. */
-    {
-        if (!(entry = calloc(1, sizeof(entry_t))))
-            goto done;
-
-        if (strlcpy(
-            entry->path, path, sizeof(entry->path)) >= sizeof(entry->path))
-        {
-            goto done;
-        }
-
-        entry->next = impl->entries;
-        impl->entries = entry;
-        entry = NULL;
-    }
-
-    ret = 0;
-
-done:
-
-    if (entry)
-        free(entry);
-
-    if (locked)
-        pthread_spin_unlock(&impl->lock);
-
-    return ret;
-}
-
-int oe_muxfs_unregister_fs(oe_fs_t* muxfs, const char* path)
-{
-    impl_t* impl = (impl_t*)&muxfs->__impl;
-    int ret = -1;
-    bool locked = false;
-    entry_t* entry = NULL;
-
-    if (!muxfs || path || impl->magic != MAGIC)
-        goto done;
-
-    pthread_spin_lock(&impl->lock);
-    locked = true;
-
-    /* Remove the entry. */
-    {
-        entry_t* prev = NULL;
-
-        if (!(entry = _find_entry(impl, path, &prev)))
-            goto done;
-
-        if (prev)
-            prev->next = entry->next;
-        else
-            impl->entries = entry->next;
-    }
-
-    ret = 0;
-
-done:
-
-    if (entry)
-        free(entry);
-
-    if (locked)
-        pthread_spin_unlock(&impl->lock);
-
-    return ret;
-}
+// clang-format on

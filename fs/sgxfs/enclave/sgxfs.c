@@ -6,7 +6,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "../common/sgxfs.h"
+#include <errno.h>
+#include <openenclave/internal/sgxfs.h>
 #include <openenclave/internal/fsinternal.h>
 
 extern oe_fs_t oe_hostfs;
@@ -79,7 +80,7 @@ static int64_t _f_ftell(FILE* base)
     if (!_valid_file(file))
         goto done;
 
-    ret = sgx_fclose(file->sgx_file);
+    ret = sgx_ftell(file->sgx_file);
 
 done:
     return ret;

@@ -1,4 +1,4 @@
-#include "../common/hostfs.h"
+#include <openenclave/internal/hostfs.h>
 #include <dirent.h>
 #include <stdio.h>
 #include <string.h>
