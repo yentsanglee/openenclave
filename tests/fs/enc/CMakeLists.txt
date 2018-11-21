@@ -8,6 +8,9 @@ oeedl_file(../fs.edl enclave gen)
 
 add_executable(fs_enc enc.cpp ${gen})
 
+target_compile_options(fs_enc PRIVATE
+    -ffreestanding)
+
 target_include_directories(fs_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(fs_enc oecpio oemuxfs oesgxfsenclave oehostfsenclave oeenclave)

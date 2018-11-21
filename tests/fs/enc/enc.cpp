@@ -32,7 +32,6 @@ static const char* _mkpath(
     return buf;
 }
 
-__attribute__((optnone))
 static void _test_default_fs(const char* tmp_dir)
 {
     char path[PATH_MAX];

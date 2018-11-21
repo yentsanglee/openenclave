@@ -116,19 +116,6 @@ static void _dump(const uint8_t* data, size_t size)
 }
 #endif
 
-/* Clang optimization causes this function to crash while attempting to
- * call fwrite. The fwrite function address is correct but the function
- * is never reached.
- */
-#ifdef __clang__
-__attribute__((optnone))
-#endif
-static size_t _fwrite(
-    const void *ptr, size_t size, size_t nmemb, FILE *stream)
-{
-    return fwrite(ptr, size, nmemb, stream);
-}
-
 static bool _valid_header(const cpio_header_t* header)
 {
     return memcmp(header->magic, "070701", 6) == 0;
@@ -599,7 +586,7 @@ int oe_cpio_unpack(const char* source, const char* target)
 
             while ((n = oe_cpio_read_data(cpio, data, sizeof(data))) > 0)
             {
-                if (_fwrite(data, 1, (size_t)n, os) != n)
+                if (fwrite(data, 1, (size_t)n, os) != n)
                 {
                     GOTO(done);
                 }

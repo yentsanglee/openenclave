@@ -10,6 +10,9 @@ add_library(oecpio STATIC
 target_include_directories(oecpio PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+target_compile_options(oecpio PRIVATE
+    -ffreestanding)
+
 target_link_libraries(oecpio 
     PUBLIC oelibc)
 
