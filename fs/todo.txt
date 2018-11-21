@@ -1,6 +1,4 @@
 
-    (*) Implement static stdio.h functions.
-
     (*) Implement the fprintf/fscanf family of functions.
 
     (*) Handle file permission checks.

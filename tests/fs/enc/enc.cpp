@@ -173,38 +173,37 @@ static void _test2(oe_fs_t* fs, const char* tmp_dir)
 static void _test3(oe_fs_t* fs, const char* tmp_dir)
 {
     DIR* dir;
-    struct dirent entry;
-    struct dirent* result;
+    struct dirent* entry;
     size_t m = 0;
 
     OE_TEST((dir = oe_opendir(fs, tmp_dir)) != NULL);
 
-    while (readdir_r(dir, &entry, &result) == 0 && result)
+    while ((entry = readdir(dir)))
     {
         m++;
 
-        if (strcmp(entry.d_name, ".") == 0)
+        if (strcmp(entry->d_name, ".") == 0)
             continue;
 
-        if (strcmp(entry.d_name, "..") == 0)
+        if (strcmp(entry->d_name, "..") == 0)
             continue;
 
-        if (strcmp(entry.d_name, "test1") == 0)
+        if (strcmp(entry->d_name, "test1") == 0)
             continue;
 
-        if (strcmp(entry.d_name, "test2") == 0)
+        if (strcmp(entry->d_name, "test2") == 0)
             continue;
 
-        if (strcmp(entry.d_name, "cpio.file") == 0)
+        if (strcmp(entry->d_name, "cpio.file") == 0)
             continue;
 
-        if (strcmp(entry.d_name, "cpio.dir") == 0)
+        if (strcmp(entry->d_name, "cpio.dir") == 0)
             continue;
 
-        if (strcmp(entry.d_name, "test_sgxfs_with_key") == 0)
+        if (strcmp(entry->d_name, "test_sgxfs_with_key") == 0)
             continue;
 
-        printf("ERROR: found file: %s\n", entry.d_name);
+        printf("ERROR: found file: %s\n", entry->d_name);
         OE_TEST(false);
     }
 

@@ -11,7 +11,7 @@ OE_EXTERNC_BEGIN
 
 #define OE_FS_PATH_MAX 256
 
-#define OE_FS_MAGIC 0x0EF55FE00EF55FE0
+#define OE_FS_MAGIC 0x0ef5bd0b777e4ce1
 
 typedef struct _oe_fs oe_fs_t;
 
@@ -85,7 +85,7 @@ int oe_feof(FILE* file);
 
 void oe_clearerr(FILE* file);
 
-int oe_readdir(DIR* dir, struct dirent* entry, struct dirent** result);
+struct dirent* oe_readdir(DIR* dir);
 
 int oe_closedir(DIR* dir);
 

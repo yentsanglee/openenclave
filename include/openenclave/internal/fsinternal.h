@@ -42,7 +42,7 @@ struct _IO_FILE
 
 struct __dirstream
 {
-    int (*d_readdir)(DIR* dir, struct dirent* entry, struct dirent** result);
+    struct dirent* (*d_readdir)(DIR* dir);
 
     int (*d_closedir)(DIR* dir);
 };

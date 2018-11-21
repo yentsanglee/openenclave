@@ -51,6 +51,7 @@ typedef struct _file
 typedef struct _dir
 {
     DIR base;
+    struct dirent entry;
     void* host_dir;
 } dir_t;
 
@@ -491,20 +492,14 @@ done:
     return ret;
 }
 
-int _d_readdir(DIR* base, struct dirent* entry, struct dirent** result)
+struct dirent* _d_readdir(DIR* base)
 {
-    int ret = -1;
+    struct dirent* ret = NULL;
     dir_t* dir = (dir_t*)base;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    if (entry)
-        memset(entry, 0, sizeof(struct dirent));
-
-    if (result)
-        *result = NULL;
-
-    if (!dir || !dir->host_dir || !entry || !result || !batch)
+    if (!dir || !dir->host_dir || !batch)
         goto done;
 
     /* Input */
@@ -525,18 +520,18 @@ int _d_readdir(DIR* base, struct dirent* entry, struct dirent** result)
 
     /* Output */
     {
-        if ((ret = args->u.readdir.ret) == 0 && args->u.readdir.result)
+        if (args->u.readdir.ret == 0 && args->u.readdir.result)
         {
-            entry->d_ino = args->u.readdir.entry.d_ino;
-            entry->d_off = args->u.readdir.entry.d_off;
-            entry->d_reclen = args->u.readdir.entry.d_reclen;
-            entry->d_type = args->u.readdir.entry.d_type;
+            dir->entry.d_ino = args->u.readdir.entry.d_ino;
+            dir->entry.d_off = args->u.readdir.entry.d_off;
+            dir->entry.d_reclen = args->u.readdir.entry.d_reclen;
+            dir->entry.d_type = args->u.readdir.entry.d_type;
             strlcpy(
-                entry->d_name,
+                dir->entry.d_name,
                 args->u.readdir.entry.d_name,
-                sizeof(entry->d_name));
+                sizeof(dir->entry.d_name));
 
-            *result = entry;
+            ret = &dir->entry;
         }
         else
         {

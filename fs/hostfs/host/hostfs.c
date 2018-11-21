@@ -91,6 +91,7 @@ static void _handle_hostfs_ocall(void* args_)
             struct dirent* result = NULL;
             args->u.readdir.ret =
                 readdir_r(args->u.readdir.dir, &entry, &result);
+            args->u.readdir.result = NULL;
 
             if (args->u.readdir.ret == 0 && result)
             {
@@ -112,8 +113,6 @@ static void _handle_hostfs_ocall(void* args_)
             {
                 memset(
                     &args->u.readdir.entry, 0, sizeof(args->u.readdir.entry));
-
-                args->u.readdir.result = NULL;
             }
             break;
         }

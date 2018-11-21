@@ -227,15 +227,15 @@ void oe_clearerr(FILE* file)
         file->f_clearerr(file);
 }
 
-int oe_readdir(DIR* dir, struct dirent* entry, struct dirent** result)
+struct dirent* oe_readdir(DIR* dir)
 {
     if (!dir)
     {
         errno = EINVAL;
-        return -1;
+        return NULL;
     }
 
-    return dir->d_readdir(dir, entry, result);
+    return dir->d_readdir(dir);
 }
 
 int oe_closedir(DIR* dir)
@@ -391,13 +391,34 @@ DIR* opendir(const char* name)
 
 int readdir_r(DIR* dir, struct dirent* entry, struct dirent** result)
 {
-    if (!dir)
+    struct dirent* tmp;
+
+    if (!dir || !entry)
     {
         errno = EINVAL;
         return -1;
     }
 
-    return dir->d_readdir(dir, entry, result);
+    if (!(tmp = dir->d_readdir(dir)))
+        return -1;
+
+    memcpy(entry, tmp, sizeof(struct dirent));
+
+    if (result)
+        *result = entry;
+
+    return 0;
+}
+
+struct dirent* readdir(DIR* dir)
+{
+    if (!dir)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    return dir->d_readdir(dir);
 }
 
 int closedir(DIR* dir)
