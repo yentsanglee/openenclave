@@ -159,7 +159,7 @@ static FILE* _fs_fopen(
     oe_fs_t* fs,
     const char* path,
     const char* mode,
-    const void* args)
+    va_list ap)
 {
     FILE* ret = NULL;
     file_t* file = NULL;
@@ -170,16 +170,8 @@ static FILE* _fs_fopen(
     if (!(file = calloc(1, sizeof(file_t))))
         goto done;
 
-    if (args)
-    {
-        if (!(file->sgx_file = sgx_fopen(path, mode, args)))
-            return NULL;
-    }
-    else
-    {
-        if (!(file->sgx_file = sgx_fopen_auto_key(path, mode)))
-            return NULL;
-    }
+    if (!(file->sgx_file = sgx_fopen_auto_key(path, mode)))
+        return NULL;
 
     file->base.magic = OE_FILE_MAGIC;
     file->base.f_fclose = _f_fclose;
@@ -216,9 +208,9 @@ done:
     return ret;
 }
 
-static DIR* _fs_opendir(oe_fs_t* fs, const char* name, const void* args)
+static DIR* _fs_opendir(oe_fs_t* fs, const char* name)
 {
-    return oe_opendir(&oe_hostfs, name, args);
+    return oe_opendir(&oe_hostfs, name);
 }
 
 static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)

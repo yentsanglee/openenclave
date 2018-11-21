@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <string.h>
 
 size_t musl_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream);
@@ -73,20 +74,27 @@ FILE* oe_fopen(
     oe_fs_t* fs,
     const char* path,
     const char* mode,
-    const void* args)
+    ...)
 {
+    FILE* ret;
+    va_list ap;
+
     if (!fs || !fs->fs_fopen)
         return NULL;
 
-    return fs->fs_fopen(fs, path, mode, args);
+    va_start(ap, mode);
+    ret = fs->fs_fopen(fs, path, mode, ap);
+    va_end(ap);
+
+    return ret;
 }
 
-DIR* oe_opendir(oe_fs_t* fs, const char* name, const void* args)
+DIR* oe_opendir(oe_fs_t* fs, const char* name)
 {
     if (!fs || !fs->fs_opendir)
         return NULL;
 
-    return fs->fs_opendir(fs, name, args);
+    return fs->fs_opendir(fs, name);
 }
 
 int oe_stat(oe_fs_t* fs, const char* path, struct stat* stat)
@@ -382,7 +390,7 @@ DIR* opendir(const char* name)
         return NULL;
     }
 
-    return oe_opendir(fs, name, NULL);
+    return oe_opendir(fs, name);
 }
 
 int readdir_r(DIR* dir, struct dirent* entry, struct dirent** result)

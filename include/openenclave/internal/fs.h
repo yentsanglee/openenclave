@@ -35,9 +35,9 @@ struct _oe_fs
         oe_fs_t* fs,
         const char* path,
         const char* mode,
-        const void* args);
+        va_list ap);
 
-    DIR* (*fs_opendir)(oe_fs_t* fs, const char* name, const void* args);
+    DIR* (*fs_opendir)(oe_fs_t* fs, const char* name);
 
     int (*fs_stat)(oe_fs_t* fs, const char* path, struct stat* stat);
 
@@ -60,9 +60,9 @@ FILE* oe_fopen(
     oe_fs_t* fs,
     const char* path,
     const char* mode,
-    const void* args);
+    ...);
 
-DIR* oe_opendir(oe_fs_t* fs, const char* name, const void* args);
+DIR* oe_opendir(oe_fs_t* fs, const char* name);
 
 int oe_stat(oe_fs_t* fs, const char* path, struct stat* stat);
 

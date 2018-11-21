@@ -20,12 +20,12 @@ void test_iot_scenario(const char* tmp_dir)
     strlcat(path, "/iot.file", sizeof(path));
 
     /* Write the alphabet to the file. */
-    OE_TEST((stream = oe_fopen(OE_FILE_SECURE_BEST_EFFORT, path, "wb", NULL)));
+    OE_TEST((stream = oe_fopen(OE_FILE_SECURE_BEST_EFFORT, path, "wb")));
     OE_TEST(fwrite(alphabet, 1, sizeof(alphabet), stream) == sizeof(alphabet));
     OE_TEST(fclose(stream) == 0);
 
     /* Read the alphabet back from the file. */
-    OE_TEST((stream = oe_fopen(OE_FILE_SECURE_BEST_EFFORT, path, "rb", NULL)));
+    OE_TEST((stream = oe_fopen(OE_FILE_SECURE_BEST_EFFORT, path, "rb")));
     OE_TEST(fread(buf, 1, sizeof(buf), stream) == sizeof(buf));
     OE_TEST(memcmp(buf, alphabet, sizeof(buf)) == 0);
     OE_TEST(fclose(stream) == 0);

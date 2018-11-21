@@ -76,7 +76,7 @@ static FILE* _fs_fopen(
     oe_fs_t* muxfs,
     const char* path,
     const char* mode,
-    const void* args)
+    va_list ap)
 {
     FILE* ret = NULL;
     oe_fs_t* fs;
@@ -88,14 +88,14 @@ static FILE* _fs_fopen(
         goto done;
     }
 
-    ret = fs->fs_fopen(fs, suffix, mode, args);
+    ret = fs->fs_fopen(fs, suffix, mode, ap);
 
 done:
 
     return ret;
 }
 
-static DIR* _fs_opendir(oe_fs_t* muxfs, const char* name, const void* args)
+static DIR* _fs_opendir(oe_fs_t* muxfs, const char* name)
 {
     DIR* ret = NULL;
     oe_fs_t* fs;
@@ -107,7 +107,7 @@ static DIR* _fs_opendir(oe_fs_t* muxfs, const char* name, const void* args)
         goto done;
     }
 
-    ret = fs->fs_opendir(fs, suffix, args);
+    ret = fs->fs_opendir(fs, suffix);
 
 done:
 

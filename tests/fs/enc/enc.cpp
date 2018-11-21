@@ -135,7 +135,7 @@ static void _test2(oe_fs_t* fs, const char* tmp_dir)
 
     _mkpath(path, tmp_dir, "/test2");
 
-    stream = oe_fopen(fs, path, "w", NULL);
+    stream = oe_fopen(fs, path, "w");
     OE_TEST(stream != NULL);
 
     /* Write to the file */
@@ -151,7 +151,7 @@ static void _test2(oe_fs_t* fs, const char* tmp_dir)
     OE_TEST(fclose(stream) == 0);
 
     /* Reopen the file for read. */
-    stream = oe_fopen(fs, path, "r", NULL);
+    stream = oe_fopen(fs, path, "r");
     OE_TEST(stream != NULL);
 
     /* Read from the file. */
@@ -175,7 +175,7 @@ static void _test3(oe_fs_t* fs, const char* tmp_dir)
     struct dirent* result;
     size_t m = 0;
 
-    OE_TEST((dir = oe_opendir(fs, tmp_dir, NULL)) != NULL);
+    OE_TEST((dir = oe_opendir(fs, tmp_dir)) != NULL);
 
     while (readdir_r(dir, &entry, &result) == 0 && result)
     {

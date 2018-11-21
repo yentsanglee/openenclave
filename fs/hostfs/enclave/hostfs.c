@@ -429,7 +429,7 @@ static FILE* _fs_fopen(
     oe_fs_t* fs,
     const char* path,
     const char* mode,
-    const void* args_)
+    va_list ap)
 {
     FILE* ret = NULL;
     file_t* file = NULL;
@@ -596,7 +596,7 @@ done:
     return ret;
 }
 
-static DIR* _fs_opendir(oe_fs_t* fs, const char* name, const void* args_)
+static DIR* _fs_opendir(oe_fs_t* fs, const char* name)
 {
     DIR* ret = NULL;
     oe_host_batch_t* batch = _get_host_batch();
