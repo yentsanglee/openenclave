@@ -11,6 +11,7 @@
 #include <openenclave/internal/muxfs.h>
 #include "../../../fs/cpio/cpio.h"
 #include "fs_t.h"
+#include "iot.h"
 
 #ifdef FILENAME_MAX
 #undef FILENAME_MAX
@@ -198,6 +199,7 @@ static void _test3(oe_fs_t* fs, const char* tmp_dir)
         if (strcmp(entry.d_name, "cpio.dir") == 0)
             continue;
 
+        printf("ERROR: found file: %s\n", entry.d_name);
         OE_TEST(false);
     }
 
@@ -261,6 +263,9 @@ void enc_test(const char* src_dir, const char* bin_dir)
         _mkpath(mux_tmp_dir, "/sgxfs", tmp_dir);
         _test4(&oe_muxfs, mux_src_dir, mux_tmp_dir);
     }
+
+    /* Test the IOT stdio.h definitions. */
+    test_iot_scenario(tmp_dir);
 }
 
 OE_SET_ENCLAVE_SGX(

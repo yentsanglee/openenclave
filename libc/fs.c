@@ -129,6 +129,122 @@ int oe_rmdir(oe_fs_t* fs, const char* path)
     return fs->fs_rmdir(fs, path);
 }
 
+int oe_fclose(FILE* file)
+{
+    if (!file)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return file->f_fclose(file);
+}
+
+size_t oe_fread(void* ptr, size_t size, size_t nmemb, FILE* file)
+{
+    if (!file)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return file->f_fread(ptr, size, nmemb, file);
+}
+
+size_t oe_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* file)
+{
+    if (!file)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return file->f_fwrite(ptr, size, nmemb, file);
+}
+
+int64_t oe_ftell(FILE* file)
+{
+    if (!file)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return file->f_ftell(file);
+}
+
+int oe_fseek(FILE* file, int64_t offset, int whence)
+{
+    if (!file)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return file->f_fseek(file, offset, whence);
+}
+
+int oe_fflush(FILE* file)
+{
+    if (!file)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return file->f_fflush(file);
+}
+
+int oe_ferror(FILE* file)
+{
+    if (!file)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return file->f_ferror(file);
+}
+
+int oe_feof(FILE* file)
+{
+    if (!file)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return file->f_feof(file);
+}
+
+void oe_clearerr(FILE* file)
+{
+    if (file)
+        file->f_clearerr(file);
+}
+
+int oe_readdir(DIR* dir, struct dirent* entry, struct dirent** result)
+{
+    if (!dir)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return dir->d_readdir(dir, entry, result);
+}
+
+int oe_closedir(DIR* dir)
+{
+    if (!dir)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return dir->d_closedir(dir);
+}
+
 /*
 **==============================================================================
 **
