@@ -1,10 +1,10 @@
 #ifndef _OE_FS_H
 #define _OE_FS_H
 
+#include <dirent.h>
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
 #include <stdio.h>
-#include <dirent.h>
 #include <sys/stat.h>
 
 OE_EXTERNC_BEGIN
@@ -31,11 +31,8 @@ struct _oe_fs
 
     int (*fs_release)(oe_fs_t* fs);
 
-    FILE* (*fs_fopen)(
-        oe_fs_t* fs,
-        const char* path,
-        const char* mode,
-        va_list ap);
+    FILE* (
+        *fs_fopen)(oe_fs_t* fs, const char* path, const char* mode, va_list ap);
 
     DIR* (*fs_opendir)(oe_fs_t* fs, const char* name);
 
@@ -56,11 +53,7 @@ void oe_fs_set_default(oe_fs_t* fs);
 
 oe_fs_t* oe_fs_get_default(void);
 
-FILE* oe_fopen(
-    oe_fs_t* fs,
-    const char* path,
-    const char* mode,
-    ...);
+FILE* oe_fopen(oe_fs_t* fs, const char* path, const char* mode, ...);
 
 DIR* oe_opendir(oe_fs_t* fs, const char* name);
 

@@ -1,40 +1,40 @@
+#include <errno.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/fsinternal.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 size_t musl_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream);
 
 size_t musl_fread(void* ptr, size_t size, size_t nmemb, FILE* stream);
 
-int musl_fclose(FILE *stream);
+int musl_fclose(FILE* stream);
 
-long musl_ftell(FILE *stream);
+long musl_ftell(FILE* stream);
 
-int musl_fseek(FILE *stream, long offset, int whence);
+int musl_fseek(FILE* stream, long offset, int whence);
 
-int musl_fflush(FILE *stream);
+int musl_fflush(FILE* stream);
 
-int musl_ferror(FILE *stream);
+int musl_ferror(FILE* stream);
 
-int musl_feof(FILE *stream);
+int musl_feof(FILE* stream);
 
-void musl_clearerr(FILE *stream);
+void musl_clearerr(FILE* stream);
 
-int musl_fputc(int c, FILE *stream);
+int musl_fputc(int c, FILE* stream);
 
-int musl_putc(int c, FILE *stream);
+int musl_putc(int c, FILE* stream);
 
-int musl_fgetc(FILE *stream);
+int musl_fgetc(FILE* stream);
 
-int musl_getc(FILE *stream);
+int musl_getc(FILE* stream);
 
-FILE *musl_fopen(const char *path, const char *mode);
+FILE* musl_fopen(const char* path, const char* mode);
 
-char *musl_fgets(char *s, int size, FILE *stream);
+char* musl_fgets(char* s, int size, FILE* stream);
 
 /*
 **==============================================================================
@@ -70,11 +70,7 @@ int oe_release(oe_fs_t* fs)
     return fs->fs_release(fs);
 }
 
-FILE* oe_fopen(
-    oe_fs_t* fs,
-    const char* path,
-    const char* mode,
-    ...)
+FILE* oe_fopen(oe_fs_t* fs, const char* path, const char* mode, ...)
 {
     FILE* ret;
     va_list ap;
@@ -261,7 +257,7 @@ int oe_closedir(DIR* dir)
 **==============================================================================
 */
 
-FILE *fopen(const char *path, const char *mode)
+FILE* fopen(const char* path, const char* mode)
 {
     oe_fs_t* fs = oe_fs_get_default();
 
@@ -303,7 +299,7 @@ long ftell(FILE* stream)
     return musl_ftell(stream);
 }
 
-int fgetpos(FILE *stream, fpos_t *pos)
+int fgetpos(FILE* stream, fpos_t* pos)
 {
     long off;
 
@@ -316,7 +312,7 @@ int fgetpos(FILE *stream, fpos_t *pos)
     if ((off = ftell(stream)) < 0)
         return -1;
 
-    *((long long *)pos) = off;
+    *((long long*)pos) = off;
 
     return 0;
 }
@@ -329,7 +325,7 @@ int fseek(FILE* stream, long offset, int whence)
     return musl_fseek(stream, offset, whence);
 }
 
-int fsetpos(FILE *stream, const fpos_t *pos)
+int fsetpos(FILE* stream, const fpos_t* pos)
 {
     if (!stream || !pos)
     {
@@ -337,13 +333,13 @@ int fsetpos(FILE *stream, const fpos_t *pos)
         return -1;
     }
 
-    if (fseek(stream, *(const long long *)pos, SEEK_SET) != 0)
+    if (fseek(stream, *(const long long*)pos, SEEK_SET) != 0)
         return -1;
 
     return 0;
 }
 
-void rewind(FILE *stream)
+void rewind(FILE* stream)
 {
     fseek(stream, 0L, SEEK_SET);
 }
@@ -415,7 +411,7 @@ int closedir(DIR* dir)
     return dir->d_closedir(dir);
 }
 
-int stat(const char *path, struct stat *buf)
+int stat(const char* path, struct stat* buf)
 {
     oe_fs_t* fs = oe_fs_get_default();
 
@@ -428,7 +424,7 @@ int stat(const char *path, struct stat *buf)
     return oe_stat(fs, path, buf);
 }
 
-int remove(const char *pathname)
+int remove(const char* pathname)
 {
     oe_fs_t* fs = oe_fs_get_default();
 
@@ -441,7 +437,7 @@ int remove(const char *pathname)
     return oe_remove(fs, pathname);
 }
 
-int rename(const char *oldpath, const char *newpath)
+int rename(const char* oldpath, const char* newpath)
 {
     oe_fs_t* fs = oe_fs_get_default();
 
@@ -454,7 +450,7 @@ int rename(const char *oldpath, const char *newpath)
     return oe_rename(fs, oldpath, newpath);
 }
 
-int mkdir(const char *pathname, mode_t mode)
+int mkdir(const char* pathname, mode_t mode)
 {
     oe_fs_t* fs = oe_fs_get_default();
 
@@ -467,7 +463,7 @@ int mkdir(const char *pathname, mode_t mode)
     return oe_mkdir(fs, pathname, mode);
 }
 
-int rmdir(const char *pathname)
+int rmdir(const char* pathname)
 {
     oe_fs_t* fs = oe_fs_get_default();
 
@@ -480,7 +476,7 @@ int rmdir(const char *pathname)
     return oe_rmdir(fs, pathname);
 }
 
-int access(const char *pathname, int mode)
+int access(const char* pathname, int mode)
 {
     oe_fs_t* fs = oe_fs_get_default();
     struct stat buf;
@@ -503,7 +499,7 @@ int access(const char *pathname, int mode)
     return -1;
 }
 
-int fputc(int c, FILE *stream)
+int fputc(int c, FILE* stream)
 {
     if (stream && stream->magic == OE_FILE_MAGIC)
     {
@@ -518,7 +514,7 @@ int fputc(int c, FILE *stream)
     return musl_fputc(c, stream);
 }
 
-int putc(int c, FILE *stream)
+int putc(int c, FILE* stream)
 {
     if (stream && stream->magic == OE_FILE_MAGIC)
     {
@@ -533,7 +529,7 @@ int putc(int c, FILE *stream)
     return musl_putc(c, stream);
 }
 
-int fgetc(FILE *stream)
+int fgetc(FILE* stream)
 {
     if (stream && stream->magic == OE_FILE_MAGIC)
     {
@@ -548,7 +544,7 @@ int fgetc(FILE *stream)
     return musl_fgetc(stream);
 }
 
-int getc(FILE *stream)
+int getc(FILE* stream)
 {
     if (stream && stream->magic == OE_FILE_MAGIC)
     {
@@ -563,7 +559,7 @@ int getc(FILE *stream)
     return musl_getc(stream);
 }
 
-int fputs(const char *s, FILE *stream)
+int fputs(const char* s, FILE* stream)
 {
     if (!s)
     {
@@ -573,13 +569,13 @@ int fputs(const char *s, FILE *stream)
 
     size_t len = strlen(s);
 
-    if (fwrite(s, 1, len, stream ) == len)
+    if (fwrite(s, 1, len, stream) == len)
         return 0;
 
     return EOF;
 }
 
-char *fgets(char *s, int size, FILE *stream)
+char* fgets(char* s, int size, FILE* stream)
 {
     size_t i;
 

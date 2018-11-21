@@ -1,15 +1,15 @@
-#include <openenclave/internal/fsinternal.h>
-#include <openenclave/internal/defs.h>
-#include <openenclave/bits/properties.h>
-#include <openenclave/internal/fs.h>
-#include <openenclave/internal/muxfs.h>
-#include <openenclave/internal/hostfs.h>
-#include <openenclave/internal/sgxfs.h>
-#include <pthread.h>
-#include <string.h>
-#include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
+#include <openenclave/bits/properties.h>
+#include <openenclave/internal/defs.h>
+#include <openenclave/internal/fs.h>
+#include <openenclave/internal/fsinternal.h>
+#include <openenclave/internal/hostfs.h>
+#include <openenclave/internal/muxfs.h>
+#include <openenclave/internal/sgxfs.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define MAGIC 0x114c4d216581d07c
 
@@ -17,15 +17,14 @@ typedef struct _entry
 {
     char path[PATH_MAX];
     oe_fs_t* fs;
-}
-entry_t;
+} entry_t;
 
 /* Global spinlock across all instance of muxfs. */
 static pthread_spinlock_t _lock;
 
-#define FS_MAGIC(fs)    fs->__impl[0]
+#define FS_MAGIC(fs) fs->__impl[0]
 #define FS_NENTRIES(fs) fs->__impl[1]
-#define FS_ENTRIES(fs)  ((entry_t*)fs->__impl[2])
+#define FS_ENTRIES(fs) ((entry_t*)fs->__impl[2])
 
 OE_INLINE bool _valid_muxfs(const oe_fs_t* fs)
 {
@@ -147,7 +146,9 @@ done:
 }
 
 static int _fs_rename(
-    oe_fs_t* muxfs, const char* old_path, const char* new_path)
+    oe_fs_t* muxfs,
+    const char* old_path,
+    const char* new_path)
 {
     int ret = -1;
     oe_fs_t* old_fs;
@@ -237,8 +238,7 @@ done:
     return ret;
 }
 
-static entry_t _fs_entries[] =
-{
+static entry_t _fs_entries[] = {
     {
         "/hostfs",
         &oe_hostfs,

@@ -1,14 +1,14 @@
 #include <errno.h>
 #include <errno.h>
+#include <limits.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/hostfs.h>
+#include <openenclave/internal/muxfs.h>
+#include <openenclave/internal/sgxfs.h>
 #include <openenclave/internal/tests.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <limits.h>
-#include <openenclave/internal/sgxfs.h>
-#include <openenclave/internal/hostfs.h>
-#include <openenclave/internal/muxfs.h>
 #include "../../../fs/cpio/cpio.h"
 #include "fs_t.h"
 #include "iot.h"
@@ -26,7 +26,9 @@
 oe_fs_t oe_default_fs = oe_hostfs;
 
 static const char* _mkpath(
-    char buf[PATH_MAX], const char* target, const char* path)
+    char buf[PATH_MAX],
+    const char* target,
+    const char* path)
 {
     strlcpy(buf, target, PATH_MAX);
     strlcat(buf, path, PATH_MAX);
@@ -160,7 +162,7 @@ static void _test2(oe_fs_t* fs, const char* tmp_dir)
         ssize_t n = fread(buf, 1, sizeof(buf), stream);
         OE_TEST(n == sizeof(buf));
         OE_TEST(memcmp(buf, alphabet, sizeof(alphabet)) == 0);
-        //printf("buf{%s}\n", buf);
+        // printf("buf{%s}\n", buf);
         m += n;
     }
 
@@ -199,6 +201,9 @@ static void _test3(oe_fs_t* fs, const char* tmp_dir)
         if (strcmp(entry.d_name, "cpio.dir") == 0)
             continue;
 
+        if (strcmp(entry.d_name, "test_sgxfs_with_key") == 0)
+            continue;
+
         printf("ERROR: found file: %s\n", entry.d_name);
         OE_TEST(false);
     }
@@ -225,6 +230,39 @@ static void _test4(oe_fs_t* fs, const char* src_dir, const char* tmp_dir)
     oe_fs_set_default(NULL);
 }
 
+static void _test_sgxfs_with_key(const char* tmp_dir)
+{
+    FILE* stream;
+    char path[PATH_MAX];
+    const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+    char buf[sizeof(alphabet)];
+    uint8_t key[16];
+    uint8_t wrong_key[16];
+
+    OE_TEST(oe_random(key, sizeof(key)) == OE_OK);
+    OE_TEST(oe_random(wrong_key, sizeof(wrong_key)) == OE_OK);
+    OE_TEST(memcmp(key, wrong_key, sizeof(wrong_key)) != 0);
+
+    strlcpy(path, tmp_dir, sizeof(path));
+    strlcat(path, "/test_sgxfs_with_key", sizeof(path));
+
+    /* Write the alphabet to the file. */
+    OE_TEST((stream = oe_fopen(&oe_sgxfs, path, "wbk", key)));
+    OE_TEST(fwrite(alphabet, 1, sizeof(alphabet), stream) == sizeof(alphabet));
+    OE_TEST(fclose(stream) == 0);
+
+    /* Make sure that opening the file with the wrong key fails. */
+    OE_TEST((stream = oe_fopen(&oe_sgxfs, path, "rbk", wrong_key)) == NULL);
+
+    /* Read the alphabet back from the file. */
+    OE_TEST((stream = oe_fopen(&oe_sgxfs, path, "rbk", key)));
+    OE_TEST(fread(buf, 1, sizeof(buf), stream) == sizeof(buf));
+    OE_TEST(memcmp(buf, alphabet, sizeof(buf)) == 0);
+    OE_TEST(fclose(stream) == 0);
+
+    OE_TEST(oe_remove(&oe_sgxfs, path) == 0);
+}
+
 void enc_test(const char* src_dir, const char* bin_dir)
 {
     static char tmp_dir[PATH_MAX];
@@ -234,7 +272,7 @@ void enc_test(const char* src_dir, const char* bin_dir)
     {
         _mkpath(tmp_dir, bin_dir, "/tests/fs/tmp");
 
-        if  (oe_stat(&oe_hostfs, tmp_dir, &buf) != 0)
+        if (oe_stat(&oe_hostfs, tmp_dir, &buf) != 0)
             OE_TEST(oe_mkdir(&oe_hostfs, tmp_dir, 0777) == 0);
     }
 
@@ -266,6 +304,8 @@ void enc_test(const char* src_dir, const char* bin_dir)
 
     /* Test the IOT stdio.h definitions. */
     test_iot_scenario(tmp_dir);
+
+    _test_sgxfs_with_key(tmp_dir);
 }
 
 OE_SET_ENCLAVE_SGX(

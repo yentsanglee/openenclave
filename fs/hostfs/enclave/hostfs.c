@@ -1,7 +1,7 @@
 #define _GNU_SOURCE
-#include <openenclave/internal/hostfs.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/fsinternal.h>
+#include <openenclave/internal/hostfs.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -712,8 +712,7 @@ done:
     return ret;
 }
 
-static int _fs_rename(
-    oe_fs_t* fs, const char* old_path, const char* new_path)
+static int _fs_rename(oe_fs_t* fs, const char* old_path, const char* new_path)
 {
     int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
@@ -729,10 +728,10 @@ static int _fs_rename(
 
         args->op = OE_HOSTFS_OP_RENAME;
         args->u.rename.ret = -1;
-        strlcpy(args->u.rename.old_path, 
-            old_path, sizeof(args->u.rename.old_path));
-        strlcpy(args->u.rename.new_path, 
-            new_path, sizeof(args->u.rename.new_path));
+        strlcpy(
+            args->u.rename.old_path, old_path, sizeof(args->u.rename.old_path));
+        strlcpy(
+            args->u.rename.new_path, new_path, sizeof(args->u.rename.new_path));
     }
 
     /* Call */

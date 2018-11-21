@@ -4,11 +4,11 @@
 #define _GNU_SOURCE
 #include "commands.h"
 #include <dirent.h>
-#include <sys/stat.h>
-#include <limits.h>
-#include <string.h>
 #include <dirent.h>
+#include <limits.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
 #include "strarr.h"
 
 int oe_lsr(oe_fs_t* fs, const char* root, oe_strarr_t* paths)

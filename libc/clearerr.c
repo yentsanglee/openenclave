@@ -1,9 +1,9 @@
 #include "stdio_impl.h"
 
-void musl_clearerr(FILE *f)
+void musl_clearerr(FILE* f)
 {
     FLOCK(f);
-    f->flags &= ~(F_EOF|F_ERR);
+    f->flags &= ~(F_EOF | F_ERR);
     FUNLOCK(f);
 }
 

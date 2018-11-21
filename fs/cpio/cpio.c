@@ -6,23 +6,23 @@
 #endif
 
 #include "cpio.h"
+#include <assert.h>
+#include <dirent.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <limits.h>
+#include <openenclave/internal/fs.h>
+#include <openenclave/internal/fsinternal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <limits.h>
-#include <dirent.h>
-#include <stdint.h>
-#include <assert.h>
 #include "strarr.h"
 #include "strings.h"
 #include "utils.h"
-#include <openenclave/internal/fs.h>
-#include <openenclave/internal/fsinternal.h>
 
 #define CPIO_BLOCK_SIZE 512
 

@@ -1,21 +1,21 @@
 #ifndef _OE_IO_H
 #define _OE_IO_H
 
-#include <stdio.h>
 #include <openenclave/internal/fs.h>
+#include <stdio.h>
 
 extern oe_fs_t oe_hostfs;
 extern oe_fs_t oe_sgxfs;
 extern oe_fs_t oe_shwfs;
 
-#define OE_FILE_INSECURE          (&oe_hostfs)
-#define OE_FILE_SECURE_HARDWARE   (&oe_shwfs)
+#define OE_FILE_INSECURE (&oe_hostfs)
+#define OE_FILE_SECURE_HARDWARE (&oe_shwfs)
 #define OE_FILE_SECURE_ENCRYPTION (&oe_sgxfs)
 
 #ifdef OE_USE_OPTEE
-# define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_HARDWARE
+#define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_HARDWARE
 #else
-# define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_ENCRYPTION
+#define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_ENCRYPTION
 #endif
 
 #ifdef OE_SECURE_POSIX_FILE_API

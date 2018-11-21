@@ -7,8 +7,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
+#include <stdarg.h>
 #include <openenclave/internal/sgxfs.h>
 #include <openenclave/internal/fsinternal.h>
+
+#define MODE_MAX 16
 
 extern oe_fs_t oe_hostfs;
 
@@ -163,15 +167,39 @@ static FILE* _fs_fopen(
 {
     FILE* ret = NULL;
     file_t* file = NULL;
+    char local_mode[MODE_MAX] = {'\0'};
+    bool use_key = false;
 
-    if (!path || !mode)
+    if (!path || !mode || strlen(mode) >= MODE_MAX)
         goto done;
 
     if (!(file = calloc(1, sizeof(file_t))))
         goto done;
 
-    if (!(file->sgx_file = sgx_fopen_auto_key(path, mode)))
-        return NULL;
+    /* Copy mode to local_mode, while discarding 'k' characters. */
+    for (const char* p = mode; *p; p++)
+    {
+        if (*p == 'k')
+            use_key = true;
+        else
+            strncat(local_mode, p, 1);
+    }
+
+    if (use_key)
+    {
+        void* key = NULL;
+
+        if (!(key = va_arg(ap, void*)))
+            goto done;
+
+        if (!(file->sgx_file = sgx_fopen(path, local_mode, key)))
+            goto done;
+    }
+    else
+    {
+        if (!(file->sgx_file = sgx_fopen_auto_key(path, local_mode)))
+            goto done;
+    }
 
     file->base.magic = OE_FILE_MAGIC;
     file->base.f_fclose = _f_fclose;
@@ -218,8 +246,7 @@ static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
     return oe_stat(&oe_hostfs, path, stat);
 }
 
-static int _fs_rename(
-    oe_fs_t* fs, const char* old_path, const char* new_path)
+static int _fs_rename(oe_fs_t* fs, const char* old_path, const char* new_path)
 {
     return oe_rename(&oe_hostfs, old_path, new_path);
 }

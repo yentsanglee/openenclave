@@ -1,5 +1,5 @@
-#include "../common/sgxfsargs.h"
 #include <openenclave/internal/hostfs.h>
+#include "../common/sgxfsargs.h"
 #include "sgx_tprotected_fs_u.h"
 
 static void _handle_sgxfs_ocall(void* args_)
