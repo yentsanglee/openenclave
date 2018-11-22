@@ -1,0 +1,12 @@
+Todo:
+
+(A) Enforce read-only mode.
+===
+(B) Handle mode (777 or 666)
+(B) Relative time stamps.
+(B) Relative file age.
+===
+(C) Memory resident/sync'd file system.
+(C) Separate Linux dependencies (stat and dirent).
+(C) Fix truncate() to extend files.
+(C) Support directory enumeration below mount points.
