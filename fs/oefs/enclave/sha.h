@@ -30,8 +30,9 @@ void oefs_sha256_dump(const oefs_sha256_t* hash);
 
 OE_INLINE bool oefs_sha256_eq(const oefs_sha256_t* x, const oefs_sha256_t* y)
 {
-    return x->u.words[0] == y->u.words[0] && x->u.words[1] == y->u.words[1] &&
-           x->u.words[2] == y->u.words[2] && x->u.words[3] == y->u.words[3];
+    const uint64_t* p = x->u.words;
+    const uint64_t* q = y->u.words;
+    return p[0] == q[0] && p[1] == q[1] && p[2] == q[2] && p[3] == q[3];
 }
 
 OE_EXTERNC_END

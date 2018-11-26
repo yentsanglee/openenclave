@@ -32,14 +32,14 @@ typedef struct _oefs_hostblkdev_ocall_args
         int ret;
         void* handle;
         uint32_t blkno;
-        oe_blk_t blk;
+        oefs_blk_t blk;
     } get;
     struct
     {
         int ret;
         void* handle;
         uint32_t blkno;
-        oe_blk_t blk;
+        oefs_blk_t blk;
     } put;
 } oefs_hostblkdev_ocall_args_t;
 

@@ -9,49 +9,49 @@
 
 OE_EXTERNC_BEGIN
 
-typedef struct _oe_blkdev oe_blkdev_t;
+typedef struct _oefs_blkdev oefs_blkdev_t;
 
-struct _oe_blkdev
+struct _oefs_blkdev
 {
-    int (*get)(oe_blkdev_t* dev, uint32_t blkno, oe_blk_t* blk);
+    int (*get)(oefs_blkdev_t* dev, uint32_t blkno, oefs_blk_t* blk);
 
-    int (*put)(oe_blkdev_t* dev, uint32_t blkno, const oe_blk_t* blk);
+    int (*put)(oefs_blkdev_t* dev, uint32_t blkno, const oefs_blk_t* blk);
 
-    int (*begin)(oe_blkdev_t* dev);
+    int (*begin)(oefs_blkdev_t* dev);
 
-    int (*end)(oe_blkdev_t* dev);
+    int (*end)(oefs_blkdev_t* dev);
 
-    int (*add_ref)(oe_blkdev_t* dev);
+    int (*add_ref)(oefs_blkdev_t* dev);
 
-    int (*release)(oe_blkdev_t* dev);
+    int (*release)(oefs_blkdev_t* dev);
 };
 
-int oefs_host_blkdev_open(oe_blkdev_t** blkdev, const char* path);
+int oefs_host_blkdev_open(oefs_blkdev_t** blkdev, const char* path);
 
-int oefs_ram_blkdev_open(oe_blkdev_t** blkdev, size_t size);
+int oefs_ram_blkdev_open(oefs_blkdev_t** blkdev, size_t size);
 
-int oefs_cache_blkdev_open(oe_blkdev_t** blkdev, oe_blkdev_t* next);
+int oefs_cache_blkdev_open(oefs_blkdev_t** blkdev, oefs_blkdev_t* next);
 
 int oefs_crypto_blkdev_open(
-    oe_blkdev_t** blkdev,
+    oefs_blkdev_t** blkdev,
     const uint8_t key[OEFS_KEY_SIZE],
-    oe_blkdev_t* next);
+    oefs_blkdev_t* next);
 
 int oefs_auth_crypto_blkdev_open(
-    oe_blkdev_t** blkdev,
+    oefs_blkdev_t** blkdev,
     bool initialize,
     size_t nblks,
     const uint8_t key[OEFS_KEY_SIZE],
-    oe_blkdev_t* next);
+    oefs_blkdev_t* next);
 
 /* Get the number of extra blocks needed by a Merkle block device. */
 int oefs_merkle_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks);
 
 int oefs_merkle_blkdev_open(
-    oe_blkdev_t** blkdev,
+    oefs_blkdev_t** blkdev,
     bool initialize,
     size_t nblks,
-    oe_blkdev_t* next);
+    oefs_blkdev_t* next);
 
 OE_EXTERNC_END
 

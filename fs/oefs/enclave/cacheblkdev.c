@@ -35,15 +35,15 @@ struct _entry
     entry_t* next;
 
     uint32_t blkno;
-    oe_blk_t blk;
+    oefs_blk_t blk;
     uint32_t index;
 };
 
 typedef struct _blkdev
 {
-    oe_blkdev_t base;
+    oefs_blkdev_t base;
     volatile uint64_t ref_count;
-    oe_blkdev_t* next;
+    oefs_blkdev_t* next;
 
     entry_t* table[TABLE_SIZE];
     entry_list_t list;
@@ -53,7 +53,7 @@ typedef struct _blkdev
 
 } blkdev_t;
 
-static entry_t* _new_entry(blkdev_t* dev, uint32_t blkno, const oe_blk_t* blk)
+static entry_t* _new_entry(blkdev_t* dev, uint32_t blkno, const oefs_blk_t* blk)
 {
     entry_t* entry;
 
@@ -187,7 +187,7 @@ static void _touch_entry(blkdev_t* dev, entry_t* entry)
     _insert_entry(dev, entry);
 }
 
-static int _blkdev_release(oe_blkdev_t* d)
+static int _blkdev_release(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -208,7 +208,7 @@ done:
     return ret;
 }
 
-static int _blkdev_get(oe_blkdev_t* d, uint32_t blkno, oe_blk_t* blk)
+static int _blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -250,7 +250,7 @@ done:
     return ret;
 }
 
-static int _blkdev_put(oe_blkdev_t* d, uint32_t blkno, const oe_blk_t* blk)
+static int _blkdev_put(oefs_blkdev_t* d, uint32_t blkno, const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -299,7 +299,7 @@ done:
     return ret;
 }
 
-static int _blkdev_begin(oe_blkdev_t* d)
+static int _blkdev_begin(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -317,7 +317,7 @@ done:
     return ret;
 }
 
-static int _blkdev_end(oe_blkdev_t* d)
+static int _blkdev_end(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -335,7 +335,7 @@ done:
     return ret;
 }
 
-static int _blkdev_add_ref(oe_blkdev_t* d)
+static int _blkdev_add_ref(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -351,7 +351,7 @@ done:
     return ret;
 }
 
-int oefs_cache_blkdev_open(oe_blkdev_t** dev_out, oe_blkdev_t* next)
+int oefs_cache_blkdev_open(oefs_blkdev_t** dev_out, oefs_blkdev_t* next)
 {
     int ret = -1;
     blkdev_t* dev = NULL;

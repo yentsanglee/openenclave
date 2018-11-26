@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _OE_OEFS_H
-#define _OE_OEFS_H
+#ifndef _OEFS_H
+#define _OEFS_H
 
 #include "blkdev.h"
 #include "common.h"
@@ -140,7 +140,7 @@ int oefs_new(
 int oefs_size(size_t nblks, size_t* size);
 
 /* Build an OE file system on the given device. */
-int oefs_mkfs(oe_blkdev_t* dev, size_t nblks);
+int oefs_mkfs(oefs_blkdev_t* dev, size_t nblks);
 
 int oefs_release(oefs_t* oefs);
 
@@ -199,4 +199,4 @@ int oefs_rmdir(oefs_t* fs, const char* path);
 
 OE_EXTERNC_END
 
-#endif /* _OE_OEFS_H */
+#endif /* _OEFS_H */

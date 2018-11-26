@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _OE_OEFS_COMMON_H
-#define _OE_OEFS_COMMON_H
+#ifndef _OEFS_COMMON_H
+#define _OEFS_COMMON_H
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
@@ -15,9 +15,9 @@
 #define OEFS_KEY_SIZE 32
 #define OEFS_BLOCK_SIZE 1024
 
-typedef struct _oe_blk
+typedef struct _oefs_blk
 {
     uint8_t data[OEFS_BLOCK_SIZE];
-} oe_blk_t;
+} oefs_blk_t;
 
-#endif /* _OE_OEFS_COMMON_H */
+#endif /* _OEFS_COMMON_H */

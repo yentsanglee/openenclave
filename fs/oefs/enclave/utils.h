@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _OE_OEFS_UTILS_H
-#define _OE_OEFS_UTILS_H
+#ifndef _OEFS_UTILS_H
+#define _OEFS_UTILS_H
 
 #include "common.h"
 
@@ -25,4 +25,4 @@ OE_INLINE size_t oefs_min_size(size_t x, size_t y)
 
 OE_EXTERNC_END
 
-#endif /* _OE_OEFS_UTILS_H */
+#endif /* _OEFS_UTILS_H */

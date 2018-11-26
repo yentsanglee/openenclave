@@ -15,9 +15,9 @@
 
 typedef struct _blkdev
 {
-    oe_blkdev_t base;
+    oefs_blkdev_t base;
     volatile uint64_t ref_count;
-    oe_blkdev_t* next;
+    oefs_blkdev_t* next;
     size_t nblks;
     const oefs_sha256_t* hashes;
     size_t nhashes;
@@ -96,7 +96,7 @@ static void _set_hash(blkdev_t* dev, size_t i, const oefs_sha256_t* hash)
 static int _write_hash_tree(blkdev_t* dev)
 {
     int ret = -1;
-    const oe_blk_t* p = (const oe_blk_t*)dev->hashes;
+    const oefs_blk_t* p = (const oefs_blk_t*)dev->hashes;
 
     for (size_t i = 0; i < dev->n_hash_blks; i++)
     {
@@ -130,7 +130,7 @@ static int read_hash_tree(blkdev_t* dev)
 
     for (size_t i = 0; i < nblks; i++)
     {
-        oe_blk_t blk;
+        oefs_blk_t blk;
         size_t n = oefs_min_size(rem, sizeof(blk));
         size_t offset = dev->nblks;
 
@@ -234,7 +234,7 @@ done:
     return ret;
 }
 
-static int _blkdev_release(oe_blkdev_t* blkdev)
+static int _blkdev_release(oefs_blkdev_t* blkdev)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -259,7 +259,7 @@ done:
     return ret;
 }
 
-static int _blkdev_get(oe_blkdev_t* blkdev, uint32_t blkno, oe_blk_t* blk)
+static int _blkdev_get(oefs_blkdev_t* blkdev, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -271,13 +271,13 @@ static int _blkdev_get(oe_blkdev_t* blkdev, uint32_t blkno, oe_blk_t* blk)
     if (dev->next->get(dev->next, blkno, blk) != 0)
         goto done;
 
-    if (_hash(&hash, blk, sizeof(oe_blk_t)) != 0)
+    if (_hash(&hash, blk, sizeof(oefs_blk_t)) != 0)
         goto done;
 
     /* Check the hash to make sure the block was not tampered with. */
     if (_check_hash(dev, blkno, &hash) != 0)
     {
-        memset(blk, 0, sizeof(oe_blk_t));
+        memset(blk, 0, sizeof(oefs_blk_t));
         goto done;
     }
 
@@ -288,7 +288,7 @@ done:
     return ret;
 }
 
-static int _blkdev_put(oe_blkdev_t* blkdev, uint32_t blkno, const oe_blk_t* blk)
+static int _blkdev_put(oefs_blkdev_t* blkdev, uint32_t blkno, const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -297,7 +297,7 @@ static int _blkdev_put(oe_blkdev_t* blkdev, uint32_t blkno, const oe_blk_t* blk)
     if (!dev || !blk || blkno > dev->nblks)
         goto done;
 
-    if (_hash(&hash, blk, sizeof(oe_blk_t)) != 0)
+    if (_hash(&hash, blk, sizeof(oefs_blk_t)) != 0)
         goto done;
 
     if (_update_hash_tree(dev, blkno, &hash) != 0)
@@ -318,7 +318,7 @@ done:
     return ret;
 }
 
-static int _blkdev_begin(oe_blkdev_t* d)
+static int _blkdev_begin(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -336,7 +336,7 @@ done:
     return ret;
 }
 
-static int _blkdev_end(oe_blkdev_t* d)
+static int _blkdev_end(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -357,7 +357,7 @@ done:
     return ret;
 }
 
-static int _blkdev_add_ref(oe_blkdev_t* blkdev)
+static int _blkdev_add_ref(oefs_blkdev_t* blkdev)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -374,10 +374,10 @@ done:
 }
 
 int oefs_merkle_blkdev_open(
-    oe_blkdev_t** blkdev,
+    oefs_blkdev_t** blkdev,
     bool initialize,
     size_t nblks,
-    oe_blkdev_t* next)
+    oefs_blkdev_t* next)
 {
     int ret = -1;
     blkdev_t* dev = NULL;
@@ -436,7 +436,7 @@ int oefs_merkle_blkdev_open(
     /* Initialize the blocks. */
     if (initialize)
     {
-        oe_blk_t zero_blk;
+        oefs_blk_t zero_blk;
         oefs_sha256_t zero_hash;
 
         /* Initialize the zero-filled block. */

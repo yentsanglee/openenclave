@@ -15,8 +15,6 @@
 #include "utils.h"
 #include "common.h"
 
-#define SHA256_SIZE 32
-
 #define AES_GCM_IV_SIZE 12
 
 #define TAGS_PER_BLOCK (OEFS_BLOCK_SIZE / sizeof(tag_t))
@@ -30,11 +28,11 @@ typedef struct _tag
 
 typedef struct _blkdev
 {
-    oe_blkdev_t base;
+    oefs_blkdev_t base;
     volatile uint64_t ref_count;
     size_t nblks;
     uint8_t key[OEFS_KEY_SIZE];
-    oe_blkdev_t* next;
+    oefs_blkdev_t* next;
     tag_t* tags;
     uint8_t* dirty;
 } blkdev_t;
@@ -188,7 +186,7 @@ done:
 static int _write_tags(blkdev_t* dev)
 {
     int ret = -1;
-    const oe_blk_t* p = (const oe_blk_t*)dev->tags;
+    const oefs_blk_t* p = (const oefs_blk_t*)dev->tags;
     size_t n = dev->nblks / TAGS_PER_BLOCK;
 
     for (size_t i = 0; i < n; i++)
@@ -216,7 +214,7 @@ done:
 static int _read_tags(blkdev_t* dev)
 {
     int ret = -1;
-    oe_blk_t* p = (oe_blk_t*)dev->tags;
+    oefs_blk_t* p = (oefs_blk_t*)dev->tags;
     size_t n = dev->nblks / TAGS_PER_BLOCK;
 
     for (size_t i = 0; i < n; i++)
@@ -237,7 +235,7 @@ done:
     return ret;
 }
 
-static int _blkdev_release(oe_blkdev_t* blkdev)
+static int _blkdev_release(oefs_blkdev_t* blkdev)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -262,11 +260,11 @@ done:
     return ret;
 }
 
-static int _blkdev_get(oe_blkdev_t* blkdev, uint32_t blkno, oe_blk_t* blk)
+static int _blkdev_get(oefs_blkdev_t* blkdev, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
-    oe_blk_t encrypted;
+    oefs_blk_t encrypted;
 
     if (!dev || !blk || blkno >= dev->nblks)
         goto done;
@@ -293,11 +291,11 @@ done:
     return ret;
 }
 
-static int _blkdev_put(oe_blkdev_t* blkdev, uint32_t blkno, const oe_blk_t* blk)
+static int _blkdev_put(oefs_blkdev_t* blkdev, uint32_t blkno, const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
-    oe_blk_t encrypted;
+    oefs_blk_t encrypted;
     tag_t tag;
 
     assert(blkno < dev->nblks);
@@ -330,7 +328,7 @@ done:
     return ret;
 }
 
-static int _blkdev_begin(oe_blkdev_t* d)
+static int _blkdev_begin(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* blkdev = (blkdev_t*)d;
@@ -348,7 +346,7 @@ done:
     return ret;
 }
 
-static int _blkdev_end(oe_blkdev_t* d)
+static int _blkdev_end(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -369,7 +367,7 @@ done:
     return ret;
 }
 
-static int _blkdev_add_ref(oe_blkdev_t* blkdev)
+static int _blkdev_add_ref(oefs_blkdev_t* blkdev)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -386,11 +384,11 @@ done:
 }
 
 int oefs_auth_crypto_blkdev_open(
-    oe_blkdev_t** blkdev,
+    oefs_blkdev_t** blkdev,
     bool initialize,
     size_t nblks,
     const uint8_t key[OEFS_KEY_SIZE],
-    oe_blkdev_t* next)
+    oefs_blkdev_t* next)
 {
     int ret = -1;
     blkdev_t* dev = NULL;
@@ -438,7 +436,7 @@ int oefs_auth_crypto_blkdev_open(
 
         /* Write out zero blocks. */
         {
-            oe_blk_t zero_blk;
+            oefs_blk_t zero_blk;
 
             /* Initialize the zero-filled block. */
             memset(&zero_blk, 0, sizeof(zero_blk));

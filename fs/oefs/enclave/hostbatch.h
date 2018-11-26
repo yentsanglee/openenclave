@@ -23,8 +23,6 @@ char* oefs_host_batch_strdup(oefs_host_batch_t* batch, const char* str);
 
 int oefs_host_batch_free(oefs_host_batch_t* batch);
 
-void dump_lock(oefs_host_batch_t* batch);
-
 OE_EXTERNC_END
 
 #endif /* _OEFS_HOSTBATCH_H */

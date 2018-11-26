@@ -10,13 +10,13 @@
 
 typedef struct _blkdev
 {
-    oe_blkdev_t base;
+    oefs_blkdev_t base;
     volatile uint64_t ref_count;
     uint8_t* mem;
     size_t size;
 } blkdev_t;
 
-static int _blkdev_release(oe_blkdev_t* dev)
+static int _blkdev_release(oefs_blkdev_t* dev)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
@@ -36,7 +36,7 @@ done:
     return ret;
 }
 
-static int _blkdev_get(oe_blkdev_t* dev, uint32_t blkno, oe_blk_t* blk)
+static int _blkdev_get(oefs_blkdev_t* dev, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
@@ -58,7 +58,7 @@ done:
     return ret;
 }
 
-static int _blkdev_put(oe_blkdev_t* dev, uint32_t blkno, const oe_blk_t* blk)
+static int _blkdev_put(oefs_blkdev_t* dev, uint32_t blkno, const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
@@ -80,17 +80,17 @@ done:
     return ret;
 }
 
-static int _blkdev_begin(oe_blkdev_t* d)
+static int _blkdev_begin(oefs_blkdev_t* d)
 {
     return 0;
 }
 
-static int _blkdev_end(oe_blkdev_t* d)
+static int _blkdev_end(oefs_blkdev_t* d)
 {
     return 0;
 }
 
-static int _blkdev_add_ref(oe_blkdev_t* dev)
+static int _blkdev_add_ref(oefs_blkdev_t* dev)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
@@ -105,7 +105,7 @@ static int _blkdev_add_ref(oe_blkdev_t* dev)
 done:
     return ret;
 }
-int oefs_ram_blkdev_open(oe_blkdev_t** blkdev, size_t size)
+int oefs_ram_blkdev_open(oefs_blkdev_t** blkdev, size_t size)
 {
     int ret = -1;
     blkdev_t* device = NULL;
