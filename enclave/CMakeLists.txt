@@ -16,6 +16,7 @@ add_library(oeenclave STATIC
     asym_keys.c
     cert.c
     crl.c
+    csr.c
     ec.c
     cmac.c
     hmac.c
