@@ -2,9 +2,10 @@
 #include <errno.h>
 #include <limits.h>
 #include <openenclave/fs.h>
-#include <openenclave/internal/hostfs.h>
+#include <openenclave/hostfs.h>
+#include <openenclave/sgxfs.h>
 #include <openenclave/internal/muxfs.h>
-#include <openenclave/internal/sgxfs.h>
+#include <openenclave/sgxfs.h>
 #include <openenclave/internal/tests.h>
 #include <stdint.h>
 #include <stdio.h>

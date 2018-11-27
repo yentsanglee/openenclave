@@ -4,9 +4,9 @@
 #include <openenclave/internal/defs.h>
 #include <openenclave/fs.h>
 #include <openenclave/internal/fs.h>
-#include <openenclave/internal/hostfs.h>
+#include <openenclave/hostfs.h>
 #include <openenclave/internal/muxfs.h>
-#include <openenclave/internal/sgxfs.h>
+#include <openenclave/sgxfs.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>

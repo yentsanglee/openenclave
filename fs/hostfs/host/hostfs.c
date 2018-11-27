@@ -1,5 +1,5 @@
 #include <dirent.h>
-#include <openenclave/internal/hostfs.h>
+#include <openenclave/hostfs.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>

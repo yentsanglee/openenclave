@@ -1,7 +1,6 @@
 #ifndef _OE_SGXFS_H
 #define _OE_SGXFS_H
 
-#include <openenclave/bits/defs.h>
 #include <openenclave/fs.h>
 
 OE_EXTERNC_BEGIN

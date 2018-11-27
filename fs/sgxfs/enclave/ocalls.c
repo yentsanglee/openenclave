@@ -9,7 +9,7 @@
 #undef FILE
 // clang-format on
 
-#include <openenclave/internal/sgxfs.h>
+#include <openenclave/sgxfs.h>
 #include "../common/sgxfsargs.h"
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
