@@ -3,10 +3,10 @@
 #include <limits.h>
 #include <openenclave/fs.h>
 #include <openenclave/hostfs.h>
-#include <openenclave/sgxfs.h>
 #include <openenclave/internal/muxfs.h>
-#include <openenclave/sgxfs.h>
 #include <openenclave/internal/tests.h>
+#include <openenclave/sgxfs.h>
+#include <openenclave/sgxfs.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -310,7 +310,7 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
     };
 
     flags |= OEFS_FLAG_MKFS;
-    //flags |= OEFS_FLAG_CRYPTO;
+    // flags |= OEFS_FLAG_CRYPTO;
     flags |= OEFS_FLAG_AUTH_CRYPTO;
     flags |= OEFS_FLAG_CACHING;
     flags |= OEFS_FLAG_INTEGRITY;

@@ -1,10 +1,10 @@
 #include <errno.h>
 #include <limits.h>
 #include <openenclave/bits/properties.h>
-#include <openenclave/internal/defs.h>
 #include <openenclave/fs.h>
-#include <openenclave/internal/fs.h>
 #include <openenclave/hostfs.h>
+#include <openenclave/internal/defs.h>
+#include <openenclave/internal/fs.h>
 #include <openenclave/internal/muxfs.h>
 #include <openenclave/sgxfs.h>
 #include <pthread.h>
