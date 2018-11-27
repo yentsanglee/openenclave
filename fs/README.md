@@ -70,21 +70,21 @@ There are four ways to bind a path to a file system.
     system used by the standard C I/O functions. For example:
 
 ```
-oe_fs_set_default(&oe_hostfs);
-stream = fopen("/myfile", "r");
+    oe_fs_set_default(&oe_hostfs);
+    stream = fopen("/myfile", "r");
 ```
 
 (4) By setting the multiplexing file system (**MUXFS**) as the default and
     using paths to direct to one or more file systems. For example:
 
 ```
-oe_fs_set_default(&oe_muxfs);
+    oe_fs_set_default(&oe_muxfs);
 
-/* Open a HOSTFS file. */
-fopen("/hostfs/myfile", "r");
+    /* Open a HOSTFS file. */
+    fopen("/hostfs/myfile", "r");
 
-/* Open an SGXFS file. */
-fopen("/sgxfs/myfile", "r");
+    /* Open an SGXFS file. */
+    fopen("/sgxfs/myfile", "r");
 ```
 
 The first method uses **explicit binding** and is the most secure. The other
