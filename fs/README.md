@@ -64,8 +64,6 @@ There are four ways to bind a path to a file system.
     #define fopen(...) oe_fopen(OE_FILE_SECURE_BEST_EFFORT, __VA_ARGS__)
 ```
 
-    This method requires using a custom **<stdio.h>** header file.
-
 (3) By using the **oe_fs_set_default()** function to set the default file
     system used by the standard C I/O functions. For example:
 
