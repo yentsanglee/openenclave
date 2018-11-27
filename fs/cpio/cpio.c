@@ -20,7 +20,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "strarr.h"
+#include "../common/strarr.h"
 #include "strings.h"
 #include "utils.h"
 

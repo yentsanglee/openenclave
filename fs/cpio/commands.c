@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#include "strarr.h"
+#include "../common/strarr.h"
 
 int oe_lsr(const char* root, oe_strarr_t* paths)
 {

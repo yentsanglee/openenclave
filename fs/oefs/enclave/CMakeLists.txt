@@ -5,7 +5,7 @@ set(LINUX_SGX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/linux-sgx)
 
 add_library(oeoefsenclave STATIC 
     authcryptoblkdev.c
-    buf.c
+    ../../common/buf.c
     cacheblkdev.c
     cryptoblkdev.c
     hostbatch.c

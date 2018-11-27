@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../common/oefs.h"
-#include "buf.h"
+#include "../../common/buf.h"
 #include "raise.h"
 #include "utils.h"
 
@@ -201,10 +201,10 @@ struct _oefs_file
     oefs_inode_t inode;
 
     /* The block numbers that contain the file's data. */
-    oefs_bufu32_t blknos;
+    oe_bufu32_t blknos;
 
     /* The block numbers that contain the file's block numbers. */
-    oefs_bufu32_t bnode_blknos;
+    oe_bufu32_t bnode_blknos;
 
     /* The file offset (or current position). */
     uint32_t offset;
@@ -370,8 +370,8 @@ done:
 static int _load_blknos(
     oefs_t* oefs,
     oefs_inode_t* inode,
-    oefs_bufu32_t* bnode_blknos,
-    oefs_bufu32_t* blknos)
+    oe_bufu32_t* bnode_blknos,
+    oe_bufu32_t* blknos)
 {
     int err = 0;
 
@@ -381,7 +381,7 @@ static int _load_blknos(
 
         for (size_t i = 0; i < n && inode->i_blocks[i]; i++)
         {
-            if (oefs_bufu32_append(blknos, &inode->i_blocks[i], 1) != 0)
+            if (oe_bufu32_append(blknos, &inode->i_blocks[i], 1) != 0)
                 OEFS_RAISE(ENOMEM);
         }
     }
@@ -399,7 +399,7 @@ static int _load_blknos(
             OEFS_CHECK(_read_block(oefs, next, (oefs_blk_t*)&bnode));
 
             /* Append this bnode blkno. */
-            if (oefs_bufu32_append(bnode_blknos, &next, 1) != 0)
+            if (oe_bufu32_append(bnode_blknos, &next, 1) != 0)
                 OEFS_RAISE(ENOMEM);
 
             n = sizeof(bnode.b_blocks) / sizeof(uint32_t);
@@ -407,7 +407,7 @@ static int _load_blknos(
             /* Get all blocks from this bnode. */
             for (size_t i = 0; i < n && bnode.b_blocks[i]; i++)
             {
-                if (oefs_bufu32_append(blknos, &bnode.b_blocks[i], 1) != 0)
+                if (oe_bufu32_append(blknos, &bnode.b_blocks[i], 1) != 0)
                     OEFS_RAISE(ENOMEM);
             }
 
@@ -451,7 +451,7 @@ done:
 
     if (file)
     {
-        oefs_bufu32_release(&file->blknos);
+        oe_bufu32_release(&file->blknos);
         free(file);
     }
 
@@ -583,7 +583,7 @@ static int _write_data(
     oefs_t* oefs,
     const void* data,
     uint32_t size,
-    oefs_bufu32_t* blknos)
+    oe_bufu32_t* blknos)
 {
     int err = 0;
     const uint8_t* ptr = (const uint8_t*)data;
@@ -600,7 +600,7 @@ static int _write_data(
         OEFS_CHECK(_assign_blkno(oefs, &blkno));
 
         /* Append the new block number to the array of blocks numbers. */
-        if (oefs_bufu32_append(blknos, &blkno, 1) != 0)
+        if (oe_bufu32_append(blknos, &blkno, 1) != 0)
             OEFS_RAISE(ENOMEM);
 
         /* Calculate bytes to copy to the block. */
@@ -654,7 +654,7 @@ static void _fill_slots(
     *rem_in_out = rem;
 }
 
-static int _append_block_chain(oefs_file_t* file, const oefs_bufu32_t* blknos)
+static int _append_block_chain(oefs_file_t* file, const oe_bufu32_t* blknos)
 {
     int err = 0;
     const uint32_t* ptr = blknos->data;
@@ -706,7 +706,7 @@ static int _append_block_chain(oefs_file_t* file, const oefs_bufu32_t* blknos)
             OEFS_CHECK(_assign_blkno(file->oefs, &new_blkno));
 
             /* Append the bnode blkno to the file struct. */
-            if (oefs_bufu32_append(&file->bnode_blknos, &new_blkno, 1) != 0)
+            if (oe_bufu32_append(&file->bnode_blknos, &new_blkno, 1) != 0)
                 OEFS_RAISE(ENOMEM);
 
             *next = new_blkno;
@@ -931,7 +931,7 @@ static int _truncate(oefs_file_t* file, ssize_t length)
             file->inode.i_nblks--;
         }
 
-        if (oefs_bufu32_resize(&file->blknos, block_index) != 0)
+        if (oe_bufu32_resize(&file->blknos, block_index) != 0)
             OEFS_RAISE(ENOMEM);
     }
 
@@ -949,7 +949,7 @@ static int _truncate(oefs_file_t* file, ssize_t length)
             OEFS_CHECK(_unassign_blkno(oefs, file->bnode_blknos.data[i]));
         }
 
-        if (oefs_bufu32_resize(&file->bnode_blknos, 0) != 0)
+        if (oe_bufu32_resize(&file->bnode_blknos, 0) != 0)
             OEFS_RAISE(ENOMEM);
     }
     else
@@ -994,7 +994,7 @@ static int _truncate(oefs_file_t* file, ssize_t length)
             OEFS_CHECK(_unassign_blkno(oefs, file->bnode_blknos.data[i]));
         }
 
-        if (oefs_bufu32_resize(&file->bnode_blknos, bnode_index + 1) != 0)
+        if (oe_bufu32_resize(&file->bnode_blknos, bnode_index + 1) != 0)
             OEFS_RAISE(ENOMEM);
 
         /* Rewrite the bnode. */
@@ -1024,7 +1024,7 @@ done:
 static int _load_file(oefs_file_t* file, void** data_out, size_t* size_out)
 {
     int err = 0;
-    oefs_buf_t buf = OEFS_BUF_INITIALIZER;
+    oe_buf_t buf = OE_BUF_INITIALIZER;
     char data[OEFS_BLOCK_SIZE];
     ssize_t n;
 
@@ -1038,7 +1038,7 @@ static int _load_file(oefs_file_t* file, void** data_out, size_t* size_out)
         if (n == 0)
             break;
 
-        if (oefs_buf_append(&buf, data, n) != 0)
+        if (oe_buf_append(&buf, data, n) != 0)
             OEFS_RAISE(ENOMEM);
     }
 
@@ -1048,7 +1048,7 @@ static int _load_file(oefs_file_t* file, void** data_out, size_t* size_out)
 
 done:
 
-    oefs_buf_release(&buf);
+    oe_buf_release(&buf);
 
     return err;
 }
@@ -1509,7 +1509,7 @@ int oefs_write(
     /* Append remaining data to the file. */
     if (remaining)
     {
-        oefs_bufu32_t blknos = OEFS_BUF_U32_INITIALIZER;
+        oe_bufu32_t blknos = OE_BUF_U32_INITIALIZER;
 
         /* Write the new blocks. */
         OEFS_CHECK(_write_data(file->oefs, ptr, remaining, &blknos));
@@ -1521,10 +1521,10 @@ int oefs_write(
         file->inode.i_nblks += blknos.size;
 
         /* Append these block numbers to the file. */
-        if (oefs_bufu32_append(&file->blknos, blknos.data, blknos.size) != 0)
+        if (oe_bufu32_append(&file->blknos, blknos.data, blknos.size) != 0)
             OEFS_RAISE(ENOMEM);
 
-        oefs_bufu32_release(&blknos);
+        oe_bufu32_release(&blknos);
 
         file->offset += remaining;
         remaining = 0;
@@ -1558,8 +1558,8 @@ int oefs_close(oefs_file_t* file)
     if (!_valid_file(file))
         OEFS_RAISE(EINVAL);
 
-    oefs_bufu32_release(&file->blknos);
-    oefs_bufu32_release(&file->bnode_blknos);
+    oe_bufu32_release(&file->blknos);
+    oe_bufu32_release(&file->bnode_blknos);
     memset(file, 0, sizeof(oefs_file_t));
     free(file);
 

@@ -19,7 +19,7 @@ OE_EXTERNC_BEGIN
 **==============================================================================
 */
 
-#define BUF_INITIALIZER \
+#define OE_BUF_INITIALIZER \
     {                   \
         NULL, 0, 0      \
     }
@@ -49,7 +49,7 @@ int oe_buf_append(oe_buf_t* buf, const void* data, uint32_t size);
 **==============================================================================
 */
 
-#define BUF_U32_INITIALIZER \
+#define OE_BUF_U32_INITIALIZER \
     {                       \
         NULL, 0, 0          \
     }

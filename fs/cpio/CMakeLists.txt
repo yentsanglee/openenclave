@@ -2,10 +2,10 @@
 # Licensed under the MIT License.
 
 add_library(oecpio STATIC 
-    buf.c
+    ../common/buf.c
     commands.c
     cpio.c
-    strarr.c)
+    ../common/strarr.c)
 
 target_include_directories(oecpio PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include)
