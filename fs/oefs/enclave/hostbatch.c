@@ -3,11 +3,11 @@
 
 #include "hostbatch.h"
 #include <assert.h>
+#include <openenclave/enclave.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <openenclave/enclave.h>
 
 #define ALIGNMENT sizeof(uint64_t)
 
@@ -94,7 +94,7 @@ static thread_data_t* _get_thread_data(oefs_host_batch_t* batch)
     return td;
 }
 
-void _delete_thread_data(thread_data_t* td)
+static void _delete_thread_data(thread_data_t* td)
 {
     oe_host_free(td->data);
 

@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "../../../fs/cpio/cpio.h"
+#include "../../../fs/oefs/common/oefs.h"
 #include "fs_t.h"
 #include "iot.h"
 
@@ -126,7 +127,7 @@ static void _test1(const char* tmp_dir)
     }
 }
 
-static void _test2(oe_fs_t* fs, const char* tmp_dir)
+static void _test_alphabet_file(oe_fs_t* fs, const char* tmp_dir)
 {
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     char buf[sizeof(alphabet)];
@@ -135,7 +136,7 @@ static void _test2(oe_fs_t* fs, const char* tmp_dir)
     size_t m = 0;
     char path[PATH_MAX];
 
-    _mkpath(path, tmp_dir, "/test2");
+    _mkpath(path, tmp_dir, "/alphabet");
 
     stream = oe_fopen(fs, path, "w");
     OE_TEST(stream != NULL);
@@ -170,7 +171,7 @@ static void _test2(oe_fs_t* fs, const char* tmp_dir)
     fclose(stream);
 }
 
-static void _test3(oe_fs_t* fs, const char* tmp_dir)
+static void _test_dirs(oe_fs_t* fs, const char* tmp_dir)
 {
     DIR* dir;
     struct dirent* entry;
@@ -191,7 +192,7 @@ static void _test3(oe_fs_t* fs, const char* tmp_dir)
         if (strcmp(entry->d_name, "test1") == 0)
             continue;
 
-        if (strcmp(entry->d_name, "test2") == 0)
+        if (strcmp(entry->d_name, "alphabet") == 0)
             continue;
 
         if (strcmp(entry->d_name, "cpio.file") == 0)
@@ -203,6 +204,9 @@ static void _test3(oe_fs_t* fs, const char* tmp_dir)
         if (strcmp(entry->d_name, "test_sgxfs_with_key") == 0)
             continue;
 
+        if (strcmp(entry->d_name, "test.oefs") == 0)
+            continue;
+
         printf("ERROR: found file: %s\n", entry->d_name);
         OE_TEST(false);
     }
@@ -212,7 +216,7 @@ static void _test3(oe_fs_t* fs, const char* tmp_dir)
     closedir(dir);
 }
 
-static void _test4(oe_fs_t* fs, const char* src_dir, const char* tmp_dir)
+static void _test_cpio(oe_fs_t* fs, const char* src_dir, const char* tmp_dir)
 {
     char tests_dir[PATH_MAX];
     char cpio_file[PATH_MAX];
@@ -262,6 +266,55 @@ static void _test_sgxfs_with_key(const char* tmp_dir)
     OE_TEST(oe_remove(&oe_sgxfs, path) == 0);
 }
 
+#if 0
+static void _test_oefs(const char* src_dir, const char* tmp_dir)
+{
+    oe_fs_t* oefs = NULL;
+    char source[PATH_MAX];
+    _mkpath(source, tmp_dir, "/test.oefs");
+    uint32_t flags = 0;
+    size_t nbytes = 4194304;
+    size_t nblks = nbytes / OEFS_BLOCK_SIZE;
+    uint8_t key[OEFS_KEY_SIZE] = {
+        0x0f, 0xf0, 0x31, 0xe3, 0x93, 0xdf, 0x46, 0x7b, 0x9a, 0x33, 0xe8,
+        0x3c, 0x55, 0x11, 0xac, 0x52, 0x9e, 0xd4, 0xb1, 0xad, 0x10, 0x16,
+        0x4f, 0xd9, 0x92, 0x19, 0x93, 0xcc, 0xa9, 0x0e, 0xcb, 0xed,
+    };
+
+    flags |= OEFS_FLAG_MKFS;
+    //flags |= OEFS_FLAG_ENCRYPTION;
+    //flags |= OEFS_FLAG_AUTHENTICATION;
+    //flags |= OEFS_FLAG_CACHING;
+    //flags |= OEFS_FLAG_INTEGRITY;
+
+    OE_TEST(oe_oefs_initialize(&oefs, source, flags, nblks, key) == 0);
+
+    oe_fs_set_default(oefs);
+    OE_TEST(oe_mkdir(oefs, "/tmp", 0777) == 0);
+    _test_alphabet_file(oefs, "/tmp");
+    oe_fs_set_default(NULL);
+
+    /* Register oefs with the multiplexer. */
+    OE_TEST(oe_muxfs_register_fs(&oe_muxfs, "/oefs", oefs) == 0);
+
+    OE_TEST(oe_mkdir(&oe_muxfs, "/oefs/tmp", 0777) == 0);
+    _test_alphabet_file(&oe_muxfs, "/oefs/tmp");
+
+    /* Test the multiplexer. */
+    {
+        char mux_src_dir[PATH_MAX];
+        const char mux_tmp_dir[] = "/oefs";
+        _mkpath(mux_src_dir, "/hostfs", src_dir);
+        _test_cpio(&oe_muxfs, mux_src_dir, mux_tmp_dir);
+    }
+
+    /* Unregister oefs with the multiplexer. */
+    OE_TEST(oe_muxfs_unregister_fs(&oe_muxfs, "/oefs") == 0);
+
+    oe_release(oefs);
+}
+#endif
+
 void enc_test(const char* src_dir, const char* bin_dir)
 {
     static char tmp_dir[PATH_MAX];
@@ -277,11 +330,11 @@ void enc_test(const char* src_dir, const char* bin_dir)
 
     _test_default_fs(tmp_dir);
     _test1(tmp_dir);
-    _test2(&oe_sgxfs, tmp_dir);
-    _test2(&oe_hostfs, tmp_dir);
-    _test3(&oe_hostfs, tmp_dir);
-    _test3(&oe_sgxfs, tmp_dir);
-    _test4(&oe_hostfs, src_dir, tmp_dir);
+    _test_alphabet_file(&oe_sgxfs, tmp_dir);
+    _test_alphabet_file(&oe_hostfs, tmp_dir);
+    _test_dirs(&oe_hostfs, tmp_dir);
+    _test_dirs(&oe_sgxfs, tmp_dir);
+    _test_cpio(&oe_hostfs, src_dir, tmp_dir);
 
     /* Test the multiplexer: hostfs -> hostfs */
     {
@@ -289,7 +342,7 @@ void enc_test(const char* src_dir, const char* bin_dir)
         char mux_tmp_dir[PATH_MAX];
         _mkpath(mux_src_dir, "/hostfs", src_dir);
         _mkpath(mux_tmp_dir, "/hostfs", tmp_dir);
-        _test4(&oe_muxfs, mux_src_dir, mux_tmp_dir);
+        _test_cpio(&oe_muxfs, mux_src_dir, mux_tmp_dir);
     }
 
     /* Test the multiplexer: hostfs -> sgxfs */
@@ -298,19 +351,23 @@ void enc_test(const char* src_dir, const char* bin_dir)
         char mux_tmp_dir[PATH_MAX];
         _mkpath(mux_src_dir, "/hostfs", src_dir);
         _mkpath(mux_tmp_dir, "/sgxfs", tmp_dir);
-        _test4(&oe_muxfs, mux_src_dir, mux_tmp_dir);
+        _test_cpio(&oe_muxfs, mux_src_dir, mux_tmp_dir);
     }
 
     /* Test the IOT stdio.h definitions. */
     test_iot_scenario(tmp_dir);
 
     _test_sgxfs_with_key(tmp_dir);
+
+#if 0
+    _test_oefs(src_dir, tmp_dir);
+#endif
 }
 
 OE_SET_ENCLAVE_SGX(
-    1,    /* ProductID */
-    1,    /* SecurityVersion */
-    true, /* AllowDebug */
-    1024, /* HeapPageCount */
-    1024, /* StackPageCount */
-    2);   /* TCSCount */
+    1,        /* ProductID */
+    1,        /* SecurityVersion */
+    true,     /* AllowDebug */
+    8 * 1024, /* HeapPageCount */
+    4 * 4096, /* StackPageCount */
+    2);       /* TCSCount */

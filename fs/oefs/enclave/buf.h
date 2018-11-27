@@ -19,8 +19,8 @@ OE_EXTERNC_BEGIN
 */
 
 #define OEFS_BUF_INITIALIZER \
-    {                   \
-        NULL, 0, 0      \
+    {                        \
+        NULL, 0, 0           \
     }
 
 typedef struct _oefs_buf
@@ -49,8 +49,8 @@ int oefs_buf_append(oefs_buf_t* buf, const void* data, uint32_t size);
 */
 
 #define OEFS_BUF_U32_INITIALIZER \
-    {                       \
-        NULL, 0, 0          \
+    {                            \
+        NULL, 0, 0               \
     }
 
 typedef struct _oefs_bufu32

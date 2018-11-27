@@ -6,14 +6,13 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
-#include <openenclave/internal/defs.h>
 #include <openenclave/internal/atomic.h>
-#include <string.h>
+#include <openenclave/internal/defs.h>
 #include <stdlib.h>
+#include <string.h>
+#include "../common/oefs.h"
 
 #define OEFS_PATH_MAX 256
-#define OEFS_KEY_SIZE 32
-#define OEFS_BLOCK_SIZE 1024
 
 typedef struct _oefs_blk
 {

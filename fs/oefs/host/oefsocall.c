@@ -1,10 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "hostblkdev.h"
 #include <stdio.h>
+#include "../common/hostblkdev.h"
 
-static void _handle_open(fs_hostblkdev_ocall_args_t* args)
+static void _handle_open(oefs_oefs_ocall_args_t* args)
 {
     if (args && args->open.path)
     {
@@ -12,14 +12,14 @@ static void _handle_open(fs_hostblkdev_ocall_args_t* args)
 
         args->open.handle = NULL;
 
-        if (!(stream = fopen(args->open.path, "r+")))
+        if (!(stream = fopen(args->open.path, "a+")))
             return;
 
         args->open.handle = stream;
     }
 }
 
-static void _handle_close(fs_hostblkdev_ocall_args_t* args)
+static void _handle_close(oefs_oefs_ocall_args_t* args)
 {
     if (args && args->close.handle)
     {
@@ -27,7 +27,7 @@ static void _handle_close(fs_hostblkdev_ocall_args_t* args)
     }
 }
 
-static void _handle_get(fs_hostblkdev_ocall_args_t* args)
+static void _handle_get(oefs_oefs_ocall_args_t* args)
 {
     if (args)
     {
@@ -40,7 +40,7 @@ static void _handle_get(fs_hostblkdev_ocall_args_t* args)
 
         /* Read the given block. */
         {
-            long offset = args->get.blkno * OE_OEFS_BLOCK_SIZE;
+            long offset = args->get.blkno * OEFS_BLOCK_SIZE;
             size_t count;
 
             if (fseek(stream, offset, SEEK_SET) != 0)
@@ -56,7 +56,7 @@ static void _handle_get(fs_hostblkdev_ocall_args_t* args)
     }
 }
 
-static void _handle_put(fs_hostblkdev_ocall_args_t* args)
+static void _handle_put(oefs_oefs_ocall_args_t* args)
 {
     if (args)
     {
@@ -69,7 +69,7 @@ static void _handle_put(fs_hostblkdev_ocall_args_t* args)
 
         /* Write the given block. */
         {
-            const long offset = args->put.blkno * OE_OEFS_BLOCK_SIZE;
+            const long offset = args->put.blkno * OEFS_BLOCK_SIZE;
 
             if (fseek(stream, offset, SEEK_SET) != 0)
                 return;
@@ -86,29 +86,38 @@ static void _handle_put(fs_hostblkdev_ocall_args_t* args)
     }
 }
 
-void fs_handle_hostblkdev_ocall(fs_hostblkdev_ocall_args_t* args)
+static void _handle_oefs_ocall(void* args_)
 {
+    oefs_oefs_ocall_args_t* args = (oefs_oefs_ocall_args_t*)args_;
+
     switch (args->op)
     {
-        case FS_HOSTBLKDEV_OPEN:
+        case OEFS_HOSTBLKDEV_OPEN:
         {
             _handle_open(args);
             break;
         }
-        case FS_HOSTBLKDEV_CLOSE:
+        case OEFS_HOSTBLKDEV_CLOSE:
         {
             _handle_close(args);
             break;
         }
-        case FS_HOSTBLKDEV_GET:
+        case OEFS_HOSTBLKDEV_GET:
         {
             _handle_get(args);
             break;
         }
-        case FS_HOSTBLKDEV_PUT:
+        case OEFS_HOSTBLKDEV_PUT:
         {
             _handle_put(args);
             break;
         }
     }
+}
+
+extern void (*oe_handle_oefs_ocall_callback)(void* args);
+
+void oe_install_oefs(void)
+{
+    oe_handle_oefs_ocall_callback = _handle_oefs_ocall;
 }

@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "common.h"
 #include "blkdev.h"
+#include "common.h"
 #include "sha.h"
 #include "utils.h"
 
@@ -124,7 +124,8 @@ static int read_hash_tree(blkdev_t* dev)
 {
     int ret = -1;
     size_t nbytes = dev->nhashes * sizeof(oefs_sha256_t);
-    size_t nblks = oefs_round_to_multiple(nbytes, OEFS_BLOCK_SIZE) / OEFS_BLOCK_SIZE;
+    size_t nblks =
+        oefs_round_to_multiple(nbytes, OEFS_BLOCK_SIZE) / OEFS_BLOCK_SIZE;
     uint8_t* ptr = (uint8_t*)dev->hashes;
     size_t rem = dev->nhashes * sizeof(oefs_sha256_t);
 
@@ -288,7 +289,10 @@ done:
     return ret;
 }
 
-static int _blkdev_put(oefs_blkdev_t* blkdev, uint32_t blkno, const oefs_blk_t* blk)
+static int _blkdev_put(
+    oefs_blkdev_t* blkdev,
+    uint32_t blkno,
+    const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;

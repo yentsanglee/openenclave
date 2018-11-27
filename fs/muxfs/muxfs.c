@@ -13,6 +13,8 @@
 
 #define MAGIC 0x114c4d216581d07c
 
+#define MAX_ENTRIES 16
+
 typedef struct _entry
 {
     char path[PATH_MAX];
@@ -22,31 +24,44 @@ typedef struct _entry
 /* Global spinlock across all instance of muxfs. */
 static pthread_spinlock_t _lock;
 
-#define FS_MAGIC(fs) fs->__impl[0]
-#define FS_NENTRIES(fs) fs->__impl[1]
-#define FS_ENTRIES(fs) ((entry_t*)fs->__impl[2])
-
-OE_INLINE bool _valid_muxfs(const oe_fs_t* fs)
+/* This implementation overlays the first few slots of oe_fs_t. */
+typedef struct _impl
 {
-    return fs && (FS_MAGIC(fs) == MAGIC);
+    uint64_t magic;
+    size_t num_entries;
+    size_t max_entries;
+    entry_t* entries;
+} impl_t;
+
+OE_STATIC_ASSERT(sizeof(impl_t) == 4 * sizeof(uint64_t));
+
+OE_INLINE impl_t* _get_impl(oe_fs_t* fs)
+{
+    impl_t* impl = (impl_t*)fs->__impl;
+
+    if (impl->magic != MAGIC)
+        return NULL;
+
+    return impl;
 }
 
 static oe_fs_t* _find_fs(oe_fs_t* fs, const char* path, char suffix[PATH_MAX])
 {
     oe_fs_t* ret = NULL;
+    impl_t* impl = _get_impl(fs);
     size_t match_len = 0;
     bool locked = false;
 
-    if (!_valid_muxfs(fs) || !path || !suffix)
+    if (!impl || !path || !suffix)
         goto done;
 
     pthread_spin_lock(&_lock);
     locked = true;
 
     /* Find the longest target that contains this path. */
-    for (size_t i = 0; i < FS_NENTRIES(fs); i++)
+    for (size_t i = 0; i < impl->num_entries; i++)
     {
-        entry_t* entry = &FS_ENTRIES(fs)[i];
+        entry_t* entry = &impl->entries[i];
         size_t len = strlen(entry->path);
 
         if (strncmp(entry->path, path, len) == 0 &&
@@ -238,7 +253,7 @@ done:
     return ret;
 }
 
-static entry_t _fs_entries[] = {
+static entry_t _entries[MAX_ENTRIES] = {
     {
         "/hostfs",
         &oe_hostfs,
@@ -249,13 +264,16 @@ static entry_t _fs_entries[] = {
     },
 };
 
+static const size_t _num_entries = 2;
+
 // clang-format off
 oe_fs_t oe_muxfs = {
     .__impl = 
     { 
         MAGIC,
-        OE_COUNTOF(_fs_entries),
-        (uint64_t)_fs_entries,
+        _num_entries,
+        OE_COUNTOF(_entries),
+        (uint64_t)_entries,
     },
     .fs_magic = OE_FS_MAGIC,
     .fs_release = _fs_release,
@@ -268,3 +286,82 @@ oe_fs_t oe_muxfs = {
     .fs_rmdir = _fs_rmdir,
 };
 // clang-format on
+
+int oe_muxfs_register_fs(oe_fs_t* muxfs, const char* path, oe_fs_t* fs)
+{
+    int ret = -1;
+    impl_t* impl = _get_impl(muxfs);
+    bool locked = false;
+    entry_t* entry;
+
+    if (!impl || !path || !fs)
+        goto done;
+
+    pthread_spin_lock(&_lock);
+    locked = true;
+
+    if (impl->num_entries == impl->max_entries)
+        goto done;
+
+    /* Is this path already registered? */
+    for (size_t i = 0; i < impl->num_entries; i++)
+    {
+        if (strcmp(impl->entries[i].path, path) == 0)
+            goto done;
+    }
+
+    entry = &impl->entries[impl->num_entries];
+
+    if (strlcpy(entry->path, path, sizeof(entry->path)) >= sizeof(entry->path))
+        goto done;
+
+    entry->fs = fs;
+    impl->num_entries++;
+
+    ret = 0;
+
+done:
+
+    if (locked)
+        pthread_spin_unlock(&_lock);
+
+    return ret;
+}
+
+int oe_muxfs_unregister_fs(oe_fs_t* muxfs, const char* path)
+{
+    int ret = -1;
+    impl_t* impl = _get_impl(muxfs);
+    bool locked = false;
+    bool found = false;
+
+    if (!impl || !path)
+        goto done;
+
+    pthread_spin_lock(&_lock);
+    locked = true;
+
+    for (size_t i = 0; i < impl->num_entries; i++)
+    {
+        if (strcmp(impl->entries[i].path, path) == 0)
+        {
+            /* Remove this entry by exchanging it with the last entry. */
+            impl->entries[i] = impl->entries[impl->num_entries - 1];
+            impl->num_entries--;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+        goto done;
+
+    ret = 0;
+
+done:
+
+    if (locked)
+        pthread_spin_unlock(&_lock);
+
+    return ret;
+}

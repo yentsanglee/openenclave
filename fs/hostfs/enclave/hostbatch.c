@@ -93,7 +93,7 @@ static thread_data_t* _get_thread_data(oe_host_batch_t* batch)
     return td;
 }
 
-void _delete_thread_data(thread_data_t* td)
+static void _delete_thread_data(thread_data_t* td)
 {
     oe_host_free(td->data);
 

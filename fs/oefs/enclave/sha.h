@@ -24,7 +24,10 @@ typedef struct _oefs_vector
 
 int oefs_sha256(oefs_sha256_t* hash, const void* data, size_t size);
 
-int oefs_sha256_v(oefs_sha256_t* hash, const oefs_vector_t* vector, size_t size);
+int oefs_sha256_v(
+    oefs_sha256_t* hash,
+    const oefs_vector_t* vector,
+    size_t size);
 
 void oefs_sha256_dump(const oefs_sha256_t* hash);
 

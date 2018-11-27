@@ -11,9 +11,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blkdev.h"
+#include "common.h"
 #include "sha.h"
 #include "utils.h"
-#include "common.h"
 
 #define AES_GCM_IV_SIZE 12
 
@@ -291,7 +291,10 @@ done:
     return ret;
 }
 
-static int _blkdev_put(oefs_blkdev_t* blkdev, uint32_t blkno, const oefs_blk_t* blk)
+static int _blkdev_put(
+    oefs_blkdev_t* blkdev,
+    uint32_t blkno,
+    const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;

@@ -97,7 +97,7 @@ typedef enum _oe_func {
     OE_OCALL_BACKTRACE_SYMBOLS,
     OE_OCALL_HOSTFS,
     OE_OCALL_SGXFS,
-    OE_OCALL_BLKDEV,
+    OE_OCALL_OEFS,
     /* Caution: always add new OCALL function numbers here */
 
     __OE_FUNC_MAX = OE_ENUM_MAX,

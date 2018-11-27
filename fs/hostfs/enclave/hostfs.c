@@ -492,7 +492,7 @@ done:
     return ret;
 }
 
-struct dirent* _d_readdir(DIR* base)
+static struct dirent* _d_readdir(DIR* base)
 {
     struct dirent* ret = NULL;
     dir_t* dir = (dir_t*)base;
@@ -547,7 +547,7 @@ done:
     return ret;
 }
 
-int _d_closedir(DIR* base)
+static int _d_closedir(DIR* base)
 {
     int ret = -1;
     dir_t* dir = (dir_t*)base;

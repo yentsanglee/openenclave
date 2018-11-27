@@ -9,14 +9,6 @@
 
 OE_EXTERNC_BEGIN
 
-/* File system creating flags. */
-#define OEFS_FLAG_NONE 0
-#define OEFS_FLAG_MKFS 1
-#define OEFS_FLAG_ENCRYPTION 2
-#define OEFS_FLAG_AUTHENTICATION 4
-#define OEFS_FLAG_INTEGRITY 8
-#define OEFS_FLAG_CACHING 16
-
 /* oefs_dirent_t.d_type -- the file type. */
 #define OEFS_DT_UNKNOWN 0
 #define OEFS_DT_FIFO 1 /* unused */
@@ -165,11 +157,7 @@ int oefs_lseek(
     int whence,
     ssize_t* offset_out);
 
-int oefs_read(
-    oefs_file_t* file,
-    void* data,
-    size_t size,
-    ssize_t* nread);
+int oefs_read(oefs_file_t* file, void* data, size_t size, ssize_t* nread);
 
 int oefs_write(
     oefs_file_t* file,

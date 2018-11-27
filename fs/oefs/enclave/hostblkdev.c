@@ -1,16 +1,16 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <openenclave/internal/calls.h>
 #include "../common/hostblkdev.h"
+#include <openenclave/internal/calls.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "common.h"
-#include "blkdev.h"
-#include "hostbatch.h"
 #include "../common/hostblkdev.h"
+#include "blkdev.h"
+#include "common.h"
+#include "hostbatch.h"
 #include "list.h"
 
 #define MAX_NODES 16
@@ -25,14 +25,14 @@ typedef struct _blkdev
 
 static size_t _get_batch_capacity()
 {
-    return sizeof(oefs_hostblkdev_ocall_args_t);
+    return sizeof(oefs_oefs_ocall_args_t);
 }
 
 static int _blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
-    typedef oefs_hostblkdev_ocall_args_t args_t;
+    typedef oefs_oefs_ocall_args_t args_t;
     args_t* args = NULL;
 
     if (!dev || !blk)
@@ -46,7 +46,7 @@ static int _blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
     args->get.handle = dev->handle;
     args->get.blkno = blkno;
 
-    if (oe_ocall(OE_OCALL_BLKDEV, (uint64_t)args, NULL) != 0)
+    if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
         goto done;
 
     if (args->get.ret != 0)
@@ -68,7 +68,7 @@ static int _blkdev_put(oefs_blkdev_t* d, uint32_t blkno, const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
-    typedef oefs_hostblkdev_ocall_args_t args_t;
+    typedef oefs_oefs_ocall_args_t args_t;
     args_t* args = NULL;
 
     if (!dev || !blk)
@@ -83,7 +83,7 @@ static int _blkdev_put(oefs_blkdev_t* d, uint32_t blkno, const oefs_blk_t* blk)
     args->put.blkno = blkno;
     args->put.blk = *blk;
 
-    if (oe_ocall(OE_OCALL_BLKDEV, (uint64_t)args, NULL) != 0)
+    if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
         goto done;
 
     if (args->put.ret != 0)
@@ -129,7 +129,7 @@ static int _blkdev_release(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
-    typedef oefs_hostblkdev_ocall_args_t args_t;
+    typedef oefs_oefs_ocall_args_t args_t;
     args_t* args = NULL;
 
     if (!dev)
@@ -143,7 +143,7 @@ static int _blkdev_release(oefs_blkdev_t* d)
         args->op = OEFS_HOSTBLKDEV_CLOSE;
         args->close.handle = dev->handle;
 
-        if (oe_ocall(OE_OCALL_BLKDEV, (uint64_t)args, NULL) != 0)
+        if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
             goto done;
 
         oefs_host_batch_delete(dev->batch);
@@ -162,7 +162,7 @@ int oefs_host_blkdev_open(oefs_blkdev_t** blkdev, const char* path)
     int ret = -1;
     blkdev_t* dev = NULL;
     oefs_host_batch_t* batch = NULL;
-    typedef oefs_hostblkdev_ocall_args_t args_t;
+    typedef oefs_oefs_ocall_args_t args_t;
     args_t* args = NULL;
 
     if (blkdev)
@@ -185,7 +185,7 @@ int oefs_host_blkdev_open(oefs_blkdev_t** blkdev, const char* path)
     if (!(args->open.path = oefs_host_batch_strdup(batch, path)))
         goto done;
 
-    if (oe_ocall(OE_OCALL_BLKDEV, (uint64_t)args, NULL) != 0)
+    if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
         goto done;
 
     if (!args->open.handle)

@@ -1,4 +1,3 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #define _GNU_SOURCE
@@ -6,20 +5,20 @@
 #include "oefs.h"
 #include <assert.h>
 #include <assert.h>
+#include <errno.h>
+#include <openenclave/bits/safemath.h>
+#include <openenclave/enclave.h>
+#include <openenclave/internal/fs.h>
+#include <openenclave/internal/fsinternal.h>
+#include <openenclave/internal/raise.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
+#include "../common/oefs.h"
 #include "buf.h"
 #include "raise.h"
 #include "utils.h"
-#include <openenclave/enclave.h>
-#include <openenclave/internal/fs.h>
-#include <openenclave/bits/safemath.h>
-#include <openenclave/internal/fsinternal.h>
-#include <openenclave/internal/raise.h>
-#include "../common/oefs.h"
 
 /*
 **==============================================================================
@@ -655,9 +654,7 @@ static void _fill_slots(
     *rem_in_out = rem;
 }
 
-static int _append_block_chain(
-    oefs_file_t* file,
-    const oefs_bufu32_t* blknos)
+static int _append_block_chain(oefs_file_t* file, const oefs_bufu32_t* blknos)
 {
     int err = 0;
     const uint32_t* ptr = blknos->data;
@@ -1076,11 +1073,7 @@ done:
     return err;
 }
 
-int _unlink(
-    oefs_t* oefs,
-    uint32_t dir_ino,
-    uint32_t ino,
-    const char* name)
+int _unlink(oefs_t* oefs, uint32_t dir_ino, uint32_t ino, const char* name)
 {
     int err = 0;
     oefs_file_t* dir = NULL;
@@ -1163,10 +1156,7 @@ done:
     return err;
 }
 
-static int _opendir_by_ino(
-    oefs_t* oefs,
-    uint32_t ino,
-    oefs_dir_t** dir_out)
+static int _opendir_by_ino(oefs_t* oefs, uint32_t ino, oefs_dir_t** dir_out)
 {
     int err = 0;
     oefs_dir_t* dir = NULL;
@@ -1330,11 +1320,7 @@ done:
 **==============================================================================
 */
 
-int oefs_read(
-    oefs_file_t* file,
-    void* data,
-    size_t size,
-    ssize_t* nread)
+int oefs_read(oefs_file_t* file, void* data, size_t size, ssize_t* nread)
 {
     int err = 0;
     oefs_t* oefs = _oefs_from_file(file);
@@ -2519,8 +2505,6 @@ int oefs_new(
     oefs_t* oefs = NULL;
     size_t extra_nblks = 0;
 
-    (void)extra_nblks;
-
     if (oefs_out)
         *oefs_out = NULL;
 
@@ -3036,7 +3020,7 @@ done:
     return ret;
 }
 
-struct dirent* _d_readdir(DIR* base)
+static struct dirent* _d_readdir(DIR* base)
 {
     struct dirent* ret = NULL;
     dir_t* dir = (dir_t*)base;
@@ -3069,7 +3053,7 @@ done:
     return ret;
 }
 
-int _d_closedir(DIR* base)
+static int _d_closedir(DIR* base)
 {
     int ret = -1;
     dir_t* dir = (dir_t*)base;
@@ -3304,14 +3288,14 @@ done:
     return ret;
 }
 
-oe_result_t oe_oefs_initialize(
+int oe_oefs_initialize(
     oe_fs_t** fs_out,
     const char* source,
     uint32_t flags,
     size_t nblks,
     const uint8_t key[OEFS_KEY_SIZE])
 {
-    oe_result_t result = OE_UNEXPECTED;
+    int ret = -1;
     oefs_t* oefs = NULL;
     oe_fs_t* fs = NULL;
 
@@ -3322,10 +3306,10 @@ oe_result_t oe_oefs_initialize(
         goto done;
 
     if (!(fs = calloc(1, sizeof(oe_fs_t))))
-        OE_RAISE(OE_OUT_OF_MEMORY);
+        goto done;
 
     if (oefs_new(&oefs, source, flags, nblks, key) != 0)
-        OE_RAISE(OE_FAILURE);
+        goto done;
 
     fs->__impl[0] = (uint64_t)oefs;
     fs->__impl[1] = OEFS_MAGIC;
@@ -3343,7 +3327,7 @@ oe_result_t oe_oefs_initialize(
     fs = NULL;
     oefs = NULL;
 
-    result = OE_OK;
+    ret = 0;
 
 done:
 
@@ -3353,5 +3337,5 @@ done:
     if (oefs)
         oefs_release(oefs);
 
-    return result;
+    return ret;
 }

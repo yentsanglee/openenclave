@@ -15,7 +15,7 @@ typedef enum _oefs_hostblkdev_op {
     OEFS_HOSTBLKDEV_PUT,
 } oefs_hostblkdev_op_t;
 
-typedef struct _oefs_hostblkdev_ocall_args
+typedef struct _oefs_oefs_ocall_args
 {
     oefs_hostblkdev_op_t op;
     struct
@@ -41,9 +41,7 @@ typedef struct _oefs_hostblkdev_ocall_args
         uint32_t blkno;
         oefs_blk_t blk;
     } put;
-} oefs_hostblkdev_ocall_args_t;
-
-void oefs_handle_hostblkdev_ocall(oefs_hostblkdev_ocall_args_t* arg);
+} oefs_oefs_ocall_args_t;
 
 OE_EXTERNC_END
 

@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "blkdev.h"
-#include "sha.h"
 #include "common.h"
+#include "sha.h"
 
 #define SHA256_SIZE 32
 
@@ -142,7 +142,10 @@ done:
     return ret;
 }
 
-static int _blkdev_put(oefs_blkdev_t* dev, uint32_t blkno, const oefs_blk_t* blk)
+static int _blkdev_put(
+    oefs_blkdev_t* dev,
+    uint32_t blkno,
+    const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;

@@ -32,6 +32,12 @@ int main(int argc, const char* argv[])
         oe_install_sgxfs();
     }
 
+    /* Install oefs */
+    {
+        extern void oe_install_oefs(void);
+        oe_install_oefs();
+    }
+
     printf("Starting enclave with %s\n", argv[1]);
     result = oe_create_fs_enclave(
         argv[1], OE_ENCLAVE_TYPE_SGX, flags, NULL, 0, &enclave);

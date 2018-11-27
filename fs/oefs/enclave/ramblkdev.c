@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "common.h"
 #include "blkdev.h"
+#include "common.h"
 
 typedef struct _blkdev
 {
@@ -58,7 +58,10 @@ done:
     return ret;
 }
 
-static int _blkdev_put(oefs_blkdev_t* dev, uint32_t blkno, const oefs_blk_t* blk)
+static int _blkdev_put(
+    oefs_blkdev_t* dev,
+    uint32_t blkno,
+    const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;

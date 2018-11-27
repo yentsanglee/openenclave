@@ -13,4 +13,4 @@ target_compile_options(fs_enc PRIVATE
 
 target_include_directories(fs_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(fs_enc oecpio oemuxfs oesgxfsenclave oehostfsenclave oeenclave)
+target_link_libraries(fs_enc oecpio oemuxfs oeoefsenclave oesgxfsenclave oehostfsenclave oeenclave)
