@@ -44,22 +44,20 @@ char* musl_fgets(char* s, int size, FILE* stream);
 **==============================================================================
 */
 
-oe_fs_t oe_default_fs;
-
-oe_fs_t* __oe_default_fs = &oe_default_fs;
+static oe_fs_t* _default_fs = NULL;
 
 void oe_fs_set_default(oe_fs_t* fs)
 {
     if (fs)
-        __oe_default_fs = fs;
+        _default_fs = fs;
 }
 
 oe_fs_t* oe_fs_get_default(void)
 {
-    if (__oe_default_fs->fs_magic != OE_FS_MAGIC)
+    if (_default_fs->fs_magic != OE_FS_MAGIC)
         return NULL;
 
-    return __oe_default_fs;
+    return _default_fs;
 }
 
 int oe_release(oe_fs_t* fs)

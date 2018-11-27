@@ -27,8 +27,6 @@
 
 #include "../../../3rdparty/linux-sgx/linux-sgx/common/inc/sgx_tprotected_fs.h"
 
-oe_fs_t oe_default_fs = oe_hostfs;
-
 static const char* _mkpath(
     char buf[PATH_MAX],
     const char* target,
@@ -59,75 +57,6 @@ static void _test_default_fs(const char* tmp_dir)
     OE_TEST(memcmp(buf, alphabet, sizeof(buf)) == 0);
 
     OE_TEST(remove(path) == 0);
-}
-
-static void _test1(const char* tmp_dir)
-{
-    char path[PATH_MAX];
-    _mkpath(path, tmp_dir, "/test1");
-
-    printf("About to open a file\n");
-    SGX_FILE* file = sgx_fopen_auto_key(path, "w");
-    if (file != NULL)
-    {
-        printf("Successfully opened for write\n");
-
-        char writedata[] = "hello world!";
-        int bytes_written = sgx_fwrite(writedata, 1, sizeof(writedata), file);
-        if (bytes_written == sizeof(writedata))
-        {
-            printf("Successfully wrote data\n");
-        }
-        else
-        {
-            printf("Failed to write data. sgx_ferror=%d\n", sgx_ferror(file));
-            OE_TEST(false);
-        }
-
-        sgx_fclose(file);
-        printf("Closed file\n");
-
-        file = sgx_fopen_auto_key(path, "r");
-        if (file != NULL)
-        {
-            printf("Successfully opened for read\n");
-
-            char readdata[1000];
-            int bytes_read = sgx_fread(readdata, 1, sizeof(readdata), file);
-            if (bytes_read == bytes_written)
-            {
-                printf("Successfully read data\n");
-                if (strcmp(writedata, readdata) == 0)
-                {
-                    printf("Read and write data were the same\n");
-                }
-                else
-                {
-                    printf("Read and write data were different\n");
-                }
-            }
-            else
-            {
-                printf(
-                    "Failed to read data. sgx_ferror=%d\n", sgx_ferror(file));
-                OE_TEST(false);
-            }
-
-            sgx_fclose(file);
-            printf("Closed file\n");
-        }
-        else
-        {
-            printf("Failed to open file for read\n");
-            OE_TEST(false);
-        }
-    }
-    else
-    {
-        printf(
-            "Failed to open file. errno=%d, \"%s\"\n", errno, strerror(errno));
-        OE_TEST(false);
-    }
 }
 
 static void _test_alphabet_file(oe_fs_t* fs, const char* tmp_dir)
@@ -192,9 +121,6 @@ static void _test_dirs(oe_fs_t* fs, const char* tmp_dir)
         if (strcmp(entry->d_name, "..") == 0)
             continue;
 
-        if (strcmp(entry->d_name, "test1") == 0)
-            continue;
-
         if (strcmp(entry->d_name, "alphabet") == 0)
             continue;
 
@@ -214,7 +140,7 @@ static void _test_dirs(oe_fs_t* fs, const char* tmp_dir)
         OE_TEST(false);
     }
 
-    OE_TEST(m >= 4);
+    OE_TEST(m >= 3);
 
     closedir(dir);
 }
@@ -354,8 +280,10 @@ void enc_test(const char* src_dir, const char* bin_dir)
             OE_TEST(oe_mkdir(&oe_hostfs, tmp_dir, 0777) == 0);
     }
 
+    oe_fs_set_default(&oe_hostfs);
     _test_default_fs(tmp_dir);
-    _test1(tmp_dir);
+    oe_fs_set_default(NULL);
+
     _test_alphabet_file(&oe_sgxfs, tmp_dir);
     _test_alphabet_file(&oe_hostfs, tmp_dir);
     _test_dirs(&oe_hostfs, tmp_dir);
