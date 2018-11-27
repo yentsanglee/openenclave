@@ -4,46 +4,99 @@ fs (file system)
 This directory contains the Open Enclave file system implementations. These
 include:
 
-    (*) sgxfs - Intel's protected file system.
-    (*) hostfs - unsecure host file system.
-    (*) muxfs - multiplexed file system.
-    (*) oefs - OE file system (with integrity, authentication, and encryption).
+    (*) SGXFS - Intel's protected file system.
+    (*) HOSTFS - unsecure host file system.
+    (*) MUXFS - multiplexed file system.
+    (*) OEFS - OE file system.
 
 Overview:
 =========
 
-Open Enclave provides APIs for utilizing one or more of its file systems. The
-**hostfs** and **sgxfs** file systems are defined globally. The following
-snippet declares an external reference to these.
+Open Enclave provides APIs for utilizing file systems implementations. The 
+**HOSTFS** and **SGXFS** file systems are defined globally as **oe_hostfs**
+and **oe_sgxfs** respectively.
+
+File systems are used to open files and directories. For example:
 
 ```
-#include <openenclave/fs.h>
-
-extern oe_fs_t oe_sgxfs;
-extern oe_fs_t oe_hostfs;
-```
-
-File systems can be used to open files and directories. For example:
-
-```
+/* Open an SGXFS file. */
 FILE* stream = oe_fopen(&oe_sgxfs, "/myfile", "w");
 
+/* Open a HOSTFS file. */
 DIR* dir = oe_opendir(&oe_hostfs, "/mydir");
 ```
 
-Once opened, these files and directories are manipulated with the standard
-C functions as shown in the following example.
+Once opened, files and directories are manipulated with the standard C 
+functions as follows.
 
 ```
-oe_fwrite("hello", 1, 5, stream);
+fwrite("hello", 1, 5, stream);
+
+while ((ent = readdir(dir)))
+{
+    ...
+}
 ```
 
+Binding a path to a file system:
+================================
+
+All path-oriented file and directory objects must be bound to a file system
+before they are manipulated. For example, **oe_fopen()** binds a path to the 
+file system given by the first argument. The following example binds "/myfile" 
+to the SGXFS file system.
+
+```
+FILE* stream = oe_fopen(&oe_sgxfs, "/myfile", "w");
+```
+
+Once bound, the **stream** can be passed to standard C I/O functions.
+
+There are four ways to bind a path to a file system.
+
+(1) By using the oe-prefixed functions, such as **oe_fopen()**, 
+    **oe_opendir()**, **oe_mkdir()**, and **oe_stat()**.
+
+(2) By using macros that redirect path-oriented functions to a particular file
+    system. For example:
+
+    ```
+    #define fopen(...) oe_fopen(OE_FILE_SECURE_BEST_EFFORT, __VA_ARGS__)
+    ```
+
+    This method requires using a custom **<stdio.h>** header file.
+
+(3) By using the **oe_fs_set_default()** function to set the default file
+    system used by the standard C I/O functions. For example:
+
+    ```
+    oe_fs_set_default(&oe_hostfs);
+    stream = fopen("/myfile", "r");
+    ```
+
+(4) By setting the multiplexing file system (**MUXFS**) as the default and
+    using paths to direct to one or more file systems. For example:
+
+    ```
+    oe_fs_set_default(&oe_muxfs);
+
+    /* Open a HOSTFS file. */
+    fopen("/hostfs/myfile", "r");
+
+    /* Open an SGXFS file. */
+    fopen("/sgxfs/myfile", "r");
+    ```
+
+The first method uses **explicit binding** and is the most secure. The other
+methods employ **implicit binding** which makes it easier to port existing 
+applications without having to retrofit all the path-oriented functions with
+special oe-prefixed functions.
 
 Supported Functions:
 ====================
 
-This directory in conjunction with MUSL libc supports the following stdio.h
-functions from the C99 standard.
+This directory in conjunction with **MUSL libc** supports the following 
+**stdio.h** functions from the **C99** standard.
 
 | Function      | Supported     | Source/target |
 | ----------------------------- | ------------- |
@@ -94,4 +147,4 @@ functions from the C99 standard.
 | ferror()      | Y             | stream        |
 | perror()      | Y             | stream        |
 
-Note: reading from stdin is not supported in enclaves.
+*stdin is not supported in enclaves.
