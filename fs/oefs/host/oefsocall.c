@@ -12,7 +12,7 @@ static void _handle_open(oefs_oefs_ocall_args_t* args)
 
         args->open.handle = NULL;
 
-        if (!(stream = fopen(args->open.path, "a+")))
+        if (!(stream = fopen(args->open.path, "w+")))
             return;
 
         args->open.handle = stream;

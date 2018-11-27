@@ -511,10 +511,11 @@ int access(const char* pathname, int mode)
     if (oe_stat(fs, pathname, &buf) != 0)
         return -1;
 
-    if (mode == F_OK)
-        return 0;
-
     /* TODO: resolve R_OK, W_OK, and X_OK (need uid/gid) */
+    if (mode == F_OK || mode == R_OK || mode == F_OK)
+    {
+        return 0;
+    }
 
     errno = EINVAL;
     return -1;

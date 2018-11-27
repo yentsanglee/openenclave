@@ -2183,7 +2183,7 @@ int oefs_lseek(
     }
 
     /* Check whether the new offset if out of range. */
-    if (new_offset < 0 || new_offset > file->offset)
+    if (new_offset < 0 || new_offset > file->inode.i_size)
         OEFS_RAISE(EINVAL);
 
     file->offset = new_offset;
@@ -3040,13 +3040,15 @@ static struct dirent* _d_readdir(DIR* base)
         goto done;
     }
 
-    dir->entry.d_ino = entry->d_ino;
-    dir->entry.d_off = entry->d_off;
-    dir->entry.d_reclen = entry->d_reclen;
-    dir->entry.d_type = entry->d_type;
-    strlcpy(dir->entry.d_name, entry->d_name, sizeof(dir->entry.d_name));
-
-    ret = &dir->entry;
+    if (entry)
+    {
+        dir->entry.d_ino = entry->d_ino;
+        dir->entry.d_off = entry->d_off;
+        dir->entry.d_reclen = entry->d_reclen;
+        dir->entry.d_type = entry->d_type;
+        strlcpy(dir->entry.d_name, entry->d_name, sizeof(dir->entry.d_name));
+        ret = &dir->entry;
+    }
 
 done:
 

@@ -27,6 +27,8 @@ int oe_strarr_append(oe_strarr_t* self, const char* data);
 
 int oe_strarr_remove(oe_strarr_t* self, size_t index);
 
+void oe_strarr_sort(oe_strarr_t* self);
+
 OE_EXTERNC_END
 
 #endif /* _OE_STRARR_H */

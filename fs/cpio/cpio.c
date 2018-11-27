@@ -572,9 +572,7 @@ int oe_cpio_unpack(const char* source, const char* target)
         GOTO(done);
 
     if (access(target, R_OK) != 0 && mkdir(target, 0766) != 0)
-    {
         GOTO(done);
-    }
 
     while ((r = oe_cpio_read_entry(cpio, &entry)) > 0)
     {
@@ -600,10 +598,10 @@ int oe_cpio_unpack(const char* source, const char* target)
 
             while ((n = oe_cpio_read_data(cpio, data, sizeof(data))) > 0)
             {
-                if (fwrite(data, 1, (size_t)n, os) != n)
-                {
+                ssize_t r;
+
+                if ((r = fwrite(data, 1, (size_t)n, os)) != n)
                     GOTO(done);
-                }
             }
 
             fclose(os);

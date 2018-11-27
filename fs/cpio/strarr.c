@@ -77,3 +77,36 @@ int oe_strarr_remove(oe_strarr_t* self, size_t index)
     self->size--;
     return 0;
 }
+
+void oe_strarr_sort(oe_strarr_t* self)
+{
+    size_t i;
+    size_t j;
+    size_t n;
+
+    if (self->size == 0)
+        return;
+
+    n = self->size - 1;
+
+    for (i = 0; i < self->size - 1; i++)
+    {
+        bool swapped = false;
+
+        for (j = 0; j < n; j++)
+        {
+            if (strcmp(self->data[j], self->data[j+1]) > 0)
+            {
+                char* tmp = self->data[j];
+                self->data[j] = self->data[j + 1];
+                self->data[j + 1] = tmp;
+                swapped = true;
+            }
+        }
+
+        if (!swapped)
+            break;
+
+        n--;
+    }
+}

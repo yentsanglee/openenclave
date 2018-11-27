@@ -11,9 +11,9 @@
 
 OE_EXTERNC_BEGIN
 
-int oe_lsr(oe_fs_t* fs, const char* root, oe_strarr_t* paths);
+int oe_lsr(const char* root, oe_strarr_t* paths);
 
-int oe_cmp(oe_fs_t* fs, const char* path1, const char* path2);
+int oe_cmp(const char* path1, const char* path2);
 
 OE_EXTERNC_END
 

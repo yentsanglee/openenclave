@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include "strarr.h"
 
-int oe_lsr(oe_fs_t* fs, const char* root, oe_strarr_t* paths)
+int oe_lsr(const char* root, oe_strarr_t* paths)
 {
     int ret = -1;
     DIR* dir = NULL;
@@ -58,7 +58,7 @@ int oe_lsr(oe_fs_t* fs, const char* root, oe_strarr_t* paths)
 
         for (i = 0; i < dirs.size; i++)
         {
-            if (oe_lsr(fs, dirs.data[i], paths) != 0)
+            if (oe_lsr(dirs.data[i], paths) != 0)
                 goto done;
         }
     }
@@ -81,7 +81,7 @@ done:
     return ret;
 }
 
-int oe_cmp(oe_fs_t* fs, const char* path1, const char* path2)
+int oe_cmp(const char* path1, const char* path2)
 {
     int ret = -1;
     struct stat st1;
@@ -95,10 +95,10 @@ int oe_cmp(oe_fs_t* fs, const char* path1, const char* path2)
     if (!path1 || !path2)
         goto done;
 
-    if (oe_stat(fs, path1, &st1) != 0)
+    if (stat(path1, &st1) != 0)
         goto done;
 
-    if (oe_stat(fs, path2, &st2) != 0)
+    if (stat(path2, &st2) != 0)
         goto done;
 
     if (S_ISDIR(st1.st_mode) && !S_ISDIR(st2.st_mode))
@@ -122,10 +122,10 @@ int oe_cmp(oe_fs_t* fs, const char* path1, const char* path2)
     if (st1.st_size != st2.st_size)
         goto done;
 
-    if (!(is1 = oe_fopen(fs, path1, "rb", NULL)))
+    if (!(is1 = fopen(path1, "rb")))
         goto done;
 
-    if (!(is2 = oe_fopen(fs, path2, "rb", NULL)))
+    if (!(is2 = fopen(path2, "rb")))
         goto done;
 
     for (;;)

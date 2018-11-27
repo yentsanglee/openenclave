@@ -653,7 +653,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/time/time.c
     ${MUSLSRC}/time/__tm_to_secs.c
     ${MUSLSRC}/time/__year_to_secs.c
-    ${MUSLSRC}/unistd/access.c
+    #${MUSLSRC}/unistd/access.c
     ${MUSLSRC}/unistd/close.c
     ${MUSLSRC}/unistd/read.c
     ${MUSLSRC}/unistd/write.c
