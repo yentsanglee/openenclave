@@ -95,7 +95,7 @@ void oe_strarr_sort(oe_strarr_t* self)
 
         for (j = 0; j < n; j++)
         {
-            if (strcmp(self->data[j], self->data[j+1]) > 0)
+            if (strcmp(self->data[j], self->data[j + 1]) > 0)
             {
                 char* tmp = self->data[j];
                 self->data[j] = self->data[j + 1];

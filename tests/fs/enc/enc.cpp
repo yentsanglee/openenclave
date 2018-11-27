@@ -9,8 +9,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "../../../fs/cpio/cpio.h"
 #include "../../../fs/cpio/commands.h"
+#include "../../../fs/cpio/cpio.h"
 #include "../../../fs/cpio/strarr.h"
 #include "../../../fs/oefs/common/oefs.h"
 #include "fs_t.h"
@@ -221,7 +221,7 @@ static void _test_dirs(oe_fs_t* fs, const char* tmp_dir)
 static const char* _basename(const char* path)
 {
     const char* p = strrchr(path, '/');
-    return p ?  p + 1 : path;
+    return p ? p + 1 : path;
 }
 
 static void _test_cpio(oe_fs_t* fs, const char* src_dir, const char* tmp_dir)
@@ -300,7 +300,7 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
     char source[PATH_MAX];
     _mkpath(source, tmp_dir, "/test.oefs");
     uint32_t flags = 0;
-    size_t nbytes = 2*4194304;
+    size_t nbytes = 2 * 4194304;
     size_t nblks = nbytes / OEFS_BLOCK_SIZE;
     uint8_t key[OEFS_KEY_SIZE] = {
         0x0f, 0xf0, 0x31, 0xe3, 0x93, 0xdf, 0x46, 0x7b, 0x9a, 0x33, 0xe8,
@@ -309,10 +309,10 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
     };
 
     flags |= OEFS_FLAG_MKFS;
-    //flags |= OEFS_FLAG_ENCRYPTION;
-    //flags |= OEFS_FLAG_AUTHENTICATION;
-    //flags |= OEFS_FLAG_CACHING;
-    //flags |= OEFS_FLAG_INTEGRITY;
+    flags |= OEFS_FLAG_ENCRYPTION;
+    flags |= OEFS_FLAG_AUTHENTICATION;
+    flags |= OEFS_FLAG_CACHING;
+    flags |= OEFS_FLAG_INTEGRITY;
 
     OE_TEST(oe_oefs_initialize(&oefs, source, flags, nblks, key) == 0);
 
