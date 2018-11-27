@@ -61,7 +61,7 @@ There are four ways to bind a path to a file system.
     system. For example:
 
 ```
-#define fopen(...) oe_fopen(OE_FILE_SECURE_BEST_EFFORT, __VA_ARGS__)
+    #define fopen(...) oe_fopen(OE_FILE_SECURE_BEST_EFFORT, __VA_ARGS__)
 ```
 
     This method requires using a custom **<stdio.h>** header file.
