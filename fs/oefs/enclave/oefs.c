@@ -2525,7 +2525,7 @@ int oefs_new(
     }
 
     /* Create an authenticated crypto block device. */
-    if ((flags & OEFS_FLAG_ENCRYPTION) && (flags & OEFS_FLAG_AUTHENTICATION))
+    if ((flags & OEFS_FLAG_AUTH_CRYPTO))
     {
         bool initialize = (flags & OEFS_FLAG_MKFS);
 
@@ -2539,7 +2539,7 @@ int oefs_new(
     }
 
     /* Create a crypto block device. */
-    if ((flags & OEFS_FLAG_ENCRYPTION) && !(flags & OEFS_FLAG_AUTHENTICATION))
+    if ((flags & OEFS_FLAG_CRYPTO))
     {
         if (oefs_crypto_blkdev_open(&crypto_dev, key, next) != 0)
             goto done;
@@ -2621,10 +2621,10 @@ int oefs_ramfs_new(oefs_t** oefs_out, uint32_t flags, size_t nblks)
 
     /* Fail if any of these flags are set. */
     {
-        if (flags & OEFS_FLAG_ENCRYPTION)
+        if (flags & OEFS_FLAG_CRYPTO)
             goto done;
 
-        if (flags & OEFS_FLAG_AUTHENTICATION)
+        if (flags & OEFS_FLAG_AUTH_CRYPTO)
             goto done;
 
         if (flags & OEFS_FLAG_INTEGRITY)
