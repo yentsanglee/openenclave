@@ -12,8 +12,8 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <limits.h>
+#include <openenclave/fs.h>
 #include <openenclave/internal/fs.h>
-#include <openenclave/internal/fsinternal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

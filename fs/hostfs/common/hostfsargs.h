@@ -3,11 +3,12 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
-#include <openenclave/internal/fs.h>
+#include <openenclave/fs.h>
 
 OE_EXTERNC_BEGIN
 
 #define OE_HOSTFS_MODE_MAX 8
+#define OE_HOSTFS_PATH_MAX 1024
 
 typedef enum _oe_hostfs_op {
     OE_HOSTFS_OP_NONE,
@@ -39,7 +40,7 @@ typedef struct _oe_hostfs_args
         struct
         {
             void* ret;
-            char path[OE_FS_PATH_MAX];
+            char path[OE_HOSTFS_PATH_MAX];
             char mode[OE_HOSTFS_MODE_MAX];
         } fopen;
         struct
@@ -97,7 +98,7 @@ typedef struct _oe_hostfs_args
         struct
         {
             void* ret;
-            char name[OE_FS_PATH_MAX];
+            char name[OE_HOSTFS_PATH_MAX];
         } opendir;
         struct
         {
@@ -109,7 +110,7 @@ typedef struct _oe_hostfs_args
                 int64_t d_off;
                 unsigned short d_reclen;
                 uint8_t d_type;
-                char d_name[OE_FS_PATH_MAX];
+                char d_name[OE_HOSTFS_PATH_MAX];
             } entry;
             void* result;
         } readdir;
@@ -121,7 +122,7 @@ typedef struct _oe_hostfs_args
         struct
         {
             int ret;
-            char path[OE_FS_PATH_MAX];
+            char path[OE_HOSTFS_PATH_MAX];
             struct
             {
                 uint32_t st_dev;
@@ -139,24 +140,24 @@ typedef struct _oe_hostfs_args
         struct
         {
             int ret;
-            char path[OE_FS_PATH_MAX];
+            char path[OE_HOSTFS_PATH_MAX];
         } remove;
         struct
         {
             int ret;
-            char old_path[OE_FS_PATH_MAX];
-            char new_path[OE_FS_PATH_MAX];
+            char old_path[OE_HOSTFS_PATH_MAX];
+            char new_path[OE_HOSTFS_PATH_MAX];
         } rename;
         struct
         {
             int ret;
-            char path[OE_FS_PATH_MAX];
+            char path[OE_HOSTFS_PATH_MAX];
             unsigned int mode;
         } mkdir;
         struct
         {
             int ret;
-            char path[OE_FS_PATH_MAX];
+            char path[OE_HOSTFS_PATH_MAX];
         } rmdir;
     } u;
     uint8_t buf[];

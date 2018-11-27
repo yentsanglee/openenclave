@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
 #include <openenclave/internal/calls.h>
-#include <openenclave/internal/fsinternal.h>
+#include <openenclave/internal/fs.h>
 #include <openenclave/internal/hostfs.h>
 #include <pthread.h>
 #include <stdio.h>

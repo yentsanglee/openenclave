@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <openenclave/internal/sgxfs.h>
-#include <openenclave/internal/fsinternal.h>
+#include <openenclave/internal/fs.h>
 
 #define MODE_MAX 16
 

@@ -1,7 +1,7 @@
 #ifndef _OE_OEFS_COMMON_H
 #define _OE_OEFS_COMMON_H
 
-#include <openenclave/internal/fs.h>
+#include <openenclave/fs.h>
 
 OE_EXTERNC_BEGIN
 

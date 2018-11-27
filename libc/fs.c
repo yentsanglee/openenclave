@@ -1,6 +1,6 @@
 #include <errno.h>
+#include <openenclave/fs.h>
 #include <openenclave/internal/fs.h>
-#include <openenclave/internal/fsinternal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>

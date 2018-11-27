@@ -4,7 +4,7 @@
 #define SECURE_FILE_MAX_PATH 1024
 
 #include <openenclave/bits/defs.h>
-#include <openenclave/internal/fs.h>
+#include <openenclave/fs.h>
 #include <stddef.h>
 #include <stdint.h>
 
