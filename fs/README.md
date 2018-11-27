@@ -10,7 +10,7 @@ include:
 * OEFS - OE file system.
 
 Overview:
-=========
+---------
 
 Open Enclave provides APIs for utilizing file systems implementations. The 
 **HOSTFS** and **SGXFS** file systems are defined globally as **oe_hostfs**
@@ -39,7 +39,7 @@ while ((ent = readdir(dir)))
 ```
 
 Binding a path to a file system:
-================================
+--------------------------------
 
 All path-oriented file and directory objects must be bound to a file system
 before they are manipulated. For example, **oe_fopen()** binds a path to the 
@@ -93,7 +93,7 @@ applications without having to retrofit all the path-oriented functions with
 special oe-prefixed functions.
 
 Supported Functions:
-====================
+--------------------
 
 This directory in conjunction with **MUSL libc** supports the following 
 **stdio.h** functions from the **C99** standard.
