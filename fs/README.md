@@ -4,10 +4,10 @@ fs (file system)
 This directory contains the Open Enclave file system implementations. These
 include:
 
-    * SGXFS - Intel's protected file system.
-    * HOSTFS - unsecure host file system.
-    * MUXFS - multiplexed file system.
-    * OEFS - OE file system.
+    - SGXFS - Intel's protected file system.
+    - HOSTFS - unsecure host file system.
+    - MUXFS - multiplexed file system.
+    - OEFS - OE file system.
 
 Overview:
 =========
