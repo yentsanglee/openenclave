@@ -99,7 +99,7 @@ This directory in conjunction with **MUSL libc** supports the following
 **stdio.h** functions from the **C99** standard.
 
 | Function      | Supported     | Source/target |
-|------------------------------ | --------------|
+|---------------|:-------------:| -------------:|
 | remove()      | Y             | path          |
 | rename()      | Y             | path          |
 | tmpfile()     |               | stream        |
