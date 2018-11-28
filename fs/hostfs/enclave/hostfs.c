@@ -1,5 +1,5 @@
 #define _GNU_SOURCE
-#include <openenclave/fs.h>
+#include <openenclave/bits/fs.h>
 #include <openenclave/internal/hostfs.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/fs.h>

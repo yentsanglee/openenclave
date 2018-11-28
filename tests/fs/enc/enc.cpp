@@ -1,7 +1,7 @@
 #include <errno.h>
 #include <errno.h>
 #include <limits.h>
-#include <openenclave/fs.h>
+#include <openenclave/bits/fs.h>
 #include <openenclave/internal/hostfs.h>
 #include <openenclave/internal/muxfs.h>
 #include <openenclave/internal/tests.h>

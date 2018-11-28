@@ -1,7 +1,7 @@
 #ifndef _OE_IO_H
 #define _OE_IO_H
 
-#include <openenclave/fs.h>
+#include <openenclave/bits/fs.h>
 #include <stdio.h>
 
 extern oe_fs_t oe_hostfs;

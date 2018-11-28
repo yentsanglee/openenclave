@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <openenclave/bits/safemath.h>
 #include <openenclave/enclave.h>
-#include <openenclave/fs.h>
+#include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/oefs.h>

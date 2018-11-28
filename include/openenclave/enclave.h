@@ -20,6 +20,7 @@
 #include "bits/report.h"
 #include "bits/result.h"
 #include "bits/types.h"
+#include "bits/fs.h"
 
 /**
  * @cond IGNORE

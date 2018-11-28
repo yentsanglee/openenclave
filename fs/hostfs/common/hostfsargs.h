@@ -3,7 +3,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
-#include <openenclave/fs.h>
+#include <openenclave/bits/fs.h>
 
 OE_EXTERNC_BEGIN
 

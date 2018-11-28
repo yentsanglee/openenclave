@@ -1,7 +1,7 @@
 #ifndef _OE_HOSTFS_H
 #define _OE_HOSTFS_H
 
-#include <openenclave/fs.h>
+#include <openenclave/bits/fs.h>
 
 OE_EXTERNC_BEGIN
 

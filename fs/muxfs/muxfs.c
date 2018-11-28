@@ -1,7 +1,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <openenclave/bits/properties.h>
-#include <openenclave/fs.h>
+#include <openenclave/bits/fs.h>
 #include <openenclave/internal/hostfs.h>
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/fs.h>

@@ -1,5 +1,5 @@
 #include <errno.h>
-#include <openenclave/fs.h>
+#include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
 #include <stdarg.h>
 #include <stdio.h>
