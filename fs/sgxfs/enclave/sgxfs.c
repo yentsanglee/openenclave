@@ -263,7 +263,7 @@ static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
         if ((offset = ftell(stream)) < 0)
             goto done;
         
-        stat->st_size = (size_t)offset
+        stat->st_size = (size_t)offset;
     }
 
     ret = 0;
