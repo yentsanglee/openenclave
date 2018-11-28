@@ -1,15 +1,15 @@
 #define _GNU_SOURCE
 #include <openenclave/bits/fs.h>
-#include <openenclave/internal/hostfs.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/hostfs.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "../common/hostfsargs.h"
 #include "hostbatch.h"
-#include <sys/stat.h>
 
 #define BATCH_SIZE 4096
 
@@ -62,7 +62,7 @@ OE_INLINE bool _valid_file(file_t* file)
     return file && file->base.magic == OE_FILE_MAGIC;
 }
 
-static int _f_fclose(FILE* base)
+static int _hostfs_f_fclose(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -104,20 +104,19 @@ done:
     return ret;
 }
 
-static size_t _f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
+static size_t _hostfs_f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
 {
     size_t ret = 0;
     file_t* file = (file_t*)base;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
+    size_t n = size * nmemb;
 
     if (!ptr || !_valid_file(file) || !batch)
         goto done;
 
     /* Input */
     {
-        size_t n = size + nmemb;
-
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + n)))
             goto done;
 
@@ -137,9 +136,10 @@ static size_t _f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
     }
 
     /* Output */
+    if (args->u.fread.ret > 0 && args->u.fread.ret <= n)
     {
-        if ((ret = args->u.fread.ret) > 0)
-            memcpy(ptr, args->buf, ret);
+        ret = args->u.fread.ret;
+        memcpy(ptr, args->buf, ret);
     }
 
 done:
@@ -150,7 +150,11 @@ done:
     return ret;
 }
 
-static size_t _f_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* base)
+static size_t _hostfs_f_fwrite(
+    const void* ptr,
+    size_t size,
+    size_t nmemb,
+    FILE* base)
 {
     size_t ret = 0;
     file_t* file = (file_t*)base;
@@ -195,7 +199,7 @@ done:
     return ret;
 }
 
-static int64_t _f_ftell(FILE* base)
+static int64_t _hostfs_f_ftell(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -234,7 +238,7 @@ done:
     return ret;
 }
 
-static int _f_fseek(FILE* base, int64_t offset, int whence)
+static int _hostfs_f_fseek(FILE* base, int64_t offset, int whence)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -275,7 +279,7 @@ done:
     return ret;
 }
 
-static int _f_fflush(FILE* base)
+static int _hostfs_f_fflush(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -314,7 +318,7 @@ done:
     return ret;
 }
 
-static int _f_ferror(FILE* base)
+static int _hostfs_f_ferror(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -353,7 +357,7 @@ done:
     return ret;
 }
 
-static int _f_feof(FILE* base)
+static int _hostfs_f_feof(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -392,7 +396,7 @@ done:
     return ret;
 }
 
-static void _f_clearerr(FILE* base)
+static void _hostfs_f_clearerr(FILE* base)
 {
     file_t* file = (file_t*)base;
     oe_host_batch_t* batch = _get_host_batch();
@@ -428,7 +432,7 @@ done:
     return;
 }
 
-static FILE* _fs_fopen(
+static FILE* _hostfs_fs_fopen(
     oe_fs_t* fs,
     const char* path,
     const char* mode,
@@ -468,15 +472,15 @@ static FILE* _fs_fopen(
             goto done;
 
         file->base.magic = OE_FILE_MAGIC;
-        file->base.f_fclose = _f_fclose;
-        file->base.f_fread = _f_fread;
-        file->base.f_fwrite = _f_fwrite;
-        file->base.f_ftell = _f_ftell;
-        file->base.f_fseek = _f_fseek;
-        file->base.f_fflush = _f_fflush;
-        file->base.f_ferror = _f_ferror;
-        file->base.f_feof = _f_feof;
-        file->base.f_clearerr = _f_clearerr;
+        file->base.f_fclose = _hostfs_f_fclose;
+        file->base.f_fread = _hostfs_f_fread;
+        file->base.f_fwrite = _hostfs_f_fwrite;
+        file->base.f_ftell = _hostfs_f_ftell;
+        file->base.f_fseek = _hostfs_f_fseek;
+        file->base.f_fflush = _hostfs_f_fflush;
+        file->base.f_ferror = _hostfs_f_ferror;
+        file->base.f_feof = _hostfs_f_feof;
+        file->base.f_clearerr = _hostfs_f_clearerr;
         file->host_file = args->u.fopen.ret;
     }
 
@@ -494,7 +498,7 @@ done:
     return ret;
 }
 
-static struct dirent* _d_readdir(DIR* base)
+static struct dirent* _hostfs_d_readdir(DIR* base)
 {
     struct dirent* ret = NULL;
     dir_t* dir = (dir_t*)base;
@@ -549,7 +553,7 @@ done:
     return ret;
 }
 
-static int _d_closedir(DIR* base)
+static int _hostfs_d_closedir(DIR* base)
 {
     int ret = -1;
     dir_t* dir = (dir_t*)base;
@@ -593,7 +597,7 @@ done:
     return ret;
 }
 
-static DIR* _fs_opendir(oe_fs_t* fs, const char* name)
+static DIR* _hostfs_fs_opendir(oe_fs_t* fs, const char* name)
 {
     DIR* ret = NULL;
     oe_host_batch_t* batch = _get_host_batch();
@@ -627,8 +631,8 @@ static DIR* _fs_opendir(oe_fs_t* fs, const char* name)
         if (!(dir = calloc(1, sizeof(dir_t))))
             goto done;
 
-        dir->base.d_readdir = _d_readdir;
-        dir->base.d_closedir = _d_closedir;
+        dir->base.d_readdir = _hostfs_d_readdir;
+        dir->base.d_closedir = _hostfs_d_closedir;
         dir->host_dir = args->u.opendir.ret;
     }
 
@@ -646,7 +650,7 @@ done:
     return ret;
 }
 
-static int _fs_release(oe_fs_t* fs)
+static int _hostfs_fs_release(oe_fs_t* fs)
 {
     uint32_t ret = -1;
 
@@ -659,7 +663,7 @@ done:
     return ret;
 }
 
-static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
+static int _hostfs_fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
 {
     int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
@@ -709,7 +713,10 @@ done:
     return ret;
 }
 
-static int _fs_rename(oe_fs_t* fs, const char* old_path, const char* new_path)
+static int _hostfs_fs_rename(
+    oe_fs_t* fs,
+    const char* old_path,
+    const char* new_path)
 {
     int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
@@ -752,7 +759,7 @@ done:
     return ret;
 }
 
-static int _fs_remove(oe_fs_t* fs, const char* path)
+static int _hostfs_fs_remove(oe_fs_t* fs, const char* path)
 {
     int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
@@ -792,7 +799,7 @@ done:
     return ret;
 }
 
-static int _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
+static int _hostfs_fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
 {
     int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
@@ -833,7 +840,7 @@ done:
     return ret;
 }
 
-static int _fs_rmdir(oe_fs_t* fs, const char* path)
+static int _hostfs_fs_rmdir(oe_fs_t* fs, const char* path)
 {
     int ret = -1;
     oe_host_batch_t* batch = _get_host_batch();
@@ -874,14 +881,14 @@ done:
 }
 
 static oe_fs_ft_t _ft = {
-    .fs_release = _fs_release,
-    .fs_fopen = _fs_fopen,
-    .fs_opendir = _fs_opendir,
-    .fs_stat = _fs_stat,
-    .fs_remove = _fs_remove,
-    .fs_rename = _fs_rename,
-    .fs_mkdir = _fs_mkdir,
-    .fs_rmdir = _fs_rmdir,
+    .fs_release = _hostfs_fs_release,
+    .fs_fopen = _hostfs_fs_fopen,
+    .fs_opendir = _hostfs_fs_opendir,
+    .fs_stat = _hostfs_fs_stat,
+    .fs_remove = _hostfs_fs_remove,
+    .fs_rename = _hostfs_fs_rename,
+    .fs_mkdir = _hostfs_fs_mkdir,
+    .fs_rmdir = _hostfs_fs_rmdir,
 };
 
 oe_fs_t oe_hostfs = {

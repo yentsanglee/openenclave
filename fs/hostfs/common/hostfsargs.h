@@ -2,8 +2,8 @@
 #define _OE_HOSTFSARGS_H
 
 #include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
 #include <openenclave/bits/fs.h>
+#include <openenclave/bits/types.h>
 
 OE_EXTERNC_BEGIN
 

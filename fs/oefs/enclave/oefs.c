@@ -6,20 +6,20 @@
 #include <assert.h>
 #include <assert.h>
 #include <errno.h>
+#include <openenclave/bits/fs.h>
 #include <openenclave/bits/safemath.h>
 #include <openenclave/enclave.h>
-#include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
-#include <openenclave/internal/raise.h>
 #include <openenclave/internal/oefs.h>
+#include <openenclave/internal/raise.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "../../common/buf.h"
 #include "raise.h"
 #include "utils.h"
-#include <sys/stat.h>
 
 /*
 **==============================================================================
@@ -2676,7 +2676,7 @@ done:
 */
 
 /* This implementation overlays oe_fs_t. */
-typedef struct _fs_impl
+typedef struct _oefs_fs_impl
 {
     oe_fs_base_t base;
     uint64_t magic;
@@ -2736,7 +2736,7 @@ static oefs_dir_t* _get_oefs_dir(dir_t* dir)
     return dir->oefs_dir;
 }
 
-static int _f_fclose(FILE* base)
+static int _oefs_f_fclose(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -2748,6 +2748,8 @@ static int _f_fclose(FILE* base)
     if (oefs_close(oefs_file) != 0)
         goto done;
 
+    free(base);
+
     ret = 0;
 
 done:
@@ -2755,7 +2757,7 @@ done:
     return ret;
 }
 
-static size_t _f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
+static size_t _oefs_f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
 {
     size_t ret = 0;
     file_t* file = (file_t*)base;
@@ -2786,7 +2788,11 @@ done:
     return ret;
 }
 
-static size_t _f_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* base)
+static size_t _oefs_f_fwrite(
+    const void* ptr,
+    size_t size,
+    size_t nmemb,
+    FILE* base)
 {
     size_t ret = 0;
     file_t* file = (file_t*)base;
@@ -2814,7 +2820,7 @@ done:
     return ret;
 }
 
-static int64_t _f_ftell(FILE* base)
+static int64_t _oefs_f_ftell(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -2841,7 +2847,7 @@ done:
     return ret;
 }
 
-static int _f_fseek(FILE* base, int64_t offset, int whence)
+static int _oefs_f_fseek(FILE* base, int64_t offset, int whence)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -2868,13 +2874,13 @@ done:
     return ret;
 }
 
-static int _f_fflush(FILE* base)
+static int _oefs_f_fflush(FILE* base)
 {
     /* Nothing to do since OEFS does not use buffered input/output. */
     return 0;
 }
 
-static int _f_ferror(FILE* base)
+static int _oefs_f_ferror(FILE* base)
 {
     int ret = 1;
     file_t* file = (file_t*)base;
@@ -2893,7 +2899,7 @@ done:
     return ret;
 }
 
-static int _f_feof(FILE* base)
+static int _oefs_f_feof(FILE* base)
 {
     int ret = 1;
     file_t* file = (file_t*)base;
@@ -2912,7 +2918,7 @@ done:
     return ret;
 }
 
-static void _f_clearerr(FILE* base)
+static void _oefs_f_clearerr(FILE* base)
 {
     file_t* file = (file_t*)base;
     oefs_file_t* oefs_file = _get_oefs_file(file);
@@ -2924,7 +2930,7 @@ static void _f_clearerr(FILE* base)
     }
 }
 
-static FILE* _fs_fopen(
+static FILE* _oefs_fs_fopen(
     oe_fs_t* fs,
     const char* path,
     const char* mode_in,
@@ -3007,15 +3013,15 @@ static FILE* _fs_fopen(
     }
 
     file->base.magic = OE_FILE_MAGIC;
-    file->base.f_fclose = _f_fclose;
-    file->base.f_fread = _f_fread;
-    file->base.f_fwrite = _f_fwrite;
-    file->base.f_ftell = _f_ftell;
-    file->base.f_fseek = _f_fseek;
-    file->base.f_fflush = _f_fflush;
-    file->base.f_ferror = _f_ferror;
-    file->base.f_feof = _f_feof;
-    file->base.f_clearerr = _f_clearerr;
+    file->base.f_fclose = _oefs_f_fclose;
+    file->base.f_fread = _oefs_f_fread;
+    file->base.f_fwrite = _oefs_f_fwrite;
+    file->base.f_ftell = _oefs_f_ftell;
+    file->base.f_fseek = _oefs_f_fseek;
+    file->base.f_fflush = _oefs_f_fflush;
+    file->base.f_ferror = _oefs_f_ferror;
+    file->base.f_feof = _oefs_f_feof;
+    file->base.f_clearerr = _oefs_f_clearerr;
     file->oefs_file = oefs_file;
     ret = &file->base;
     file = NULL;
@@ -3032,7 +3038,7 @@ done:
     return ret;
 }
 
-static struct dirent* _d_readdir(DIR* base)
+static struct dirent* _oefs_d_readdir(DIR* base)
 {
     struct dirent* ret = NULL;
     dir_t* dir = (dir_t*)base;
@@ -3067,7 +3073,7 @@ done:
     return ret;
 }
 
-static int _d_closedir(DIR* base)
+static int _oefs_d_closedir(DIR* base)
 {
     int ret = -1;
     dir_t* dir = (dir_t*)base;
@@ -3095,7 +3101,7 @@ done:
     return ret;
 }
 
-static DIR* _fs_opendir(oe_fs_t* fs, const char* name)
+static DIR* _oefs_fs_opendir(oe_fs_t* fs, const char* name)
 {
     DIR* ret = NULL;
     oefs_t* oefs = _get_oefs(fs);
@@ -3121,8 +3127,8 @@ static DIR* _fs_opendir(oe_fs_t* fs, const char* name)
         goto done;
     }
 
-    dir->base.d_readdir = _d_readdir;
-    dir->base.d_closedir = _d_closedir;
+    dir->base.d_readdir = _oefs_d_readdir;
+    dir->base.d_closedir = _oefs_d_closedir;
     dir->oefs_dir = oefs_dir;
     ret = &dir->base;
     dir = NULL;
@@ -3139,7 +3145,7 @@ done:
     return ret;
 }
 
-static int _fs_release(oe_fs_t* fs)
+static int _oefs_fs_release(oe_fs_t* fs)
 {
     uint32_t ret = -1;
     oefs_t* oefs = _get_oefs(fs);
@@ -3165,7 +3171,7 @@ done:
     return ret;
 }
 
-static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
+static int _oefs_fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
 {
     int ret = -1;
     oefs_t* oefs = _get_oefs(fs);
@@ -3202,7 +3208,10 @@ done:
     return ret;
 }
 
-static int _fs_rename(oe_fs_t* fs, const char* old_path, const char* new_path)
+static int _oefs_fs_rename(
+    oe_fs_t* fs,
+    const char* old_path,
+    const char* new_path)
 {
     int ret = -1;
     oefs_t* oefs = _get_oefs(fs);
@@ -3227,7 +3236,7 @@ done:
     return ret;
 }
 
-static int _fs_remove(oe_fs_t* fs, const char* path)
+static int _oefs_fs_remove(oe_fs_t* fs, const char* path)
 {
     int ret = -1;
     oefs_t* oefs = _get_oefs(fs);
@@ -3252,7 +3261,7 @@ done:
     return ret;
 }
 
-static int _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
+static int _oefs_fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
 {
     int ret = -1;
     oefs_t* oefs = _get_oefs(fs);
@@ -3277,7 +3286,7 @@ done:
     return ret;
 }
 
-static int _fs_rmdir(oe_fs_t* fs, const char* path)
+static int _oefs_fs_rmdir(oe_fs_t* fs, const char* path)
 {
     int ret = -1;
     oefs_t* oefs = _get_oefs(fs);
@@ -3303,14 +3312,14 @@ done:
 }
 
 static oe_fs_ft_t _ft = {
-    .fs_release = _fs_release,
-    .fs_fopen = _fs_fopen,
-    .fs_opendir = _fs_opendir,
-    .fs_stat = _fs_stat,
-    .fs_remove = _fs_remove,
-    .fs_rename = _fs_rename,
-    .fs_mkdir = _fs_mkdir,
-    .fs_rmdir = _fs_rmdir,
+    .fs_release = _oefs_fs_release,
+    .fs_fopen = _oefs_fs_fopen,
+    .fs_opendir = _oefs_fs_opendir,
+    .fs_stat = _oefs_fs_stat,
+    .fs_remove = _oefs_fs_remove,
+    .fs_rename = _oefs_fs_rename,
+    .fs_mkdir = _oefs_fs_mkdir,
+    .fs_rmdir = _oefs_fs_rmdir,
 };
 
 int oe_oefs_initialize(

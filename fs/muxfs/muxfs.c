@@ -1,10 +1,10 @@
 #include <errno.h>
 #include <limits.h>
-#include <openenclave/bits/properties.h>
 #include <openenclave/bits/fs.h>
-#include <openenclave/internal/hostfs.h>
+#include <openenclave/bits/properties.h>
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/hostfs.h>
 #include <openenclave/internal/muxfs.h>
 #include <openenclave/internal/sgxfs.h>
 #include <pthread.h>
@@ -25,7 +25,7 @@ typedef struct _entry
 static pthread_spinlock_t _lock;
 
 /* This implementation overlays oe_fs_t. */
-typedef struct _fs_impl
+typedef struct _muxfs_fs_impl
 {
     oe_fs_base_t base;
     uint64_t magic;
@@ -88,7 +88,7 @@ done:
     return ret;
 }
 
-static FILE* _fs_fopen(
+static FILE* _muxfs_fs_fopen(
     oe_fs_t* muxfs,
     const char* path,
     const char* mode,
@@ -111,7 +111,7 @@ done:
     return ret;
 }
 
-static DIR* _fs_opendir(oe_fs_t* muxfs, const char* name)
+static DIR* _muxfs_fs_opendir(oe_fs_t* muxfs, const char* name)
 {
     DIR* ret = NULL;
     oe_fs_t* fs;
@@ -130,7 +130,7 @@ done:
     return ret;
 }
 
-static int _fs_release(oe_fs_t* fs)
+static int _muxfs_fs_release(oe_fs_t* fs)
 {
     uint32_t ret = -1;
 
@@ -143,7 +143,7 @@ done:
     return ret;
 }
 
-static int _fs_stat(oe_fs_t* muxfs, const char* path, struct stat* stat)
+static int _muxfs_fs_stat(oe_fs_t* muxfs, const char* path, struct stat* stat)
 {
     int ret = -1;
     oe_fs_t* fs;
@@ -162,7 +162,7 @@ done:
     return ret;
 }
 
-static int _fs_rename(
+static int _muxfs_fs_rename(
     oe_fs_t* muxfs,
     const char* old_path,
     const char* new_path)
@@ -198,7 +198,7 @@ done:
     return ret;
 }
 
-static int _fs_remove(oe_fs_t* muxfs, const char* path)
+static int _muxfs_fs_remove(oe_fs_t* muxfs, const char* path)
 {
     int ret = -1;
     oe_fs_t* fs;
@@ -217,7 +217,7 @@ done:
     return ret;
 }
 
-static int _fs_mkdir(oe_fs_t* muxfs, const char* path, unsigned int mode)
+static int _muxfs_fs_mkdir(oe_fs_t* muxfs, const char* path, unsigned int mode)
 {
     int ret = -1;
     oe_fs_t* fs;
@@ -236,7 +236,7 @@ done:
     return ret;
 }
 
-static int _fs_rmdir(oe_fs_t* muxfs, const char* path)
+static int _muxfs_fs_rmdir(oe_fs_t* muxfs, const char* path)
 {
     int ret = -1;
     oe_fs_t* fs;
@@ -269,14 +269,14 @@ static entry_t _entries[MAX_ENTRIES] = {
 static const size_t _num_entries = 2;
 
 static oe_fs_ft_t _ft = {
-    .fs_release = _fs_release,
-    .fs_fopen = _fs_fopen,
-    .fs_opendir = _fs_opendir,
-    .fs_stat = _fs_stat,
-    .fs_remove = _fs_remove,
-    .fs_rename = _fs_rename,
-    .fs_mkdir = _fs_mkdir,
-    .fs_rmdir = _fs_rmdir,
+    .fs_release = _muxfs_fs_release,
+    .fs_fopen = _muxfs_fs_fopen,
+    .fs_opendir = _muxfs_fs_opendir,
+    .fs_stat = _muxfs_fs_stat,
+    .fs_remove = _muxfs_fs_remove,
+    .fs_rename = _muxfs_fs_rename,
+    .fs_mkdir = _muxfs_fs_mkdir,
+    .fs_rmdir = _muxfs_fs_rmdir,
 };
 
 oe_fs_t oe_muxfs = {

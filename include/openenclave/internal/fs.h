@@ -3,8 +3,8 @@
 
 #include <dirent.h>
 #include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
 #include <openenclave/bits/fs.h>
+#include <openenclave/bits/types.h>
 #include <stdio.h>
 
 OE_EXTERNC_BEGIN

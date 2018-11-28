@@ -28,7 +28,7 @@ OE_INLINE bool _valid_file(file_t* file)
     return file && file->base.magic == OE_FILE_MAGIC;
 }
 
-static int _f_fclose(FILE* base)
+static int _sgxfs_f_fclose(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -47,7 +47,7 @@ done:
     return ret;
 }
 
-static size_t _f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
+static size_t _sgxfs_f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
 {
     size_t ret = 0;
     file_t* file = (file_t*)base;
@@ -62,7 +62,11 @@ done:
     return ret;
 }
 
-static size_t _f_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* base)
+static size_t _sgxfs_f_fwrite(
+    const void* ptr,
+    size_t size,
+    size_t nmemb,
+    FILE* base)
 {
     size_t ret = 0;
     file_t* file = (file_t*)base;
@@ -77,7 +81,7 @@ done:
     return ret;
 }
 
-static int64_t _f_ftell(FILE* base)
+static int64_t _sgxfs_f_ftell(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
@@ -91,7 +95,7 @@ done:
     return ret;
 }
 
-static int _f_fseek(FILE* base, int64_t offset, int whence)
+static int _sgxfs_f_fseek(FILE* base, int64_t offset, int whence)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -105,7 +109,7 @@ done:
     return ret;
 }
 
-static int _f_fflush(FILE* base)
+static int _sgxfs_f_fflush(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -119,7 +123,7 @@ done:
     return ret;
 }
 
-static int _f_ferror(FILE* base)
+static int _sgxfs_f_ferror(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -133,7 +137,7 @@ done:
     return ret;
 }
 
-static int _f_feof(FILE* base)
+static int _sgxfs_f_feof(FILE* base)
 {
     int ret = -1;
     file_t* file = (file_t*)base;
@@ -147,7 +151,7 @@ done:
     return ret;
 }
 
-static void _f_clearerr(FILE* base)
+static void _sgxfs_f_clearerr(FILE* base)
 {
     file_t* file = (file_t*)base;
 
@@ -160,7 +164,7 @@ done:
     return;
 }
 
-static FILE* _fs_fopen(
+static FILE* _sgxfs_fs_fopen(
     oe_fs_t* fs,
     const char* path,
     const char* mode,
@@ -203,15 +207,15 @@ static FILE* _fs_fopen(
     }
 
     file->base.magic = OE_FILE_MAGIC;
-    file->base.f_fclose = _f_fclose;
-    file->base.f_fread = _f_fread;
-    file->base.f_fwrite = _f_fwrite;
-    file->base.f_ftell = _f_ftell;
-    file->base.f_fseek = _f_fseek;
-    file->base.f_fflush = _f_fflush;
-    file->base.f_ferror = _f_ferror;
-    file->base.f_feof = _f_feof;
-    file->base.f_clearerr = _f_clearerr;
+    file->base.f_fclose = _sgxfs_f_fclose;
+    file->base.f_fread = _sgxfs_f_fread;
+    file->base.f_fwrite = _sgxfs_f_fwrite;
+    file->base.f_ftell = _sgxfs_f_ftell;
+    file->base.f_fseek = _sgxfs_f_fseek;
+    file->base.f_fflush = _sgxfs_f_fflush;
+    file->base.f_ferror = _sgxfs_f_ferror;
+    file->base.f_feof = _sgxfs_f_feof;
+    file->base.f_clearerr = _sgxfs_f_clearerr;
 
     ret = &file->base;
     file = NULL;
@@ -224,7 +228,7 @@ done:
     return ret;
 }
 
-static int _fs_release(oe_fs_t* fs)
+static int _sgxfs_fs_release(oe_fs_t* fs)
 {
     uint32_t ret = -1;
 
@@ -237,12 +241,12 @@ done:
     return ret;
 }
 
-static DIR* _fs_opendir(oe_fs_t* fs, const char* name)
+static DIR* _sgxfs_fs_opendir(oe_fs_t* fs, const char* name)
 {
     return oe_opendir(&oe_hostfs, name);
 }
 
-static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
+static int _sgxfs_fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
 {
     int ret = -1;
     FILE* stream = NULL;
@@ -262,7 +266,7 @@ static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
 
         if ((offset = ftell(stream)) < 0)
             goto done;
-        
+
         stat->st_size = (size_t)offset;
     }
 
@@ -276,35 +280,38 @@ done:
     return ret;
 }
 
-static int _fs_rename(oe_fs_t* fs, const char* old_path, const char* new_path)
+static int _sgxfs_fs_rename(
+    oe_fs_t* fs,
+    const char* old_path,
+    const char* new_path)
 {
     return oe_rename(&oe_hostfs, old_path, new_path);
 }
 
-static int _fs_remove(oe_fs_t* fs, const char* path)
+static int _sgxfs_fs_remove(oe_fs_t* fs, const char* path)
 {
     return oe_remove(&oe_hostfs, path);
 }
 
-static int _fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
+static int _sgxfs_fs_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
 {
     return oe_mkdir(&oe_hostfs, path, mode);
 }
 
-static int _fs_rmdir(oe_fs_t* fs, const char* path)
+static int _sgxfs_fs_rmdir(oe_fs_t* fs, const char* path)
 {
     return oe_rmdir(&oe_hostfs, path);
 }
 
 static oe_fs_ft_t _ft = {
-    .fs_release = _fs_release,
-    .fs_fopen = _fs_fopen,
-    .fs_opendir = _fs_opendir,
-    .fs_stat = _fs_stat,
-    .fs_remove = _fs_remove,
-    .fs_rename = _fs_rename,
-    .fs_mkdir = _fs_mkdir,
-    .fs_rmdir = _fs_rmdir,
+    .fs_release = _sgxfs_fs_release,
+    .fs_fopen = _sgxfs_fs_fopen,
+    .fs_opendir = _sgxfs_fs_opendir,
+    .fs_stat = _sgxfs_fs_stat,
+    .fs_remove = _sgxfs_fs_remove,
+    .fs_rename = _sgxfs_fs_rename,
+    .fs_mkdir = _sgxfs_fs_mkdir,
+    .fs_rmdir = _sgxfs_fs_rmdir,
 };
 
 oe_fs_t oe_sgxfs = {

@@ -1,17 +1,17 @@
+#include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <errno.h>
 #include <limits.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/muxfs.h>
-#include <openenclave/internal/tests.h>
 #include <openenclave/internal/oefs.h>
+#include <openenclave/internal/tests.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <dirent.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <assert.h>
+#include <sys/types.h>
 #include "../../../fs/common/strarr.h"
 #include "../../../fs/cpio/commands.h"
 #include "../../../fs/cpio/cpio.h"
@@ -187,6 +187,7 @@ static void _test_cpio(oe_fs_t* fs, const char* src_dir, const char* tmp_dir)
             _mkpath(file1, src_dir, "/tests/fs/alphabet");
             _mkpath(file2, cpio_dir, "/fs/alphabet");
 
+            OE_TEST(oe_cmp(file1, file1) == 0);
             OE_TEST(oe_cmp(file1, file2) == 0);
         }
 

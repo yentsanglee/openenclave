@@ -86,8 +86,8 @@ int oe_cmp(const char* path1, const char* path2)
     int ret = -1;
     struct stat st1;
     struct stat st2;
-    char buf1[512];
-    char buf2[512];
+    uint8_t buf1[512];
+    uint8_t buf2[512];
     FILE* is1 = NULL;
     FILE* is2 = NULL;
     size_t size = 0;
@@ -146,7 +146,9 @@ int oe_cmp(const char* path1, const char* path2)
     }
 
     if (size != st1.st_size)
+    {
         goto done;
+    }
 
     ret = 0;
 

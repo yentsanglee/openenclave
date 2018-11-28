@@ -1,13 +1,13 @@
+#include <dirent.h>
 #include <errno.h>
 #include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <dirent.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 size_t musl_fwrite(const void* ptr, size_t size, size_t nmemb, FILE* stream);
 
