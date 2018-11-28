@@ -1,4 +1,4 @@
-#include <openenclave/hostfs.h>
+#include <openenclave/internal/hostfs.h>
 #include "../common/sgxfsargs.h"
 #include "sgx_tprotected_fs_u.h"
 

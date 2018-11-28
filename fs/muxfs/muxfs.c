@@ -2,11 +2,11 @@
 #include <limits.h>
 #include <openenclave/bits/properties.h>
 #include <openenclave/fs.h>
-#include <openenclave/hostfs.h>
+#include <openenclave/internal/hostfs.h>
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/muxfs.h>
-#include <openenclave/sgxfs.h>
+#include <openenclave/internal/sgxfs.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,20 +25,21 @@ typedef struct _entry
 static pthread_spinlock_t _lock;
 
 /* This implementation overlays oe_fs_t. */
-typedef struct _fs
+typedef struct _fs_impl
 {
     oe_fs_base_t base;
     uint64_t magic;
     size_t num_entries;
     size_t max_entries;
     entry_t* entries;
-} fs_t;
+    uint64_t padding[10];
+} fs_impl_t;
 
-OE_STATIC_ASSERT(sizeof(fs_t) <= sizeof(oe_fs_t));
+OE_STATIC_ASSERT(sizeof(fs_impl_t) == sizeof(oe_fs_t));
 
-OE_INLINE fs_t* _get_impl(oe_fs_t* fs)
+OE_INLINE fs_impl_t* _get_impl(oe_fs_t* fs)
 {
-    fs_t* impl = (fs_t*)fs->__impl;
+    fs_impl_t* impl = (fs_impl_t*)fs->__impl;
 
     if (impl->magic != MAGIC)
         return NULL;
@@ -49,7 +50,7 @@ OE_INLINE fs_t* _get_impl(oe_fs_t* fs)
 static oe_fs_t* _find_fs(oe_fs_t* fs, const char* path, char suffix[PATH_MAX])
 {
     oe_fs_t* ret = NULL;
-    fs_t* impl = _get_impl(fs);
+    fs_impl_t* impl = _get_impl(fs);
     size_t match_len = 0;
     bool locked = false;
 
@@ -290,7 +291,7 @@ oe_fs_t oe_muxfs = {
 int oe_muxfs_register_fs(oe_fs_t* muxfs, const char* path, oe_fs_t* fs)
 {
     int ret = -1;
-    fs_t* impl = _get_impl(muxfs);
+    fs_impl_t* impl = _get_impl(muxfs);
     bool locked = false;
     entry_t* entry;
 
@@ -331,7 +332,7 @@ done:
 int oe_muxfs_unregister_fs(oe_fs_t* muxfs, const char* path)
 {
     int ret = -1;
-    fs_t* impl = _get_impl(muxfs);
+    fs_impl_t* impl = _get_impl(muxfs);
     bool locked = false;
     bool found = false;
 

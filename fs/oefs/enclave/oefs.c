@@ -11,12 +11,12 @@
 #include <openenclave/fs.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/raise.h>
+#include <openenclave/internal/oefs.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../../common/buf.h"
-#include "../common/oefs.h"
 #include "raise.h"
 #include "utils.h"
 
@@ -2675,15 +2675,15 @@ done:
 */
 
 /* This implementation overlays oe_fs_t. */
-typedef struct fs
+typedef struct _fs_impl
 {
     oe_fs_base_t base;
     uint64_t magic;
     oefs_t* oefs;
     uint64_t padding[12];
-} fs_t;
+} fs_impl_t;
 
-OE_STATIC_ASSERT(sizeof(fs_t) == sizeof(oe_fs_t));
+OE_STATIC_ASSERT(sizeof(fs_impl_t) == sizeof(oe_fs_t));
 
 typedef struct _file
 {
@@ -2702,7 +2702,7 @@ typedef struct _dir
 
 static oefs_t* _get_oefs(oe_fs_t* fs)
 {
-    fs_t* impl = (fs_t*)fs;
+    fs_impl_t* impl = (fs_impl_t*)fs;
 
     if (!fs || oe_fs_magic(fs) != OE_FS_MAGIC)
         return NULL;
@@ -3321,7 +3321,7 @@ int oe_oefs_initialize(
 {
     int ret = -1;
     oefs_t* oefs = NULL;
-    fs_t* fs = NULL;
+    fs_impl_t* impl = NULL;
 
     if (fs_out)
         *fs_out = NULL;
@@ -3329,27 +3329,27 @@ int oe_oefs_initialize(
     if (!fs_out)
         goto done;
 
-    if (!(fs = calloc(1, sizeof(oe_fs_t))))
+    if (!(impl = calloc(1, sizeof(fs_impl_t))))
         goto done;
 
     if (oefs_new(&oefs, source, flags, nblks, key) != 0)
         goto done;
 
-    fs->base.magic = OE_FS_MAGIC;
-    fs->base.ft = &_ft;
-    fs->magic = OEFS_MAGIC;
-    fs->oefs = oefs;
+    impl->base.magic = OE_FS_MAGIC;
+    impl->base.ft = &_ft;
+    impl->magic = OEFS_MAGIC;
+    impl->oefs = oefs;
 
-    *fs_out = (oe_fs_t*)fs;
-    fs = NULL;
+    *fs_out = (oe_fs_t*)impl;
+    impl = NULL;
     oefs = NULL;
 
     ret = 0;
 
 done:
 
-    if (fs)
-        free(fs);
+    if (impl)
+        free(impl);
 
     if (oefs)
         oefs_release(oefs);
