@@ -19,6 +19,7 @@
 #include "../../common/buf.h"
 #include "raise.h"
 #include "utils.h"
+#include <sys/stat.h>
 
 /*
 **==============================================================================

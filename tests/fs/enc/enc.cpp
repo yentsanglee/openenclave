@@ -10,6 +10,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "../../../fs/common/strarr.h"
 #include "../../../fs/cpio/commands.h"
 #include "../../../fs/cpio/cpio.h"

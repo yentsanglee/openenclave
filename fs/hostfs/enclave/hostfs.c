@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include <openenclave/fs.h>
 #include <openenclave/internal/hostfs.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/fs.h>
@@ -8,6 +9,7 @@
 #include <string.h>
 #include "../common/hostfsargs.h"
 #include "hostbatch.h"
+#include <sys/stat.h>
 
 #define BATCH_SIZE 4096
 
