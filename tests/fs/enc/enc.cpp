@@ -189,6 +189,9 @@ static void _test_cpio(oe_fs_t* fs, const char* src_dir, const char* tmp_dir)
 
             OE_TEST(oe_cmp(file1, file2) == 0);
         }
+
+        oe_strarr_release(&paths1);
+        oe_strarr_release(&paths2);
     }
     oe_fs_set_default(NULL);
 }
