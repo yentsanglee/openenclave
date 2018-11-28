@@ -1,9 +1,0 @@
-
-    (*) EDL vs. intrinsic OCALLs.
-
-    (*) Define macros that influence <stdio.h>.
-
-    (*) Work out library packaging (and install functions).
-
-    (*) Clean up public header (fs.h, sgxfs.h hostfs.h).
-

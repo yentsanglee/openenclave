@@ -6,3 +6,7 @@
     (*) Set error numbers.
 
     (*) Does sgxfs impose a C++ requirement?
+
+    (*) Work out library packaging dependencies.
+
+    (*) EDL vs. intrinsic OCALLs.
