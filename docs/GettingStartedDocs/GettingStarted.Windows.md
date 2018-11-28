@@ -103,7 +103,7 @@ cd ~/Projects
 ```
 and clone this repository.
 ```
-git clone https:/github.com/Microsoft/openenclave.git
+git clone https://github.com/Microsoft/openenclave.git
 ```
 cd into the repository and make the build directory.
 ```
@@ -123,6 +123,7 @@ $env:VC150COMNTOOLS/launchdevcmd.bat
 and run  powershell again. This sets the environment. There is also a batch file to just set the environment, but we use this method.  again, get back to the build directory which we got switched off of.
 
 ```
+powershell
 cd ~/Projects/openenclave/build
 ```
 and build
@@ -131,9 +132,12 @@ msbuild ./ALL_BUILD.vcxproj -p:Configuration=Debug
 ```
 To clean the build
 ```
-msbuild ./ALL_BUILD.vcxprok -t:clean
+msbuild ./ALL_BUILD.vcxproj -t:clean
 ```
-
+And to run tests
+```
+msbuild ./RUN_TESTS.vcxproj
+```
 
 
 
