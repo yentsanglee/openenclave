@@ -46,26 +46,26 @@ char* musl_fgets(char* s, int size, FILE* stream);
 
 static oe_fs_t* _default_fs = NULL;
 
-void oe_fs_set_default(oe_fs_t* fs)
+bool oe_fs_set_default(oe_fs_t* fs)
 {
-    if (fs)
-        _default_fs = fs;
+    if (!oe_fs_is_valid(fs))
+        return false;
+
+    _default_fs = fs;
+    return true;
 }
 
 oe_fs_t* oe_fs_get_default(void)
 {
-    if (_default_fs->fs_magic != OE_FS_MAGIC)
-        return NULL;
-
     return _default_fs;
 }
 
 int oe_release(oe_fs_t* fs)
 {
-    if (!fs || !fs->fs_release)
+    if (!oe_fs_is_valid(fs))
         return -1;
 
-    return fs->fs_release(fs);
+    return oe_fs_ft(fs)->fs_release(fs);
 }
 
 FILE* oe_fopen(oe_fs_t* fs, const char* path, const char* mode, ...)
@@ -73,11 +73,11 @@ FILE* oe_fopen(oe_fs_t* fs, const char* path, const char* mode, ...)
     FILE* ret;
     va_list ap;
 
-    if (!fs || !fs->fs_fopen)
+    if (!oe_fs_is_valid(fs))
         return NULL;
 
     va_start(ap, mode);
-    ret = fs->fs_fopen(fs, path, mode, ap);
+    ret = oe_fs_ft(fs)->fs_fopen(fs, path, mode, ap);
     va_end(ap);
 
     return ret;
@@ -85,50 +85,50 @@ FILE* oe_fopen(oe_fs_t* fs, const char* path, const char* mode, ...)
 
 DIR* oe_opendir(oe_fs_t* fs, const char* name)
 {
-    if (!fs || !fs->fs_opendir)
+    if (!oe_fs_is_valid(fs))
         return NULL;
 
-    return fs->fs_opendir(fs, name);
+    return oe_fs_ft(fs)->fs_opendir(fs, name);
 }
 
 int oe_stat(oe_fs_t* fs, const char* path, struct stat* stat)
 {
-    if (!fs || !fs->fs_stat)
+    if (!oe_fs_is_valid(fs))
         return -1;
 
-    return fs->fs_stat(fs, path, stat);
+    return oe_fs_ft(fs)->fs_stat(fs, path, stat);
 }
 
 int oe_remove(oe_fs_t* fs, const char* path)
 {
-    if (!fs || !fs->fs_remove)
+    if (!oe_fs_is_valid(fs))
         return -1;
 
-    return fs->fs_remove(fs, path);
+    return oe_fs_ft(fs)->fs_remove(fs, path);
 }
 
 int oe_rename(oe_fs_t* fs, const char* old_path, const char* new_path)
 {
-    if (!fs || !fs->fs_rename)
+    if (!oe_fs_is_valid(fs))
         return -1;
 
-    return fs->fs_rename(fs, old_path, new_path);
+    return oe_fs_ft(fs)->fs_rename(fs, old_path, new_path);
 }
 
 int oe_mkdir(oe_fs_t* fs, const char* path, unsigned int mode)
 {
-    if (!fs || !fs->fs_mkdir)
+    if (!oe_fs_is_valid(fs))
         return -1;
 
-    return fs->fs_mkdir(fs, path, mode);
+    return oe_fs_ft(fs)->fs_mkdir(fs, path, mode);
 }
 
 int oe_rmdir(oe_fs_t* fs, const char* path)
 {
-    if (!fs || !fs->fs_rmdir)
+    if (!oe_fs_is_valid(fs))
         return -1;
 
-    return fs->fs_rmdir(fs, path);
+    return oe_fs_ft(fs)->fs_rmdir(fs, path);
 }
 
 int oe_fclose(FILE* file)

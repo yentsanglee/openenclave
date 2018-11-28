@@ -10,9 +10,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include "../../../fs/common/strarr.h"
 #include "../../../fs/cpio/commands.h"
 #include "../../../fs/cpio/cpio.h"
-#include "../../../fs/common/strarr.h"
 #include "../../../fs/oefs/common/oefs.h"
 #include "fs_t.h"
 #include "iot.h"

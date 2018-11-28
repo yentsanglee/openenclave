@@ -11,6 +11,7 @@ OE_EXTERNC_BEGIN
 
 typedef struct _IO_FILE FILE;
 typedef struct __dirstream DIR;
+typedef struct _oe_fs_ft oe_fs_ft_t;
 
 #define OE_FS_MAGIC 0x0ef5bd0b777e4ce1
 
@@ -51,6 +52,49 @@ struct __dirstream
 
     int (*d_closedir)(DIR* dir);
 };
+
+struct _oe_fs_ft
+{
+    int (*fs_release)(oe_fs_t* fs);
+
+    FILE* (
+        *fs_fopen)(oe_fs_t* fs, const char* path, const char* mode, va_list ap);
+
+    DIR* (*fs_opendir)(oe_fs_t* fs, const char* name);
+
+    int (*fs_stat)(oe_fs_t* fs, const char* path, struct stat* stat);
+
+    int (*fs_remove)(oe_fs_t* fs, const char* path);
+
+    int (*fs_rename)(oe_fs_t* fs, const char* old_path, const char* new_path);
+
+    int (*fs_mkdir)(oe_fs_t* fs, const char* path, unsigned int mode);
+
+    int (*fs_rmdir)(oe_fs_t* fs, const char* path);
+};
+
+typedef struct _oe_fs_base
+{
+    uint64_t magic;
+    const oe_fs_ft_t* ft;
+} oe_fs_base_t;
+
+OE_INLINE bool oe_fs_is_valid(const oe_fs_t* fs)
+{
+    oe_fs_base_t* base = (oe_fs_base_t*)fs;
+
+    return base && base->magic == OE_FS_MAGIC && base->ft;
+}
+
+OE_INLINE uint64_t oe_fs_magic(const oe_fs_t* fs)
+{
+    return ((oe_fs_base_t*)fs)->magic;
+}
+
+OE_INLINE const oe_fs_ft_t* oe_fs_ft(const oe_fs_t* fs)
+{
+    return ((oe_fs_base_t*)fs)->ft;
+}
 
 OE_EXTERNC_END
 

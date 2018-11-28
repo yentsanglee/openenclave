@@ -15,8 +15,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../common/oefs.h"
 #include "../../common/buf.h"
+#include "../common/oefs.h"
 #include "raise.h"
 #include "utils.h"
 
@@ -2674,6 +2674,17 @@ done:
 **==============================================================================
 */
 
+/* This implementation overlays oe_fs_t. */
+typedef struct fs
+{
+    oe_fs_base_t base;
+    uint64_t magic;
+    oefs_t* oefs;
+    uint64_t padding[12];
+} fs_t;
+
+OE_STATIC_ASSERT(sizeof(fs_t) == sizeof(oe_fs_t));
+
 typedef struct _file
 {
     FILE base;
@@ -2691,18 +2702,18 @@ typedef struct _dir
 
 static oefs_t* _get_oefs(oe_fs_t* fs)
 {
-    oefs_t* oefs;
+    fs_t* impl = (fs_t*)fs;
 
-    if (!fs || fs->fs_magic != OE_FS_MAGIC)
+    if (!fs || oe_fs_magic(fs) != OE_FS_MAGIC)
         return NULL;
 
-    if (!(oefs = (oefs_t*)fs->__impl[0]) || fs->__impl[1] != OEFS_MAGIC)
+    if (impl->magic != OEFS_MAGIC || !impl->oefs)
         return NULL;
 
-    if (oefs->magic != OEFS_MAGIC)
+    if (impl->oefs->magic != OEFS_MAGIC)
         return NULL;
 
-    return oefs;
+    return impl->oefs;
 }
 
 static oefs_file_t* _get_oefs_file(file_t* file)
@@ -3290,6 +3301,17 @@ done:
     return ret;
 }
 
+static oe_fs_ft_t _ft = {
+    .fs_release = _fs_release,
+    .fs_fopen = _fs_fopen,
+    .fs_opendir = _fs_opendir,
+    .fs_stat = _fs_stat,
+    .fs_remove = _fs_remove,
+    .fs_rename = _fs_rename,
+    .fs_mkdir = _fs_mkdir,
+    .fs_rmdir = _fs_rmdir,
+};
+
 int oe_oefs_initialize(
     oe_fs_t** fs_out,
     const char* source,
@@ -3299,7 +3321,7 @@ int oe_oefs_initialize(
 {
     int ret = -1;
     oefs_t* oefs = NULL;
-    oe_fs_t* fs = NULL;
+    fs_t* fs = NULL;
 
     if (fs_out)
         *fs_out = NULL;
@@ -3313,19 +3335,12 @@ int oe_oefs_initialize(
     if (oefs_new(&oefs, source, flags, nblks, key) != 0)
         goto done;
 
-    fs->__impl[0] = (uint64_t)oefs;
-    fs->__impl[1] = OEFS_MAGIC;
-    fs->fs_magic = OE_FS_MAGIC;
-    fs->fs_release = _fs_release;
-    fs->fs_fopen = _fs_fopen;
-    fs->fs_opendir = _fs_opendir;
-    fs->fs_stat = _fs_stat;
-    fs->fs_remove = _fs_remove;
-    fs->fs_rename = _fs_rename;
-    fs->fs_mkdir = _fs_mkdir;
-    fs->fs_rmdir = _fs_rmdir;
+    fs->base.magic = OE_FS_MAGIC;
+    fs->base.ft = &_ft;
+    fs->magic = OEFS_MAGIC;
+    fs->oefs = oefs;
 
-    *fs_out = fs;
+    *fs_out = (oe_fs_t*)fs;
     fs = NULL;
     oefs = NULL;
 

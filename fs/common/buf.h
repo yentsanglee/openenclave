@@ -20,8 +20,8 @@ OE_EXTERNC_BEGIN
 */
 
 #define OE_BUF_INITIALIZER \
-    {                   \
-        NULL, 0, 0      \
+    {                      \
+        NULL, 0, 0         \
     }
 
 typedef struct _oe_buf
@@ -50,8 +50,8 @@ int oe_buf_append(oe_buf_t* buf, const void* data, uint32_t size);
 */
 
 #define OE_BUF_U32_INITIALIZER \
-    {                       \
-        NULL, 0, 0          \
+    {                          \
+        NULL, 0, 0             \
     }
 
 typedef struct _bufu32

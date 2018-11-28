@@ -871,8 +871,7 @@ done:
     return ret;
 }
 
-oe_fs_t oe_hostfs = {
-    .fs_magic = OE_FS_MAGIC,
+static oe_fs_ft_t _ft = {
     .fs_release = _fs_release,
     .fs_fopen = _fs_fopen,
     .fs_opendir = _fs_opendir,
@@ -881,4 +880,9 @@ oe_fs_t oe_hostfs = {
     .fs_rename = _fs_rename,
     .fs_mkdir = _fs_mkdir,
     .fs_rmdir = _fs_rmdir,
+};
+
+oe_fs_t oe_hostfs = {
+    (uint64_t)OE_FS_MAGIC,
+    (uint64_t)&_ft,
 };

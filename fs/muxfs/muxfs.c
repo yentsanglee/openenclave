@@ -24,20 +24,21 @@ typedef struct _entry
 /* Global spinlock across all instance of muxfs. */
 static pthread_spinlock_t _lock;
 
-/* This implementation overlays the first few slots of oe_fs_t. */
-typedef struct _impl
+/* This implementation overlays oe_fs_t. */
+typedef struct _fs
 {
+    oe_fs_base_t base;
     uint64_t magic;
     size_t num_entries;
     size_t max_entries;
     entry_t* entries;
-} impl_t;
+} fs_t;
 
-OE_STATIC_ASSERT(sizeof(impl_t) == 4 * sizeof(uint64_t));
+OE_STATIC_ASSERT(sizeof(fs_t) <= sizeof(oe_fs_t));
 
-OE_INLINE impl_t* _get_impl(oe_fs_t* fs)
+OE_INLINE fs_t* _get_impl(oe_fs_t* fs)
 {
-    impl_t* impl = (impl_t*)fs->__impl;
+    fs_t* impl = (fs_t*)fs->__impl;
 
     if (impl->magic != MAGIC)
         return NULL;
@@ -48,7 +49,7 @@ OE_INLINE impl_t* _get_impl(oe_fs_t* fs)
 static oe_fs_t* _find_fs(oe_fs_t* fs, const char* path, char suffix[PATH_MAX])
 {
     oe_fs_t* ret = NULL;
-    impl_t* impl = _get_impl(fs);
+    fs_t* impl = _get_impl(fs);
     size_t match_len = 0;
     bool locked = false;
 
@@ -102,7 +103,7 @@ static FILE* _fs_fopen(
         goto done;
     }
 
-    ret = fs->fs_fopen(fs, suffix, mode, ap);
+    ret = oe_fs_ft(fs)->fs_fopen(fs, suffix, mode, ap);
 
 done:
 
@@ -121,7 +122,7 @@ static DIR* _fs_opendir(oe_fs_t* muxfs, const char* name)
         goto done;
     }
 
-    ret = fs->fs_opendir(fs, suffix);
+    ret = oe_fs_ft(fs)->fs_opendir(fs, suffix);
 
 done:
 
@@ -153,7 +154,7 @@ static int _fs_stat(oe_fs_t* muxfs, const char* path, struct stat* stat)
         goto done;
     }
 
-    ret = fs->fs_stat(fs, suffix, stat);
+    ret = oe_fs_ft(fs)->fs_stat(fs, suffix, stat);
 
 done:
 
@@ -189,7 +190,7 @@ static int _fs_rename(
         goto done;
     }
 
-    ret = old_fs->fs_rename(old_fs, old_suffix, new_suffix);
+    ret = oe_fs_ft(old_fs)->fs_rename(old_fs, old_suffix, new_suffix);
 
 done:
 
@@ -208,7 +209,7 @@ static int _fs_remove(oe_fs_t* muxfs, const char* path)
         goto done;
     }
 
-    ret = fs->fs_remove(fs, suffix);
+    ret = oe_fs_ft(fs)->fs_remove(fs, suffix);
 
 done:
 
@@ -227,7 +228,7 @@ static int _fs_mkdir(oe_fs_t* muxfs, const char* path, unsigned int mode)
         goto done;
     }
 
-    ret = fs->fs_mkdir(fs, suffix, mode);
+    ret = oe_fs_ft(fs)->fs_mkdir(fs, suffix, mode);
 
 done:
 
@@ -246,7 +247,7 @@ static int _fs_rmdir(oe_fs_t* muxfs, const char* path)
         goto done;
     }
 
-    ret = fs->fs_rmdir(fs, suffix);
+    ret = oe_fs_ft(fs)->fs_rmdir(fs, suffix);
 
 done:
 
@@ -266,16 +267,7 @@ static entry_t _entries[MAX_ENTRIES] = {
 
 static const size_t _num_entries = 2;
 
-// clang-format off
-oe_fs_t oe_muxfs = {
-    .__impl = 
-    { 
-        MAGIC,
-        _num_entries,
-        OE_COUNTOF(_entries),
-        (uint64_t)_entries,
-    },
-    .fs_magic = OE_FS_MAGIC,
+static oe_fs_ft_t _ft = {
     .fs_release = _fs_release,
     .fs_fopen = _fs_fopen,
     .fs_opendir = _fs_opendir,
@@ -285,12 +277,20 @@ oe_fs_t oe_muxfs = {
     .fs_mkdir = _fs_mkdir,
     .fs_rmdir = _fs_rmdir,
 };
-// clang-format on
+
+oe_fs_t oe_muxfs = {
+    (uint64_t)OE_FS_MAGIC,
+    (uint64_t)&_ft,
+    MAGIC,
+    _num_entries,
+    OE_COUNTOF(_entries),
+    (uint64_t)_entries,
+};
 
 int oe_muxfs_register_fs(oe_fs_t* muxfs, const char* path, oe_fs_t* fs)
 {
     int ret = -1;
-    impl_t* impl = _get_impl(muxfs);
+    fs_t* impl = _get_impl(muxfs);
     bool locked = false;
     entry_t* entry;
 
@@ -331,7 +331,7 @@ done:
 int oe_muxfs_unregister_fs(oe_fs_t* muxfs, const char* path)
 {
     int ret = -1;
-    impl_t* impl = _get_impl(muxfs);
+    fs_t* impl = _get_impl(muxfs);
     bool locked = false;
     bool found = false;
 

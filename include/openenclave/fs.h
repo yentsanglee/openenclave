@@ -9,43 +9,20 @@
 
 OE_EXTERNC_BEGIN
 
-typedef struct _oe_fs oe_fs_t;
-
 /* Use the same struct name as MUSL */
 typedef struct _IO_FILE FILE;
 
 /* Use the same struct name as MUSL */
 typedef struct __dirstream DIR;
 
-struct _oe_fs
+typedef struct _oe_fs
 {
-    /* File-system specific internal implementation. */
     uint64_t __impl[16];
-
-    /* Magic number: must be OE_FS_MAGIC */
-    uint64_t fs_magic;
-
-    int (*fs_release)(oe_fs_t* fs);
-
-    FILE* (
-        *fs_fopen)(oe_fs_t* fs, const char* path, const char* mode, va_list ap);
-
-    DIR* (*fs_opendir)(oe_fs_t* fs, const char* name);
-
-    int (*fs_stat)(oe_fs_t* fs, const char* path, struct stat* stat);
-
-    int (*fs_remove)(oe_fs_t* fs, const char* path);
-
-    int (*fs_rename)(oe_fs_t* fs, const char* old_path, const char* new_path);
-
-    int (*fs_mkdir)(oe_fs_t* fs, const char* path, unsigned int mode);
-
-    int (*fs_rmdir)(oe_fs_t* fs, const char* path);
-};
+} oe_fs_t;
 
 int oe_release(oe_fs_t* fs);
 
-void oe_fs_set_default(oe_fs_t* fs);
+bool oe_fs_set_default(oe_fs_t* fs);
 
 oe_fs_t* oe_fs_get_default(void);
 
