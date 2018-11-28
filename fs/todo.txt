@@ -5,3 +5,4 @@
 
     (*) Set error numbers.
 
+    (*) Does sgxfs impose a C++ requirement?

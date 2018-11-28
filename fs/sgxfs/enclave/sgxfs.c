@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>
+#include <sys/stat.h>
 #include <openenclave/internal/sgxfs.h>
 #include <openenclave/internal/fs.h>
 
@@ -243,7 +244,36 @@ static DIR* _fs_opendir(oe_fs_t* fs, const char* name)
 
 static int _fs_stat(oe_fs_t* fs, const char* path, struct stat* stat)
 {
-    return oe_stat(&oe_hostfs, path, stat);
+    int ret = -1;
+    FILE* stream = NULL;
+
+    if (oe_stat(&oe_hostfs, path, stat) != 0)
+        goto done;
+
+    /* Recalculate the size to omit the metadata headers. */
+    {
+        int64_t offset;
+
+        if (!(stream = oe_fopen(fs, path, "r")))
+            goto done;
+
+        if (fseek(stream, 0L, SEEK_END) != 0)
+            goto done;
+
+        if ((offset = ftell(stream)) < 0)
+            goto done;
+        
+        stat->st_size = (size_t)offset
+    }
+
+    ret = 0;
+
+done:
+
+    if (stream)
+        oe_fclose(stream);
+
+    return ret;
 }
 
 static int _fs_rename(oe_fs_t* fs, const char* old_path, const char* new_path)

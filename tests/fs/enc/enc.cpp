@@ -1,11 +1,9 @@
 #include <errno.h>
 #include <errno.h>
 #include <limits.h>
-#include <openenclave/bits/fs.h>
-#include <openenclave/internal/hostfs.h>
+#include <openenclave/enclave.h>
 #include <openenclave/internal/muxfs.h>
 #include <openenclave/internal/tests.h>
-#include <openenclave/internal/sgxfs.h>
 #include <openenclave/internal/oefs.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -13,21 +11,15 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <assert.h>
 #include "../../../fs/common/strarr.h"
 #include "../../../fs/cpio/commands.h"
 #include "../../../fs/cpio/cpio.h"
 #include "fs_t.h"
 #include "iot.h"
 
-#ifdef FILENAME_MAX
-#undef FILENAME_MAX
-#endif
-
-#ifdef FOPEN_MAX
-#undef FOPEN_MAX
-#endif
-
-#include "../../../3rdparty/linux-sgx/linux-sgx/common/inc/sgx_tprotected_fs.h"
+extern oe_fs_t oe_sgxfs;
+extern oe_fs_t oe_hostfs;
 
 static const char* _mkpath(
     char buf[PATH_MAX],
@@ -185,6 +177,17 @@ static void _test_cpio(oe_fs_t* fs, const char* src_dir, const char* tmp_dir)
             const char* filename1 = _basename(paths1.data[i]);
             const char* filename2 = _basename(paths2.data[i]);
             OE_TEST(strcmp(filename1, filename2) == 0);
+        }
+
+        /* Compare the alphabet file. */
+        {
+            char file1[PATH_MAX];
+            char file2[PATH_MAX];
+
+            _mkpath(file1, src_dir, "/tests/fs/alphabet");
+            _mkpath(file2, cpio_dir, "/fs/alphabet");
+
+            OE_TEST(oe_cmp(file1, file2) == 0);
         }
     }
     oe_fs_set_default(NULL);
