@@ -6,7 +6,7 @@ include(add_enclave_executable)
 
 oeedl_file(../fs.edl enclave gen)
 
-add_executable(fs_enc enc.cpp iot.c ${gen})
+add_executable(fs_enc enc.cpp test_default_fs_macro.c ${gen})
 
 target_compile_options(fs_enc PRIVATE
     -ffreestanding)

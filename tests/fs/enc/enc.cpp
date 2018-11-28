@@ -16,7 +16,7 @@
 #include "../../../fs/cpio/commands.h"
 #include "../../../fs/cpio/cpio.h"
 #include "fs_t.h"
-#include "iot.h"
+#include "test_default_fs_macro.h"
 
 extern oe_fs_t oe_sgxfs;
 extern oe_fs_t oe_hostfs;
@@ -317,8 +317,8 @@ void enc_test(const char* src_dir, const char* bin_dir)
         _test_cpio(&oe_muxfs, mux_src_dir, mux_tmp_dir);
     }
 
-    /* Test the IOT stdio.h definitions. */
-    test_iot_scenario(tmp_dir);
+    /* Test the use of the OE_DEFAULT_FS macro. */
+    test_default_fs_macro(tmp_dir);
 
     _test_sgxfs_with_key(tmp_dir);
 

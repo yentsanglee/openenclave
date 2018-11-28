@@ -41,6 +41,14 @@ ExternalProject_Add(oelibc_includes
             ${PATCHES_DIR}/endian.h
             ${OE_INCDIR}/openenclave/libc/endian.h
 
+        # Install wrapper stdio.h that includes the original stdio.h.
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${OE_INCDIR}/openenclave/libc/stdio.h
+            ${OE_INCDIR}/openenclave/libc/__stdio.h
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${PATCHES_DIR}/stdio.h
+            ${OE_INCDIR}/openenclave/libc/stdio.h
+
         # Append deprecations.h to all C header files.
         COMMAND ${CMAKE_CURRENT_LIST_DIR}/append-deprecations
             ${OE_INCDIR}/openenclave/libc
