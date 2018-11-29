@@ -17,6 +17,7 @@ else()
 endif()
 
 add_subdirectory(aesm)
+add_subdirectory(fs)
 add_subdirectory(mem)
 add_subdirectory(safecrt)
 add_subdirectory(safemath)
