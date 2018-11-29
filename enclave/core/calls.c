@@ -17,6 +17,7 @@
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/utils.h>
+#include "../asym_keys.h"
 #include "../report.h"
 #include "asmdefs.h"
 #include "cpuid.h"
@@ -470,6 +471,16 @@ static void _handle_ecall(
         case OE_ECALL_VERIFY_REPORT:
         {
             oe_handle_verify_report(arg_in, &arg_out);
+            break;
+        }
+        case OE_ECALL_GET_PUBLIC_KEY_BY_POLICY:
+        {
+            oe_handle_get_public_key_by_policy(arg_in);
+            break;
+        }
+        case OE_ECALL_GET_PUBLIC_KEY:
+        {
+            oe_handle_get_public_key(arg_in);
             break;
         }
         default:

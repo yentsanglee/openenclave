@@ -52,6 +52,7 @@ add_library(oehost STATIC
     ../common/safecrt.c
     ../common/sgxcertextensions.c
     ../common/tcbinfo.c
+    asym_keys.c
     calls.c
     create.c
     dupenv.c

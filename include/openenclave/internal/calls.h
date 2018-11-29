@@ -76,6 +76,8 @@ typedef enum _oe_func {
     OE_ECALL_VERIFY_REPORT,
     OE_ECALL_GET_SGX_REPORT,
     OE_ECALL_VIRTUAL_EXCEPTION_HANDLER,
+    OE_ECALL_GET_PUBLIC_KEY_BY_POLICY,
+    OE_ECALL_GET_PUBLIC_KEY,
     /* Caution: always add new ECALL function numbers here */
 
     OE_OCALL_CALL_HOST = OE_OCALL_BASE,

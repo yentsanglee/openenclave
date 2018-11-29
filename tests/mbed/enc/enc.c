@@ -244,10 +244,12 @@ int test(const char* in_testname, char** out_testname, struct mbed_args* args)
 /*
  **==============================================================================
  **
- ** oe_handle_verify_report():
+ ** oe_handle_verify_report()
+ ** oe_handle_get_public_key_by_policy()
+ ** oe_handle_get_public_key()
  **
- **     Since liboeenclave is not linked, we must define a version of this
- **     function here (since liboecore depends on it). This version asserts
+ **     Since liboeenclave is not linked, we must define a version of these
+ **     functions here (since liboecore depends on it). This version asserts
  **     and aborts().
  **
  **==============================================================================
@@ -256,6 +258,18 @@ int test(const char* in_testname, char** out_testname, struct mbed_args* args)
 void oe_handle_verify_report(uint64_t arg_in, uint64_t* arg_out)
 {
     assert("oe_handle_verify_report()" == NULL);
+    abort();
+}
+
+void oe_handle_get_public_key_by_policy(uint64_t arg_in)
+{
+    assert("oe_handle_get_public_key_by_policy()" == NULL);
+    abort();
+}
+
+void oe_handle_get_public_key(uint64_t arg_in)
+{
+    assert("oe_handle_get_public_key()" == NULL);
     abort();
 }
 
