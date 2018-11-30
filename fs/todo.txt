@@ -1,12 +1,12 @@
 
     (*) Implement the fprintf/fscanf family of functions.
 
-    (*) Handle file permission checks.
+    (*) Handle file permission/owner checks.
 
-    (*) Set error numbers.
-
-    (*) Does sgxfs impose a C++ requirement?
+    (*) Verify that errno's are handled correctly.
 
     (*) Work out library packaging dependencies.
 
     (*) EDL vs. intrinsic OCALLs.
+
+    (*) Implement "auto-key" feature.
