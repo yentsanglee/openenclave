@@ -269,7 +269,6 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
     oe_fs_t oefs = OE_FS_INITIALIZER;
     char source[PATH_MAX];
     _mkpath(source, tmp_dir, "/test.oefs");
-    uint32_t flags = 0;
     size_t nbytes = 2 * 4194304;
     size_t nblks = nbytes / OEFS_BLOCK_SIZE;
     uint8_t key[OEFS_KEY_SIZE] = {
@@ -288,13 +287,9 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
         }
     }
 
-    flags |= OEFS_FLAG_MKFS;
-    // flags |= OEFS_FLAG_CRYPTO;
-    flags |= OEFS_FLAG_AUTH_CRYPTO;
-    flags |= OEFS_FLAG_CACHING;
-    flags |= OEFS_FLAG_INTEGRITY;
+    OE_TEST(oe_oefs_mkfs(source, key) == 0);
 
-    OE_TEST(oe_oefs_initialize(&oefs, source, flags, key) == 0);
+    OE_TEST(oe_oefs_initialize(&oefs, source, key) == 0);
 
     oe_fs_set_default(&oefs);
     OE_TEST(oe_mkdir(&oefs, "/tmp", 0777) == 0);

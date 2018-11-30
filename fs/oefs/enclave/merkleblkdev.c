@@ -120,7 +120,7 @@ done:
 }
 
 /* Read the hashes just after the data blocks. */
-static int read_hash_tree(blkdev_t* dev)
+static int _read_hash_tree(blkdev_t* dev)
 {
     int ret = -1;
     size_t nbytes = dev->nhashes * sizeof(oefs_sha256_t);
@@ -136,7 +136,9 @@ static int read_hash_tree(blkdev_t* dev)
         size_t offset = dev->nblks;
 
         if (dev->next->get(dev->next, i + offset, &blk) != 0)
+        {
             goto done;
+        }
 
         memcpy(ptr, &blk, n);
         ptr += n;
@@ -497,7 +499,7 @@ int oefs_merkle_blkdev_open(
     else
     {
         /* Read the hashe tree from the next device. */
-        if (read_hash_tree(dev) != 0)
+        if (_read_hash_tree(dev) != 0)
             goto done;
 
         /* Check the hash tree. */
