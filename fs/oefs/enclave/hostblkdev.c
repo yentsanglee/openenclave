@@ -28,6 +28,43 @@ static size_t _get_batch_capacity()
     return sizeof(oefs_oefs_ocall_args_t);
 }
 
+static int _blkdev_stat(oefs_blkdev_t* d, oefs_blkdev_stat_t* stat)
+{
+    int ret = -1;
+    blkdev_t* dev = (blkdev_t*)d;
+    typedef oefs_oefs_ocall_args_t args_t;
+    args_t* args = NULL;
+
+    if (!dev || !stat)
+        goto done;
+
+    if (!(args = oefs_host_batch_calloc(dev->batch, sizeof(args_t))))
+        goto done;
+
+    args->op = OEFS_HOSTBLKDEV_STAT;
+    args->stat.ret = -1;
+    args->stat.handle = dev->handle;
+
+    if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
+        goto done;
+
+    if (args->stat.ret != 0)
+        goto done;
+
+    stat->total_size = args->stat.buf.total_size;
+    stat->overhead_size = args->stat.buf.overhead_size;
+    stat->usable_size = args->stat.buf.usable_size;
+
+    ret = 0;
+
+done:
+
+    if (args && dev)
+        oefs_host_batch_free(dev->batch);
+
+    return ret;
+}
+
 static int _blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
@@ -191,6 +228,7 @@ int oefs_host_blkdev_open(oefs_blkdev_t** blkdev, const char* path)
     if (!args->open.handle)
         goto done;
 
+    dev->base.stat = _blkdev_stat;
     dev->base.get = _blkdev_get;
     dev->base.put = _blkdev_put;
     dev->base.begin = _blkdev_begin;

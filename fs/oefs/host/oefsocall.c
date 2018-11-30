@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include <stdio.h>
+#include <sys/stat.h>
 #include "../common/hostblkdev.h"
 
 static void _handle_open(oefs_oefs_ocall_args_t* args)
@@ -12,7 +13,7 @@ static void _handle_open(oefs_oefs_ocall_args_t* args)
 
         args->open.handle = NULL;
 
-        if (!(stream = fopen(args->open.path, "w+")))
+        if (!(stream = fopen(args->open.path, "r+")))
             return;
 
         args->open.handle = stream;
@@ -24,6 +25,32 @@ static void _handle_close(oefs_oefs_ocall_args_t* args)
     if (args && args->close.handle)
     {
         fclose((FILE*)args->close.handle);
+    }
+}
+
+static void _handle_stat(oefs_oefs_ocall_args_t* args)
+{
+    if (args)
+    {
+        FILE* stream;
+        int fd;
+        struct stat buf;
+
+        args->stat.ret = -1;
+
+        if (!(stream = (FILE*)args->stat.handle))
+            return;
+
+        if ((fd = fileno(stream)) < 0)
+            return;
+
+        if (fstat(fd, &buf) != 0)
+            return;
+
+        args->stat.buf.total_size = buf.st_size;
+        args->stat.buf.overhead_size = 0;
+        args->stat.buf.usable_size = buf.st_size;
+        args->stat.ret = 0;
     }
 }
 
@@ -100,6 +127,11 @@ static void _handle_oefs_ocall(void* args_)
         case OEFS_HOSTBLKDEV_CLOSE:
         {
             _handle_close(args);
+            break;
+        }
+        case OEFS_HOSTBLKDEV_STAT:
+        {
+            _handle_stat(args);
             break;
         }
         case OEFS_HOSTBLKDEV_GET:

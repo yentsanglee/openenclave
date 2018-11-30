@@ -11,6 +11,7 @@ OE_EXTERNC_BEGIN
 typedef enum _oefs_hostblkdev_op {
     OEFS_HOSTBLKDEV_OPEN,
     OEFS_HOSTBLKDEV_CLOSE,
+    OEFS_HOSTBLKDEV_STAT,
     OEFS_HOSTBLKDEV_GET,
     OEFS_HOSTBLKDEV_PUT,
 } oefs_hostblkdev_op_t;
@@ -34,6 +35,17 @@ typedef struct _oefs_oefs_ocall_args
         uint32_t blkno;
         oefs_blk_t blk;
     } get;
+    struct
+    {
+        int ret;
+        void* handle;
+        struct
+        {
+            uint64_t total_size;
+            uint64_t overhead_size;
+            uint64_t usable_size;
+        } buf;
+    } stat;
     struct
     {
         int ret;

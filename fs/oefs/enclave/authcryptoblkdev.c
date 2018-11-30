@@ -386,6 +386,27 @@ done:
     return ret;
 }
 
+int oefs_auth_crypto_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks)
+{
+    int ret = -1;
+    size_t ntags;
+
+    if (!extra_nblks)
+        goto done;
+
+    /* Calculate the number of authentication tags. */
+    ntags = nblks;
+
+    /* Calculate the number of blocks needed by a Merkle hash tree. */
+    *extra_nblks =
+        oefs_round_to_multiple(ntags, TAGS_PER_BLOCK) / TAGS_PER_BLOCK;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 int oefs_auth_crypto_blkdev_open(
     oefs_blkdev_t** blkdev,
     bool initialize,

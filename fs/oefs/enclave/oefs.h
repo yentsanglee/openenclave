@@ -125,7 +125,6 @@ int oefs_new(
     oefs_t** oefs_out,
     const char* source,
     uint32_t flags,
-    size_t nblks,
     const uint8_t key[OEFS_KEY_SIZE]);
 
 /* Compute required size of a file system with the given block count. */

@@ -230,6 +230,38 @@ static void _test_sgxfs_with_key(const char* tmp_dir)
     OE_TEST(oe_remove(&oe_sgxfs, path) == 0);
 }
 
+static int _create_oefs_device_file(const char* path, size_t nblks)
+{
+    int ret = -1;
+    FILE* os;
+    uint8_t block[OEFS_BLOCK_SIZE];
+    size_t total_nblks;
+
+    printf("creating %s\n", path);
+
+    OE_TEST(oefs_calculate_total_blocks(nblks, &total_nblks) == 0);
+
+    if (!(os = oe_fopen(&oe_hostfs, path, "w")))
+        goto done;
+
+    memset(block, 0, sizeof(block));
+
+    for (size_t i = 0; i < total_nblks; i++)
+    {
+        if (fwrite(block, 1, sizeof(block), os) != sizeof(block))
+            goto done;
+    }
+
+    ret = 0;
+
+done:
+
+    if (os)
+        fclose(os);
+
+    return ret;
+}
+
 static void _test_oefs(const char* src_dir, const char* tmp_dir)
 {
     oe_fs_t* oefs = NULL;
@@ -244,13 +276,23 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
         0x4f, 0xd9, 0x92, 0x19, 0x93, 0xcc, 0xa9, 0x0e, 0xcb, 0xed,
     };
 
+    /* Create a zero-filled file on the host (if it does not already exist). */
+    {
+        struct stat buf;
+
+        if (oe_stat(&oe_hostfs, source, &buf) != 0)
+        {
+            OE_TEST(_create_oefs_device_file(source, nblks) == 0);
+        }
+    }
+
     flags |= OEFS_FLAG_MKFS;
     // flags |= OEFS_FLAG_CRYPTO;
     flags |= OEFS_FLAG_AUTH_CRYPTO;
     flags |= OEFS_FLAG_CACHING;
     flags |= OEFS_FLAG_INTEGRITY;
 
-    OE_TEST(oe_oefs_initialize(&oefs, source, flags, nblks, key) == 0);
+    OE_TEST(oe_oefs_initialize(&oefs, source, flags, key) == 0);
 
     oe_fs_set_default(oefs);
     OE_TEST(oe_mkdir(oefs, "/tmp", 0777) == 0);

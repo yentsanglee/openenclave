@@ -11,8 +11,24 @@ OE_EXTERNC_BEGIN
 
 typedef struct _oefs_blkdev oefs_blkdev_t;
 
+typedef struct _oefs_blkdev_stat oefs_blkdev_stat_t;
+
+struct _oefs_blkdev_stat
+{
+    /* The total size of the device in bytes. */
+    uint64_t total_size;
+
+    /* The number of bytes dedicated to overhead (e.g., metadata). */
+    uint64_t overhead_size;
+
+    /* The number of usable bytes (total_size - overhead_size) */
+    uint64_t usable_size;
+};
+
 struct _oefs_blkdev
 {
+    int (*stat)(oefs_blkdev_t* dev, oefs_blkdev_stat_t* stat);
+
     int (*get)(oefs_blkdev_t* dev, uint32_t blkno, oefs_blk_t* blk);
 
     int (*put)(oefs_blkdev_t* dev, uint32_t blkno, const oefs_blk_t* blk);
@@ -46,6 +62,9 @@ int oefs_auth_crypto_blkdev_open(
 
 /* Get the number of extra blocks needed by a Merkle block device. */
 int oefs_merkle_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks);
+
+/* Get the number of extra blocks needed by a auth-crypto block device. */
+int oefs_auth_crypto_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks);
 
 int oefs_merkle_blkdev_open(
     oefs_blkdev_t** blkdev,

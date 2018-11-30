@@ -2489,11 +2489,56 @@ done:
     return err;
 }
 
+int oefs_calculate_total_blocks(size_t nblks, size_t* total_nblks)
+{
+    int ret = -1;
+
+    if (total_nblks)
+        *total_nblks = 0;
+
+    if (!total_nblks)
+        goto done;
+
+    /* There must be at least 4 blocks. */
+    if (nblks < 8)
+        goto done;
+
+    /* The number of blocks must be a power of two. */
+    if (!oefs_is_pow_of_2(nblks))
+        goto done;
+
+    /* Add extra blocks for the Merkle-tree overhead bytes. */
+    {
+        size_t extra_nblks;
+
+        if (oefs_merkle_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
+            goto done;
+
+        nblks += extra_nblks;
+    }
+
+    /* Add extra blocks for the auth-crypto overhead bytes. */
+    {
+        size_t extra_nblks;
+
+        if (oefs_auth_crypto_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
+            goto done;
+
+        nblks += extra_nblks;
+    }
+
+    *total_nblks = nblks;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 int oefs_new(
     oefs_t** oefs_out,
     const char* source,
     uint32_t flags,
-    size_t nblks,
     const uint8_t key[OEFS_KEY_SIZE])
 {
     int ret = -1;
@@ -2504,12 +2549,15 @@ int oefs_new(
     oefs_blkdev_t* dev = NULL;
     oefs_blkdev_t* next = NULL;
     oefs_t* oefs = NULL;
-    size_t extra_nblks = 0;
+    size_t device_size;
+    size_t n0;
+    size_t n1;
+    size_t n2;
 
     if (oefs_out)
         *oefs_out = NULL;
 
-    if (!oefs_out || !source || nblks < 2 || !oefs_is_pow_of_2(nblks))
+    if (!oefs_out || !source)
         goto done;
 
     /* Open a host device. */
@@ -2518,10 +2566,71 @@ int oefs_new(
 
     next = host_dev;
 
-    /* Get the number of extra blocks needed by the Merkle block device. */
-    if ((flags & OEFS_FLAG_INTEGRITY))
+    /* Get the size of the host device. */
     {
-        if (oefs_merkle_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
+        oefs_blkdev_stat_t stat;
+
+        if (host_dev->stat(host_dev, &stat) != 0)
+            goto done;
+
+        device_size = stat.total_size;
+
+        if ((device_size % OEFS_BLOCK_SIZE))
+            goto done;
+
+        n0 = device_size / OEFS_BLOCK_SIZE;
+    }
+
+    /* Block size assumption. */
+    OE_STATIC_ASSERT(OEFS_BLOCK_SIZE >= 1024);
+
+    /*
+     * Calculate n0, n1, and n2 such that:
+     *
+     *                                    n2         n1         n0
+     *                                     |          |          |
+     *                                     V          V          V
+     * +-----------------------------------+----------+----------+
+     * | Data blocks                       | Merkle   | Auth     |
+     * |                                   | Tree     | Crypto   |
+     * |                                   | overhead | overhead |
+     * |                                   | blocks   | blocks   |
+     * +-----------------------------------+----------+----------+
+     *
+     */
+
+    /* Calculate the largest power of two less than n0. */
+    {
+        size_t r = 1;
+        n2 = r;
+
+        while (r < n0)
+        {
+            n2 = r;
+            r *= 2;
+        }
+    }
+
+    /* Calculate extra bytes for the Merkle tree block device. */
+    {
+        size_t extra_nblks;
+
+        if (oefs_merkle_blkdev_get_extra_blocks(n2, &extra_nblks) != 0)
+            goto done;
+
+        n1 = n2 + extra_nblks;
+    }
+
+    /* Calculate extra bytes for the auth-crypto block device. */
+    {
+        size_t extra_nblks;
+
+        if (oefs_auth_crypto_blkdev_get_extra_blocks(n1, &extra_nblks) != 0)
+            goto done;
+
+        size_t end = n1 + extra_nblks;
+
+        if (end != n0)
             goto done;
     }
 
@@ -2531,7 +2640,7 @@ int oefs_new(
         bool initialize = (flags & OEFS_FLAG_MKFS);
 
         if (oefs_auth_crypto_blkdev_open(
-                &crypto_dev, initialize, nblks + extra_nblks, key, next) != 0)
+                &crypto_dev, initialize, n1, key, next) != 0)
         {
             goto done;
         }
@@ -2539,7 +2648,6 @@ int oefs_new(
         next = crypto_dev;
     }
 
-    /* Create a crypto block device. */
     if ((flags & OEFS_FLAG_CRYPTO))
     {
         if (oefs_crypto_blkdev_open(&crypto_dev, key, next) != 0)
@@ -2553,7 +2661,7 @@ int oefs_new(
     {
         bool initialize = (flags & OEFS_FLAG_MKFS);
 
-        if (oefs_merkle_blkdev_open(&merkle_dev, initialize, nblks, next) != 0)
+        if (oefs_merkle_blkdev_open(&merkle_dev, initialize, n2, next) != 0)
         {
             goto done;
         }
@@ -2575,7 +2683,7 @@ int oefs_new(
 
     if (flags & OEFS_FLAG_MKFS)
     {
-        if (oefs_mkfs(dev, nblks) != 0)
+        if (oefs_mkfs(dev, n2) != 0)
             goto done;
     }
 
@@ -3326,7 +3434,6 @@ int oe_oefs_initialize(
     oe_fs_t** fs_out,
     const char* source,
     uint32_t flags,
-    size_t nblks,
     const uint8_t key[OEFS_KEY_SIZE])
 {
     int ret = -1;
@@ -3342,7 +3449,7 @@ int oe_oefs_initialize(
     if (!(impl = calloc(1, sizeof(fs_impl_t))))
         goto done;
 
-    if (oefs_new(&oefs, source, flags, nblks, key) != 0)
+    if (oefs_new(&oefs, source, flags, key) != 0)
         goto done;
 
     impl->base.magic = OE_FS_MAGIC;

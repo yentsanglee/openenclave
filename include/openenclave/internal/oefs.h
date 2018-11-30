@@ -16,11 +16,12 @@ OE_EXTERNC_BEGIN
 #define OEFS_FLAG_INTEGRITY 8
 #define OEFS_FLAG_CACHING 16
 
+int oefs_calculate_total_blocks(size_t nblks, size_t* total_nblks);
+
 int oe_oefs_initialize(
     oe_fs_t** fs_out,
     const char* source,
     uint32_t flags,
-    size_t nblks,
     const uint8_t key[OEFS_KEY_SIZE]);
 
 void oe_install_blkdev(void);
