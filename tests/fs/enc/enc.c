@@ -21,6 +21,8 @@
 extern oe_fs_t oe_sgxfs;
 extern oe_fs_t oe_hostfs;
 
+oe_fs_t oe_default_fs;
+
 static const char* _mkpath(
     char buf[PATH_MAX],
     const char* target,
@@ -264,7 +266,7 @@ done:
 
 static void _test_oefs(const char* src_dir, const char* tmp_dir)
 {
-    oe_fs_t* oefs = NULL;
+    oe_fs_t oefs = OE_FS_INITIALIZER;
     char source[PATH_MAX];
     _mkpath(source, tmp_dir, "/test.oefs");
     uint32_t flags = 0;
@@ -294,13 +296,13 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
 
     OE_TEST(oe_oefs_initialize(&oefs, source, flags, key) == 0);
 
-    oe_fs_set_default(oefs);
-    OE_TEST(oe_mkdir(oefs, "/tmp", 0777) == 0);
-    _test_alphabet_file(oefs, "/tmp");
+    oe_fs_set_default(&oefs);
+    OE_TEST(oe_mkdir(&oefs, "/tmp", 0777) == 0);
+    _test_alphabet_file(&oefs, "/tmp");
     oe_fs_set_default(NULL);
 
     /* Register oefs with the multiplexer. */
-    OE_TEST(oe_muxfs_register_fs(&oe_muxfs, "/oefs", oefs) == 0);
+    OE_TEST(oe_muxfs_register_fs(&oe_muxfs, "/oefs", &oefs) == 0);
 
     _test_alphabet_file(&oe_muxfs, "/oefs/tmp");
 
@@ -315,7 +317,7 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
     /* Unregister oefs with the multiplexer. */
     OE_TEST(oe_muxfs_unregister_fs(&oe_muxfs, "/oefs") == 0);
 
-    oe_release(oefs);
+    oe_release(&oefs);
 }
 
 void enc_test(const char* src_dir, const char* bin_dir)
@@ -334,6 +336,10 @@ void enc_test(const char* src_dir, const char* bin_dir)
     oe_fs_set_default(&oe_hostfs);
     _test_default_fs(tmp_dir);
     oe_fs_set_default(NULL);
+
+    oe_default_fs = oe_hostfs;
+    _test_default_fs(tmp_dir);
+    memset(&oe_default_fs, 0, sizeof(oe_default_fs));
 
     _test_alphabet_file(&oe_sgxfs, tmp_dir);
     _test_alphabet_file(&oe_hostfs, tmp_dir);

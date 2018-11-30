@@ -16,6 +16,8 @@ typedef struct stat oe_stat_t;
 
 typedef struct dirent oe_dirent_t;
 
+#define OE_FS_INITIALIZER { 0 }
+
 typedef struct _oe_fs
 {
     uint64_t __impl[16];
