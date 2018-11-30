@@ -8,6 +8,7 @@
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/internal/asn1.h>
 #include <openenclave/internal/cert.h>
+#include <openenclave/internal/csr.h>
 #include <openenclave/internal/ec.h>
 #include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/raise.h>
@@ -875,6 +876,47 @@ static void _test_crl_distribution_points(void)
     printf("=== passed %s()\n", __FUNCTION__);
 }
 
+static void _test_csr_from_key(void)
+{
+#if OE_BUILD_ENCLAVE
+    printf("=== begin %s()\n", __FUNCTION__);
+
+    oe_result_t r;
+    uint8_t private_raw[32];
+    oe_ec_private_key_t private_key = {0};
+    oe_ec_public_key_t public_key = {0};
+    uint8_t* csr = NULL;
+    size_t csr_size = 0;
+    const char* name = 
+        "CN=Marshall T. Rose, O=Dover Beach Consulting, L=Santa Clara, "
+        "ST=California, C=US";
+
+    /* Generate a random 256 bit key. */
+    r = oe_random_internal(private_raw, sizeof(private_raw));
+    OE_TEST(r == OE_OK);
+
+    /* Set the MSB to 0 so we always have a valid NIST 256P key. */
+    private_raw[0] = private_raw[0] & 0x7F;
+
+    r = oe_ec_generate_key_pair_from_private(
+        OE_EC_TYPE_SECP256R1,
+        private_raw,
+        sizeof(private_raw),
+        &private_key,
+        &public_key);
+    OE_TEST(r == OE_OK);
+
+    /* Now generate the CSR. */
+    OE_TEST(
+        oe_csr_from_ec_key(
+            &private_key, &public_key, name, &csr, &csr_size) == OE_OK);
+
+    free(csr);
+    oe_ec_private_key_free(&private_key);
+    oe_ec_public_key_free(&public_key);
+#endif
+}
+
 void TestEC()
 {
     OE_TEST(read_cert("../data/ec_cert_with_ext.pem", _CERT) == OE_OK);
@@ -909,6 +951,7 @@ void TestEC()
     _test_cert_with_extensions();
     _test_cert_without_extensions();
     _test_crl_distribution_points();
+    _test_csr_from_key();
     _test_sign_and_verify();
     _test_generate();
     _test_generate_from_private();
