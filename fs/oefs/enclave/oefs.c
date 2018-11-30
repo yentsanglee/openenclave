@@ -31,6 +31,7 @@
 **
 **         empty-block
 **         empty-block
+**         header-block (plain-text header block)
 **         super-block
 **         bitmap blocks
 **         -------------
@@ -76,11 +77,14 @@
 /* The logical block number of the root directory inode. */
 #define ROOT_INO 1
 
+/* The physical block number of the plain-text header block. */
+#define HEADER_BLOCK_PHYSICAL_BLKNO 2
+
 /* The physical block number of the super block. */
-#define SUPER_BLOCK_PHYSICAL_BLKNO 2
+#define SUPER_BLOCK_PHYSICAL_BLKNO 3
 
 /* The first physical block number of the block bitmap. */
-#define BITMAP_PHYSICAL_BLKNO 3
+#define BITMAP_PHYSICAL_BLKNO 4
 
 #define BLKNOS_PER_INODE \
     (sizeof(((oefs_inode_t*)0)->i_blocks) / sizeof(uint32_t))
@@ -420,7 +424,7 @@ INLINE uint32_t _get_physical_blkno(oefs_t* oefs, uint32_t blkno)
 {
     /* Calculate the number of bitmap blocks. */
     size_t num_bitmap_blocks = _num_bitmap_blocks(oefs->nblks);
-    return blkno + (3 + num_bitmap_blocks) - 1;
+    return blkno + (BITMAP_PHYSICAL_BLKNO + num_bitmap_blocks) - 1;
 }
 
 static int _oefs_size(size_t nblks, size_t* size);
@@ -2406,6 +2410,10 @@ static int _oefs_mkfs(oefs_blkdev_t* dev, size_t nblks)
     if (dev->put(dev, blkno++, &empty_block) != 0)
         OEFS_RAISE(EIO);
 
+    /* Write empty plain-text header block. */
+    if (dev->put(dev, blkno++, &empty_block) != 0)
+        OEFS_RAISE(EIO);
+
     /* Write the super block */
     {
         oefs_super_block_t sb;
@@ -2529,6 +2537,9 @@ static int _oefs_size(size_t nblks, size_t* size)
 
     /* Count the first two empty blocks. */
     total_blocks += 2;
+
+    /* Count the header block. */
+    total_blocks++;
 
     /* Count the super block */
     total_blocks++;
@@ -2678,7 +2689,7 @@ int oefs_calculate_total_blocks(size_t nblks, size_t* total_nblks)
     if (!total_nblks)
         goto done;
 
-    /* There must be at least 4 blocks. */
+    /* There must be at least 8 blocks. */
     if (nblks < 8)
         goto done;
 
