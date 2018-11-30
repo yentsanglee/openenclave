@@ -69,6 +69,7 @@ let usage (progname: string) =
 --trusted             Generate trusted proxy and bridge\n\
 --untrusted-dir <dir> Specify the directory for saving untrusted code\n\
 --trusted-dir   <dir> Specify the directory for saving trusted code\n\
+--internal <prefix>   Generate marshaling functions for internal use\n\
 --help                Print this help message\n";
   eprintf "\n\
 If neither `--untrusted' nor `--trusted' is specified, generate both.\n";
@@ -84,6 +85,7 @@ type edger8r_params = {
   gen_trusted   : bool;         (* User specified `--trusted' *)
   untrusted_dir : string;       (* Directory to save untrusted code *)
   trusted_dir   : string;       (* Directory to save trusted code *)
+  internal      : string;       (* Generate code for internal use *)
 }
 
 (* The search paths are recored in the array below.
@@ -109,6 +111,7 @@ let rec parse_cmdline (progname: string) (cmdargs: string list) =
   let u_dir    = ref "." in
   let t_dir    = ref "." in
   let files    = ref [] in
+  let internal = ref "" in
 
   let rec local_parser (args: string list) =
     match args with
@@ -136,6 +139,9 @@ let rec parse_cmdline (progname: string) (cmdargs: string list) =
 		  let extra_path_arry = Array.of_list extra_paths in
                     search_paths := Array.append extra_path_arry !search_paths;
                     local_parser (List.tl ops)
+            | "--internal" -> 
+                if ops = [] then usage progname
+                else ( internal := List.hd ops; local_parser (List.tl ops) )                 
             | _ -> files := op :: !files; local_parser ops
   in
     local_parser cmdargs;
@@ -143,6 +149,7 @@ let rec parse_cmdline (progname: string) (cmdargs: string list) =
       { input_files = List.rev !files; use_prefix = !use_pref;
         header_only = !hd_only; gen_untrusted = true; gen_trusted = true;
         untrusted_dir = !u_dir; trusted_dir = !t_dir;
+        internal = !internal
       }
     in
       if !untrusted || !trusted (* User specified '--untrusted' or '--trusted' *)
