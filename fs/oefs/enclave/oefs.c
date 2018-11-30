@@ -52,6 +52,13 @@
 
 #define INLINE static __inline
 
+#define OEFS_FLAG_NONE 0
+#define OEFS_FLAG_MKFS 1
+#define OEFS_FLAG_CRYPTO 2
+#define OEFS_FLAG_AUTH_CRYPTO 4
+#define OEFS_FLAG_INTEGRITY 8
+#define OEFS_FLAG_CACHING 16
+
 #define BITS_PER_BLK (OEFS_BLOCK_SIZE * 8)
 
 #define SUPER_BLOCK_MAGIC 0x0EF51234

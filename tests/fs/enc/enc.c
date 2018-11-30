@@ -7,6 +7,8 @@
 #include <openenclave/internal/muxfs.h>
 #include <openenclave/internal/oefs.h>
 #include <openenclave/internal/tests.h>
+#include <openenclave/internal/keys.h>
+#include <openenclave/internal/hexdump.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -232,6 +234,52 @@ static void _test_sgxfs_with_key(const char* tmp_dir)
     OE_TEST(oe_remove(&oe_sgxfs, path) == 0);
 }
 
+static int _generate_sgx_key(sgx_key_t* key, uint8_t key_id[SGX_KEYID_SIZE])
+{
+    sgx_key_request_t kr;
+
+    memset(&kr, 0, sizeof(sgx_key_request_t));
+
+    kr.key_name = SGX_KEYSELECT_SEAL;
+    kr.key_policy = SGX_KEYPOLICY_MRSIGNER;
+
+    memset(&kr.cpu_svn, 0, sizeof(kr.cpu_svn));
+    memset(&kr.isv_svn, 0, sizeof(kr.isv_svn));
+
+    kr.attribute_mask.flags = OE_SEALKEY_DEFAULT_FLAGSMASK;
+    kr.attribute_mask.xfrm = 0x0;
+    kr.misc_attribute_mask = OE_SEALKEY_DEFAULT_MISCMASK;
+
+    memcpy(kr.key_id, key_id, sizeof(kr.key_id));
+
+    if (oe_get_key(&kr, key) != 0)
+        return -1;
+
+    return 0;
+}
+
+static int _generate_key(uint8_t key[OEFS_KEY_SIZE])
+{
+    sgx_key_t lo;
+    sgx_key_t hi;
+    uint8_t id_lo[SGX_KEYID_SIZE];
+    uint8_t id_hi[SGX_KEYID_SIZE];
+
+    memset(id_lo, 0xaa, sizeof(id_lo));
+    memset(id_hi, 0xaa, sizeof(id_hi));
+
+    if (_generate_sgx_key(&lo, id_lo) != 0)
+        return -1;
+
+    if (_generate_sgx_key(&hi, id_hi) != 0)
+        return -1;
+
+    memcpy(&key[0], &hi, sizeof(hi));
+    memcpy(&key[sizeof(hi)], &lo, sizeof(lo));
+
+    return 0;
+}
+
 static int _create_oefs_device_file(const char* path, size_t nblks)
 {
     int ret = -1;
@@ -271,11 +319,15 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
     _mkpath(source, tmp_dir, "/test.oefs");
     size_t nbytes = 2 * 4194304;
     size_t nblks = nbytes / OEFS_BLOCK_SIZE;
+#if 0
     uint8_t key[OEFS_KEY_SIZE] = {
         0x0f, 0xf0, 0x31, 0xe3, 0x93, 0xdf, 0x46, 0x7b, 0x9a, 0x33, 0xe8,
         0x3c, 0x55, 0x11, 0xac, 0x52, 0x9e, 0xd4, 0xb1, 0xad, 0x10, 0x16,
         0x4f, 0xd9, 0x92, 0x19, 0x93, 0xcc, 0xa9, 0x0e, 0xcb, 0xed,
     };
+#else
+    uint8_t key[OEFS_KEY_SIZE];
+#endif
 
     /* Create a zero-filled file on the host (if it does not already exist). */
     {
@@ -286,6 +338,10 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
             OE_TEST(_create_oefs_device_file(source, nblks) == 0);
         }
     }
+
+    OE_TEST(_generate_key(key) == 0);
+
+    oe_hex_dump(key, sizeof(key));
 
     OE_TEST(oe_oefs_mkfs(source, key) == 0);
 
