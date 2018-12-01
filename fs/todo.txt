@@ -1,4 +1,6 @@
 
+    (*) Implement FILE buffering.
+
     (*) Implement the fprintf/fscanf family of functions.
 
     (*) Handle file permission/owner checks.
