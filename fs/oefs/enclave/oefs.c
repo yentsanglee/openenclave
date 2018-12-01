@@ -11,6 +11,8 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/oefs.h>
 #include <openenclave/internal/raise.h>
+#include <openenclave/internal/keys.h>
+#include <openenclave/internal/hexdump.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -210,7 +212,7 @@ typedef struct _oefs_header_block
     /* Magic number: HEADER_BLOCK_MAGIC. */
     uint32_t h_magic;
 
-    uint8_t h_master_key_id[OEFS_KEY_SIZE];
+    uint8_t h_key_id[OEFS_KEY_SIZE];
 
     uint8_t h_padding[OEFS_BLOCK_SIZE - sizeof(uint32_t) - OEFS_KEY_SIZE];
 
@@ -300,9 +302,6 @@ struct _oefs
 
     /* "Cooked" crypto device. */
     oefs_blkdev_t* dev;
-
-    /* Plain-text header block. */
-    oefs_header_block_t hb;
 
     union {
         const oefs_super_block_t read;
@@ -451,7 +450,8 @@ static int _oefs_size(size_t nblks, size_t* size);
 static int _oefs_mkfs(
     oefs_blkdev_t* host_dev, 
     oefs_blkdev_t* dev, 
-    size_t nblks);
+    size_t nblks,
+    uint8_t key_id[OEFS_KEY_SIZE]);
 
 #if 0
 static int _oefs_creat(
@@ -2408,7 +2408,8 @@ done:
 static int _oefs_mkfs(
     oefs_blkdev_t* host_dev, 
     oefs_blkdev_t* dev, 
-    size_t nblks)
+    size_t nblks,
+    uint8_t key_id[OEFS_KEY_SIZE])
 {
     int err = 0;
     size_t num_bitmap_blocks;
@@ -2443,8 +2444,7 @@ static int _oefs_mkfs(
 
         hb.h_magic = HEADER_BLOCK_MAGIC;
 
-        if (oe_random(hb.h_master_key_id, sizeof(hb.h_master_key_id)) != OE_OK)
-            OEFS_RAISE(EIO);
+        memcpy(hb.h_key_id, key_id, sizeof(hb.h_key_id));
 
         if (host_dev->put(host_dev, blkno++, (const oefs_blk_t*)&hb) != 0)
             OEFS_RAISE(EIO);
@@ -2618,17 +2618,6 @@ static int _oefs_initialize(
     /* Save pointer to device (caller is responsible for releasing it). */
     oefs->dev = dev;
 
-    /* Read the header block from the file system. */
-    if (host_dev->get(
-        host_dev, HEADER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&oefs->hb) != 0)
-    {
-        OEFS_RAISE(EIO);
-    }
-
-    /* Check the header block magic number. */
-    if (oefs->hb.h_magic != HEADER_BLOCK_MAGIC)
-        OEFS_RAISE(EIO);
-
     /* Read the super block from the file system. */
     if (dev->get(dev, SUPER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&oefs->sb) != 0)
         OEFS_RAISE(EIO);
@@ -2775,11 +2764,59 @@ done:
     return ret;
 }
 
+static int _generate_sgx_key(sgx_key_t* key, uint8_t key_id[SGX_KEYID_SIZE])
+{
+    sgx_key_request_t kr;
+
+    memset(&kr, 0, sizeof(sgx_key_request_t));
+
+    kr.key_name = SGX_KEYSELECT_SEAL;
+    kr.key_policy = SGX_KEYPOLICY_MRSIGNER;
+
+    memset(&kr.cpu_svn, 0, sizeof(kr.cpu_svn));
+    memset(&kr.isv_svn, 0, sizeof(kr.isv_svn));
+
+    kr.attribute_mask.flags = OE_SEALKEY_DEFAULT_FLAGSMASK;
+    kr.attribute_mask.xfrm = 0x0;
+    kr.misc_attribute_mask = OE_SEALKEY_DEFAULT_MISCMASK;
+
+    memcpy(kr.key_id, key_id, sizeof(kr.key_id));
+
+    if (oe_get_key(&kr, key) != 0)
+        return -1;
+
+    return 0;
+}
+
+static int _generate_master_key(
+    const uint8_t key_id[OEFS_KEY_SIZE],
+    uint8_t key[OEFS_KEY_SIZE])
+{
+    sgx_key_t lo;
+    sgx_key_t hi;
+    uint8_t id_lo[SGX_KEYID_SIZE];
+    uint8_t id_hi[SGX_KEYID_SIZE];
+
+    memcpy(id_lo, &key_id[0], sizeof(id_lo));
+    memcpy(id_hi, &key_id[SGX_KEYID_SIZE], sizeof(id_hi));
+
+    if (_generate_sgx_key(&lo, id_lo) != 0)
+        return -1;
+
+    if (_generate_sgx_key(&hi, id_hi) != 0)
+        return -1;
+
+    memcpy(&key[0], &hi, sizeof(hi));
+    memcpy(&key[sizeof(hi)], &lo, sizeof(lo));
+
+    return 0;
+}
+
 static int _oefs_new(
     oefs_t** oefs_out,
     const char* source,
     uint32_t flags,
-    const uint8_t key[OEFS_KEY_SIZE])
+    const uint8_t key_in[OEFS_KEY_SIZE])
 {
     int ret = -1;
     oefs_blkdev_t* host_dev = NULL;
@@ -2793,11 +2830,13 @@ static int _oefs_new(
     size_t n0;
     size_t n1;
     size_t n2;
+    uint8_t key_id[OEFS_KEY_SIZE];
+    uint8_t key[OEFS_KEY_SIZE];
 
     if (oefs_out)
         *oefs_out = NULL;
 
-    if (!oefs_out || !source || !key)
+    if (!oefs_out || !source)
         goto done;
 
     /* Open a host device. */
@@ -2805,6 +2844,40 @@ static int _oefs_new(
         goto done;
 
     next = host_dev;
+
+    if (key_in)
+    {
+        memset(key_id, 0, sizeof(key_id));
+        memcpy(key, key_in, sizeof(key));
+    }
+    else
+    {
+        /* Generate a key id or read it from the header. */
+        if (flags & OEFS_FLAG_MKFS)
+        {
+            if (oe_random(key_id, sizeof(key_id)) != OE_OK)
+                goto done;
+        }
+        else
+        {
+            oefs_header_block_t hb;
+
+            if (host_dev->get(
+                host_dev, HEADER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&hb) != 0)
+            {
+                goto done;
+            }
+
+            if (hb.h_magic != HEADER_BLOCK_MAGIC)
+                goto done;
+
+            memcpy(key_id, hb.h_key_id, sizeof(key_id));
+        }
+
+        /* Generate a key from the key id. */
+        if (_generate_master_key(key_id, key) != 0)
+            goto done;
+    }
 
     /* Get the size of the host device. */
     {
@@ -2923,7 +2996,7 @@ static int _oefs_new(
 
     if (flags & OEFS_FLAG_MKFS)
     {
-        if (_oefs_mkfs(host_dev, dev, n2) != 0)
+        if (_oefs_mkfs(host_dev, dev, n2, key_id) != 0)
             goto done;
     }
 
