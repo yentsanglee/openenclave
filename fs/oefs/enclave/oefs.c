@@ -2861,6 +2861,9 @@ static int _oefs_new(
         else
         {
             oefs_header_block_t hb;
+            uint8_t zero_key_id[OEFS_KEY_SIZE];
+
+            memset(zero_key_id, 0, sizeof(zero_key_id));
 
             if (host_dev->get(
                 host_dev, HEADER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&hb) != 0)
@@ -2872,6 +2875,9 @@ static int _oefs_new(
                 goto done;
 
             memcpy(key_id, hb.h_key_id, sizeof(key_id));
+
+            if (memcmp(key_id, zero_key_id, sizeof(key_id)) == 0)
+                goto done;
         }
 
         /* Generate a key from the key id. */
