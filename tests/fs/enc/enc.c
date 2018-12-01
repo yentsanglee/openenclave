@@ -295,10 +295,6 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
 
     oe_hex_dump(key, sizeof(key));
 
-#if 0
-    OE_TEST(oe_oefs_mkfs(source, key) == 0);
-#endif
-
     OE_TEST(oe_oefs_initialize(&oefs, source, key) == 0);
 
     oe_fs_set_default(&oefs);

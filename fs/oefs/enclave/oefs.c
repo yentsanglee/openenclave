@@ -57,7 +57,6 @@
 #define INLINE static __inline
 
 #define OEFS_FLAG_NONE 0
-#define OEFS_FLAG_MKFS 1
 #define OEFS_FLAG_CRYPTO 2
 #define OEFS_FLAG_AUTH_CRYPTO 4
 #define OEFS_FLAG_INTEGRITY 8
@@ -3798,30 +3797,6 @@ static oe_fs_ft_t _ft = {
     .fs_mkdir = _oefs_fs_mkdir,
     .fs_rmdir = _oefs_fs_rmdir,
 };
-
-int oe_oefs_mkfs(const char* source, const uint8_t key[OEFS_KEY_SIZE])
-{
-    int ret = -1;
-    oefs_t* oefs = NULL;
-    uint32_t flags = 0;
-
-    flags |= OEFS_FLAG_MKFS;
-    flags |= OEFS_FLAG_CACHING;
-    flags |= OEFS_FLAG_INTEGRITY;
-    flags |= OEFS_FLAG_AUTH_CRYPTO;
-
-    if (_oefs_new(&oefs, source, flags, key) != 0)
-        goto done;
-
-    ret = 0;
-
-done:
-
-    if (oefs)
-        _oefs_release(oefs);
-
-    return ret;
-}
 
 int oe_oefs_initialize(
     oe_fs_t* fs,

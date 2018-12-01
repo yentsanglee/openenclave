@@ -11,8 +11,6 @@ OE_EXTERNC_BEGIN
 
 int oefs_calculate_total_blocks(size_t nblks, size_t* total_nblks);
 
-int oe_oefs_mkfs(const char* source, const uint8_t key[OEFS_KEY_SIZE]);
-
 int oe_oefs_initialize(
     oe_fs_t* fs,
     const char* source,
