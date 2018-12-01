@@ -62,6 +62,8 @@
 
 #define BITS_PER_BLK (OEFS_BLOCK_SIZE * 8)
 
+#define HEADER_BLOCK_MAGIC 0X782056e2
+
 #define SUPER_BLOCK_MAGIC 0x0EF51234
 
 #define INODE_MAGIC 0xe3d6e3eb
@@ -203,6 +205,19 @@ typedef struct _oefs_stat
     oefs_timespec_t st_ctim;
 } oefs_stat_t;
 
+typedef struct _oefs_header_block
+{
+    /* Magic number: HEADER_BLOCK_MAGIC. */
+    uint32_t h_magic;
+
+    uint8_t h_master_key_id[OEFS_KEY_SIZE];
+
+    uint8_t h_padding[OEFS_BLOCK_SIZE - sizeof(uint32_t) - OEFS_KEY_SIZE];
+
+} oefs_header_block_t;
+
+OE_STATIC_ASSERT(sizeof(oefs_header_block_t) == OEFS_BLOCK_SIZE);
+
 typedef struct _oefs_super_block
 {
     /* Magic number: SUPER_BLOCK_MAGIC. */
@@ -283,7 +298,11 @@ struct _oefs
     /* Should contain the value of the OEFS_MAGIC macro. */
     uint32_t magic;
 
+    /* "Cooked" crypto device. */
     oefs_blkdev_t* dev;
+
+    /* Plain-text header block. */
+    oefs_header_block_t hb;
 
     union {
         const oefs_super_block_t read;
@@ -429,7 +448,10 @@ INLINE uint32_t _get_physical_blkno(oefs_t* oefs, uint32_t blkno)
 
 static int _oefs_size(size_t nblks, size_t* size);
 
-static int _oefs_mkfs(oefs_blkdev_t* dev, size_t nblks);
+static int _oefs_mkfs(
+    oefs_blkdev_t* host_dev, 
+    oefs_blkdev_t* dev, 
+    size_t nblks);
 
 #if 0
 static int _oefs_creat(
@@ -2383,7 +2405,10 @@ done:
     return err;
 }
 
-static int _oefs_mkfs(oefs_blkdev_t* dev, size_t nblks)
+static int _oefs_mkfs(
+    oefs_blkdev_t* host_dev, 
+    oefs_blkdev_t* dev, 
+    size_t nblks)
 {
     int err = 0;
     size_t num_bitmap_blocks;
@@ -2410,9 +2435,20 @@ static int _oefs_mkfs(oefs_blkdev_t* dev, size_t nblks)
     if (dev->put(dev, blkno++, &empty_block) != 0)
         OEFS_RAISE(EIO);
 
-    /* Write empty plain-text header block. */
-    if (dev->put(dev, blkno++, &empty_block) != 0)
-        OEFS_RAISE(EIO);
+    /* Write the plain-text header block. */
+    {
+        oefs_header_block_t hb;
+
+        memset(&hb, 0, sizeof(oefs_header_block_t));
+
+        hb.h_magic = HEADER_BLOCK_MAGIC;
+
+        if (oe_random(hb.h_master_key_id, sizeof(hb.h_master_key_id)) != OE_OK)
+            OEFS_RAISE(EIO);
+
+        if (host_dev->put(host_dev, blkno++, (const oefs_blk_t*)&hb) != 0)
+            OEFS_RAISE(EIO);
+    }
 
     /* Write the super block */
     {
@@ -2559,7 +2595,10 @@ done:
     return err;
 }
 
-static int _oefs_initialize(oefs_t** oefs_out, oefs_blkdev_t* dev)
+static int _oefs_initialize(
+    oefs_t** oefs_out, 
+    oefs_blkdev_t* host_dev,
+    oefs_blkdev_t* dev)
 {
     int err = 0;
     size_t nblks;
@@ -2579,11 +2618,22 @@ static int _oefs_initialize(oefs_t** oefs_out, oefs_blkdev_t* dev)
     /* Save pointer to device (caller is responsible for releasing it). */
     oefs->dev = dev;
 
+    /* Read the header block from the file system. */
+    if (host_dev->get(
+        host_dev, HEADER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&oefs->hb) != 0)
+    {
+        OEFS_RAISE(EIO);
+    }
+
+    /* Check the header block magic number. */
+    if (oefs->hb.h_magic != HEADER_BLOCK_MAGIC)
+        OEFS_RAISE(EIO);
+
     /* Read the super block from the file system. */
     if (dev->get(dev, SUPER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&oefs->sb) != 0)
         OEFS_RAISE(EIO);
 
-    /* Check the superblock magic number. */
+    /* Check the super block magic number. */
     if (oefs->sb.read.s_magic != SUPER_BLOCK_MAGIC)
         OEFS_RAISE(EIO);
 
@@ -2873,11 +2923,11 @@ static int _oefs_new(
 
     if (flags & OEFS_FLAG_MKFS)
     {
-        if (_oefs_mkfs(dev, n2) != 0)
+        if (_oefs_mkfs(host_dev, dev, n2) != 0)
             goto done;
     }
 
-    if (_oefs_initialize(&oefs, dev) != 0)
+    if (_oefs_initialize(&oefs, host_dev, dev) != 0)
         goto done;
 
     *oefs_out = oefs;
