@@ -22,6 +22,7 @@
 #include "raise.h"
 #include "utils.h"
 #include "blkdev.h"
+#include "sha.h"
 
 /*
 **==============================================================================
@@ -212,7 +213,7 @@ typedef struct _oefs_header_block
     /* Magic number: HEADER_BLOCK_MAGIC. */
     uint32_t h_magic;
 
-    uint8_t h_salt[OEFS_KEY_SIZE];
+    uint8_t h_key_id[OEFS_KEY_SIZE];
 
     uint8_t h_padding[OEFS_BLOCK_SIZE - sizeof(uint32_t) - OEFS_KEY_SIZE];
 
@@ -231,8 +232,11 @@ typedef struct _oefs_super_block
     /* The number of free blocks. */
     uint32_t s_free_blocks;
 
+    /* The SHA-256 hash of the header block. */
+    uint8_t s_header_hash[32];
+
     /* (12) Reserved. */
-    uint8_t s_reserved[OEFS_BLOCK_SIZE - 12];
+    uint8_t s_reserved[OEFS_BLOCK_SIZE - 12 - 32];
 } oefs_super_block_t;
 
 OE_STATIC_ASSERT(sizeof(oefs_super_block_t) == OEFS_BLOCK_SIZE);
@@ -451,7 +455,7 @@ static int _oefs_mkfs(
     oefs_blkdev_t* host_dev, 
     oefs_blkdev_t* dev, 
     size_t nblks,
-    uint8_t salt[OEFS_KEY_SIZE]);
+    uint8_t key_id[OEFS_KEY_SIZE]);
 
 #if 0
 static int _oefs_creat(
@@ -2405,16 +2409,26 @@ done:
     return err;
 }
 
+static void _initialize_header_block(
+    oefs_header_block_t* hb,
+    const uint8_t key_id[OEFS_KEY_SIZE])
+{
+    memset(hb, 0, sizeof(oefs_header_block_t));
+    hb->h_magic = HEADER_BLOCK_MAGIC;
+    memcpy(hb->h_key_id, key_id, sizeof(hb->h_key_id));
+}
+
 static int _oefs_mkfs(
     oefs_blkdev_t* host_dev, 
     oefs_blkdev_t* dev, 
     size_t nblks,
-    uint8_t salt[OEFS_KEY_SIZE])
+    uint8_t key_id[OEFS_KEY_SIZE])
 {
     int err = 0;
     size_t num_bitmap_blocks;
     uint32_t blkno = 0;
     oefs_blk_t empty_block;
+    oefs_header_block_t hb;
 
     if (dev)
         dev->begin(dev);
@@ -2438,26 +2452,27 @@ static int _oefs_mkfs(
 
     /* Write the plain-text header block. */
     {
-        oefs_header_block_t hb;
-
-        memset(&hb, 0, sizeof(oefs_header_block_t));
-
-        hb.h_magic = HEADER_BLOCK_MAGIC;
-
-        memcpy(hb.h_salt, salt, sizeof(hb.h_salt));
+        _initialize_header_block(&hb, key_id);
 
         if (host_dev->put(host_dev, blkno++, (const oefs_blk_t*)&hb) != 0)
             OEFS_RAISE(EIO);
     }
 
-    /* Write the super block */
+    /* Write the super block. */
     {
         oefs_super_block_t sb;
+        oefs_sha256_t hash;
+
         memset(&sb, 0, sizeof(sb));
 
         sb.s_magic = SUPER_BLOCK_MAGIC;
         sb.s_nblks = nblks;
         sb.s_free_blocks = nblks - 3;
+
+        if (oefs_sha256(&hash, &hb, sizeof(hb)) != 0)
+            OEFS_RAISE(EIO);
+
+        memcpy(sb.s_header_hash, &hash, sizeof(sb.s_header_hash));
 
         if (dev->put(dev, blkno++, (const oefs_blk_t*)&sb) != 0)
             OEFS_RAISE(EIO);
@@ -2598,13 +2613,15 @@ done:
 static int _oefs_initialize(
     oefs_t** oefs_out, 
     oefs_blkdev_t* host_dev,
-    oefs_blkdev_t* dev)
+    oefs_blkdev_t* dev,
+    const oefs_header_block_t* hb)
 {
     int err = 0;
     size_t nblks;
     uint8_t* bitmap = NULL;
     uint8_t* bitmap_copy = NULL;
     oefs_t* oefs = NULL;
+    oefs_super_block_t sb;
 
     if (oefs_out)
         *oefs_out = NULL;
@@ -2619,12 +2636,25 @@ static int _oefs_initialize(
     oefs->dev = dev;
 
     /* Read the super block from the file system. */
-    if (dev->get(dev, SUPER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&oefs->sb) != 0)
+    if (dev->get(dev, SUPER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&sb) != 0)
         OEFS_RAISE(EIO);
 
+    /* Check that the hash of the header matches the one in the super block. */
+    {
+        oefs_sha256_t hash;
+
+        if (oefs_sha256(&hash, hb, sizeof(oefs_header_block_t)) != 0)
+            OEFS_RAISE(EIO);
+
+        if (memcmp(sb.s_header_hash, &hash, sizeof(sb.s_header_hash)) != 0)
+            OEFS_RAISE(EIO);
+    }
+
     /* Check the super block magic number. */
-    if (oefs->sb.read.s_magic != SUPER_BLOCK_MAGIC)
+    if (sb.s_magic != SUPER_BLOCK_MAGIC)
         OEFS_RAISE(EIO);
+
+    oefs->sb.__write = sb;
 
     /* Make copy of super block. */
     memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs->sb_copy));
@@ -2789,7 +2819,7 @@ static int _generate_sgx_key(sgx_key_t* key, uint8_t key_id[SGX_KEYID_SIZE])
 }
 
 static int _generate_master_key(
-    const uint8_t salt[OEFS_KEY_SIZE],
+    const uint8_t key_id[OEFS_KEY_SIZE],
     uint8_t key[OEFS_KEY_SIZE])
 {
     sgx_key_t lo;
@@ -2797,8 +2827,8 @@ static int _generate_master_key(
     uint8_t id_lo[SGX_KEYID_SIZE];
     uint8_t id_hi[SGX_KEYID_SIZE];
 
-    memcpy(id_lo, &salt[0], sizeof(id_lo));
-    memcpy(id_hi, &salt[SGX_KEYID_SIZE], sizeof(id_hi));
+    memcpy(id_lo, &key_id[0], sizeof(id_lo));
+    memcpy(id_hi, &key_id[SGX_KEYID_SIZE], sizeof(id_hi));
 
     if (_generate_sgx_key(&lo, id_lo) != 0)
         return -1;
@@ -2830,8 +2860,9 @@ static int _oefs_new(
     size_t n0;
     size_t n1;
     size_t n2;
-    uint8_t salt[OEFS_KEY_SIZE];
+    uint8_t key_id[OEFS_KEY_SIZE];
     uint8_t key[OEFS_KEY_SIZE];
+    oefs_header_block_t hb;
 
     if (oefs_out)
         *oefs_out = NULL;
@@ -2847,7 +2878,7 @@ static int _oefs_new(
 
     if (key_in)
     {
-        memset(salt, 0, sizeof(salt));
+        memset(key_id, 0, sizeof(key_id));
         memcpy(key, key_in, sizeof(key));
     }
     else
@@ -2855,15 +2886,16 @@ static int _oefs_new(
         /* Generate a key id or read it from the header. */
         if (flags & OEFS_FLAG_MKFS)
         {
-            if (oe_random(salt, sizeof(salt)) != OE_OK)
+            if (oe_random(key_id, sizeof(key_id)) != OE_OK)
                 goto done;
+
+            _initialize_header_block(&hb, key_id);
         }
         else
         {
-            oefs_header_block_t hb;
-            uint8_t zero_salt[OEFS_KEY_SIZE];
+            uint8_t zero_key_id[OEFS_KEY_SIZE];
 
-            memset(zero_salt, 0, sizeof(zero_salt));
+            memset(zero_key_id, 0, sizeof(zero_key_id));
 
             if (host_dev->get(
                 host_dev, HEADER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&hb) != 0)
@@ -2874,14 +2906,14 @@ static int _oefs_new(
             if (hb.h_magic != HEADER_BLOCK_MAGIC)
                 goto done;
 
-            memcpy(salt, hb.h_salt, sizeof(salt));
+            memcpy(key_id, hb.h_key_id, sizeof(key_id));
 
-            if (memcmp(salt, zero_salt, sizeof(salt)) == 0)
+            if (memcmp(key_id, zero_key_id, sizeof(key_id)) == 0)
                 goto done;
         }
 
         /* Generate a key from the key id. */
-        if (_generate_master_key(salt, key) != 0)
+        if (_generate_master_key(key_id, key) != 0)
             goto done;
     }
 
@@ -3002,11 +3034,11 @@ static int _oefs_new(
 
     if (flags & OEFS_FLAG_MKFS)
     {
-        if (_oefs_mkfs(host_dev, dev, n2, salt) != 0)
+        if (_oefs_mkfs(host_dev, dev, n2, key_id) != 0)
             goto done;
     }
 
-    if (_oefs_initialize(&oefs, host_dev, dev) != 0)
+    if (_oefs_initialize(&oefs, host_dev, dev, &hb) != 0)
         goto done;
 
     *oefs_out = oefs;
