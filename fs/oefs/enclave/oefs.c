@@ -449,6 +449,19 @@ INLINE uint32_t _get_physical_blkno(oefs_t* oefs, uint32_t blkno)
     return blkno + (BITMAP_PHYSICAL_BLKNO + num_bitmap_blocks) - 1;
 }
 
+static bool _is_zero_filled(const void* data, size_t size)
+{
+    const uint8_t* p = (const uint8_t*)data;
+
+    while (size--)
+    {
+        if (*p++ != '\0')
+            return false;
+    }
+
+    return true;
+}
+
 static int _oefs_size(size_t nblks, size_t* size);
 
 static int _oefs_mkfs(
@@ -2863,6 +2876,7 @@ static int _oefs_new(
     uint8_t key_id[OEFS_KEY_SIZE];
     uint8_t key[OEFS_KEY_SIZE];
     oefs_header_block_t hb;
+    bool do_mkfs;
 
     if (oefs_out)
         *oefs_out = NULL;
@@ -2876,40 +2890,44 @@ static int _oefs_new(
 
     next = host_dev;
 
-    if (key_in)
+    /* Fetch header and set do_mkfs to true if header is zero-filled. */
     {
-        memset(key_id, 0, sizeof(key_id));
-        memcpy(key, key_in, sizeof(key));
-    }
-    else
-    {
-        /* Generate a key id or read it from the header. */
-        if (flags & OEFS_FLAG_MKFS)
+        if (host_dev->get(
+            host_dev, HEADER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&hb) != 0)
         {
-            if (oe_random(key_id, sizeof(key_id)) != OE_OK)
-                goto done;
+            goto done;
+        }
 
-            _initialize_header_block(&hb, key_id);
+        if (_is_zero_filled(&hb, sizeof(hb)))
+        {
+            do_mkfs = true;
         }
         else
         {
-            uint8_t zero_key_id[OEFS_KEY_SIZE];
-
-            memset(zero_key_id, 0, sizeof(zero_key_id));
-
-            if (host_dev->get(
-                host_dev, HEADER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&hb) != 0)
-            {
-                goto done;
-            }
-
             if (hb.h_magic != HEADER_BLOCK_MAGIC)
                 goto done;
 
             memcpy(key_id, hb.h_key_id, sizeof(key_id));
 
-            if (memcmp(key_id, zero_key_id, sizeof(key_id)) == 0)
+            do_mkfs = false;
+        }
+    }
+
+    if (key_in)
+    {
+        memset(key_id, 0, sizeof(key_id));
+        memcpy(key, key_in, sizeof(key));
+        _initialize_header_block(&hb, key_id);
+    }
+    else
+    {
+        /* Generate a key id or read it from the header. */
+        if (do_mkfs)
+        {
+            if (oe_random(key_id, sizeof(key_id)) != OE_OK)
                 goto done;
+
+            _initialize_header_block(&hb, key_id);
         }
 
         /* Generate a key from the key id. */
@@ -2988,7 +3006,7 @@ static int _oefs_new(
     /* Create an authenticated crypto block device. */
     if ((flags & OEFS_FLAG_AUTH_CRYPTO))
     {
-        bool initialize = (flags & OEFS_FLAG_MKFS);
+        bool initialize = do_mkfs;
 
         if (oefs_auth_crypto_blkdev_open(
                 &crypto_dev, initialize, n1, key, next) != 0)
@@ -3010,7 +3028,7 @@ static int _oefs_new(
     /* Create a Merkle block device. */
     if ((flags & OEFS_FLAG_INTEGRITY))
     {
-        bool initialize = (flags & OEFS_FLAG_MKFS);
+        bool initialize = do_mkfs;
 
         if (oefs_merkle_blkdev_open(&merkle_dev, initialize, n2, next) != 0)
         {
@@ -3032,7 +3050,7 @@ static int _oefs_new(
     /* Set the top-level block device. */
     dev = next;
 
-    if (flags & OEFS_FLAG_MKFS)
+    if (do_mkfs)
     {
         if (_oefs_mkfs(host_dev, dev, n2, key_id) != 0)
             goto done;
