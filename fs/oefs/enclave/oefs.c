@@ -3,7 +3,6 @@
 #define _GNU_SOURCE
 
 #include <assert.h>
-#include <assert.h>
 #include <errno.h>
 #include <openenclave/bits/fs.h>
 #include <openenclave/bits/safemath.h>
@@ -1639,8 +1638,6 @@ static int _oefs_write(
     const uint8_t* ptr = (uint8_t*)data;
     uint32_t new_file_size;
 
-    _begin(oefs);
-
     if (nwritten)
         *nwritten = 0;
 
@@ -1762,8 +1759,6 @@ done:
 
     if (_flush(oefs) != 0)
         return EIO;
-
-    _end(oefs);
 
     return err;
 }
@@ -3164,12 +3159,16 @@ typedef struct _oefs_fs_impl
 
 OE_STATIC_ASSERT(sizeof(fs_impl_t) == sizeof(oe_fs_t));
 
+#define FILE_BUF_SIZE (16*1024)
+
 typedef struct _file
 {
     FILE base;
     bool f_err;
     bool f_eof;
     oefs_file_t* oefs_file;
+    uint8_t buf[FILE_BUF_SIZE];
+    size_t size;
 } file_t;
 
 typedef struct _dir
@@ -3214,6 +3213,8 @@ static oefs_dir_t* _get_oefs_dir(dir_t* dir)
     return dir->oefs_dir;
 }
 
+static int _oefs_f_fflush(FILE* base);
+
 static int _oefs_f_fclose(FILE* base)
 {
     int ret = -1;
@@ -3221,6 +3222,10 @@ static int _oefs_f_fclose(FILE* base)
     oefs_file_t* oefs_file = _get_oefs_file(file);
 
     if (!oefs_file)
+        goto done;
+
+    /* Flush the write buffer. */
+    if (_oefs_f_fflush(base) != 0)
         goto done;
 
     if (_oefs_close(oefs_file) != 0)
@@ -3250,6 +3255,10 @@ static size_t _oefs_f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
         goto done;
     }
 
+    /* Flush the write buffer before reading. */
+    if (_oefs_f_fflush(base) != 0)
+        goto done;
+
     if ((err = _oefs_read(oefs_file, ptr, n, &nread)) != 0)
     {
         file->f_err = true;
@@ -3275,25 +3284,65 @@ static size_t _oefs_f_fwrite(
     size_t ret = 0;
     file_t* file = (file_t*)base;
     oefs_file_t* oefs_file = _get_oefs_file(file);
-    size_t n = size * nmemb;
-    ssize_t nwritten;
+    size_t count = size * nmemb;
+    ssize_t nwritten = 0;
     int err;
+    const uint8_t* p = (const uint8_t*)ptr;
 
-    if (!ptr || oe_safe_mul_u64(size, nmemb, &n) != OE_OK || !oefs_file)
+    if (!ptr || oe_safe_mul_u64(size, nmemb, &count) != OE_OK || !oefs_file)
     {
         file->f_err = true;
         goto done;
     }
 
-    if ((err = _oefs_write(oefs_file, ptr, n, &nwritten)) != 0)
+    _begin(oefs_file->oefs);
+
+    /* While there are more bytes to be written. */
+    while (count > 0)
     {
-        file->f_err = true;
-        goto done;
+        size_t remaining;
+        size_t min;
+
+        /* Calculate the number of bytes remaining in the write buffer. */
+        remaining = FILE_BUF_SIZE - file->size;
+
+        /* Copy more caller data into the write buffer. */
+        min = (count < remaining) ? count : remaining;
+        memcpy(file->buf + file->size, p, min);
+        p += min;
+        count -= min;
+        file->size += min;
+
+        /* Flush the write buffer if it is full. */
+        if (file->size == FILE_BUF_SIZE)
+        {
+            ssize_t n;
+
+            if ((err = _oefs_write(oefs_file, file->buf, file->size, &n)) != 0)
+            {
+                file->f_err = true;
+                goto done;
+            }
+
+            assert(n == file->size);
+            
+            if (n != file->size)
+            {
+                file->f_err = true;
+                goto done;
+            }
+
+            file->size = 0;
+        }
+
+        nwritten += min;
     }
 
     ret = (size_t)nwritten;
 
 done:
+
+    _end(oefs_file->oefs);
 
     return ret;
 }
@@ -3311,6 +3360,10 @@ static int64_t _oefs_f_ftell(FILE* base)
         errno = EINVAL;
         goto done;
     }
+
+    /* Flush the write buffer. */
+    if (_oefs_f_fflush(base) != 0)
+        goto done;
 
     if ((err = _oefs_lseek(oefs_file, 0, SEEK_CUR, &offset)) != 0)
     {
@@ -3339,6 +3392,10 @@ static int _oefs_f_fseek(FILE* base, int64_t offset, int whence)
         goto done;
     }
 
+    /* Flush the write buffer. */
+    if (_oefs_f_fflush(base) != 0)
+        goto done;
+
     if ((err = _oefs_lseek(oefs_file, offset, whence, &new_offset)) != 0)
     {
         errno = err;
@@ -3354,8 +3411,32 @@ done:
 
 static int _oefs_f_fflush(FILE* base)
 {
-    /* Nothing to do since OEFS does not use buffered input/output. */
-    return 0;
+    int ret = EOF;
+    file_t* file = (file_t*)base;
+    oefs_file_t* oefs_file = _get_oefs_file(file);
+    int err;
+    ssize_t n;
+
+    if (!oefs_file)
+    {
+        errno = EINVAL;
+        file->f_err = true;
+        goto done;
+    }
+
+    if ((err = _oefs_write(oefs_file, file->buf, file->size, &n)) != 0)
+    {
+        errno = err;
+        file->f_err = true;
+        goto done;
+    }
+
+    assert(n == file->size);
+    file->size = 0;
+    ret = 0;
+
+done:
+    return ret;
 }
 
 static int _oefs_f_ferror(FILE* base)

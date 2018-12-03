@@ -23,24 +23,9 @@
 #include "../common/strarr.h"
 #include "strings.h"
 #include "utils.h"
+#include "trace.h"
 
 #define CPIO_BLOCK_SIZE 512
-
-#define TRACE
-
-// clang-format off
-#if defined(TRACE)
-# define GOTO(LABEL) \
-    do \
-    { \
-        printf("GOTO=%s(%u): %s()\n", __FILE__, __LINE__, __FUNCTION__); \
-        goto LABEL; \
-    } \
-    while (0)
-#else
-# define GOTO(LABEL) goto LABEL
-#endif
-// clang-format on
 
 typedef struct _cpio_header
 {

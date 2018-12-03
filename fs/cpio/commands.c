@@ -10,6 +10,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "../common/strarr.h"
+#include "trace.h"
 
 int oe_lsr(const char* root, oe_strarr_t* paths)
 {
@@ -21,11 +22,11 @@ int oe_lsr(const char* root, oe_strarr_t* paths)
 
     /* Check parameters */
     if (!root || !paths)
-        goto done;
+        GOTO(done);
 
     /* Open the directory */
     if (!(dir = opendir(root)))
-        goto done;
+        GOTO(done);
 
     /* For each entry */
     while ((ent = readdir(dir)))
@@ -42,13 +43,13 @@ int oe_lsr(const char* root, oe_strarr_t* paths)
 
         /* Append to paths[] array */
         if (oe_strarr_append(paths, path) != 0)
-            goto done;
+            GOTO(done);
 
         /* Append to dirs[] array */
         if (ent->d_type & DT_DIR)
         {
             if (oe_strarr_append(&dirs, path) != 0)
-                goto done;
+                GOTO(done);
         }
     }
 
@@ -59,7 +60,7 @@ int oe_lsr(const char* root, oe_strarr_t* paths)
         for (i = 0; i < dirs.size; i++)
         {
             if (oe_lsr(dirs.data[i], paths) != 0)
-                goto done;
+                GOTO(done);
         }
     }
 
@@ -93,40 +94,40 @@ int oe_cmp(const char* path1, const char* path2)
     size_t size = 0;
 
     if (!path1 || !path2)
-        goto done;
+        GOTO(done);
 
     if (stat(path1, &st1) != 0)
-        goto done;
+        GOTO(done);
 
     if (stat(path2, &st2) != 0)
-        goto done;
+        GOTO(done);
 
     if (S_ISDIR(st1.st_mode) && !S_ISDIR(st2.st_mode))
-        goto done;
+        GOTO(done);
 
     if (!S_ISDIR(st1.st_mode) && S_ISDIR(st2.st_mode))
-        goto done;
+        GOTO(done);
 
     if (S_ISREG(st1.st_mode) && !S_ISREG(st2.st_mode))
-        goto done;
+        GOTO(done);
 
     if (!S_ISREG(st1.st_mode) && S_ISREG(st2.st_mode))
-        goto done;
+        GOTO(done);
 
     if (S_ISDIR(st1.st_mode))
     {
         ret = 0;
-        goto done;
+        GOTO(done);
     }
 
     if (st1.st_size != st2.st_size)
-        goto done;
+        GOTO(done);
 
     if (!(is1 = fopen(path1, "rb")))
-        goto done;
+        GOTO(done);
 
     if (!(is2 = fopen(path2, "rb")))
-        goto done;
+        GOTO(done);
 
     for (;;)
     {
@@ -134,20 +135,20 @@ int oe_cmp(const char* path1, const char* path2)
         ssize_t n2 = fread(buf2, 1, sizeof(buf2), is2);
 
         if (n1 != n2)
-            goto done;
+            GOTO(done);
 
         if (n1 <= 0)
             break;
 
         if (memcmp(buf1, buf2, n1) != 0)
-            goto done;
+            GOTO(done);
 
         size += n1;
     }
 
     if (size != st1.st_size)
     {
-        goto done;
+        GOTO(done);
     }
 
     ret = 0;
