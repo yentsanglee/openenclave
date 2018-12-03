@@ -2436,6 +2436,7 @@ static int _oefs_mkfs(
     uint32_t blkno = 0;
     oefs_blk_t empty_block;
     oefs_header_block_t hb;
+    size_t num_data_blocks;
 
     if (dev)
         dev->begin(dev);
@@ -2465,6 +2466,23 @@ static int _oefs_mkfs(
             OEFS_RAISE(EIO);
     }
 
+    /* Calculate the number of data blocks. */
+    {
+        num_data_blocks = nblks;
+
+        /* Exclude the first two empty blocks. */
+        num_data_blocks -= 2;
+
+        /* Exclude the header block. */
+        num_data_blocks--;
+
+        /* Exclude the superblock. */
+        num_data_blocks--;
+
+        /* Exclude the bitmap blocks. */
+        num_data_blocks -= num_bitmap_blocks;
+    }
+
     /* Write the super block. */
     {
         oefs_super_block_t sb;
@@ -2473,6 +2491,7 @@ static int _oefs_mkfs(
         memset(&sb, 0, sizeof(sb));
 
         sb.s_magic = SUPER_BLOCK_MAGIC;
+        /* ATTN: add s_num_data_blocks field. */
         sb.s_nblks = nblks;
         sb.s_free_blocks = nblks - 3;
 
