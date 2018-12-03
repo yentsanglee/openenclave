@@ -7,7 +7,7 @@ OE_EXTERNC_BEGIN
 
 #define OEFS_KEY_SIZE 32
 
-#define OEFS_BLOCK_SIZE 1024
+#define OEFS_BLOCK_SIZE 2048
 
 int oefs_calculate_total_blocks(size_t nblks, size_t* total_nblks);
 

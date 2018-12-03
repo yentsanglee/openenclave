@@ -545,7 +545,7 @@ done:
     return err;
 }
 
-static int _write_block(oefs_t* oefs, size_t blkno, const oefs_blk_t* blk)
+static int _oefs_write_block(oefs_t* oefs, size_t blkno, const oefs_blk_t* blk)
 {
     int err = 0;
     uint32_t physical_blkno;
@@ -796,7 +796,7 @@ done:
     return err;
 }
 
-static int _write_data(
+static int _oefs_write_data(
     oefs_t* oefs,
     const void* data,
     uint32_t size,
@@ -830,7 +830,7 @@ static int _write_data(
         memcpy(blk.data, ptr, copy_size);
 
         /* Write the new block. */
-        OEFS_CHECK(_write_block(oefs, blkno, &blk));
+        OEFS_CHECK(_oefs_write_block(oefs, blkno, &blk));
 
         /* Advance to next block of data to write. */
         ptr += copy_size;
@@ -929,7 +929,7 @@ static int _append_block_chain(oefs_file_t* file, const oe_bufu32_t* blknos)
             *next = new_blkno;
 
             /* Rewrite the current inode or bnode. */
-            OEFS_CHECK(_write_block(file->oefs, blkno, object));
+            OEFS_CHECK(_oefs_write_block(file->oefs, blkno, object));
 
             /* Initialize the new bnode with zeros. */
             memset(&bnode, 0, sizeof(oefs_bnode_t));
@@ -944,7 +944,7 @@ static int _append_block_chain(oefs_file_t* file, const oe_bufu32_t* blknos)
         else
         {
             /* Rewrite the inode or bnode. */
-            OEFS_CHECK(_write_block(file->oefs, blkno, object));
+            OEFS_CHECK(_oefs_write_block(file->oefs, blkno, object));
         }
     }
 
@@ -1058,7 +1058,7 @@ static int _creat(
             OEFS_RAISE(EINVAL);
 
         OEFS_CHECK(_assign_blkno(oefs, &ino));
-        OEFS_CHECK(_write_block(oefs, ino, (const oefs_blk_t*)&inode));
+        OEFS_CHECK(_oefs_write_block(oefs, ino, (const oefs_blk_t*)&inode));
     }
 
     /* Create an inode for the new file. */
@@ -1215,7 +1215,7 @@ static int _truncate(oefs_file_t* file, ssize_t length)
             OEFS_RAISE(ENOMEM);
 
         /* Rewrite the bnode. */
-        OEFS_CHECK(_write_block(oefs, bnode_blkno, (const oefs_blk_t*)&bnode));
+        OEFS_CHECK(_oefs_write_block(oefs, bnode_blkno, (const oefs_blk_t*)&bnode));
     }
 
     /* Update the inode. */
@@ -1226,7 +1226,7 @@ static int _truncate(oefs_file_t* file, ssize_t length)
 
     /* Sync the inode to disk. */
     OEFS_CHECK(
-        _write_block(file->oefs, file->ino, (const oefs_blk_t*)&file->inode));
+        _oefs_write_block(file->oefs, file->ino, (const oefs_blk_t*)&file->inode));
 
 done:
 
@@ -1353,7 +1353,7 @@ int _unlink(oefs_t* oefs, uint32_t dir_ino, uint32_t ino, const char* name)
         inode.i_links--;
 
         /* Rewrite the inode. */
-        OEFS_CHECK(_write_block(oefs, ino, (const oefs_blk_t*)&inode));
+        OEFS_CHECK(_oefs_write_block(oefs, ino, (const oefs_blk_t*)&inode));
     }
 
 done:
@@ -1718,7 +1718,7 @@ static int _oefs_write(
         }
 
         /* Rewrite the block. */
-        OEFS_CHECK(_write_block(file->oefs, file->blknos.data[i], &blk));
+        OEFS_CHECK(_oefs_write_block(file->oefs, file->blknos.data[i], &blk));
     }
 
     /* Append remaining data to the file. */
@@ -1727,7 +1727,7 @@ static int _oefs_write(
         oe_bufu32_t blknos = OE_BUF_U32_INITIALIZER;
 
         /* Write the new blocks. */
-        OEFS_CHECK(_write_data(file->oefs, ptr, remaining, &blknos));
+        OEFS_CHECK(_oefs_write_data(file->oefs, ptr, remaining, &blknos));
 
         /* Append these block numbers to the block-numbers chain. */
         OEFS_CHECK(_append_block_chain(file, &blknos));
@@ -1750,7 +1750,7 @@ static int _oefs_write(
 
     /* Flush the inode to disk. */
     OEFS_CHECK(
-        _write_block(file->oefs, file->ino, (const oefs_blk_t*)&file->inode));
+        _oefs_write_block(file->oefs, file->ino, (const oefs_blk_t*)&file->inode));
 
     /* Calculate number of bytes written */
     *nwritten = size - remaining;
@@ -2159,7 +2159,7 @@ static int _oefs_link(oefs_t* oefs, const char* old_path, const char* new_path)
 
         OEFS_CHECK(_load_inode(oefs, ino, &inode));
         inode.i_links++;
-        OEFS_CHECK(_write_block(oefs, ino, (const oefs_blk_t*)&inode));
+        OEFS_CHECK(_oefs_write_block(oefs, ino, (const oefs_blk_t*)&inode));
     }
 
     /* Remove the destination file if it existed above. */

@@ -88,7 +88,7 @@ done:
     return rc;
 }
 
-static int _blkdev_release(oefs_blkdev_t* dev)
+static int _crypto_blkdev_release(oefs_blkdev_t* dev)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
@@ -110,7 +110,7 @@ done:
     return ret;
 }
 
-static int _blkdev_get(oefs_blkdev_t* dev, uint32_t blkno, oefs_blk_t* blk)
+static int _crypto_blkdev_get(oefs_blkdev_t* dev, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
@@ -142,7 +142,7 @@ done:
     return ret;
 }
 
-static int _blkdev_put(
+static int _crypto_blkdev_put(
     oefs_blkdev_t* dev,
     uint32_t blkno,
     const oefs_blk_t* blk)
@@ -177,7 +177,7 @@ done:
     return ret;
 }
 
-static int _blkdev_begin(oefs_blkdev_t* d)
+static int _crypto_blkdev_begin(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -195,7 +195,7 @@ done:
     return ret;
 }
 
-static int _blkdev_end(oefs_blkdev_t* d)
+static int _crypto_blkdev_end(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -213,7 +213,7 @@ done:
     return ret;
 }
 
-static int _blkdev_add_ref(oefs_blkdev_t* dev)
+static int _crypto_blkdev_add_ref(oefs_blkdev_t* dev)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;
@@ -246,12 +246,12 @@ int oefs_crypto_blkdev_open(
     if (!(device = calloc(1, sizeof(blkdev_t))))
         goto done;
 
-    device->base.get = _blkdev_get;
-    device->base.put = _blkdev_put;
-    device->base.begin = _blkdev_begin;
-    device->base.end = _blkdev_end;
-    device->base.add_ref = _blkdev_add_ref;
-    device->base.release = _blkdev_release;
+    device->base.get = _crypto_blkdev_get;
+    device->base.put = _crypto_blkdev_put;
+    device->base.begin = _crypto_blkdev_begin;
+    device->base.end = _crypto_blkdev_end;
+    device->base.add_ref = _crypto_blkdev_add_ref;
+    device->base.release = _crypto_blkdev_release;
     device->ref_count = 1;
     device->next = next;
     memcpy(device->key, key, OEFS_KEY_SIZE);

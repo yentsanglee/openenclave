@@ -271,7 +271,7 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
     oe_fs_t oefs = OE_FS_INITIALIZER;
     char source[PATH_MAX];
     _mkpath(source, tmp_dir, "/test.oefs");
-    size_t nbytes = 2 * 4194304;
+    size_t nbytes = 4 * 4194304;
     size_t nblks = nbytes / OEFS_BLOCK_SIZE;
     uint8_t static_key[OEFS_KEY_SIZE] = {
         0x0f, 0xf0, 0x31, 0xe3, 0x93, 0xdf, 0x46, 0x7b, 0x9a, 0x33, 0xe8,
@@ -378,6 +378,6 @@ OE_SET_ENCLAVE_SGX(
     1,        /* ProductID */
     1,        /* SecurityVersion */
     true,     /* AllowDebug */
-    8 * 1024, /* HeapPageCount */
-    4 * 4096, /* StackPageCount */
+    16 * 1024, /* HeapPageCount */
+    2 * 4096, /* StackPageCount */
     2);       /* TCSCount */

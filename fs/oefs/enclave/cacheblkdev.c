@@ -187,7 +187,7 @@ static void _touch_entry(blkdev_t* dev, entry_t* entry)
     _insert_entry(dev, entry);
 }
 
-static int _blkdev_release(oefs_blkdev_t* d)
+static int _cache_blkdev_release(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -208,7 +208,7 @@ done:
     return ret;
 }
 
-static int _blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
+static int _cache_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -250,7 +250,7 @@ done:
     return ret;
 }
 
-static int _blkdev_put(oefs_blkdev_t* d, uint32_t blkno, const oefs_blk_t* blk)
+static int _cache_blkdev_put(oefs_blkdev_t* d, uint32_t blkno, const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -299,7 +299,7 @@ done:
     return ret;
 }
 
-static int _blkdev_begin(oefs_blkdev_t* d)
+static int _cache_blkdev_begin(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -317,7 +317,7 @@ done:
     return ret;
 }
 
-static int _blkdev_end(oefs_blkdev_t* d)
+static int _cache_blkdev_end(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -335,7 +335,7 @@ done:
     return ret;
 }
 
-static int _blkdev_add_ref(oefs_blkdev_t* d)
+static int _cache_blkdev_add_ref(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -365,12 +365,12 @@ int oefs_cache_blkdev_open(oefs_blkdev_t** dev_out, oefs_blkdev_t* next)
     if (!(dev = calloc(1, sizeof(blkdev_t))))
         goto done;
 
-    dev->base.get = _blkdev_get;
-    dev->base.put = _blkdev_put;
-    dev->base.begin = _blkdev_begin;
-    dev->base.end = _blkdev_end;
-    dev->base.add_ref = _blkdev_add_ref;
-    dev->base.release = _blkdev_release;
+    dev->base.get = _cache_blkdev_get;
+    dev->base.put = _cache_blkdev_put;
+    dev->base.begin = _cache_blkdev_begin;
+    dev->base.end = _cache_blkdev_end;
+    dev->base.add_ref = _cache_blkdev_add_ref;
+    dev->base.release = _cache_blkdev_release;
     dev->ref_count = 1;
     dev->next = next;
     next->add_ref(next);

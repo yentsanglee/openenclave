@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <openenclave/enclave.h>
 #include "blkdev.h"
 #include "common.h"
 #include "sha.h"
@@ -85,8 +86,8 @@ static void _set_hash(blkdev_t* dev, size_t i, const oefs_sha256_t* hash)
 {
     uint32_t hblkno = i / HASHES_PER_BLOCK;
 
-    assert(i < dev->nhashes);
-    assert(hblkno < dev->n_hash_blks);
+    oe_assert(i < dev->nhashes);
+    oe_assert(hblkno < dev->n_hash_blks);
 
     ((oefs_sha256_t*)dev->hashes)[i] = *hash;
     dev->dirty[hblkno] = 1;
@@ -237,7 +238,7 @@ done:
     return ret;
 }
 
-static int _blkdev_release(oefs_blkdev_t* blkdev)
+static int _merkle_blkdev_release(oefs_blkdev_t* blkdev)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -262,7 +263,7 @@ done:
     return ret;
 }
 
-static int _blkdev_get(oefs_blkdev_t* blkdev, uint32_t blkno, oefs_blk_t* blk)
+static int _merkle_blkdev_get(oefs_blkdev_t* blkdev, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -291,7 +292,7 @@ done:
     return ret;
 }
 
-static int _blkdev_put(
+static int _merkle_blkdev_put(
     oefs_blkdev_t* blkdev,
     uint32_t blkno,
     const oefs_blk_t* blk)
@@ -300,7 +301,9 @@ static int _blkdev_put(
     blkdev_t* dev = (blkdev_t*)blkdev;
     oefs_sha256_t hash;
 
-    if (!dev || !blk || blkno > dev->nblks)
+    oe_assert(blkno < dev->nblks);
+
+    if (!dev || !blk || blkno >= dev->nblks)
         goto done;
 
     if (_hash(&hash, blk, sizeof(oefs_blk_t)) != 0)
@@ -324,7 +327,7 @@ done:
     return ret;
 }
 
-static int _blkdev_begin(oefs_blkdev_t* d)
+static int _merkle_blkdev_begin(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -342,7 +345,7 @@ done:
     return ret;
 }
 
-static int _blkdev_end(oefs_blkdev_t* d)
+static int _merkle_blkdev_end(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -363,7 +366,7 @@ done:
     return ret;
 }
 
-static int _blkdev_add_ref(oefs_blkdev_t* blkdev)
+static int _merkle_blkdev_add_ref(oefs_blkdev_t* blkdev)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -426,12 +429,12 @@ int oefs_merkle_blkdev_open(
     if (!(dirty = calloc(1, dev->n_hash_blks)))
         goto done;
 
-    dev->base.get = _blkdev_get;
-    dev->base.put = _blkdev_put;
-    dev->base.begin = _blkdev_begin;
-    dev->base.end = _blkdev_end;
-    dev->base.add_ref = _blkdev_add_ref;
-    dev->base.release = _blkdev_release;
+    dev->base.get = _merkle_blkdev_get;
+    dev->base.put = _merkle_blkdev_put;
+    dev->base.begin = _merkle_blkdev_begin;
+    dev->base.end = _merkle_blkdev_end;
+    dev->base.add_ref = _merkle_blkdev_add_ref;
+    dev->base.release = _merkle_blkdev_release;
     dev->ref_count = 1;
     dev->next = next;
     dev->nblks = nblks;

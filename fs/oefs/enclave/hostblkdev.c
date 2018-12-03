@@ -28,7 +28,7 @@ static size_t _get_batch_capacity()
     return sizeof(oefs_oefs_ocall_args_t);
 }
 
-static int _blkdev_stat(oefs_blkdev_t* d, oefs_blkdev_stat_t* stat)
+static int _host_blkdev_stat(oefs_blkdev_t* d, oefs_blkdev_stat_t* stat)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -65,7 +65,7 @@ done:
     return ret;
 }
 
-static int _blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
+static int _host_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -101,7 +101,7 @@ done:
     return ret;
 }
 
-static int _blkdev_put(oefs_blkdev_t* d, uint32_t blkno, const oefs_blk_t* blk)
+static int _host_blkdev_put(oefs_blkdev_t* d, uint32_t blkno, const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -136,17 +136,17 @@ done:
     return ret;
 }
 
-static int _blkdev_begin(oefs_blkdev_t* d)
+static int _host_blkdev_begin(oefs_blkdev_t* d)
 {
     return 0;
 }
 
-static int _blkdev_end(oefs_blkdev_t* d)
+static int _host_blkdev_end(oefs_blkdev_t* d)
 {
     return 0;
 }
 
-static int _blkdev_add_ref(oefs_blkdev_t* d)
+static int _host_blkdev_add_ref(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -162,7 +162,7 @@ done:
     return ret;
 }
 
-static int _blkdev_release(oefs_blkdev_t* d)
+static int _host_blkdev_release(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -228,13 +228,13 @@ int oefs_host_blkdev_open(oefs_blkdev_t** blkdev, const char* path)
     if (!args->open.handle)
         goto done;
 
-    dev->base.stat = _blkdev_stat;
-    dev->base.get = _blkdev_get;
-    dev->base.put = _blkdev_put;
-    dev->base.begin = _blkdev_begin;
-    dev->base.end = _blkdev_end;
-    dev->base.add_ref = _blkdev_add_ref;
-    dev->base.release = _blkdev_release;
+    dev->base.stat = _host_blkdev_stat;
+    dev->base.get = _host_blkdev_get;
+    dev->base.put = _host_blkdev_put;
+    dev->base.begin = _host_blkdev_begin;
+    dev->base.end = _host_blkdev_end;
+    dev->base.add_ref = _host_blkdev_add_ref;
+    dev->base.release = _host_blkdev_release;
     dev->batch = batch;
     dev->ref_count = 1;
     dev->handle = args->open.handle;

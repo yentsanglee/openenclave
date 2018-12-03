@@ -250,7 +250,7 @@ done:
     return ret;
 }
 
-static int _blkdev_release(oefs_blkdev_t* blkdev)
+static int _auth_crypto_blkdev_release(oefs_blkdev_t* blkdev)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -275,7 +275,7 @@ done:
     return ret;
 }
 
-static int _blkdev_get(oefs_blkdev_t* blkdev, uint32_t blkno, oefs_blk_t* blk)
+static int _auth_crypto_blkdev_get(oefs_blkdev_t* blkdev, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -306,7 +306,7 @@ done:
     return ret;
 }
 
-static int _blkdev_put(
+static int _auth_crypto_blkdev_put(
     oefs_blkdev_t* blkdev,
     uint32_t blkno,
     const oefs_blk_t* blk)
@@ -346,7 +346,7 @@ done:
     return ret;
 }
 
-static int _blkdev_begin(oefs_blkdev_t* d)
+static int _auth_crypto_blkdev_begin(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* blkdev = (blkdev_t*)d;
@@ -364,7 +364,7 @@ done:
     return ret;
 }
 
-static int _blkdev_end(oefs_blkdev_t* d)
+static int _auth_crypto_blkdev_end(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
@@ -385,7 +385,7 @@ done:
     return ret;
 }
 
-static int _blkdev_add_ref(oefs_blkdev_t* blkdev)
+static int _auth_crypto_blkdev_add_ref(oefs_blkdev_t* blkdev)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;
@@ -455,12 +455,12 @@ int oefs_auth_crypto_blkdev_open(
     if (!(dirty = calloc(nblks, sizeof(uint8_t))))
         goto done;
 
-    dev->base.get = _blkdev_get;
-    dev->base.put = _blkdev_put;
-    dev->base.begin = _blkdev_begin;
-    dev->base.end = _blkdev_end;
-    dev->base.add_ref = _blkdev_add_ref;
-    dev->base.release = _blkdev_release;
+    dev->base.get = _auth_crypto_blkdev_get;
+    dev->base.put = _auth_crypto_blkdev_put;
+    dev->base.begin = _auth_crypto_blkdev_begin;
+    dev->base.end = _auth_crypto_blkdev_end;
+    dev->base.add_ref = _auth_crypto_blkdev_add_ref;
+    dev->base.release = _auth_crypto_blkdev_release;
     dev->ref_count = 1;
     dev->nblks = nblks;
     dev->next = next;
