@@ -3159,7 +3159,7 @@ typedef struct _oefs_fs_impl
 
 OE_STATIC_ASSERT(sizeof(fs_impl_t) == sizeof(oe_fs_t));
 
-#define FILE_BUF_SIZE (16*1024)
+#define FILE_BUF_SIZE (32*1024)
 
 typedef struct _file
 {
@@ -3168,7 +3168,7 @@ typedef struct _file
     bool f_eof;
     oefs_file_t* oefs_file;
     uint8_t buf[FILE_BUF_SIZE];
-    size_t size;
+    size_t buf_size;
 } file_t;
 
 typedef struct _dir
@@ -3224,7 +3224,6 @@ static int _oefs_f_fclose(FILE* base)
     if (!oefs_file)
         goto done;
 
-    /* Flush the write buffer. */
     if (_oefs_f_fflush(base) != 0)
         goto done;
 
@@ -3304,35 +3303,35 @@ static size_t _oefs_f_fwrite(
         size_t min;
 
         /* Calculate the number of bytes remaining in the write buffer. */
-        remaining = FILE_BUF_SIZE - file->size;
+        remaining = FILE_BUF_SIZE - file->buf_size;
 
         /* Copy more caller data into the write buffer. */
         min = (count < remaining) ? count : remaining;
-        memcpy(file->buf + file->size, p, min);
+        memcpy(file->buf + file->buf_size, p, min);
         p += min;
         count -= min;
-        file->size += min;
+        file->buf_size += min;
 
         /* Flush the write buffer if it is full. */
-        if (file->size == FILE_BUF_SIZE)
+        if (file->buf_size == FILE_BUF_SIZE)
         {
             ssize_t n;
 
-            if ((err = _oefs_write(oefs_file, file->buf, file->size, &n)) != 0)
+            if ((err = _oefs_write(oefs_file, file->buf, file->buf_size, &n)) != 0)
             {
                 file->f_err = true;
                 goto done;
             }
 
-            assert(n == file->size);
+            assert(n == file->buf_size);
             
-            if (n != file->size)
+            if (n != file->buf_size)
             {
                 file->f_err = true;
                 goto done;
             }
 
-            file->size = 0;
+            file->buf_size = 0;
         }
 
         nwritten += min;
@@ -3424,15 +3423,18 @@ static int _oefs_f_fflush(FILE* base)
         goto done;
     }
 
-    if ((err = _oefs_write(oefs_file, file->buf, file->size, &n)) != 0)
+    if (file->buf_size)
     {
-        errno = err;
-        file->f_err = true;
-        goto done;
+        if ((err = _oefs_write(oefs_file, file->buf, file->buf_size, &n)) != 0)
+        {
+            errno = err;
+            file->f_err = true;
+            goto done;
+        }
+
+        file->buf_size = 0;
     }
 
-    assert(n == file->size);
-    file->size = 0;
     ret = 0;
 
 done:

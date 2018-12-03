@@ -47,6 +47,7 @@ static void _handle_hostfs_ocall(void* args_)
                 args->u.fwrite.size,
                 args->u.fwrite.nmemb,
                 args->u.fwrite.file);
+            fflush(args->u.fwrite.file);
             break;
         }
         case OE_HOSTFS_OP_FTELL:

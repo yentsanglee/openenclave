@@ -3,6 +3,7 @@
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/hostfs.h>
+#include <openenclave/bits/safemath.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,10 +45,14 @@ static oe_host_batch_t* _get_host_batch(void)
     return _batch;
 }
 
+#define FILE_BUF_SIZE 4096
+
 typedef struct _file
 {
     FILE base;
     void* host_file;
+    uint8_t buf[FILE_BUF_SIZE];
+    size_t buf_size;
 } file_t;
 
 typedef struct _dir
@@ -62,6 +67,8 @@ OE_INLINE bool _valid_file(file_t* file)
     return file && file->base.magic == OE_FILE_MAGIC;
 }
 
+static int _hostfs_f_fflush(FILE* base);
+
 static int _hostfs_f_fclose(FILE* base)
 {
     int ret = -1;
@@ -70,6 +77,9 @@ static int _hostfs_f_fclose(FILE* base)
     args_t* args = NULL;
 
     if (!_valid_file(file) || !batch)
+        goto done;
+
+    if (_hostfs_f_fflush(base) != 0)
         goto done;
 
     /* Input */
@@ -115,6 +125,9 @@ static size_t _hostfs_f_fread(void* ptr, size_t size, size_t nmemb, FILE* base)
     if (!ptr || !_valid_file(file) || !batch)
         goto done;
 
+    if (_hostfs_f_fflush(base) != 0)
+        goto done;
+
     /* Input */
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + n)))
@@ -150,19 +163,15 @@ done:
     return ret;
 }
 
-static size_t _hostfs_f_fwrite(
+static size_t _fwrite(
     const void* ptr,
     size_t size,
     size_t nmemb,
-    FILE* base)
+    file_t* file)
 {
     size_t ret = 0;
-    file_t* file = (file_t*)base;
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
-
-    if (!ptr || !_valid_file(file) || !batch)
-        goto done;
 
     /* Input */
     {
@@ -199,6 +208,65 @@ done:
     return ret;
 }
 
+static size_t _hostfs_f_fwrite(
+    const void* ptr,
+    size_t size,
+    size_t nmemb,
+    FILE* base)
+{
+    size_t ret = 0;
+    file_t* file = (file_t*)base;
+    size_t count = size * nmemb;
+    ssize_t nwritten = 0;
+    const uint8_t* p = (const uint8_t*)ptr;
+
+    if (!ptr || 
+        oe_safe_mul_u64(size, nmemb, &count) != OE_OK || 
+        !_valid_file(file))
+    {
+        goto done;
+    }
+
+    /* While there are more bytes to be written. */
+    while (count > 0)
+    {
+        size_t remaining;
+        size_t min;
+
+        /* Calculate the number of bytes remaining in the write buffer. */
+        remaining = FILE_BUF_SIZE - file->buf_size;
+
+        /* Copy more caller data into the write buffer. */
+        min = (count < remaining) ? count : remaining;
+        memcpy(file->buf + file->buf_size, p, min);
+        p += min;
+        count -= min;
+        file->buf_size += min;
+
+        /* Flush the write buffer if it is full. */
+        if (file->buf_size == FILE_BUF_SIZE)
+        {
+            ssize_t n;
+
+            if ((n = _fwrite(file->buf, 1, file->buf_size, file)) <= 0)
+                goto done;
+
+            if (n != file->buf_size)
+                goto done;
+
+            file->buf_size = 0;
+        }
+
+        nwritten += min;
+    }
+
+    ret = (size_t)nwritten;
+
+done:
+
+    return ret;
+}
+
 static int64_t _hostfs_f_ftell(FILE* base)
 {
     int64_t ret = -1;
@@ -207,6 +275,9 @@ static int64_t _hostfs_f_ftell(FILE* base)
     args_t* args = NULL;
 
     if (!_valid_file(file) || !batch)
+        goto done;
+
+    if (_hostfs_f_fflush(base) != 0)
         goto done;
 
     /* Input */
@@ -248,6 +319,9 @@ static int _hostfs_f_fseek(FILE* base, int64_t offset, int whence)
     if (!_valid_file(file) || !batch)
         goto done;
 
+    if (_hostfs_f_fflush(base) != 0)
+        goto done;
+
     /* Input */
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
@@ -283,37 +357,22 @@ static int _hostfs_f_fflush(FILE* base)
 {
     int64_t ret = -1;
     file_t* file = (file_t*)base;
-    oe_host_batch_t* batch = _get_host_batch();
-    args_t* args = NULL;
+    size_t n;
 
-    if (!_valid_file(file) || !batch)
+    if (!_valid_file(file))
         goto done;
 
-    /* Input */
+    if (file->buf_size)
     {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+        if ((n = _fwrite(file->buf, 1, file->buf_size, file)) != file->buf_size)
             goto done;
 
-        args->u.fflush.ret = -1;
-        args->op = OE_HOSTFS_OP_FFLUSH;
-        args->u.fflush.file = file->host_file;
+        file->buf_size = 0;
     }
 
-    /* Call */
-    {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
-            goto done;
-    }
-
-    /* Output */
-    {
-        ret = args->u.fflush.ret;
-    }
+    ret = 0;
 
 done:
-
-    if (args)
-        oe_host_batch_free(batch);
 
     return ret;
 }
