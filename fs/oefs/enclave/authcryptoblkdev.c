@@ -35,6 +35,7 @@ typedef struct _blkdev
     oefs_blkdev_t* next;
     tag_t* tags;
     uint8_t* dirty;
+    bool is_dirty;
 } blkdev_t;
 
 static int _generate_initialization_vector(
@@ -175,39 +176,45 @@ static int _write_tags(blkdev_t* dev)
     const oefs_blk_t* p = (const oefs_blk_t*)dev->tags;
     size_t n = dev->nblks / TAGS_PER_BLOCK;
 
-    /* For each hash page. */
-    for (size_t i = 0; i < n; i++)
+    /* If any blocks are dirty. */
+    if (dev->is_dirty)
     {
-        bool dirty = false;
-
-        /* Check whether this hash page is dirty. */
+        /* For each hash page. */
+        for (size_t i = 0; i < n; i++)
         {
-            size_t first = i * TAGS_PER_BLOCK;
-            size_t last = first + TAGS_PER_BLOCK;
+            bool dirty = false;
 
-            uint64_t* p = (uint64_t*)&dev->dirty[first];
-            uint64_t* end = (uint64_t*)&dev->dirty[last];
-
-            while (p != end && *p == '\0')
-                p++;
-
-            if (p != end)
+            /* Check whether this hash page is dirty. */
             {
-                dirty = true;
-                memset(p, 0, (end - p) * sizeof(uint64_t));
+                size_t first = i * TAGS_PER_BLOCK;
+                size_t last = first + TAGS_PER_BLOCK;
+
+                uint64_t* p = (uint64_t*)&dev->dirty[first];
+                uint64_t* end = (uint64_t*)&dev->dirty[last];
+
+                while (p != end && *p == '\0')
+                    p++;
+
+                if (p != end)
+                {
+                    dirty = true;
+                    memset(p, 0, (end - p) * sizeof(uint64_t));
+                }
             }
+
+            /* Write the hash page if any of its blocks are dirty. */
+            if (dirty)
+            {
+                size_t off = dev->nblks;
+
+                if (dev->next->put(dev->next, i + off, p) != 0)
+                    goto done;
+            }
+
+            p++;
         }
 
-        /* Write the hash page if any of its blocks are dirty. */
-        if (dirty)
-        {
-            size_t off = dev->nblks;
-
-            if (dev->next->put(dev->next, i + off, p) != 0)
-                goto done;
-        }
-
-        p++;
+        dev->is_dirty = false;
     }
 
     ret = 0;
@@ -332,6 +339,7 @@ static int _auth_crypto_blkdev_put(
 
     /* Set the dirty byte for this block's tag. */
     dev->dirty[blkno] = 1;
+    dev->is_dirty = true;
 
     ret = 0;
 
@@ -466,6 +474,7 @@ int oefs_auth_crypto_blkdev_open(
     {
         /* Set all the dirty bits so all nodes will be written. */
         memset(dev->dirty, 1, dev->nblks);
+        dev->is_dirty = true;
 
         /* Write out zero blocks. */
         {
