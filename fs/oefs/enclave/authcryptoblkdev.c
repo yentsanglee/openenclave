@@ -37,20 +37,6 @@ typedef struct _blkdev
     uint8_t* dirty;
 } blkdev_t;
 
-#if 0
-static void _dump(const void* data_, size_t size)
-{
-    const uint8_t* data = (const uint8_t*)data_;
-    for (size_t i = 0; i < size; i++)
-    {
-        uint8_t byte = data[i];
-        printf("%02x", byte);
-    }
-
-    printf("\n");
-}
-#endif
-
 static int _generate_initialization_vector(
     const uint8_t key[OEFS_KEY_SIZE],
     uint64_t blkno,
