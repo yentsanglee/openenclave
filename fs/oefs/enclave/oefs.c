@@ -3463,6 +3463,8 @@ static int _oefs_f_fflush(FILE* base)
         goto done;
     }
 
+    _begin(oefs_file->oefs);
+
     if (file->buf_size)
     {
         if ((err = _oefs_write(oefs_file, file->buf, file->buf_size, &n)) != 0)
@@ -3478,6 +3480,9 @@ static int _oefs_f_fflush(FILE* base)
     ret = 0;
 
 done:
+
+    _end(oefs_file->oefs);
+
     return ret;
 }
 
