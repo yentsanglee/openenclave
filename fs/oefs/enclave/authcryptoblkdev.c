@@ -275,7 +275,10 @@ done:
     return ret;
 }
 
-static int _auth_crypto_blkdev_get(oefs_blkdev_t* blkdev, uint32_t blkno, oefs_blk_t* blk)
+static int _auth_crypto_blkdev_get(
+    oefs_blkdev_t* blkdev,
+    uint32_t blkno,
+    oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;

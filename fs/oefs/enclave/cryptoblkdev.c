@@ -110,7 +110,10 @@ done:
     return ret;
 }
 
-static int _crypto_blkdev_get(oefs_blkdev_t* dev, uint32_t blkno, oefs_blk_t* blk)
+static int _crypto_blkdev_get(
+    oefs_blkdev_t* dev,
+    uint32_t blkno,
+    oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* device = (blkdev_t*)dev;

@@ -8,20 +8,20 @@
 #include <openenclave/bits/safemath.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/hexdump.h>
+#include <openenclave/internal/keys.h>
 #include <openenclave/internal/oefs.h>
 #include <openenclave/internal/raise.h>
-#include <openenclave/internal/keys.h>
-#include <openenclave/internal/hexdump.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include "../../common/buf.h"
-#include "raise.h"
-#include "utils.h"
 #include "blkdev.h"
+#include "raise.h"
 #include "sha.h"
+#include "utils.h"
 
 /*
 **==============================================================================
@@ -224,17 +224,20 @@ typedef struct _oefs_super_block
     /* Magic number: SUPER_BLOCK_MAGIC. */
     uint32_t s_magic;
 
-    /* The total number of blocks in the file system. */
+    /* The total number of physical blocks in the file system. */
     uint32_t s_nblks;
 
-    /* The number of free blocks. */
-    uint32_t s_free_blocks;
+    /* The number of data blocks in the file system. */
+    uint32_t s_num_data_blocks;
+
+    /* The number of free data blocks. */
+    uint32_t s_free_data_blocks;
 
     /* The SHA-256 hash of the header block. */
     uint8_t s_header_hash[32];
 
     /* (12) Reserved. */
-    uint8_t s_reserved[OEFS_BLOCK_SIZE - 12 - 32];
+    uint8_t s_reserved[OEFS_BLOCK_SIZE - 12 - 32 - 4];
 } oefs_super_block_t;
 
 OE_STATIC_ASSERT(sizeof(oefs_super_block_t) == OEFS_BLOCK_SIZE);
@@ -463,8 +466,8 @@ static bool _is_zero_filled(const void* data, size_t size)
 static int _oefs_size(size_t nblks, size_t* size);
 
 static int _oefs_mkfs(
-    oefs_blkdev_t* host_dev, 
-    oefs_blkdev_t* dev, 
+    oefs_blkdev_t* host_dev,
+    oefs_blkdev_t* dev,
     size_t nblks,
     uint8_t key_id[OEFS_KEY_SIZE]);
 
@@ -493,7 +496,11 @@ static int _oefs_lseek(
     int whence,
     ssize_t* offset_out);
 
-static int _oefs_read(oefs_file_t* file, void* data, size_t size, ssize_t* nread);
+static int _oefs_read(
+    oefs_file_t* file,
+    void* data,
+    size_t size,
+    ssize_t* nread);
 
 static int _oefs_write(
     oefs_file_t* file,
@@ -527,7 +534,7 @@ static int _read_block(oefs_t* oefs, size_t blkno, oefs_blk_t* blk)
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
-    if (blkno == 0 || blkno > oefs->sb.read.s_nblks)
+    if (blkno == 0 || blkno > oefs->sb.read.s_num_data_blocks)
         OEFS_RAISE(EIO);
 
     /* Sanity check: make sure the block is not free. */
@@ -551,7 +558,7 @@ static int _oefs_write_block(oefs_t* oefs, size_t blkno, const oefs_blk_t* blk)
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
-    if (blkno == 0 || blkno > oefs->sb.read.s_nblks)
+    if (blkno == 0 || blkno > oefs->sb.read.s_num_data_blocks)
         OEFS_RAISE(EINVAL);
 
     /* Sanity check: make sure the block is not free. */
@@ -693,13 +700,16 @@ static int _assign_blkno(oefs_t* oefs, uint32_t* blkno)
 
     *blkno = 0;
 
+    if (oefs->sb.read.s_free_data_blocks == 0)
+        OEFS_RAISE(ENOSPC);
+
     for (uint32_t i = 0; i < oefs->nblks; i++)
     {
         if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, i))
         {
             _set_bit(_bitmap_write(oefs), oefs->bitmap_size, i);
             *blkno = i + 1;
-            _sb_write(oefs)->s_free_blocks--;
+            _sb_write(oefs)->s_free_data_blocks--;
             OEFS_RAISE(0);
         }
     }
@@ -721,7 +731,7 @@ static int _unassign_blkno(oefs_t* oefs, uint32_t blkno)
     assert(_test_bit(oefs->bitmap.read, oefs->bitmap_size, index));
 
     _clr_bit(_bitmap_write(oefs), oefs->bitmap_size, index);
-    _sb_write(oefs)->s_free_blocks++;
+    _sb_write(oefs)->s_free_data_blocks++;
 
 done:
     return err;
@@ -1215,7 +1225,8 @@ static int _truncate(oefs_file_t* file, ssize_t length)
             OEFS_RAISE(ENOMEM);
 
         /* Rewrite the bnode. */
-        OEFS_CHECK(_oefs_write_block(oefs, bnode_blkno, (const oefs_blk_t*)&bnode));
+        OEFS_CHECK(
+            _oefs_write_block(oefs, bnode_blkno, (const oefs_blk_t*)&bnode));
     }
 
     /* Update the inode. */
@@ -1226,7 +1237,8 @@ static int _truncate(oefs_file_t* file, ssize_t length)
 
     /* Sync the inode to disk. */
     OEFS_CHECK(
-        _oefs_write_block(file->oefs, file->ino, (const oefs_blk_t*)&file->inode));
+        _oefs_write_block(
+            file->oefs, file->ino, (const oefs_blk_t*)&file->inode));
 
 done:
 
@@ -1537,7 +1549,11 @@ done:
 **==============================================================================
 */
 
-static int _oefs_read(oefs_file_t* file, void* data, size_t size, ssize_t* nread)
+static int _oefs_read(
+    oefs_file_t* file,
+    void* data,
+    size_t size,
+    ssize_t* nread)
 {
     int err = 0;
     oefs_t* oefs = _oefs_from_file(file);
@@ -1750,7 +1766,8 @@ static int _oefs_write(
 
     /* Flush the inode to disk. */
     OEFS_CHECK(
-        _oefs_write_block(file->oefs, file->ino, (const oefs_blk_t*)&file->inode));
+        _oefs_write_block(
+            file->oefs, file->ino, (const oefs_blk_t*)&file->inode));
 
     /* Calculate number of bytes written */
     *nwritten = size - remaining;
@@ -2179,7 +2196,10 @@ done:
     return err;
 }
 
-static int _oefs_rename(oefs_t* oefs, const char* old_path, const char* new_path)
+static int _oefs_rename(
+    oefs_t* oefs,
+    const char* old_path,
+    const char* new_path)
 {
     int err = 0;
 
@@ -2426,8 +2446,8 @@ static void _initialize_header_block(
 }
 
 static int _oefs_mkfs(
-    oefs_blkdev_t* host_dev, 
-    oefs_blkdev_t* dev, 
+    oefs_blkdev_t* host_dev,
+    oefs_blkdev_t* dev,
     size_t nblks,
     uint8_t key_id[OEFS_KEY_SIZE])
 {
@@ -2491,9 +2511,9 @@ static int _oefs_mkfs(
         memset(&sb, 0, sizeof(sb));
 
         sb.s_magic = SUPER_BLOCK_MAGIC;
-        /* ATTN: add s_num_data_blocks field. */
         sb.s_nblks = nblks;
-        sb.s_free_blocks = nblks - 3;
+        sb.s_num_data_blocks = num_data_blocks;
+        sb.s_free_data_blocks = num_data_blocks - 3;
 
         if (oefs_sha256(&hash, &hb, sizeof(hb)) != 0)
             OEFS_RAISE(EIO);
@@ -2637,7 +2657,7 @@ done:
 }
 
 static int _oefs_initialize(
-    oefs_t** oefs_out, 
+    oefs_t** oefs_out,
     oefs_blkdev_t* host_dev,
     oefs_blkdev_t* dev,
     const oefs_header_block_t* hb)
@@ -2685,7 +2705,7 @@ static int _oefs_initialize(
     /* Make copy of super block. */
     memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs->sb_copy));
 
-    /* Get the number of blocks. */
+    /* Get the number of physical blocks. */
     nblks = oefs->sb.read.s_nblks;
 
     /* Check that the number of blocks is correct. */
@@ -2906,7 +2926,7 @@ static int _oefs_new(
     /* Fetch header and set do_mkfs to true if header is zero-filled. */
     {
         if (host_dev->get(
-            host_dev, HEADER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&hb) != 0)
+                host_dev, HEADER_BLOCK_PHYSICAL_BLKNO, (oefs_blk_t*)&hb) != 0)
         {
             goto done;
         }
@@ -3178,7 +3198,7 @@ typedef struct _oefs_fs_impl
 
 OE_STATIC_ASSERT(sizeof(fs_impl_t) == sizeof(oe_fs_t));
 
-#define FILE_BUF_SIZE (32*1024)
+#define FILE_BUF_SIZE (32 * 1024)
 
 typedef struct _file
 {
@@ -3336,14 +3356,15 @@ static size_t _oefs_f_fwrite(
         {
             ssize_t n;
 
-            if ((err = _oefs_write(oefs_file, file->buf, file->buf_size, &n)) != 0)
+            if ((err = _oefs_write(oefs_file, file->buf, file->buf_size, &n)) !=
+                0)
             {
                 file->f_err = true;
                 goto done;
             }
 
             assert(n == file->buf_size);
-            
+
             if (n != file->buf_size)
             {
                 file->f_err = true;
@@ -3919,6 +3940,7 @@ int oe_oefs_initialize(
     flags |= OEFS_FLAG_CACHING;
     flags |= OEFS_FLAG_INTEGRITY;
     flags |= OEFS_FLAG_AUTH_CRYPTO;
+    // flags |= OEFS_FLAG_CRYPTO;
 
     if (_oefs_new(&oefs, source, flags, key) != 0)
         goto done;

@@ -2,11 +2,11 @@
 // Licensed under the MIT License.
 
 #include <assert.h>
+#include <openenclave/enclave.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <openenclave/enclave.h>
 #include "blkdev.h"
 #include "common.h"
 #include "sha.h"
@@ -263,7 +263,10 @@ done:
     return ret;
 }
 
-static int _merkle_blkdev_get(oefs_blkdev_t* blkdev, uint32_t blkno, oefs_blk_t* blk)
+static int _merkle_blkdev_get(
+    oefs_blkdev_t* blkdev,
+    uint32_t blkno,
+    oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)blkdev;

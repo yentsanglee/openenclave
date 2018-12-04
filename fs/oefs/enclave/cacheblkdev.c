@@ -250,7 +250,10 @@ done:
     return ret;
 }
 
-static int _cache_blkdev_put(oefs_blkdev_t* d, uint32_t blkno, const oefs_blk_t* blk)
+static int _cache_blkdev_put(
+    oefs_blkdev_t* d,
+    uint32_t blkno,
+    const oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
