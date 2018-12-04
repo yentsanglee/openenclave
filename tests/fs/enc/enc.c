@@ -4,11 +4,12 @@
 #include <errno.h>
 #include <limits.h>
 #include <openenclave/enclave.h>
+#include <openenclave/internal/hexdump.h>
+#include <openenclave/internal/keys.h>
 #include <openenclave/internal/muxfs.h>
 #include <openenclave/internal/oefs.h>
 #include <openenclave/internal/tests.h>
-#include <openenclave/internal/keys.h>
-#include <openenclave/internal/hexdump.h>
+#include <openenclave/internal/time.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -149,11 +150,17 @@ static const char* _basename(const char* path)
     return p ? p + 1 : path;
 }
 
-static void _test_cpio(oe_fs_t* fs, const char* src_dir, const char* tmp_dir)
+static void _test_cpio(
+    oe_fs_t* fs,
+    const char* src_dir,
+    const char* tmp_dir,
+    const char* msg)
 {
     char tests_dir[PATH_MAX];
     char cpio_file[PATH_MAX];
     char cpio_dir[PATH_MAX];
+
+    uint64_t t2 = oe_get_time();
 
     _mkpath(tests_dir, src_dir, "/tests");
     _mkpath(cpio_file, tmp_dir, "/cpio.file");
@@ -199,6 +206,9 @@ static void _test_cpio(oe_fs_t* fs, const char* src_dir, const char* tmp_dir)
         oe_strarr_release(&paths2);
     }
     oe_fs_set_default(NULL);
+
+    uint64_t t1 = oe_get_time();
+    printf("_test_cpio(): %s: %lf seconds\n", msg, (t1 - t2) / 1000.0);
 }
 
 static void _test_sgxfs_with_key(const char* tmp_dir)
@@ -241,7 +251,7 @@ static int _create_oefs_device_file(const char* path, size_t nblks)
     uint8_t block[OEFS_BLOCK_SIZE];
     size_t total_nblks;
 
-    printf("creating %s\n", path);
+    uint64_t t0 = oe_get_time();
 
     OE_TEST(oefs_calculate_total_blocks(nblks, &total_nblks) == 0);
 
@@ -255,6 +265,9 @@ static int _create_oefs_device_file(const char* path, size_t nblks)
         if (fwrite(block, 1, sizeof(block), os) != sizeof(block))
             goto done;
     }
+
+    uint64_t t1 = oe_get_time();
+    printf("_create_oefs_device_file(): %lf\n", (t1 - t0) / 1000.0);
 
     ret = 0;
 
@@ -271,7 +284,7 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
     oe_fs_t oefs = OE_FS_INITIALIZER;
     char source[PATH_MAX];
     _mkpath(source, tmp_dir, "/test.oefs");
-    size_t nbytes = 4 * 4194304;
+    size_t nbytes = 2 * 4194304;
     size_t nblks = nbytes / OEFS_BLOCK_SIZE;
     uint8_t static_key[OEFS_KEY_SIZE] = {
         0x0f, 0xf0, 0x31, 0xe3, 0x93, 0xdf, 0x46, 0x7b, 0x9a, 0x33, 0xe8,
@@ -295,7 +308,13 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
 
     oe_hex_dump(key, sizeof(key));
 
-    OE_TEST(oe_oefs_initialize(&oefs, source, key) == 0);
+    /* Initialize OEFS */
+    {
+        uint64_t t0 = oe_get_time();
+        OE_TEST(oe_oefs_initialize(&oefs, source, key) == 0);
+        uint64_t t1 = oe_get_time();
+        printf("oe_oefs_initialize(): %lf\n", (t1 - t0) / 1000.0);
+    }
 
     oe_fs_set_default(&oefs);
     OE_TEST(oe_mkdir(&oefs, "/tmp", 0777) == 0);
@@ -307,12 +326,12 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
 
     _test_alphabet_file(&oe_muxfs, "/oefs/tmp");
 
-    /* Test the multiplexer. */
+    /* Test the multiplexer with HOSTFS and OEFS. */
     {
         char mux_src_dir[PATH_MAX];
         const char mux_tmp_dir[] = "/oefs/tmp";
         _mkpath(mux_src_dir, "/hostfs", src_dir);
-        _test_cpio(&oe_muxfs, mux_src_dir, mux_tmp_dir);
+        _test_cpio(&oe_muxfs, mux_src_dir, mux_tmp_dir, "oefs");
     }
 
     /* Unregister oefs with the multiplexer. */
@@ -346,7 +365,7 @@ void enc_test(const char* src_dir, const char* bin_dir)
     _test_alphabet_file(&oe_hostfs, tmp_dir);
     _test_dirs(&oe_hostfs, tmp_dir);
     _test_dirs(&oe_sgxfs, tmp_dir);
-    _test_cpio(&oe_hostfs, src_dir, tmp_dir);
+    _test_cpio(&oe_hostfs, src_dir, tmp_dir, "hostfs");
 
     /* Test the multiplexer: hostfs -> hostfs */
     {
@@ -354,7 +373,7 @@ void enc_test(const char* src_dir, const char* bin_dir)
         char mux_tmp_dir[PATH_MAX];
         _mkpath(mux_src_dir, "/hostfs", src_dir);
         _mkpath(mux_tmp_dir, "/hostfs", tmp_dir);
-        _test_cpio(&oe_muxfs, mux_src_dir, mux_tmp_dir);
+        _test_cpio(&oe_muxfs, mux_src_dir, mux_tmp_dir, "hostfs:muxfs");
     }
 
     /* Test the multiplexer: hostfs -> sgxfs */
@@ -363,7 +382,7 @@ void enc_test(const char* src_dir, const char* bin_dir)
         char mux_tmp_dir[PATH_MAX];
         _mkpath(mux_src_dir, "/hostfs", src_dir);
         _mkpath(mux_tmp_dir, "/sgxfs", tmp_dir);
-        _test_cpio(&oe_muxfs, mux_src_dir, mux_tmp_dir);
+        _test_cpio(&oe_muxfs, mux_src_dir, mux_tmp_dir, "sgxfs");
     }
 
     /* Test the use of the OE_DEFAULT_FS macro. */
@@ -375,9 +394,9 @@ void enc_test(const char* src_dir, const char* bin_dir)
 }
 
 OE_SET_ENCLAVE_SGX(
-    1,        /* ProductID */
-    1,        /* SecurityVersion */
-    true,     /* AllowDebug */
+    1,         /* ProductID */
+    1,         /* SecurityVersion */
+    true,      /* AllowDebug */
     16 * 1024, /* HeapPageCount */
-    2 * 4096, /* StackPageCount */
-    2);       /* TCSCount */
+    2 * 4096,  /* StackPageCount */
+    2);        /* TCSCount */

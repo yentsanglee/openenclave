@@ -188,23 +188,28 @@ static int _write_tags(blkdev_t* dev)
     int ret = -1;
     const oefs_blk_t* p = (const oefs_blk_t*)dev->tags;
     size_t n = dev->nblks / TAGS_PER_BLOCK;
-    size_t blkno = 0;
 
     /* For each hash page. */
     for (size_t i = 0; i < n; i++)
     {
         bool dirty = false;
 
-        /* Determine whether any this hash page's blocks are dirty. */
-        for (size_t j = 0; j < TAGS_PER_BLOCK; j++)
+        /* Check whether this hash page is dirty. */
         {
-            if (dev->dirty[blkno])
+            size_t first = i * TAGS_PER_BLOCK;
+            size_t last = first + TAGS_PER_BLOCK;
+
+            uint64_t* p = (uint64_t*)&dev->dirty[first];
+            uint64_t* end = (uint64_t*)&dev->dirty[last];
+
+            while (p != end && *p == '\0')
+                p++;
+
+            if (p != end)
             {
                 dirty = true;
-                dev->dirty[blkno] = 0;
+                memset(p, 0, (end - p) * sizeof(uint64_t));
             }
-
-            blkno++;
         }
 
         /* Write the hash page if any of its blocks are dirty. */
