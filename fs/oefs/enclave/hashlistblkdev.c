@@ -484,10 +484,6 @@ static int _hash_list_blkdev_put(
     blkdev_t* dev = (blkdev_t*)blkdev;
     oefs_sha256_t hash;
 
-#if 0
-printf("PUT{%u:%zu}\n", blkno, dev->header_block.nblks);
-#endif
-
     oe_assert(blkno < dev->nblks);
 
     if (!dev || !blk || blkno >= dev->header_block.nblks)
