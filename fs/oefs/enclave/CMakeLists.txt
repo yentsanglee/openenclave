@@ -8,6 +8,7 @@ add_library(oeoefsenclave STATIC
     ../../common/buf.c
     cacheblkdev.c
     cryptoblkdev.c
+    hashlistblkdev.c
     hostbatch.c
     hostblkdev.c
     list.c
