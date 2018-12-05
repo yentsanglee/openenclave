@@ -72,6 +72,14 @@ int oefs_merkle_blkdev_open(
     size_t nblks,
     oefs_blkdev_t* next);
 
+int oefs_hash_list_blkdev_open(
+    oefs_blkdev_t** blkdev,
+    bool initialize,
+    size_t nblks,
+    oefs_blkdev_t* next);
+
+int oefs_hash_list_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks);
+
 OE_EXTERNC_END
 
 #endif /* _OEFS_BLKDEV_H */

@@ -2816,8 +2816,13 @@ int oefs_calculate_total_blocks(size_t nblks, size_t* total_nblks)
     {
         size_t extra_nblks;
 
+#if defined(USE_MERKLE_BLKDDEV)
         if (oefs_merkle_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
             goto done;
+#else
+        if (oefs_hash_list_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
+            goto done;
+#endif
 
         nblks += extra_nblks;
     }
@@ -2898,7 +2903,7 @@ static int _oefs_new(
     oefs_blkdev_t* host_dev = NULL;
     oefs_blkdev_t* crypto_dev = NULL;
     oefs_blkdev_t* cache_dev = NULL;
-    oefs_blkdev_t* merkle_dev = NULL;
+    oefs_blkdev_t* integ_dev = NULL;
     oefs_blkdev_t* dev = NULL;
     oefs_blkdev_t* next = NULL;
     oefs_t* oefs = NULL;
@@ -3017,8 +3022,13 @@ static int _oefs_new(
     {
         size_t extra_nblks;
 
+#if defined(USE_MERKLE_BLKDDEV)
         if (oefs_merkle_blkdev_get_extra_blocks(n2, &extra_nblks) != 0)
             goto done;
+#else
+        if (oefs_hash_list_blkdev_get_extra_blocks(n2, &extra_nblks) != 0)
+            goto done;
+#endif
 
         n1 = n2 + extra_nblks;
     }
@@ -3063,12 +3073,15 @@ static int _oefs_new(
     {
         bool initialize = do_mkfs;
 
-        if (oefs_merkle_blkdev_open(&merkle_dev, initialize, n2, next) != 0)
-        {
+#if defined(USE_MERKLE_BLKDDEV)
+        if (oefs_merkle_blkdev_open(&integ_dev, initialize, n2, next) != 0)
             goto done;
-        }
+#else
+        if (oefs_hash_list_blkdev_open(&integ_dev, initialize, n2, next) != 0)
+            goto done;
+#endif
 
-        next = merkle_dev;
+        next = integ_dev;
     }
 
     /* Create a cache block device. */
@@ -3108,8 +3121,8 @@ done:
     if (cache_dev)
         cache_dev->release(cache_dev);
 
-    if (merkle_dev)
-        merkle_dev->release(merkle_dev);
+    if (integ_dev)
+        integ_dev->release(integ_dev);
 
     if (oefs)
         _oefs_release(oefs);
@@ -3945,7 +3958,7 @@ int oe_oefs_initialize(
     flags |= OEFS_FLAG_CACHING;
     flags |= OEFS_FLAG_INTEGRITY;
     flags |= OEFS_FLAG_AUTH_CRYPTO;
-    // flags |= OEFS_FLAG_CRYPTO;
+    //flags |= OEFS_FLAG_CRYPTO;
 
     if (_oefs_new(&oefs, source, flags, key) != 0)
         goto done;

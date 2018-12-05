@@ -3,6 +3,8 @@
 
 #include <assert.h>
 #include <openenclave/enclave.h>
+#include <openenclave/internal/hexdump.h>
+#include <openenclave/internal/print.h>
 #include <mbedtls/sha256.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -67,6 +69,9 @@ typedef struct _blkdev
 
     /* The dirty hash blocks. */
     uint8_t* dirty_hash_blocks;
+
+    /* True if any dirty_hash_blocks[] elements is non-zero. */
+    bool have_dirty_hash_blocks;
 
 } blkdev_t;
 
@@ -141,8 +146,14 @@ static void _set_hash(blkdev_t* dev, size_t blkno, const oefs_sha256_t* hash)
     oe_assert(blkno < dev->header_block.nblks);
     oe_assert(i < dev->num_hash_blocks);
 
+#if 0
+    if (memcmp(&dev->hash_blocks[i].hashes[j], hash, HASH_SIZE) == 0)
+        printf("NOCHANGE{%zu}\n", blkno);
+#endif
+
     dev->hash_blocks[i].hashes[j] = *hash;
     dev->dirty_hash_blocks[i] = 1;
+    dev->have_dirty_hash_blocks = true;
 }
 
 static int _flush_header_block(blkdev_t* dev)
@@ -178,6 +189,12 @@ static int _flush_hash_list(blkdev_t* dev)
     int ret = -1;
     size_t blkno;
 
+    if (!dev->have_dirty_hash_blocks)
+    {
+        ret = 0;
+        goto done;
+    }
+
     /* Update the master hash. */
     if (_update_header_block(dev) != 0)
         GOTO(done);
@@ -202,6 +219,8 @@ static int _flush_hash_list(blkdev_t* dev)
             dev->dirty_hash_blocks[i] = 0;
         }
     }
+
+    dev->have_dirty_hash_blocks = false;
 
     ret = 0;
 
@@ -465,6 +484,10 @@ static int _hash_list_blkdev_put(
     blkdev_t* dev = (blkdev_t*)blkdev;
     oefs_sha256_t hash;
 
+#if 0
+printf("PUT{%u:%zu}\n", blkno, dev->header_block.nblks);
+#endif
+
     oe_assert(blkno < dev->nblks);
 
     if (!dev || !blk || blkno >= dev->header_block.nblks)
@@ -612,6 +635,8 @@ int oefs_hash_list_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks)
     hblks = oefs_round_to_multiple(nblks, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
 
     *extra_nblks = 1 + hblks;
+
+    ret = 0;
 
 done:
     return ret;
