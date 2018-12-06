@@ -1,13 +1,11 @@
 
     (*) Implement the fprintf/fscanf family of functions.
 
-    (*) Handle file permission/owner checks.
-
-    (*) Handle file times.
+    (*) Handle file permission/owner/times.
 
     (*) Verify that errno's are handled correctly.
 
     (*) Work out library packaging dependencies.
 
-    (*) EDL vs. intrinsic OCALLs.
+    (*) Handle concurrency.
 
