@@ -9,18 +9,53 @@
 #undef FILE
 // clang-format on
 
+#include <pthread.h>
 #include <openenclave/internal/sgxfs.h>
 #include "../common/sgxfsargs.h"
+#include "../../common/hostbatch.h"
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <string.h>
 #include <stdio.h>
 
+#define BATCH_SIZE 4096
+
 typedef oe_sgxfs_args_t args_t;
+
+OE_STATIC_ASSERT(sizeof(args_t) < BATCH_SIZE);
 
 static bool _copy_path(char dest[SECURE_FILE_MAX_PATH], const char* src)
 {
     return strlcpy(dest, src, SECURE_FILE_MAX_PATH) < SECURE_FILE_MAX_PATH;
+}
+
+static oe_host_batch_t* _batch;
+static pthread_spinlock_t _lock;
+
+static void _atexit_handler()
+{
+    pthread_spin_lock(&_lock);
+    oe_host_batch_delete(_batch);
+    _batch = NULL;
+    pthread_spin_unlock(&_lock);
+}
+
+static oe_host_batch_t* _get_host_batch(void)
+{
+    if (_batch == NULL)
+    {
+        pthread_spin_lock(&_lock);
+
+        if (_batch == NULL)
+        {
+            _batch = oe_host_batch_new(BATCH_SIZE);
+            atexit(_atexit_handler);
+        }
+
+        pthread_spin_unlock(&_lock);
+    }
+
+    return _batch;
 }
 
 sgx_status_t SGX_CDECL u_sgxprotectedfs_exclusive_file_open(
@@ -32,14 +67,15 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_exclusive_file_open(
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
 
-    if (!retval || !filename || !file_size || !error_code)
+    if (!retval || !filename || !file_size || !error_code || !batch)
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
     }
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
     {
         err = SGX_ERROR_OUT_OF_MEMORY;
         goto done;
@@ -68,7 +104,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_exclusive_file_open(
 done:
 
     if (args)
-        oe_host_free(args);
+        oe_host_batch_free(batch);
 
     return err;
 }
@@ -78,14 +114,15 @@ u_sgxprotectedfs_check_if_file_exists(uint8_t* retval, const char* filename)
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
 
-    if (!retval || !filename)
+    if (!retval || !filename || !batch)
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
     }
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
     {
         err = SGX_ERROR_OUT_OF_MEMORY;
         goto done;
@@ -110,7 +147,7 @@ u_sgxprotectedfs_check_if_file_exists(uint8_t* retval, const char* filename)
 done:
 
     if (args)
-        oe_host_free(args);
+        oe_host_batch_free(batch);
 
     return err;
 }
@@ -124,14 +161,15 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fread_node(
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
 
-    if (!retval || !file || !buffer || !node_size)
+    if (!retval || !file || !buffer || !node_size || !batch)
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
     }
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t) + node_size + 1)))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + node_size + 1)))
     {
         err = SGX_ERROR_OUT_OF_MEMORY;
         goto done;
@@ -155,7 +193,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fread_node(
 done:
 
     if (args)
-        oe_host_free(args);
+        oe_host_batch_free(batch);
 
     return err;
 }
@@ -169,14 +207,15 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fwrite_node(
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
 
-    if (!retval || !file || !buffer || !node_size)
+    if (!retval || !file || !buffer || !node_size || !batch)
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
     }
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t) + node_size + 1)))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + node_size + 1)))
     {
         err = SGX_ERROR_OUT_OF_MEMORY;
         goto done;
@@ -200,7 +239,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fwrite_node(
 done:
 
     if (args)
-        oe_host_free(args);
+        oe_host_batch_free(batch);
 
     return err;
 }
@@ -209,14 +248,15 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fclose(int* retval, void* file)
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
 
-    if (!retval || !file)
+    if (!retval || !file || !batch)
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
     }
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
     {
         err = SGX_ERROR_OUT_OF_MEMORY;
         goto done;
@@ -236,7 +276,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fclose(int* retval, void* file)
 done:
 
     if (args)
-        oe_host_free(args);
+        oe_host_batch_free(batch);
 
     return err;
 }
@@ -245,14 +285,15 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fflush(uint8_t* retval, void* file)
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
 
-    if (!retval || !file)
+    if (!retval || !file || !batch)
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
     }
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
     {
         err = SGX_ERROR_OUT_OF_MEMORY;
         goto done;
@@ -272,7 +313,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fflush(uint8_t* retval, void* file)
 done:
 
     if (args)
-        oe_host_free(args);
+        oe_host_batch_free(batch);
 
     return err;
 }
@@ -282,14 +323,15 @@ u_sgxprotectedfs_remove(int* retval, const char* filename)
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
 
-    if (!retval || !filename)
+    if (!retval || !filename || !batch)
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
     }
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
     {
         err = SGX_ERROR_OUT_OF_MEMORY;
         goto done;
@@ -314,7 +356,7 @@ u_sgxprotectedfs_remove(int* retval, const char* filename)
 done:
 
     if (args)
-        oe_host_free(args);
+        oe_host_batch_free(batch);
 
     return err;
 }
@@ -324,14 +366,15 @@ u_sgxprotectedfs_recovery_file_open(void** retval, const char* filename)
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
 
-    if (!retval || !filename)
+    if (!retval || !filename || !batch)
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
     }
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
     {
         err = SGX_ERROR_OUT_OF_MEMORY;
         goto done;
@@ -356,7 +399,7 @@ u_sgxprotectedfs_recovery_file_open(void** retval, const char* filename)
 done:
 
     if (args)
-        oe_host_free(args);
+        oe_host_batch_free(batch);
 
     return err;
 }
@@ -369,14 +412,15 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fwrite_recovery_node(
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
 
-    if (!retval || !file || !data || !data_length)
+    if (!retval || !file || !data || !data_length || !batch)
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
     }
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t) + data_length + 1)))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + data_length + 1)))
     {
         err = SGX_ERROR_OUT_OF_MEMORY;
         goto done;
@@ -399,7 +443,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_fwrite_recovery_node(
 done:
 
     if (args)
-        oe_host_free(args);
+        oe_host_batch_free(batch);
 
     return err;
 }
@@ -412,14 +456,15 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_do_file_recovery(
 {
     sgx_status_t err = 0;
     args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
 
-    if (!retval || !filename || !recovery_filename || !node_size)
+    if (!retval || !filename || !recovery_filename || !node_size || !batch)
     {
         err = SGX_ERROR_INVALID_PARAMETER;
         goto done;
     }
 
-    if (!(args = oe_host_calloc(1, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
     {
         err = SGX_ERROR_OUT_OF_MEMORY;
         goto done;
@@ -452,7 +497,7 @@ sgx_status_t SGX_CDECL u_sgxprotectedfs_do_file_recovery(
 done:
 
     if (args)
-        oe_host_free(args);
+        oe_host_batch_free(batch);
 
     return err;
 }
