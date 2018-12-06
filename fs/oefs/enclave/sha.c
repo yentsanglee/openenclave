@@ -97,3 +97,16 @@ void oefs_sha256_dump(const oefs_sha256_t* hash)
     printf("\n");
 }
 
+const char* oefs_sha256_str(const oefs_sha256_t* hash, oefs_sha256_str_t* str)
+{
+    char* p = str->data;
+
+    for (size_t i = 0; i < sizeof(oefs_sha256_t); i++)
+    {
+        uint8_t byte = hash->data[i];
+        snprintf(p, 3, "%02x", byte);
+        p += 2;
+    }
+
+    return str->data;
+}

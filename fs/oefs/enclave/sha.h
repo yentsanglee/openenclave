@@ -18,6 +18,11 @@ typedef struct _oefs_sha256
     uint8_t data[32];
 } oefs_sha256_t;
 
+typedef struct _oefs_sha256_str
+{
+    char data[65];
+} oefs_sha256_str_t;
+
 int oefs_sha256_init(oefs_sha256_context_t* context);
 
 int oefs_sha256_update(
@@ -32,6 +37,8 @@ int oefs_sha256_finish(oefs_sha256_context_t* context, oefs_sha256_t* hash);
 int oefs_sha256(oefs_sha256_t* hash, const void* data, size_t size);
 
 void oefs_sha256_dump(const oefs_sha256_t* hash);
+
+const char* oefs_sha256_str(const oefs_sha256_t* hash, oefs_sha256_str_t* str);
 
 OE_EXTERNC_END
 

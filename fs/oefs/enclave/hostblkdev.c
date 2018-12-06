@@ -83,6 +83,10 @@ static int _host_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
     args->get.handle = dev->handle;
     args->get.blkno = blkno;
 
+#if defined(TRACE_PUTS_AND_GETS)
+    printf("GET\n");
+#endif
+
     if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
         goto done;
 
@@ -123,6 +127,9 @@ static int _host_blkdev_put(
     args->put.blkno = blkno;
     args->put.blk = *blk;
 
+#if defined(TRACE_PUTS_AND_GETS)
+    printf("PUT\n");
+#endif
     if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
         goto done;
 
