@@ -146,11 +146,6 @@ static void _set_hash(blkdev_t* dev, size_t blkno, const oefs_sha256_t* hash)
     oe_assert(blkno < dev->header_block.nblks);
     oe_assert(i < dev->num_hash_blocks);
 
-#if 0
-    if (memcmp(&dev->hash_blocks[i].hashes[j], hash, HASH_SIZE) == 0)
-        printf("NOCHANGE{%zu}\n", blkno);
-#endif
-
     dev->hash_blocks[i].hashes[j] = *hash;
     dev->dirty_hash_blocks[i] = 1;
     dev->have_dirty_hash_blocks = true;
