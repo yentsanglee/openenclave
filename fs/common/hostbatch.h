@@ -1,12 +1,11 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _OE_HOSTBATCH_H
-#define _OE_HOSTBATCH_H
+#ifndef _OEFS_HOSTBATCH_H
+#define _OEFS_HOSTBATCH_H
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
-#include <stdint.h>
 
 OE_EXTERNC_BEGIN
 
@@ -24,8 +23,6 @@ char* oe_host_batch_strdup(oe_host_batch_t* batch, const char* str);
 
 int oe_host_batch_free(oe_host_batch_t* batch);
 
-void dump_lock(oe_host_batch_t* batch);
-
 OE_EXTERNC_END
 
-#endif /* _OE_HOSTBATCH_H */
+#endif /* _OEFS_HOSTBATCH_H */

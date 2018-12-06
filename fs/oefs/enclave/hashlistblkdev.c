@@ -5,7 +5,6 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/print.h>
-#include <mbedtls/sha256.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,26 +77,26 @@ typedef struct _blkdev
 static int _update_hash_block(hash_block_t* hash_block)
 {
     int ret = -1;
-    mbedtls_sha256_context ctx;
+    oefs_sha256_context_t ctx;
 
-    mbedtls_sha256_init(&ctx);
+    oefs_sha256_init(&ctx);
 
     for (size_t i = 0; i < HASHES_PER_BLOCK; i++)
     {
         const oefs_sha256_t* hash = &hash_block->hashes[i];
 
-        if (mbedtls_sha256_update_ret(&ctx, hash->u.bytes, HASH_SIZE) != 0)
+        if (oefs_sha256_update(&ctx, hash->data, HASH_SIZE) != 0)
             GOTO(done);
     }
 
-    if (mbedtls_sha256_finish_ret(&ctx, hash_block->hash.u.bytes) != 0)
+    if (oefs_sha256_finish(&ctx, (oefs_sha256_t*)hash_block->hash.data) != 0)
         GOTO(done);
 
     ret = 0;
 
 done:
 
-    mbedtls_sha256_free(&ctx);
+    oefs_sha256_release(&ctx);
 
     return ret;
 }
@@ -105,9 +104,9 @@ done:
 static int _update_header_block(blkdev_t* dev)
 {
     int ret = -1;
-    mbedtls_sha256_context ctx;
+    oefs_sha256_context_t ctx;
 
-    mbedtls_sha256_init(&ctx);
+    oefs_sha256_init(&ctx);
 
     for (size_t i = 0; i < dev->num_hash_blocks; i++)
     {
@@ -122,18 +121,18 @@ static int _update_header_block(blkdev_t* dev)
 
         hash = &hash_block->hash;
 
-        if (mbedtls_sha256_update_ret(&ctx, hash->u.bytes, HASH_SIZE) != 0)
+        if (oefs_sha256_update(&ctx, hash->data, HASH_SIZE) != 0)
             GOTO(done);
     }
 
-    if (mbedtls_sha256_finish_ret(&ctx, dev->header_block.hash.u.bytes) != 0)
+    if (oefs_sha256_finish(&ctx, (oefs_sha256_t*)dev->header_block.hash.data) != 0)
         GOTO(done);
 
     ret = 0;
 
 done:
 
-    mbedtls_sha256_free(&ctx);
+    oefs_sha256_release(&ctx);
 
     return ret;
 }

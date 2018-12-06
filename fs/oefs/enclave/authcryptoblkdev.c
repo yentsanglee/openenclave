@@ -5,7 +5,6 @@
 #include <mbedtls/aes.h>
 #include <mbedtls/cmac.h>
 #include <mbedtls/gcm.h>
-#include <mbedtls/sha256.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,7 +60,7 @@ static int _generate_initialization_vector(
         goto done;
 
     /* Use the hash of the key as the key. */
-    if (mbedtls_aes_setkey_enc(&aes, khash.u.bytes, sizeof(khash) * 8) != 0)
+    if (mbedtls_aes_setkey_enc(&aes, khash.data, sizeof(khash) * 8) != 0)
         goto done;
 
     /* Encrypt the buffer with the hash of the key, yielding the IV. */

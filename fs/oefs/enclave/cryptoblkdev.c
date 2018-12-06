@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 #include <mbedtls/aes.h>
-#include <mbedtls/sha256.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,7 +46,7 @@ static int _generate_initialization_vector(
         goto done;
 
     /* Create a SHA-256 hash of the key. */
-    if (mbedtls_aes_setkey_enc(&aes, khash.u.bytes, sizeof(khash) * 8) != 0)
+    if (mbedtls_aes_setkey_enc(&aes, khash.data, sizeof(khash) * 8) != 0)
         goto done;
 
     /* Encrypt the buffer with the hash of the key, yielding the IV. */

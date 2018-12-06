@@ -10,7 +10,7 @@
 #include "../common/hostblkdev.h"
 #include "blkdev.h"
 #include "common.h"
-#include "hostbatch.h"
+#include "../../common/hostbatch.h"
 #include "list.h"
 
 #define MAX_NODES 16
@@ -19,7 +19,7 @@ typedef struct _blkdev
 {
     oefs_blkdev_t base;
     volatile uint64_t ref_count;
-    oefs_host_batch_t* batch;
+    oe_host_batch_t* batch;
     void* handle;
 } blkdev_t;
 
@@ -38,7 +38,7 @@ static int _host_blkdev_stat(oefs_blkdev_t* d, oefs_blkdev_stat_t* stat)
     if (!dev || !stat)
         goto done;
 
-    if (!(args = oefs_host_batch_calloc(dev->batch, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(dev->batch, sizeof(args_t))))
         goto done;
 
     args->op = OEFS_HOSTBLKDEV_STAT;
@@ -60,7 +60,7 @@ static int _host_blkdev_stat(oefs_blkdev_t* d, oefs_blkdev_stat_t* stat)
 done:
 
     if (args && dev)
-        oefs_host_batch_free(dev->batch);
+        oe_host_batch_free(dev->batch);
 
     return ret;
 }
@@ -75,7 +75,7 @@ static int _host_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
     if (!dev || !blk)
         goto done;
 
-    if (!(args = oefs_host_batch_calloc(dev->batch, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(dev->batch, sizeof(args_t))))
         goto done;
 
     args->op = OEFS_HOSTBLKDEV_GET;
@@ -96,7 +96,7 @@ static int _host_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 done:
 
     if (args && dev)
-        oefs_host_batch_free(dev->batch);
+        oe_host_batch_free(dev->batch);
 
     return ret;
 }
@@ -114,7 +114,7 @@ static int _host_blkdev_put(
     if (!dev || !blk)
         goto done;
 
-    if (!(args = oefs_host_batch_calloc(dev->batch, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(dev->batch, sizeof(args_t))))
         goto done;
 
     args->op = OEFS_HOSTBLKDEV_PUT;
@@ -134,7 +134,7 @@ static int _host_blkdev_put(
 done:
 
     if (args && dev)
-        oefs_host_batch_free(dev->batch);
+        oe_host_batch_free(dev->batch);
 
     return ret;
 }
@@ -177,7 +177,7 @@ static int _host_blkdev_release(oefs_blkdev_t* d)
 
     if (oe_atomic_decrement(&dev->ref_count) == 0)
     {
-        if (!(args = oefs_host_batch_calloc(dev->batch, sizeof(args_t))))
+        if (!(args = oe_host_batch_calloc(dev->batch, sizeof(args_t))))
             goto done;
 
         args->op = OEFS_HOSTBLKDEV_CLOSE;
@@ -186,7 +186,7 @@ static int _host_blkdev_release(oefs_blkdev_t* d)
         if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
             goto done;
 
-        oefs_host_batch_delete(dev->batch);
+        oe_host_batch_delete(dev->batch);
         free(dev);
     }
 
@@ -201,7 +201,7 @@ int oefs_host_blkdev_open(oefs_blkdev_t** blkdev, const char* path)
 {
     int ret = -1;
     blkdev_t* dev = NULL;
-    oefs_host_batch_t* batch = NULL;
+    oe_host_batch_t* batch = NULL;
     typedef oefs_oefs_ocall_args_t args_t;
     args_t* args = NULL;
 
@@ -214,15 +214,15 @@ int oefs_host_blkdev_open(oefs_blkdev_t** blkdev, const char* path)
     if (!(dev = calloc(1, sizeof(blkdev_t))))
         goto done;
 
-    if (!(batch = oefs_host_batch_new(_get_batch_capacity())))
+    if (!(batch = oe_host_batch_new(_get_batch_capacity())))
         goto done;
 
-    if (!(args = oefs_host_batch_calloc(batch, sizeof(args_t))))
+    if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         goto done;
 
     args->op = OEFS_HOSTBLKDEV_OPEN;
 
-    if (!(args->open.path = oefs_host_batch_strdup(batch, path)))
+    if (!(args->open.path = oe_host_batch_strdup(batch, path)))
         goto done;
 
     if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
@@ -250,13 +250,13 @@ int oefs_host_blkdev_open(oefs_blkdev_t** blkdev, const char* path)
 done:
 
     if (args && dev && dev->batch)
-        oefs_host_batch_free(dev->batch);
+        oe_host_batch_free(dev->batch);
 
     if (dev)
         free(dev);
 
     if (batch)
-        oefs_host_batch_delete(batch);
+        oe_host_batch_delete(batch);
 
     return ret;
 }

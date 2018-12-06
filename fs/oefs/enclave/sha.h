@@ -8,35 +8,30 @@
 
 OE_EXTERNC_BEGIN
 
+typedef struct _oefs_sha256_context
+{
+    uint64_t __impl[16];
+} oefs_sha256_context_t;
+
 typedef struct _oefs_sha256
 {
-    union {
-        uint64_t words[4];
-        uint8_t bytes[32];
-    } u;
+    uint8_t data[32];
 } oefs_sha256_t;
 
-typedef struct _oefs_vector
-{
-    void* data;
-    size_t size;
-} oefs_vector_t;
+int oefs_sha256_init(oefs_sha256_context_t* context);
+
+int oefs_sha256_update(
+    oefs_sha256_context_t* context, 
+    const void* data, 
+    size_t size);
+
+void oefs_sha256_release(const oefs_sha256_context_t* context);
+
+int oefs_sha256_finish(oefs_sha256_context_t* context, oefs_sha256_t* hash);
 
 int oefs_sha256(oefs_sha256_t* hash, const void* data, size_t size);
 
-int oefs_sha256_v(
-    oefs_sha256_t* hash,
-    const oefs_vector_t* vector,
-    size_t size);
-
 void oefs_sha256_dump(const oefs_sha256_t* hash);
-
-OE_INLINE bool oefs_sha256_eq(const oefs_sha256_t* x, const oefs_sha256_t* y)
-{
-    const uint64_t* p = x->u.words;
-    const uint64_t* q = y->u.words;
-    return p[0] == q[0] && p[1] == q[1] && p[2] == q[2] && p[3] == q[3];
-}
 
 OE_EXTERNC_END
 

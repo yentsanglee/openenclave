@@ -1,11 +1,68 @@
 #include "sha.h"
 #include <mbedtls/sha256.h>
+#include <openenclave/internal/defs.h>
 #include <stdio.h>
+
+OE_STATIC_ASSERT(
+    sizeof(mbedtls_sha256_context) <= sizeof(oefs_sha256_context_t));
+
+int oefs_sha256_init(oefs_sha256_context_t* context)
+{
+#if !defined(FAKE)
+    mbedtls_sha256_context* ctx = (mbedtls_sha256_context*)context;
+
+    (void)ctx;
+
+    mbedtls_sha256_init(ctx);
+
+    if (mbedtls_sha256_starts_ret(ctx, 0) != 0)
+        return -1;
+#endif
+
+    return 0;
+}
+
+int oefs_sha256_update(
+    oefs_sha256_context_t* context, 
+    const void* data, 
+    size_t size)
+{
+#if !defined(FAKE)
+    mbedtls_sha256_context* ctx = (mbedtls_sha256_context*)context;
+
+    if (mbedtls_sha256_update_ret(ctx, (const uint8_t*)data, size) != 0)
+        return -1;
+#endif
+
+    return 0;
+}
+
+int oefs_sha256_finish(oefs_sha256_context_t* context, oefs_sha256_t* hash)
+{
+#if defined(FAKE)
+    /* Generate a fake hash for performance comparisons. */
+    memset(hash->data, 0xfa, sizeof(oefs_sha256_t));
+#else
+    mbedtls_sha256_context* ctx = (mbedtls_sha256_context*)context;
+
+    if (mbedtls_sha256_finish_ret(ctx, hash->data) != 0)
+        return -1;
+#endif
+
+    return 0;
+}
+
+void oefs_sha256_release(const oefs_sha256_context_t* context)
+{
+    mbedtls_sha256_context* ctx = (mbedtls_sha256_context*)context;
+
+    mbedtls_sha256_free(ctx);
+}
 
 int oefs_sha256(oefs_sha256_t* hash, const void* data, size_t size)
 {
     int ret = -1;
-    mbedtls_sha256_context ctx;
+    oefs_sha256_context_t ctx;
 
     if (hash)
         memset(hash, 0, sizeof(oefs_sha256_t));
@@ -13,16 +70,15 @@ int oefs_sha256(oefs_sha256_t* hash, const void* data, size_t size)
     if (!hash || !data)
         goto done;
 
-    mbedtls_sha256_init(&ctx);
+    oefs_sha256_init(&ctx);
 
-    if (mbedtls_sha256_starts_ret(&ctx, 0) != 0)
+    if (oefs_sha256_update(&ctx, data, size) != 0)
         goto done;
 
-    if (mbedtls_sha256_update_ret(&ctx, data, size) != 0)
+    if (oefs_sha256_finish(&ctx, (oefs_sha256_t*)hash->data) != 0)
         goto done;
 
-    if (mbedtls_sha256_finish_ret(&ctx, hash->u.bytes) != 0)
-        goto done;
+    oefs_sha256_release(&ctx);
 
     ret = 0;
 
@@ -34,42 +90,10 @@ void oefs_sha256_dump(const oefs_sha256_t* hash)
 {
     for (size_t i = 0; i < sizeof(oefs_sha256_t); i++)
     {
-        uint8_t byte = hash->u.bytes[i];
+        uint8_t byte = hash->data[i];
         printf("%02x", byte);
     }
 
     printf("\n");
 }
 
-int oefs_sha256_v(oefs_sha256_t* hash, const oefs_vector_t* vector, size_t size)
-{
-    int ret = -1;
-    mbedtls_sha256_context ctx;
-
-    if (hash)
-        memset(hash, 0, sizeof(oefs_sha256_t));
-
-    if (!hash || !vector)
-        goto done;
-
-    mbedtls_sha256_init(&ctx);
-
-    if (mbedtls_sha256_starts_ret(&ctx, 0) != 0)
-        goto done;
-
-    for (size_t i = 0; i < size; i++)
-    {
-        const oefs_vector_t* v = &vector[i];
-
-        if (mbedtls_sha256_update_ret(&ctx, v->data, v->size) != 0)
-            goto done;
-    }
-
-    if (mbedtls_sha256_finish_ret(&ctx, hash->u.bytes) != 0)
-        goto done;
-
-    ret = 0;
-
-done:
-    return ret;
-}

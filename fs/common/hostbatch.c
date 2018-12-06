@@ -32,7 +32,7 @@ struct _thread_data
 
 #define GUARD 0xa89d0e55
 
-struct _oefs_host_batch
+struct _oe_host_batch
 {
     size_t capacity;
     thread_data_t* tds;
@@ -41,7 +41,7 @@ struct _oefs_host_batch
     uint32_t guard2;
 };
 
-static thread_data_t* _new_thread_data(oefs_host_batch_t* batch)
+static thread_data_t* _new_thread_data(oe_host_batch_t* batch)
 {
     thread_data_t* ret = NULL;
     thread_data_t* td = NULL;
@@ -73,7 +73,7 @@ done:
     return ret;
 }
 
-static thread_data_t* _get_thread_data(oefs_host_batch_t* batch)
+static thread_data_t* _get_thread_data(oe_host_batch_t* batch)
 {
     thread_data_t* td = NULL;
 
@@ -109,15 +109,15 @@ static void _delete_thread_data(thread_data_t* td)
     free(td);
 }
 
-oefs_host_batch_t* oefs_host_batch_new(size_t capacity)
+oe_host_batch_t* oe_host_batch_new(size_t capacity)
 {
-    oefs_host_batch_t* ret = NULL;
-    oefs_host_batch_t* batch = NULL;
+    oe_host_batch_t* ret = NULL;
+    oe_host_batch_t* batch = NULL;
 
     if (capacity == 0)
         goto done;
 
-    if (!(batch = calloc(1, sizeof(oefs_host_batch_t))))
+    if (!(batch = calloc(1, sizeof(oe_host_batch_t))))
         goto done;
 
     batch->capacity = capacity;
@@ -135,7 +135,7 @@ done:
     return ret;
 }
 
-void oefs_host_batch_delete(oefs_host_batch_t* batch)
+void oe_host_batch_delete(oe_host_batch_t* batch)
 {
     if (batch)
     {
@@ -150,7 +150,7 @@ void oefs_host_batch_delete(oefs_host_batch_t* batch)
     }
 }
 
-void* oefs_host_batch_malloc(oefs_host_batch_t* batch, size_t size)
+void* oe_host_batch_malloc(oe_host_batch_t* batch, size_t size)
 {
     void* ret = NULL;
     thread_data_t* td;
@@ -192,17 +192,17 @@ done:
     return ret;
 }
 
-void* oefs_host_batch_calloc(oefs_host_batch_t* batch, size_t size)
+void* oe_host_batch_calloc(oe_host_batch_t* batch, size_t size)
 {
     void* ptr;
 
-    if (!(ptr = oefs_host_batch_malloc(batch, size)))
+    if (!(ptr = oe_host_batch_malloc(batch, size)))
         return NULL;
 
     return memset(ptr, 0, size);
 }
 
-char* oefs_host_batch_strdup(oefs_host_batch_t* batch, const char* str)
+char* oe_host_batch_strdup(oe_host_batch_t* batch, const char* str)
 {
     char* ret = NULL;
     size_t len;
@@ -212,7 +212,7 @@ char* oefs_host_batch_strdup(oefs_host_batch_t* batch, const char* str)
 
     len = strlen(str);
 
-    if (!(ret = oefs_host_batch_calloc(batch, len + 1)))
+    if (!(ret = oe_host_batch_calloc(batch, len + 1)))
         goto done;
 
     memcpy(ret, str, len + 1);
@@ -221,7 +221,7 @@ done:
     return ret;
 }
 
-int oefs_host_batch_free(oefs_host_batch_t* batch)
+int oe_host_batch_free(oe_host_batch_t* batch)
 {
     int ret = -1;
     thread_data_t* td;

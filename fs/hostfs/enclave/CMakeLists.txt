@@ -5,7 +5,7 @@ set(LINUX_SGX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/linux-sgx)
 
 add_library(oehostfsenclave STATIC 
     hostfs.c
-    hostbatch.c)
+    ../../common/hostbatch.c)
 
 target_include_directories(oehostfsenclave PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include)

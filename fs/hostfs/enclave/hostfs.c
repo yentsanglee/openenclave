@@ -10,7 +10,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "../common/hostfsargs.h"
-#include "hostbatch.h"
+#include "../../common/hostbatch.h"
 
 #define BATCH_SIZE 4096
 
