@@ -4,6 +4,10 @@
 #ifndef _OE_MUSL_PATCHES_STDIO_H
 #define _OE_MUSL_PATCHES_STDIO_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Include the original MUSL stdio.h header. */
 #define __NEED_uint64_t
 #include "__stdio.h"
@@ -48,6 +52,10 @@ extern oe_fs_t oe_oefs;
 #define rename(...) oe_rename(OE_DEFAULT_FS, __VA_ARGS__)
 #define mkdir(...) oe_mkdir(OE_DEFAULT_FS, __VA_ARGS__)
 #define rmdir(...) oe_rmdir(OE_DEFAULT_FS, __VA_ARGS__)
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* _OE_MUSL_PATCHES_STDIO_H */
