@@ -9,3 +9,7 @@
 
     (*) Handle concurrency.
 
+    (*) Test loading of OEFS blobs.
+
+    (*) Add oe_file_get_fs() and oe_dir_get_fs().
+

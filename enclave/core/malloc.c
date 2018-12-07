@@ -29,7 +29,7 @@
 #define sbrk oe_sbrk
 #define fprintf _dlmalloc_stats_fprintf
 
-typedef struct _FILE FILE;
+typedef struct _IO_FILE FILE;
 
 static int _dlmalloc_stats_fprintf(FILE* stream, const char* format, ...);
 

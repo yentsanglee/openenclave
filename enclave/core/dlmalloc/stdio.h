@@ -4,7 +4,7 @@
 #ifndef _OE_CORE_DLMALLOC_STDIO_H
 #define _OE_CORE_DLMALLOC_STDIO_H
 
-typedef struct _FILE FILE;
+typedef struct _IO_FILE FILE;
 
 #define stdin ((FILE*)0)
 #define stdout ((FILE*)1)
