@@ -600,7 +600,9 @@ int fputs(const char* s, FILE* stream)
 
 char* fgets(char* s, int size, FILE* stream)
 {
-    size_t i;
+    bool eof = false;
+    char* start = s;
+    int c;
 
     if (!s || !size || !stream)
     {
@@ -608,20 +610,34 @@ char* fgets(char* s, int size, FILE* stream)
         return NULL;
     }
 
-    for (i = 0; i < size - 1; i++)
+    if (size-- == 1)
     {
-        int c = fgetc(stream);
+        *s = '\0';
+        return s;
+    }
 
-        if (c == EOF)
-            return NULL;
+    while (size--)
+    {
+        if ((c = fgetc(stream)) == EOF)
+        {
+            eof = true;
+            break;
+        }
 
-        s[i] = c;
+        *s++ = c;
 
         if (c == '\n')
             break;
     }
 
-    s[i] = '\0';
+    /* Zero-terminate the string. */
+    *s = '\0';
+
+    if (eof && s == start)
+    {
+        *s = '\0';
+        return NULL;
+    }
 
     return s;
 }
