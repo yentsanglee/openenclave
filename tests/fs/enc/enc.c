@@ -24,8 +24,6 @@
 extern oe_fs_t oe_sgxfs;
 extern oe_fs_t oe_hostfs;
 
-oe_fs_t oe_default_fs;
-
 static const char* _mkpath(
     char buf[PATH_MAX],
     const char* target,
@@ -357,9 +355,9 @@ void enc_test(const char* src_dir, const char* bin_dir)
     _test_default_fs(tmp_dir);
     oe_fs_set_default(NULL);
 
-    oe_default_fs = oe_hostfs;
+    oe_fs_set_default(&oe_hostfs);
     _test_default_fs(tmp_dir);
-    memset(&oe_default_fs, 0, sizeof(oe_default_fs));
+    oe_fs_set_default(NULL);
 
     _test_alphabet_file(&oe_sgxfs, tmp_dir);
     _test_alphabet_file(&oe_hostfs, tmp_dir);

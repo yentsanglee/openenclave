@@ -485,7 +485,7 @@ static int _hash_list_blkdev_put(
     blkdev_t* dev = (blkdev_t*)blkdev;
     oefs_sha256_t hash;
 
-    oe_assert(blkno < dev->nblks);
+    oe_assert(blkno < dev->header_block.nblks);
 
     if (!dev || !blk || blkno >= dev->header_block.nblks)
         GOTO(done);

@@ -47,9 +47,7 @@ char* musl_fgets(char* s, int size, FILE* stream);
 **==============================================================================
 */
 
-oe_fs_t oe_default_fs;
-
-static oe_fs_t* _default_fs = &oe_default_fs;
+static oe_fs_t* _default_fs = NULL;
 
 bool oe_fs_set_default(oe_fs_t* fs)
 {
