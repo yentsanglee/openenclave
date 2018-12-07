@@ -613,9 +613,12 @@ char* fgets(char* s, int size, FILE* stream)
         int c = fgetc(stream);
 
         if (c == EOF)
-            break;
+            return NULL;
 
         s[i] = c;
+
+        if (c == '\n')
+            break;
     }
 
     s[i] = '\0';
