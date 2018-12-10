@@ -1,5 +1,17 @@
 
+    (*) Merkle tree: only persist root and leaf nodes.
+
+    (*) Combine auth-crypto and Merkle tree (combine tag and leaf hash).
+
+    (*) Implement block write counters.
+
+    (*) Let host manage part of the Merkle tree.
+
+    (*) Implement monotonic counters so that tag is function of the counter.
+
     (*) Implement the fprintf/fscanf family of functions.
+
+    (*) Use shared memory for host block manager.
 
     (*) Handle file permission/owner/times.
 
