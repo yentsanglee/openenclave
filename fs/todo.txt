@@ -1,21 +1,11 @@
 
-    (*) Test flushing and refetching of OEFS.
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-    (*) Merkle tree: only persist root and leaf nodes.
+    (*) Test flushing and refetching of OEFS.
 
     (*) Combine auth-crypto and Merkle tree (combine tag and leaf hash).
 
-    (*) Implement block write counters.
-
-    (*) Let host manage part of the Merkle tree.
-
-    (*) Implement monotonic counters so that tag is function of the counter.
-
     (*) Implement the fprintf/fscanf family of functions.
-
-    (*) Use shared memory for host block manager.
-
-    (*) Handle file permission/owner/times.
 
     (*) Verify that errno's are handled correctly.
 
@@ -23,7 +13,23 @@
 
     (*) Handle concurrency.
 
-    (*) Test loading of OEFS blobs.
-
     (*) Add oe_file_get_fs() and oe_dir_get_fs().
+
+    BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+    (*) Implement file-system wide monotonic counters.
+
+    (*) Implement OEFS recovery.
+
+    CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+
+    (*) Implement block write counters.
+
+    (*) Let host manage part of the Merkle tree.
+
+    (*) Implement monotonic counters so that tag is function of the counter.
+
+    (*) Use shared memory for host block manager.
+
+    (*) Handle file permission/owner/times.
 
