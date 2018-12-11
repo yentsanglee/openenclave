@@ -12,6 +12,7 @@ add_library(oeoefsenclave STATIC
     hostblkdev.c
     list.c
     merkleblkdev.c
+    authmerkleblkdev.c
     oefs.c
     ramblkdev.c
     sha.c)

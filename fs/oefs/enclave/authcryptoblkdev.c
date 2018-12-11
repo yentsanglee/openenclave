@@ -438,7 +438,7 @@ int oefs_auth_crypto_blkdev_open(
     if (blkdev)
         *blkdev = NULL;
 
-    if (!blkdev || !nblks || !next)
+    if (!blkdev || !nblks || !next || !key)
         goto done;
 
     if (!(dev = calloc(1, sizeof(blkdev_t))))
