@@ -2818,13 +2818,8 @@ int oefs_calculate_total_blocks(size_t nblks, size_t* total_nblks)
     {
         size_t extra_nblks;
 
-#if defined(USE_MERKLE_BLKDDEV)
-        if (oefs_merkle2_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
+        if (oefs_merkle_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
             goto done;
-#else
-        if (oefs_hash_list_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
-            goto done;
-#endif
 
         nblks += extra_nblks;
     }
@@ -3024,13 +3019,8 @@ static int _oefs_new(
     {
         size_t extra_nblks;
 
-#if defined(USE_MERKLE_BLKDDEV)
-        if (oefs_merkle2_blkdev_get_extra_blocks(n2, &extra_nblks) != 0)
+        if (oefs_merkle_blkdev_get_extra_blocks(n2, &extra_nblks) != 0)
             goto done;
-#else
-        if (oefs_hash_list_blkdev_get_extra_blocks(n2, &extra_nblks) != 0)
-            goto done;
-#endif
 
         n1 = n2 + extra_nblks;
     }
@@ -3075,13 +3065,8 @@ static int _oefs_new(
     {
         bool initialize = do_mkfs;
 
-#if defined(USE_MERKLE_BLKDDEV)
-        if (oefs_merkle2_blkdev_open(&integ_dev, initialize, n2, next) != 0)
+        if (oefs_merkle_blkdev_open(&integ_dev, initialize, n2, next) != 0)
             goto done;
-#else
-        if (oefs_hash_list_blkdev_open(&integ_dev, initialize, n2, next) != 0)
-            goto done;
-#endif
 
         next = integ_dev;
     }

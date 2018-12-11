@@ -9,11 +9,9 @@ add_library(oeoefsenclave STATIC
     authcryptoblkdev.c
     cacheblkdev.c
     cryptoblkdev.c
-    hashlistblkdev.c
     hostblkdev.c
     list.c
     merkleblkdev.c
-    merkle2blkdev.c
     oefs.c
     ramblkdev.c
     sha.c)
