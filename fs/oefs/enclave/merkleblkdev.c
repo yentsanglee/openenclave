@@ -13,8 +13,6 @@
 #include "common.h"
 #include "utils.h"
 #include "sha.h"
-
-#define ENABLE_TRACE_GOTO
 #include "trace.h"
 
 #define HASH_SIZE (sizeof(oefs_sha256_t))

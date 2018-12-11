@@ -15,8 +15,6 @@
 #include "common.h"
 #include "utils.h"
 #include "sha.h"
-
-#define ENABLE_TRACE_GOTO
 #include "trace.h"
 
 #define TAGS_PER_BLOCK (OEFS_BLOCK_SIZE / sizeof(tag_t))
