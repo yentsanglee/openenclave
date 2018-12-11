@@ -51,11 +51,6 @@ OE_INLINE size_t _parent_index(size_t i)
     return (i - 1) / 2;
 }
 
-OE_INLINE int _hash(oefs_sha256_t* hash, const void* data, size_t size)
-{
-    return oefs_sha256(hash, data, size);
-}
-
 static int _hash2(
     oefs_sha256_t* hash,
     const oefs_sha256_t* left,
@@ -73,7 +68,7 @@ static int _hash2(
     data.left = *left;
     data.right = *right;
 
-    if (_hash(hash, &data, sizeof(data)) != 0)
+    if (oefs_sha256(hash, &data, sizeof(data)) != 0)
         goto done;
 
     ret = 0;
@@ -278,7 +273,7 @@ static int _merkle_blkdev_get(
     if (dev->next->get(dev->next, blkno, blk) != 0)
         goto done;
 
-    if (_hash(&hash, blk, sizeof(oefs_blk_t)) != 0)
+    if (oefs_sha256(&hash, blk, sizeof(oefs_blk_t)) != 0)
         goto done;
 
     /* Check the hash to make sure the block was not tampered with. */
@@ -309,7 +304,7 @@ static int _merkle_blkdev_put(
     if (!dev || !blk || blkno >= dev->nblks)
         goto done;
 
-    if (_hash(&hash, blk, sizeof(oefs_blk_t)) != 0)
+    if (oefs_sha256(&hash, blk, sizeof(oefs_blk_t)) != 0)
         goto done;
 
     if (_update_hash_tree(dev, blkno, &hash) != 0)
@@ -455,7 +450,7 @@ int oefs_merkle_blkdev_open(
         memset(&zero_blk, 0, sizeof(zero_blk));
 
         /* Compute the hash of the zero-filled block. */
-        if (_hash(&zero_hash, &zero_blk, sizeof(zero_blk)) != 0)
+        if (oefs_sha256(&zero_hash, &zero_blk, sizeof(zero_blk)) != 0)
             goto done;
 
         /* Write all the data blocks. */
@@ -504,7 +499,7 @@ int oefs_merkle_blkdev_open(
     }
     else
     {
-        /* Read the hashe tree from the next device. */
+        /* Read the hash tree from the next device. */
         if (_read_hash_tree(dev) != 0)
             goto done;
 

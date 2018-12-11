@@ -40,6 +40,11 @@ void oefs_sha256_dump(const oefs_sha256_t* hash);
 
 const char* oefs_sha256_str(const oefs_sha256_t* hash, oefs_sha256_str_t* str);
 
+OE_INLINE bool oefs_sha256_eq(const oefs_sha256_t* x, const oefs_sha256_t* y)
+{
+    return memcmp(x, y, sizeof(oefs_sha256_t)) == 0;
+}
+
 OE_EXTERNC_END
 
 #endif /* _OEFS_SHA_H */

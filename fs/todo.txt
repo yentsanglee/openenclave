@@ -1,4 +1,6 @@
 
+    (*) Test flushing and refetching of OEFS.
+
     (*) Merkle tree: only persist root and leaf nodes.
 
     (*) Combine auth-crypto and Merkle tree (combine tag and leaf hash).
