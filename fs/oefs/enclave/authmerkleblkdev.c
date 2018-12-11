@@ -588,6 +588,7 @@ static int _init_merkle(blkdev_t* dev, size_t nblks)
 
         /* Set all hash blocks to dirty. */
         memset(dev->dirty_tag_blocks, 1, alloc_size);
+        dev->have_dirty_tag_blocks = true;
     }
 
     /* Initialize the hash blocks. */
