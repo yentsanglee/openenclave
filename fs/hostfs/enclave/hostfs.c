@@ -12,7 +12,7 @@
 #include "../common/hostfsargs.h"
 #include "../../common/hostbatch.h"
 
-#define BATCH_SIZE 4096
+#define BATCH_SIZE 16*1024
 
 typedef oe_hostfs_args_t args_t;
 
