@@ -322,7 +322,15 @@ static void _test_oefs(const char* src_dir, const char* tmp_dir)
     /* Register oefs with the multiplexer. */
     OE_TEST(oe_muxfs_register_fs(&oe_muxfs, "/oefs", &oefs) == 0);
 
-    _test_alphabet_file(&oe_muxfs, "/oefs/tmp");
+    {
+        uint64_t t0 = oe_get_time();
+
+        for (size_t i = 0; i < 1000; i++)
+            _test_alphabet_file(&oe_muxfs, "/oefs/tmp");
+
+        uint64_t t1 = oe_get_time();
+        printf("_test_alphabet_file(): %lf\n", (t1 - t0) / 1000.0);
+    }
 
     /* Test the multiplexer with HOSTFS and OEFS. */
     {
