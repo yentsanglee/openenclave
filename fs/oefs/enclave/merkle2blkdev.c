@@ -25,7 +25,7 @@
 
 #define KEY_BITS 256
 
-/* Block layout: [data blocks] [header block] [hash blocks] */
+/* Block layout: [data blocks] [header block] [tag blocks] */
 
 typedef struct _header_block
 {
@@ -70,11 +70,11 @@ typedef struct _blkdev
     /* Upper part of Merkle tree (excluding leaf nodes). */
     oefs_sha256_t* merkle;
 
-    /* In-memory copy of the hash blocks. */
+    /* In-memory copy of the tag blocks. */
     tag_block_t* tag_blocks;
     size_t num_tag_blocks;
 
-    /* The dirty hash blocks. */
+    /* The dirty tag blocks. */
     uint8_t* dirty_tag_blocks;
 
     /* True if any dirty_tag_blocks[] elements are non-zero. */
@@ -355,10 +355,10 @@ static int _flush_merkle(blkdev_t* dev)
         if (_flush_header_block(dev) != 0)
             GOTO(done);
 
-        /* Calculate the block number of the first hash block. */
+        /* Calculate the block number of the first tag block. */
         blkno = dev->header_block.nblks + 1;
 
-        /* Flush the dirty hash blocks. */
+        /* Flush the dirty tag blocks. */
         for (size_t i = 0; i < dev->num_tag_blocks; i++)
         {
             if (dev->dirty_tag_blocks[i])
@@ -496,10 +496,10 @@ static int _load_merkle(blkdev_t* dev)
         dev->dirty_tag_blocks = dirty_tag_blocks;
     }
 
-    /* Calculate the block number of the first hash block. */
+    /* Calculate the block number of the first tag block. */
     blkno = dev->header_block.nblks + 1;
 
-    /* Load each of the hash blocks. */
+    /* Load each of the tag blocks. */
     for (size_t i = 0; i < dev->num_tag_blocks; i++)
     {
         tag_block_t* tag_block = &dev->tag_blocks[i];
@@ -584,12 +584,12 @@ static int _init_merkle(blkdev_t* dev, size_t nblks)
 
         dev->dirty_tag_blocks = dirty_tag_blocks;
 
-        /* Set all hash blocks to dirty. */
+        /* Set all tag blocks to dirty. */
         memset(dev->dirty_tag_blocks, 1, alloc_size);
         dev->have_dirty_tag_blocks = true;
     }
 
-    /* Initialize the hash blocks. */
+    /* Initialize the tag blocks. */
     if (_initialize_tag_blocks(dev) != 0)
         GOTO(done);
 
@@ -600,7 +600,7 @@ static int _init_merkle(blkdev_t* dev, size_t nblks)
     /* Update the master hash in the header. */
     dev->header_block.hash = dev->merkle[0];
 
-    /* Flush the header and hash blocks to disk. */
+    /* Flush the header and tag blocks to disk. */
     if (_flush_merkle(dev) != 0)
         GOTO(done);
 
@@ -806,7 +806,7 @@ done:
     return ret;
 }
 
-int oefs_auth_merkle_blkdev_open(
+int oefs_merkle2_blkdev_open(
     oefs_blkdev_t** blkdev,
     bool initialize,
     size_t nblks,
@@ -866,7 +866,7 @@ done:
     return ret;
 }
 
-int oefs_auth_merkle_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks)
+int oefs_merkle2_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks)
 {
     int ret = -1;
     size_t hblks;
