@@ -234,14 +234,11 @@ typedef struct _oefs_super_block
     /* The number of data blocks in the file system. */
     uint32_t s_num_data_blocks;
 
-    /* The number of free data blocks. */
-    uint32_t s_free_data_blocks;
-
     /* The SHA-256 hash of the header block. */
     uint8_t s_header_hash[32];
 
     /* (12) Reserved. */
-    uint8_t s_reserved[OEFS_BLOCK_SIZE - 12 - 32 - 4];
+    uint8_t s_reserved[OEFS_BLOCK_SIZE - 12 - 32];
 } oefs_super_block_t;
 
 OE_STATIC_ASSERT(sizeof(oefs_super_block_t) == OEFS_BLOCK_SIZE);
@@ -312,12 +309,7 @@ struct _oefs
     /* "Cooked" crypto device. */
     oefs_blkdev_t* dev;
 
-    union {
-        const oefs_super_block_t read;
-        // This field should only be accessed with the _sb_write() method,
-        // which sets the oefs_t.dirty flag.
-        oefs_super_block_t __write;
-    } sb;
+    oefs_super_block_t sb;
 
     union {
         // This field should only be accessed with the _bitmap_write() method,
@@ -538,7 +530,7 @@ static int _read_block(oefs_t* oefs, size_t blkno, oefs_blk_t* blk)
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
-    if (blkno == 0 || blkno > oefs->sb.read.s_num_data_blocks)
+    if (blkno == 0 || blkno > oefs->sb.s_num_data_blocks)
         OEFS_RAISE(EIO);
 
     /* Sanity check: make sure the block is not free. */
@@ -562,7 +554,7 @@ static int _oefs_write_block(oefs_t* oefs, size_t blkno, const oefs_blk_t* blk)
     uint32_t physical_blkno;
 
     /* Check whether the block number is valid. */
-    if (blkno == 0 || blkno > oefs->sb.read.s_num_data_blocks)
+    if (blkno == 0 || blkno > oefs->sb.s_num_data_blocks)
         OEFS_RAISE(EINVAL);
 
     /* Sanity check: make sure the block is not free. */
@@ -686,12 +678,6 @@ done:
     return err;
 }
 
-static oefs_super_block_t* _sb_write(oefs_t* oefs)
-{
-    oefs->dirty = true;
-    return &oefs->sb.__write;
-}
-
 static uint8_t* _bitmap_write(oefs_t* oefs)
 {
     oefs->dirty = true;
@@ -704,16 +690,12 @@ static int _assign_blkno(oefs_t* oefs, uint32_t* blkno)
 
     *blkno = 0;
 
-    if (oefs->sb.read.s_free_data_blocks == 0)
-        OEFS_RAISE(ENOSPC);
-
     for (uint32_t i = 0; i < oefs->nblks; i++)
     {
         if (!_test_bit(oefs->bitmap.read, oefs->bitmap_size, i))
         {
             _set_bit(_bitmap_write(oefs), oefs->bitmap_size, i);
             *blkno = i + 1;
-            _sb_write(oefs)->s_free_data_blocks--;
             OEFS_RAISE(0);
         }
     }
@@ -735,26 +717,6 @@ static int _unassign_blkno(oefs_t* oefs, uint32_t blkno)
     assert(_test_bit(oefs->bitmap.read, oefs->bitmap_size, index));
 
     _clr_bit(_bitmap_write(oefs), oefs->bitmap_size, index);
-    _sb_write(oefs)->s_free_data_blocks++;
-
-done:
-    return err;
-}
-
-static int _flush_super_block(oefs_t* oefs)
-{
-    int err = 0;
-
-    /* Flush the superblock if it changed. */
-    if (memcmp(&oefs->sb, &oefs->sb_copy, sizeof(oefs_super_block_t)) != 0)
-    {
-        const uint32_t blkno = SUPER_BLOCK_PHYSICAL_BLKNO;
-
-        if (oefs->dev->put(oefs->dev, blkno, (const oefs_blk_t*)&oefs->sb) != 0)
-            OEFS_RAISE(EIO);
-
-        memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs_super_block_t));
-    }
 
 done:
     return err;
@@ -802,7 +764,6 @@ static int _flush(oefs_t* oefs)
     if (oefs->dirty)
     {
         OEFS_CHECK(_flush_bitmap(oefs));
-        OEFS_CHECK(_flush_super_block(oefs));
         oefs->dirty = false;
     }
 
@@ -2517,7 +2478,6 @@ static int _oefs_mkfs(
         sb.s_magic = SUPER_BLOCK_MAGIC;
         sb.s_nblks = nblks;
         sb.s_num_data_blocks = num_data_blocks;
-        sb.s_free_data_blocks = num_data_blocks - 3;
 
         if (oefs_sha256(&hash, &hb, sizeof(hb)) != 0)
             OEFS_RAISE(EIO);
@@ -2704,13 +2664,13 @@ static int _oefs_initialize(
     if (sb.s_magic != SUPER_BLOCK_MAGIC)
         OEFS_RAISE(EIO);
 
-    oefs->sb.__write = sb;
+    oefs->sb = sb;
 
     /* Make copy of super block. */
     memcpy(&oefs->sb_copy, &oefs->sb, sizeof(oefs->sb_copy));
 
     /* Get the number of physical blocks. */
-    nblks = oefs->sb.read.s_nblks;
+    nblks = oefs->sb.s_nblks;
 
     /* Check that the number of blocks is correct. */
     if (!nblks)
