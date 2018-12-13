@@ -123,6 +123,7 @@ oe_host_batch_t* oe_host_batch_new(size_t capacity)
     batch->capacity = capacity;
     batch->guard1 = GUARD;
     batch->guard2 = GUARD;
+    pthread_spin_init(&batch->lock, 0);
 
     ret = batch;
     batch = NULL;

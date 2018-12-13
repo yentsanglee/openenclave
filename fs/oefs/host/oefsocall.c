@@ -85,31 +85,31 @@ static void _handle_get(oefs_oefs_ocall_args_t* args)
 
 static void _handle_put(oefs_oefs_ocall_args_t* args)
 {
-    if (args)
+    for (oefs_oefs_ocall_args_t* p = args; p; p = p->next)
     {
         FILE* stream;
 
-        args->put.ret = -1;
+        p->put.ret = -1;
 
-        if (!(stream = (FILE*)args->put.handle))
+        if (!(stream = (FILE*)p->put.handle))
             return;
 
         /* Write the given block. */
         {
-            const long offset = args->put.blkno * OEFS_BLOCK_SIZE;
+            const long offset = p->put.blkno * OEFS_BLOCK_SIZE;
 
             if (fseek(stream, offset, SEEK_SET) != 0)
                 return;
 
-            const size_t count = sizeof(args->put.blk);
+            const size_t count = sizeof(p->put.blk);
 
-            if (fwrite(args->put.blk.data, 1, count, stream) != count)
+            if (fwrite(p->put.blk.data, 1, count, stream) != count)
                 return;
 
             fflush(stream);
         }
 
-        args->put.ret = 0;
+        p->put.ret = 0;
     }
 }
 

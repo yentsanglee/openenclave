@@ -13,7 +13,9 @@
 #include "../../common/hostbatch.h"
 #include "list.h"
 
-#define MAX_NODES 16
+#define MAX_COUNT 8
+
+typedef oefs_oefs_ocall_args_t args_t;
 
 typedef struct _blkdev
 {
@@ -21,21 +23,62 @@ typedef struct _blkdev
     volatile uint64_t ref_count;
     oe_host_batch_t* batch;
     void* handle;
+
+    /* Linked list of put requests. */
+    args_t* head;
+    args_t* tail;
+    size_t count;
 } blkdev_t;
 
 static size_t _get_batch_capacity()
 {
-    return sizeof(oefs_oefs_ocall_args_t);
+    return MAX_COUNT * sizeof(args_t);
+}
+
+static int _host_blkdev_flush(blkdev_t* dev)
+{
+    int ret = -1;
+    args_t* p;
+
+    if (dev->count)
+    {
+        if (oe_ocall(OE_OCALL_OEFS, (uint64_t)dev->head, NULL) != 0)
+            goto done;
+
+        for (p = dev->head; p; p = p->next)
+        {
+            if (p->put.ret != 0)
+            {
+                dev->head = NULL;
+                dev->tail = NULL;
+                dev->count = 0;
+                goto done;
+            }
+        }
+
+        dev->head = NULL;
+        dev->tail = NULL;
+        dev->count = 0;
+    }
+
+    ret = 0;
+
+done:
+
+    oe_host_batch_free(dev->batch);
+    return ret;
 }
 
 static int _host_blkdev_stat(oefs_blkdev_t* d, oefs_blkdev_stat_t* stat)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
-    typedef oefs_oefs_ocall_args_t args_t;
     args_t* args = NULL;
 
     if (!dev || !stat)
+        goto done;
+
+    if (dev->count && _host_blkdev_flush(dev) != 0)
         goto done;
 
     if (!(args = oe_host_batch_calloc(dev->batch, sizeof(args_t))))
@@ -69,10 +112,12 @@ static int _host_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
-    typedef oefs_oefs_ocall_args_t args_t;
     args_t* args = NULL;
 
     if (!dev || !blk)
+        goto done;
+
+    if (dev->count && _host_blkdev_flush(dev) != 0)
         goto done;
 
     if (!(args = oe_host_batch_calloc(dev->batch, sizeof(args_t))))
@@ -82,10 +127,6 @@ static int _host_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
     args->get.ret = -1;
     args->get.handle = dev->handle;
     args->get.blkno = blkno;
-
-#if defined(TRACE_PUTS_AND_GETS)
-    printf("GET\n");
-#endif
 
     if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
         goto done;
@@ -112,11 +153,16 @@ static int _host_blkdev_put(
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
-    typedef oefs_oefs_ocall_args_t args_t;
     args_t* args = NULL;
 
     if (!dev || !blk)
         goto done;
+
+    if (dev->count == MAX_COUNT)
+    {
+        if (_host_blkdev_flush(dev) != 0)
+            goto done;
+    }
 
     if (!(args = oe_host_batch_calloc(dev->batch, sizeof(args_t))))
         goto done;
@@ -127,21 +173,20 @@ static int _host_blkdev_put(
     args->put.blkno = blkno;
     args->put.blk = *blk;
 
-#if defined(TRACE_PUTS_AND_GETS)
-    printf("PUT\n");
-#endif
-    if (oe_ocall(OE_OCALL_OEFS, (uint64_t)args, NULL) != 0)
-        goto done;
+    /* Append new args to list. */
+    {
+        if (dev->tail)
+            dev->tail->next = args;
+        else
+            dev->head = args;
 
-    if (args->put.ret != 0)
-        goto done;
+        dev->tail = args;
+        dev->count++;
+    }
 
     ret = 0;
 
 done:
-
-    if (args && dev)
-        oe_host_batch_free(dev->batch);
 
     return ret;
 }
@@ -153,6 +198,11 @@ static int _host_blkdev_begin(oefs_blkdev_t* d)
 
 static int _host_blkdev_end(oefs_blkdev_t* d)
 {
+    blkdev_t* dev = (blkdev_t*)d;
+
+    if (dev->count)
+        return _host_blkdev_flush(dev);
+
     return 0;
 }
 
@@ -176,7 +226,6 @@ static int _host_blkdev_release(oefs_blkdev_t* d)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
-    typedef oefs_oefs_ocall_args_t args_t;
     args_t* args = NULL;
 
     if (!dev)
@@ -209,7 +258,6 @@ int oefs_host_blkdev_open(oefs_blkdev_t** blkdev, const char* path)
     int ret = -1;
     blkdev_t* dev = NULL;
     oe_host_batch_t* batch = NULL;
-    typedef oefs_oefs_ocall_args_t args_t;
     args_t* args = NULL;
 
     if (blkdev)
