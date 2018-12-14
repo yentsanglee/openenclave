@@ -38,22 +38,18 @@ static size_t _get_batch_capacity()
 static int _host_blkdev_flush(blkdev_t* dev)
 {
     int ret = -1;
-    args_t* p;
 
     if (dev->count)
     {
         if (oe_ocall(OE_OCALL_OEFS, (uint64_t)dev->head, NULL) != 0)
             goto done;
 
-        for (p = dev->head; p; p = p->next)
+        if (dev->head->put.ret != 0)
         {
-            if (p->put.ret != 0)
-            {
-                dev->head = NULL;
-                dev->tail = NULL;
-                dev->count = 0;
-                goto done;
-            }
+            dev->head = NULL;
+            dev->tail = NULL;
+            dev->count = 0;
+            goto done;
         }
 
         dev->head = NULL;

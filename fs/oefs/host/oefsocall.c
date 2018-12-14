@@ -89,8 +89,6 @@ static void _handle_put(oefs_oefs_ocall_args_t* args)
     {
         FILE* stream;
 
-        p->put.ret = -1;
-
         if (!(stream = (FILE*)p->put.handle))
             return;
 
@@ -99,12 +97,20 @@ static void _handle_put(oefs_oefs_ocall_args_t* args)
             const long offset = p->put.blkno * OEFS_BLOCK_SIZE;
 
             if (fseek(stream, offset, SEEK_SET) != 0)
+            {
+                args->put.ret = -1;
+                p->put.ret = -1;
                 return;
+            }
 
             const size_t count = sizeof(p->put.blk);
 
             if (fwrite(p->put.blk.data, 1, count, stream) != count)
+            {
+                args->put.ret = -1;
+                p->put.ret = -1;
                 return;
+            }
 
             fflush(stream);
         }
