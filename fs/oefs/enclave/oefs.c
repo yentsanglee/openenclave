@@ -23,8 +23,6 @@
 #include "sha.h"
 #include "utils.h"
 
-#define USE_MERKLE2_BLKDEV
-
 /*
 **==============================================================================
 **
@@ -2778,13 +2776,8 @@ int oefs_calculate_total_blocks(size_t nblks, size_t* total_nblks)
     {
         size_t extra_nblks;
 
-#if defined(USE_MERKLE2_BLKDEV)
-        if (oefs_merkle2_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
-            goto done;
-#else
         if (oefs_merkle_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
             goto done;
-#endif
 
         nblks += extra_nblks;
     }
@@ -2984,13 +2977,8 @@ static int _oefs_new(
     {
         size_t extra_nblks;
 
-#if defined(USE_MERKLE2_BLKDEV)
-        if (oefs_merkle2_blkdev_get_extra_blocks(n2, &extra_nblks) != 0)
-            goto done;
-#else
         if (oefs_merkle_blkdev_get_extra_blocks(n2, &extra_nblks) != 0)
             goto done;
-#endif
 
         n1 = n2 + extra_nblks;
     }
@@ -3035,13 +3023,8 @@ static int _oefs_new(
     {
         bool initialize = do_mkfs;
 
-#if defined(USE_MERKLE2_BLKDEV)
-        if (oefs_merkle2_blkdev_open(&integ_dev, initialize, n2, key, next) != 0)
-            goto done;
-#else
         if (oefs_merkle_blkdev_open(&integ_dev, initialize, n2, next) != 0)
             goto done;
-#endif
 
         next = integ_dev;
     }
@@ -3917,14 +3900,9 @@ int oe_oefs_initialize(
     if (!fs)
         goto done;
 
-#if defined(USE_MERKLE2_BLKDEV)
     flags |= OEFS_FLAG_CACHING;
     flags |= OEFS_FLAG_INTEGRITY;
-#else
-    flags |= OEFS_FLAG_CACHING;
-    flags |= OEFS_FLAG_INTEGRITY;
-    flags |= OEFS_FLAG_AUTH_CRYPTO;
-#endif
+    flags |= OEFS_FLAG_CRYPTO;
 
     if (_oefs_new(&oefs, source, flags, key) != 0)
         goto done;

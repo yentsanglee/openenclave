@@ -646,7 +646,7 @@ static int _append_file(oe_cpio_t* cpio, const char* path, const char* name)
     /* Write the CPIO data. */
     if (!S_ISDIR(st.st_mode))
     {
-        char buf[512];
+        char buf[4096];
 
         if (!(is = fopen(path, "rb")))
             GOTO(done);
