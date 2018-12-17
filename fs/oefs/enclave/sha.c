@@ -11,8 +11,6 @@ int oefs_sha256_init(oefs_sha256_context_t* context)
 #if !defined(FAKE)
     mbedtls_sha256_context* ctx = (mbedtls_sha256_context*)context;
 
-    (void)ctx;
-
     mbedtls_sha256_init(ctx);
 
     if (mbedtls_sha256_starts_ret(ctx, 0) != 0)

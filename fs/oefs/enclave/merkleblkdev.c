@@ -498,6 +498,7 @@ static int _update_hash_tree(
         if (_hash2(&hash, left, right) != 0)
             GOTO(done);
 
+        dev->merkle[parent] = hash;
         parent = _parent_index(parent);
     }
 
