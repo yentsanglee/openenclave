@@ -13,6 +13,7 @@
 #include "common.h"
 #include "utils.h"
 #include "sha.h"
+#include "fast_sha256.h"
 #include "trace.h"
 
 #define HASH_SIZE (sizeof(oefs_sha256_t))
@@ -141,7 +142,7 @@ static int _hash2(
     data.left = *left;
     data.right = *right;
 
-    if (fast_sha256(hash, &data, sizeof(data)) != 0)
+    if (fast_sha256(hash->data, &data, sizeof(data)) != 0)
         GOTO(done);
 
     ret = 0;
@@ -235,7 +236,7 @@ static int _initialize_hash_blocks(blkdev_t* dev)
 
     memset(&zero_blk, 0, sizeof(oefs_blk_t));
 
-    if (fast_sha256(&hash, &zero_blk, sizeof(zero_blk)) != 0)
+    if (fast_sha256(hash.data, &zero_blk, sizeof(zero_blk)) != 0)
         GOTO(done);
 
     for (size_t i = 0; i < dev->num_hash_blocks; i++)
@@ -551,7 +552,7 @@ static int _merkle_blkdev_get(
     if (dev->next->get(dev->next, blkno, blk) != 0)
         GOTO(done);
 
-    if (fast_sha256(&hash, blk, sizeof(oefs_blk_t)) != 0)
+    if (fast_sha256(hash.data, blk, sizeof(oefs_blk_t)) != 0)
         GOTO(done);
 
 #if 0
@@ -601,7 +602,7 @@ static int _merkle_blkdev_put(
     if (!dev || !blk || blkno >= dev->header_block.nblks)
         GOTO(done);
 
-    if (fast_sha256(&hash, blk, sizeof(oefs_blk_t)) != 0)
+    if (fast_sha256(hash.data, blk, sizeof(oefs_blk_t)) != 0)
         GOTO(done);
 
     if (_update_hash_tree(dev, blkno, &hash) != 0)

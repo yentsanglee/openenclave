@@ -47,11 +47,6 @@ OE_INLINE bool oefs_sha256_eq(const oefs_sha256_t* x, const oefs_sha256_t* y)
     return memcmp(x, y, sizeof(oefs_sha256_t)) == 0;
 }
 
-int fast_sha256(
-    oefs_sha256_t* hash, 
-    const void* data, 
-    size_t size);
-
 OE_EXTERNC_END
 
 #endif /* _OEFS_SHA_H */

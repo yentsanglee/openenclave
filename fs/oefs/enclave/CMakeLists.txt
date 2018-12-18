@@ -17,6 +17,7 @@ add_library(oeoefsenclave STATIC
     sha256_sse4.o
     sha256_rorx.o
     sha256_avx.o
+    sha256_rorx_x8ms.o
     sha.c
     fast_sha256.c)
 
@@ -38,6 +39,10 @@ add_custom_command(OUTPUT sha256_rorx.o COMMAND ${YASM_EXE}
 add_custom_command(OUTPUT sha256_avx.o COMMAND ${YASM_EXE}
     -f x64 -f elf64 -X gnu -g dwarf2 -D LINUX 
     -o sha256_avx.o ${CMAKE_CURRENT_SOURCE_DIR}/sha256_avx.asm)
+
+add_custom_command(OUTPUT sha256_rorx_x8ms.o COMMAND ${YASM_EXE}
+    -f x64 -f elf64 -X gnu -g dwarf2 -D LINUX 
+    -o sha256_rorx_x8ms.o ${CMAKE_CURRENT_SOURCE_DIR}/sha256_rorx_x8ms.asm)
 
 set_property(TARGET oeoefsenclave PROPERTY 
     ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
