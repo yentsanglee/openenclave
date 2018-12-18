@@ -141,7 +141,7 @@ static int _hash2(
     data.left = *left;
     data.right = *right;
 
-    if (oefs_sha256(hash, &data, sizeof(data)) != 0)
+    if (fast_sha256(hash, &data, sizeof(data)) != 0)
         GOTO(done);
 
     ret = 0;
@@ -235,7 +235,7 @@ static int _initialize_hash_blocks(blkdev_t* dev)
 
     memset(&zero_blk, 0, sizeof(oefs_blk_t));
 
-    if (oefs_sha256(&hash, &zero_blk, sizeof(zero_blk)) != 0)
+    if (fast_sha256(&hash, &zero_blk, sizeof(zero_blk)) != 0)
         GOTO(done);
 
     for (size_t i = 0; i < dev->num_hash_blocks; i++)
@@ -551,8 +551,20 @@ static int _merkle_blkdev_get(
     if (dev->next->get(dev->next, blkno, blk) != 0)
         GOTO(done);
 
-    if (oefs_sha256(&hash, blk, sizeof(oefs_blk_t)) != 0)
+    if (fast_sha256(&hash, blk, sizeof(oefs_blk_t)) != 0)
         GOTO(done);
+
+#if 0
+    {
+        oefs_sha256_t h;
+
+        if (oefs_sha256(&h, blk, sizeof(oefs_blk_t)) != 0)
+            GOTO(done);
+
+        if (memcmp(&hash, &h, sizeof(hash)) != 0)
+            GOTO(done);
+    }
+#endif
 
 #if defined(TRACE_PUTS_AND_GETS)
     {
@@ -589,7 +601,7 @@ static int _merkle_blkdev_put(
     if (!dev || !blk || blkno >= dev->header_block.nblks)
         GOTO(done);
 
-    if (oefs_sha256(&hash, blk, sizeof(oefs_blk_t)) != 0)
+    if (fast_sha256(&hash, blk, sizeof(oefs_blk_t)) != 0)
         GOTO(done);
 
     if (_update_hash_tree(dev, blkno, &hash) != 0)

@@ -95,6 +95,19 @@ void oefs_sha256_dump(const oefs_sha256_t* hash)
     printf("\n");
 }
 
+void oefs_sha256_context_dump(const oefs_sha256_context_t* context)
+{
+    mbedtls_sha256_context* ctx = (mbedtls_sha256_context*)context;
+
+    printf("total[0]=%u\n", ctx->total[0]);
+    printf("total[1]=%u\n", ctx->total[1]);
+
+    for (size_t i = 0; i < sizeof(ctx->state) / sizeof(ctx->state[0]); i++)
+    {
+        printf("state{%08x}\n", ctx->state[i]);
+    }
+}
+
 const char* oefs_sha256_str(const oefs_sha256_t* hash, oefs_sha256_str_t* str)
 {
     char* p = str->data;
