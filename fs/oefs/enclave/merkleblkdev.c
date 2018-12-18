@@ -526,6 +526,7 @@ static int _merkle_blkdev_release(oefs_blkdev_t* blkdev)
             GOTO(done);
 
         dev->next->release(dev->next);
+        free(dev->merkle);
         free(dev->hash_blocks);
         free(dev->dirty_hash_blocks);
         free(dev);
@@ -554,25 +555,6 @@ static int _merkle_blkdev_get(
 
     if (fast_sha256(hash.data, blk, sizeof(oefs_blk_t)) != 0)
         GOTO(done);
-
-#if 0
-    {
-        oefs_sha256_t h;
-
-        if (oefs_sha256(&h, blk, sizeof(oefs_blk_t)) != 0)
-            GOTO(done);
-
-        if (memcmp(&hash, &h, sizeof(hash)) != 0)
-            GOTO(done);
-    }
-#endif
-
-#if defined(TRACE_PUTS_AND_GETS)
-    {
-        oefs_sha256_str_t str;
-        printf("GET{%08u:%.8s}\n", blkno, oefs_sha256_str(&hash, &str));
-    }
-#endif
 
     /* Check the hash to make sure the block was not tampered with. */
     if (_check_hash(dev, blkno, &hash) != 0)
@@ -608,13 +590,6 @@ static int _merkle_blkdev_put(
     if (_update_hash_tree(dev, blkno, &hash) != 0)
         GOTO(done);
 
-#if defined(TRACE_PUTS_AND_GETS)
-    {
-        oefs_sha256_str_t str;
-        printf("PUT{%08u:%.8s}\n", blkno, oefs_sha256_str(&hash, &str));
-    }
-#endif
-
     if (dev->next->put(dev->next, blkno, blk) != 0)
         GOTO(done);
 
@@ -632,10 +607,6 @@ static int _merkle_blkdev_begin(oefs_blkdev_t* d)
 
     if (!dev || !dev->next)
         GOTO(done);
-
-#if defined(TRACE_PUTS_AND_GETS)
-    printf("=== BEGIN\n");
-#endif
 
     if (dev->next->begin(dev->next) != 0)
         GOTO(done);
@@ -657,10 +628,6 @@ static int _merkle_blkdev_end(oefs_blkdev_t* d)
 
     if (_flush_merkle(dev) != 0)
         GOTO(done);
-
-#if defined(TRACE_PUTS_AND_GETS)
-    printf("=== END\n");
-#endif
 
     if (dev->next->end(dev->next) != 0)
         GOTO(done);
