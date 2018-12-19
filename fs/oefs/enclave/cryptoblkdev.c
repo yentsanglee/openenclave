@@ -58,7 +58,7 @@ static int _generate_initialization_vector(
     }
 
     /* Create a SHA-256 hash of the key. */
-    if (mbedtls_aes_setkey_enc(&aes, khash.data, sizeof(khash) * 8) != 0)
+    if (mbedtls_aes_setkey_enc(&aes, khash.u.data, sizeof(khash) * 8) != 0)
         goto done;
 
     /* Encrypt the buffer with the hash of the key, yielding the IV. */
