@@ -20,7 +20,7 @@
 #include "../../common/buf.h"
 #include "blkdev.h"
 #include "raise.h"
-#include "sha.h"
+#include "sha256.h"
 #include "utils.h"
 
 /*
@@ -57,8 +57,7 @@
 
 #define OEFS_FLAG_NONE 0
 #define OEFS_FLAG_CRYPTO 2
-#define OEFS_FLAG_AUTH_CRYPTO 4
-#define OEFS_FLAG_INTEGRITY 8
+#define OEFS_FLAG_MERKLE 8
 #define OEFS_FLAG_CACHING 16
 
 #define BITS_PER_BLK (OEFS_BLOCK_SIZE * 8)
@@ -2467,7 +2466,7 @@ static int _oefs_mkfs(
     /* Write the super block. */
     {
         oefs_super_block_t sb;
-        oefs_sha256_t hash;
+        sha256_t hash;
 
         memset(&sb, 0, sizeof(sb));
 
@@ -2475,7 +2474,7 @@ static int _oefs_mkfs(
         sb.s_nblks = nblks;
         sb.s_num_data_blocks = num_data_blocks;
 
-        if (oefs_sha256(&hash, &hb, sizeof(hb)) != 0)
+        if (sha256(&hash, &hb, sizeof(hb)) != 0)
             OEFS_RAISE(EIO);
 
         memcpy(sb.s_header_hash, &hash, sizeof(sb.s_header_hash));
@@ -2647,9 +2646,9 @@ static int _oefs_initialize(
 
     /* Check that the hash of the header matches the one in the super block. */
     {
-        oefs_sha256_t hash;
+        sha256_t hash;
 
-        if (oefs_sha256(&hash, hb, sizeof(oefs_header_block_t)) != 0)
+        if (sha256(&hash, hb, sizeof(oefs_header_block_t)) != 0)
             OEFS_RAISE(EIO);
 
         if (memcmp(sb.s_header_hash, &hash, sizeof(sb.s_header_hash)) != 0)
@@ -2782,16 +2781,6 @@ int oefs_calculate_total_blocks(size_t nblks, size_t* total_nblks)
         nblks += extra_nblks;
     }
 
-    /* Add extra blocks for the auth-crypto overhead bytes. */
-    {
-        size_t extra_nblks;
-
-        if (oefs_auth_crypto_blkdev_get_extra_blocks(nblks, &extra_nblks) != 0)
-            goto done;
-
-        nblks += extra_nblks;
-    }
-
     *total_nblks = nblks;
 
     ret = 0;
@@ -2865,7 +2854,6 @@ static int _oefs_new(
     size_t device_size;
     size_t n0;
     size_t n1;
-    size_t n2;
     uint8_t key_id[OEFS_KEY_SIZE];
     uint8_t key[OEFS_KEY_SIZE];
     oefs_header_block_t hb;
@@ -2928,7 +2916,7 @@ static int _oefs_new(
             goto done;
     }
 
-    /* Get the size of the host device. */
+    /* Calculate n0: the size of the host device. */
     {
         oefs_blkdev_stat_t stat;
 
@@ -2947,69 +2935,45 @@ static int _oefs_new(
     OE_STATIC_ASSERT(OEFS_BLOCK_SIZE >= 1024);
 
     /*
-     * Calculate n0, n1, and n2 such that:
+     * Calculate n0 and n1 such that:
      *
-     *                                    n2         n1         n0
-     *                                     |          |          |
-     *                                     V          V          V
+     *                                    n1                    n0
+     *                                     |                     |
+     *                                     V                     V
      * +-----------------------------------+----------+----------+
-     * | Data blocks                       | Merkle   | Auth     |
-     * |                                   | Tree     | Crypto   |
-     * |                                   | overhead | overhead |
-     * |                                   | blocks   | blocks   |
+     * | Data blocks                       | Merkle   | Unused   |
+     * |                                   | Tree     |          |
+     * |                                   | overhead |          |
+     * |                                   | blocks   |          |
      * +-----------------------------------+----------+----------+
      *
      */
 
-    /* Calculate the largest power of two less than n0. */
+    /* Calculate n1: the largest power of two less than n0. */
     {
         size_t r = 1;
-        n2 = r;
+        n1 = r;
 
         while (r < n0)
         {
-            n2 = r;
+            n1 = r;
             r *= 2;
         }
     }
 
-    /* Calculate extra bytes for the Merkle tree block device. */
+    /* Be sure there is enough space for the Merkle tree. */
     {
         size_t extra_nblks;
 
-        if (oefs_merkle_blkdev_get_extra_blocks(n2, &extra_nblks) != 0)
+        if (oefs_merkle_blkdev_get_extra_blocks(n1, &extra_nblks) != 0)
             goto done;
 
-        n1 = n2 + extra_nblks;
-    }
-
-    /* Calculate extra bytes for the auth-crypto block device. */
-    {
-        size_t extra_nblks;
-
-        if (oefs_auth_crypto_blkdev_get_extra_blocks(n1, &extra_nblks) != 0)
-            goto done;
-
-        size_t end = n1 + extra_nblks;
-
-        if (end > n0)
+        /* Make sure there is enough storage. */
+        if (n1 + extra_nblks > n0)
             goto done;
     }
 
-    /* Create an authenticated crypto block device. */
-    if ((flags & OEFS_FLAG_AUTH_CRYPTO))
-    {
-        bool initialize = do_mkfs;
-
-        if (oefs_auth_crypto_blkdev_open(
-                &crypto_dev, initialize, n1, key, next) != 0)
-        {
-            goto done;
-        }
-
-        next = crypto_dev;
-    }
-
+    /* Create the crypto block device. */
     if ((flags & OEFS_FLAG_CRYPTO))
     {
         if (oefs_crypto_blkdev_open(&crypto_dev, key, next) != 0)
@@ -3019,11 +2983,11 @@ static int _oefs_new(
     }
 
     /* Create a Merkle block device. */
-    if ((flags & OEFS_FLAG_INTEGRITY))
+    if ((flags & OEFS_FLAG_MERKLE))
     {
         bool initialize = do_mkfs;
 
-        if (oefs_merkle_blkdev_open(&integ_dev, initialize, n2, next) != 0)
+        if (oefs_merkle_blkdev_open(&integ_dev, initialize, n1, next) != 0)
             goto done;
 
         next = integ_dev;
@@ -3043,7 +3007,7 @@ static int _oefs_new(
 
     if (do_mkfs)
     {
-        if (_oefs_mkfs(host_dev, dev, n2, key_id) != 0)
+        if (_oefs_mkfs(host_dev, dev, n1, key_id) != 0)
             goto done;
     }
 
@@ -3097,7 +3061,7 @@ static int _oefs_ramfs_new(oefs_t** oefs_out, uint32_t flags, size_t nblks)
         if (flags & OEFS_FLAG_AUTH_CRYPTO)
             goto done;
 
-        if (flags & OEFS_FLAG_INTEGRITY)
+        if (flags & OEFS_FLAG_MERKLE)
             goto done;
 
         if (flags & OEFS_FLAG_CACHING)
@@ -3901,7 +3865,7 @@ int oe_oefs_initialize(
         goto done;
 
     flags |= OEFS_FLAG_CACHING;
-    flags |= OEFS_FLAG_INTEGRITY;
+    flags |= OEFS_FLAG_MERKLE;
     flags |= OEFS_FLAG_CRYPTO;
 
     if (_oefs_new(&oefs, source, flags, key) != 0)

@@ -1,31 +1,13 @@
 #include "endian.h"
-#include "fast_sha256.h"
+#include "sha256.h"
 #include "sha.h"
 #include <stdio.h>
 
 #define USE_RORX
 
-#if defined(USE_SSE4)
-    #define SHA256 sha256_sse4
-#elif defined(USE_RORX)
-    #define SHA256 sha256_rorx
-#elif defined(USE_AVX)
-    #define SHA256 sha256_avx
-#elif defined(USE_RORX_X8MS)
-    #define SHA256 sha256_rorx_x8ms
-#else
-#error "please define USE_SSE4, USE_RORX, or USE_AVX"
-#endif
-
-void sha256_sse4(void *input_data, uint32_t digest[8], uint64_t num_blks);
-
 void sha256_rorx(void *input_data, uint32_t digest[8], uint64_t num_blks);
 
-void sha256_avx(void *input_data, uint32_t digest[8], uint64_t num_blks);
-
-void sha256_rorx_x8ms(void *input_data, uint32_t digest[8], uint64_t num_blks);
-
-int fast_sha256(uint8_t hash[32], const void* data, size_t size)
+int sha256(sha256_t* hash, const void* data, size_t size)
 {
     int ret = -1;
     const uint8_t* p = (const uint8_t*)data;
@@ -46,7 +28,7 @@ int fast_sha256(uint8_t hash[32], const void* data, size_t size)
     if (size % blksz)
         goto done;
 
-    SHA256((void*)p, digest, n);
+    sha256_rorx((void*)p, digest, n);
 
     /* Write the final block. */
     {
@@ -64,7 +46,7 @@ int fast_sha256(uint8_t hash[32], const void* data, size_t size)
         uint32_t* p = (uint32_t*)hash;
 
         final_block.size = oe_to_big_endian_u64((uint64_t)size << 3);
-        SHA256((void*)&final_block, digest, 1);
+        sha256_rorx((void*)&final_block, digest, 1);
 
         for (size_t i = 0; i < OE_COUNTOF(digest); i++)
             *p++ = oe_to_big_endian_u32(digest[i]);

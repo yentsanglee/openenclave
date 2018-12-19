@@ -6,7 +6,6 @@ set(LINUX_SGX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/linux-sgx)
 add_library(oeoefsenclave STATIC 
     ../../common/buf.c
     ../../common/hostbatch.c
-    authcryptoblkdev.c
     cacheblkdev.c
     cryptoblkdev.c
     hostblkdev.c
@@ -16,7 +15,7 @@ add_library(oeoefsenclave STATIC
     ramblkdev.c
     sha256_rorx.o
     sha.c
-    fast_sha256.c)
+    sha256.c)
 
 target_include_directories(oeoefsenclave PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include)

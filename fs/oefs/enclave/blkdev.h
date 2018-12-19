@@ -53,21 +53,11 @@ int oefs_crypto_blkdev_open(
     const uint8_t key[OEFS_KEY_SIZE],
     oefs_blkdev_t* next);
 
-int oefs_auth_crypto_blkdev_open(
-    oefs_blkdev_t** blkdev,
-    bool initialize,
-    size_t nblks,
-    const uint8_t key[OEFS_KEY_SIZE],
-    oefs_blkdev_t* next);
-
 /* Get the number of extra blocks needed by a Merkle block device. */
 int oefs_merkle_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks);
 
 /* Get the number of extra blocks needed by a auth-Merkle block device. */
 int oefs_merkle2_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks);
-
-/* Get the number of extra blocks needed by a auth-crypto block device. */
-int oefs_auth_crypto_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks);
 
 int oefs_merkle_blkdev_open(
     oefs_blkdev_t** blkdev,
