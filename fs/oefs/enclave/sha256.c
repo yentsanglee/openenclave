@@ -81,6 +81,7 @@ void sha256_64(sha256_t* hash, const void* data)
     sha256_rorx((void*)_final, digest, 1);
 
     {
+        /* ATTN: alignement? */
         uint32_t* p = (uint32_t*)hash;
 
         for (size_t i = 0; i < OE_COUNTOF(digest); i++)
