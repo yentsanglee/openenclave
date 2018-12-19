@@ -34,6 +34,14 @@ OE_INLINE bool sha256_eq(const sha256_t* x, const sha256_t* y)
         x->u.u64[3] == y->u.u64[3];
 }
 
+OE_INLINE void sha256_copy(sha256_t* dest, const sha256_t* src)
+{
+        dest->u.u64[0] = src->u.u64[0];
+        dest->u.u64[1] = src->u.u64[1];
+        dest->u.u64[2] = src->u.u64[2];
+        dest->u.u64[3] = src->u.u64[3];
+}
+
 OE_EXTERNC_END
 
 #endif /* _OEFS_SHA256_H */

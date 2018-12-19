@@ -133,9 +133,8 @@ static void _hash2(sha256_t* hash, const sha256_t* left, const sha256_t* right)
     data_t data;
     OE_STATIC_ASSERT(sizeof(data) == 64);
 
-    data.left = *left;
-    data.right = *right;
-
+    sha256_copy(&data.left, left);
+    sha256_copy(&data.right, right);
     sha256_64(hash, &data);
 }
 
