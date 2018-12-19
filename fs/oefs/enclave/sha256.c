@@ -7,6 +7,18 @@
 
 void sha256_rorx(void* input_data, uint32_t digest[8], uint64_t num_blks);
 
+OE_INLINE void _digest_to_hash(sha256_t* hash, uint32_t digest[8])
+{
+    hash->u.u32[0] = oe_to_big_endian_u32(digest[0]);
+    hash->u.u32[1] = oe_to_big_endian_u32(digest[1]);
+    hash->u.u32[2] = oe_to_big_endian_u32(digest[2]);
+    hash->u.u32[3] = oe_to_big_endian_u32(digest[3]);
+    hash->u.u32[4] = oe_to_big_endian_u32(digest[4]);
+    hash->u.u32[5] = oe_to_big_endian_u32(digest[5]);
+    hash->u.u32[6] = oe_to_big_endian_u32(digest[6]);
+    hash->u.u32[7] = oe_to_big_endian_u32(digest[7]);
+}
+
 int sha256(sha256_t* hash, const void* data, size_t size)
 {
     int ret = -1;
@@ -39,14 +51,10 @@ int sha256(sha256_t* hash, const void* data, size_t size)
         final_block_t final_block = {
             {0x80}, 0,
         };
-        uint32_t* p = (uint32_t*)hash;
 
         final_block.size = oe_to_big_endian_u64((uint64_t)size << 3);
-
         sha256_rorx((void*)&final_block, digest, 1);
-
-        for (size_t i = 0; i < OE_COUNTOF(digest); i++)
-            *p++ = oe_to_big_endian_u32(digest[i]);
+        _digest_to_hash(hash, digest);
     }
 
     ret = 0;
@@ -79,11 +87,5 @@ void sha256_64(sha256_t* hash, const void* data)
 
     sha256_rorx((void*)data, digest, 1);
     sha256_rorx((void*)_final, digest, 1);
-
-    {
-        uint32_t* p = (uint32_t*)hash;
-
-        for (size_t i = 0; i < OE_COUNTOF(digest); i++)
-            *p++ = oe_to_big_endian_u32(digest[i]);
-    }
+    _digest_to_hash(hash, digest);
 }

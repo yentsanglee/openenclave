@@ -12,7 +12,8 @@ typedef struct _sha256
 {
     union
     {
-        uint64_t words[4];
+        uint64_t u64[4];
+        uint32_t u32[8];
         uint8_t data[32];
     }
     u;
@@ -27,10 +28,10 @@ void sha256_64(sha256_t* hash, const void* data);
 OE_INLINE bool sha256_eq(const sha256_t* x, const sha256_t* y)
 {
     return 
-        x->u.words[0] == y->u.words[0] &&
-        x->u.words[1] == y->u.words[1] &&
-        x->u.words[2] == y->u.words[2] &&
-        x->u.words[3] == y->u.words[3];
+        x->u.u64[0] == y->u.u64[0] &&
+        x->u.u64[1] == y->u.u64[1] &&
+        x->u.u64[2] == y->u.u64[2] &&
+        x->u.u64[3] == y->u.u64[3];
 }
 
 OE_EXTERNC_END
