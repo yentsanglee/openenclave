@@ -46,8 +46,7 @@ static int _generate_initialization_vector(
         {
             uint8_t key[OEFS_KEY_SIZE];
             uint8_t padding[64 - OEFS_KEY_SIZE];
-        }
-        buf;
+        } buf;
         OE_STATIC_ASSERT(sizeof(buf) == 64);
 
         memcpy(buf.key, key, sizeof(buf.key));

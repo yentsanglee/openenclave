@@ -21,8 +21,8 @@ int oefs_sha256_init(oefs_sha256_context_t* context)
 }
 
 int oefs_sha256_update(
-    oefs_sha256_context_t* context, 
-    const void* data, 
+    oefs_sha256_context_t* context,
+    const void* data,
     size_t size)
 {
 #if !defined(FAKE)

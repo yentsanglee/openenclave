@@ -18,7 +18,10 @@ typedef struct stat oe_stat_t;
 
 typedef struct dirent oe_dirent_t;
 
-#define OE_FS_INITIALIZER { 0 }
+#define OE_FS_INITIALIZER \
+    {                     \
+        0                 \
+    }
 
 /* This may have been defined already by <stdio.h> */
 #ifndef __DEFINED_oe_fs_t

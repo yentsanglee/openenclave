@@ -1,21 +1,21 @@
 // Licensed under the MIT License.
 
 #include <assert.h>
+#include <mbedtls/aes.h>
+#include <mbedtls/cmac.h>
+#include <mbedtls/gcm.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/print.h>
 #include <pthread.h>
-#include <mbedtls/aes.h>
-#include <mbedtls/cmac.h>
-#include <mbedtls/gcm.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "blkdev.h"
 #include "common.h"
-#include "utils.h"
 #include "sha.h"
 #include "trace.h"
+#include "utils.h"
 
 #define TAGS_PER_BLOCK (OEFS_BLOCK_SIZE / sizeof(tag_t))
 
@@ -39,8 +39,7 @@ typedef struct _header_block
     oefs_sha256_t hash;
 
     uint8_t reserved[OEFS_BLOCK_SIZE - 48];
-}
-header_block_t;
+} header_block_t;
 
 OE_STATIC_ASSERT(sizeof(header_block_t) == OEFS_BLOCK_SIZE);
 
@@ -52,8 +51,7 @@ typedef struct _tag
 typedef struct _tag_block
 {
     tag_t tags[TAGS_PER_BLOCK];
-}
-tag_block_t;
+} tag_block_t;
 
 OE_STATIC_ASSERT(sizeof(tag_block_t) == OEFS_BLOCK_SIZE);
 
@@ -399,11 +397,11 @@ static int _initialize_tag_blocks(blkdev_t* dev)
 
             /* Encrypt the zero-block */
             if (_encrypt(
-                dev->key, 
-                blkno, 
-                (const uint8_t*)&zero_blk, 
-                (uint8_t*)&encrypted, 
-                &tag) != 0)
+                    dev->key,
+                    blkno,
+                    (const uint8_t*)&zero_blk,
+                    (uint8_t*)&encrypted,
+                    &tag) != 0)
             {
                 goto done;
             }
@@ -473,8 +471,9 @@ static int _load_merkle(blkdev_t* dev)
     }
 
     /* Calculate dev->num_tag_blocks */
-    dev->num_tag_blocks = oefs_round_to_multiple(
-        dev->header_block.nblks, TAGS_PER_BLOCK) / TAGS_PER_BLOCK;
+    dev->num_tag_blocks =
+        oefs_round_to_multiple(dev->header_block.nblks, TAGS_PER_BLOCK) /
+        TAGS_PER_BLOCK;
 
     /* Allocate the dev->tag_blocks[] array. */
     {
@@ -562,8 +561,9 @@ static int _init_merkle(blkdev_t* dev, size_t nblks)
     }
 
     /* Calculate dev->num_tag_blocks */
-    dev->num_tag_blocks = oefs_round_to_multiple(
-        dev->header_block.nblks, TAGS_PER_BLOCK) / TAGS_PER_BLOCK;
+    dev->num_tag_blocks =
+        oefs_round_to_multiple(dev->header_block.nblks, TAGS_PER_BLOCK) /
+        TAGS_PER_BLOCK;
 
     /* Allocate the dev->tag_blocks[] array. */
     {
@@ -733,7 +733,8 @@ static int _auth_merkle_blkdev_put(
         GOTO(done);
 
     if (_encrypt(
-        dev->key, blkno, (const uint8_t*)blk, (uint8_t*)&encrypted, &tag) != 0)
+            dev->key, blkno, (const uint8_t*)blk, (uint8_t*)&encrypted, &tag) !=
+        0)
     {
         goto done;
     }
@@ -778,7 +779,7 @@ static int _auth_merkle_blkdev_end(oefs_blkdev_t* d)
         GOTO(done);
 
     if (_flush_merkle(dev) != 0)
-            GOTO(done);
+        GOTO(done);
 
     if (dev->next->end(dev->next) != 0)
         GOTO(done);

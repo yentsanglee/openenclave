@@ -15,6 +15,8 @@ typedef struct _sha256
 
 int sha256(sha256_t* hash, const void* data, size_t size);
 
+void sha256_64(sha256_t* hash, const void* data);
+
 OE_INLINE bool sha256_eq(const sha256_t* x, const sha256_t* y)
 {
     return memcmp(x, y, sizeof(sha256_t)) == 0;

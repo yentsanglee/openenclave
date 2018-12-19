@@ -14,9 +14,9 @@
 #include <string.h>
 #include "blkdev.h"
 #include "common.h"
-#include "utils.h"
 #include "sha.h"
 #include "trace.h"
+#include "utils.h"
 
 #define HASH_SIZE (sizeof(oefs_sha256_t))
 
@@ -42,8 +42,7 @@ typedef struct _header_block
     oefs_sha256_t hash;
 
     uint8_t reserved[OEFS_BLOCK_SIZE - 48];
-}
-header_block_t;
+} header_block_t;
 
 OE_STATIC_ASSERT(sizeof(header_block_t) == OEFS_BLOCK_SIZE);
 
@@ -57,8 +56,7 @@ typedef struct _hash_block
     tag_t tag;
     uint8_t padding[16];
     oefs_sha256_t hashes[HASHES_PER_BLOCK];
-}
-hash_block_t;
+} hash_block_t;
 
 OE_STATIC_ASSERT(sizeof(hash_block_t) == OEFS_BLOCK_SIZE);
 
@@ -363,12 +361,12 @@ static int _flush_merkle(blkdev_t* dev)
                 hash_block_t out;
 
                 if (_encrypt(
-                    dev->key,
-                    i,
-                    (const uint8_t*)in->hashes,
-                    (uint8_t*)out.hashes,
-                    sizeof(out.hashes),
-                    &out.tag) != 0)
+                        dev->key,
+                        i,
+                        (const uint8_t*)in->hashes,
+                        (uint8_t*)out.hashes,
+                        sizeof(out.hashes),
+                        &out.tag) != 0)
                 {
                     GOTO(done);
                 }
@@ -477,8 +475,9 @@ static int _load_merkle(blkdev_t* dev)
     }
 
     /* Calculate dev->num_hash_blocks */
-    dev->num_hash_blocks = oefs_round_to_multiple(
-        dev->header_block.nblks, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
+    dev->num_hash_blocks =
+        oefs_round_to_multiple(dev->header_block.nblks, HASHES_PER_BLOCK) /
+        HASHES_PER_BLOCK;
 
     /* Allocate the dev->hash_blocks[] array. */
     {
@@ -582,8 +581,9 @@ static int _init_merkle(blkdev_t* dev, size_t nblks)
     }
 
     /* Calculate dev->num_hash_blocks */
-    dev->num_hash_blocks = oefs_round_to_multiple(
-        dev->header_block.nblks, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
+    dev->num_hash_blocks =
+        oefs_round_to_multiple(dev->header_block.nblks, HASHES_PER_BLOCK) /
+        HASHES_PER_BLOCK;
 
     /* Allocate the dev->hash_blocks[] array. */
     {

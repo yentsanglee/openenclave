@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../../common/hostbatch.h"
 #include "../common/hostblkdev.h"
 #include "blkdev.h"
 #include "common.h"
-#include "../../common/hostbatch.h"
 #include "list.h"
 
 #define MAX_COUNT 8

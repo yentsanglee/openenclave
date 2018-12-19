@@ -22,8 +22,8 @@
 #include <unistd.h>
 #include "../common/strarr.h"
 #include "strings.h"
-#include "utils.h"
 #include "trace.h"
+#include "utils.h"
 
 #define CPIO_BLOCK_SIZE 512
 

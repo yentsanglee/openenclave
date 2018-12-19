@@ -30,7 +30,7 @@ void test_default_fs_macro(const char* tmp_dir)
     const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
     char buf[sizeof(alphabet)];
 
-    //oe_fs_set_default(NULL);
+    // oe_fs_set_default(NULL);
 
     strlcpy(path, tmp_dir, sizeof(path));
     strlcat(path, "/test_default_fs_macro.file", sizeof(path));

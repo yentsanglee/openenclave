@@ -18,7 +18,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define BATCH_SIZE 16*1024
+#define BATCH_SIZE 16 * 1024
 
 typedef oe_sgxfs_args_t args_t;
 

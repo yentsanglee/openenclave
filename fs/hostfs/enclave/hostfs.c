@@ -1,18 +1,18 @@
 #define _GNU_SOURCE
 #include <openenclave/bits/fs.h>
+#include <openenclave/bits/safemath.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/hostfs.h>
-#include <openenclave/bits/safemath.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include "../common/hostfsargs.h"
 #include "../../common/hostbatch.h"
+#include "../common/hostfsargs.h"
 
-#define BATCH_SIZE 16*1024
+#define BATCH_SIZE 16 * 1024
 
 typedef oe_hostfs_args_t args_t;
 
@@ -163,11 +163,7 @@ done:
     return ret;
 }
 
-static size_t _fwrite(
-    const void* ptr,
-    size_t size,
-    size_t nmemb,
-    file_t* file)
+static size_t _fwrite(const void* ptr, size_t size, size_t nmemb, file_t* file)
 {
     size_t ret = 0;
     oe_host_batch_t* batch = _get_host_batch();
@@ -220,8 +216,7 @@ static size_t _hostfs_f_fwrite(
     ssize_t nwritten = 0;
     const uint8_t* p = (const uint8_t*)ptr;
 
-    if (!ptr || 
-        oe_safe_mul_u64(size, nmemb, &count) != OE_OK || 
+    if (!ptr || oe_safe_mul_u64(size, nmemb, &count) != OE_OK ||
         !_valid_file(file))
     {
         goto done;
