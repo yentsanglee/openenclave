@@ -49,7 +49,7 @@ static int _blkdev_get(oefs_blkdev_t* dev, uint32_t blkno, oefs_blk_t* blk)
     if (ptr + OEFS_BLOCK_SIZE > device->mem + device->size)
         goto done;
 
-    memcpy(blk->data, ptr, OEFS_BLOCK_SIZE);
+    memcpy(blk->u.data, ptr, OEFS_BLOCK_SIZE);
 
     ret = 0;
 
@@ -74,7 +74,7 @@ static int _blkdev_put(
     if (ptr + OEFS_BLOCK_SIZE > device->mem + device->size)
         goto done;
 
-    memcpy(ptr, blk->data, OEFS_BLOCK_SIZE);
+    memcpy(ptr, blk->u.data, OEFS_BLOCK_SIZE);
 
     ret = 0;
 

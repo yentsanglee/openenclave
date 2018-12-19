@@ -143,8 +143,8 @@ static int _crypto_blkdev_get(
             MBEDTLS_AES_DECRYPT,
             device->key,
             blkno,
-            encrypted.data,
-            blk->data) != 0)
+            encrypted.u.data,
+            blk->u.data) != 0)
     {
         goto done;
     }
@@ -174,8 +174,8 @@ static int _crypto_blkdev_put(
             MBEDTLS_AES_ENCRYPT,
             device->key,
             blkno,
-            blk->data,
-            encrypted.data) != 0)
+            blk->u.data,
+            encrypted.u.data) != 0)
     {
         goto done;
     }

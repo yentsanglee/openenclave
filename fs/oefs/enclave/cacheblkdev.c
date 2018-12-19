@@ -61,15 +61,17 @@ static entry_t* _new_entry(blkdev_t* dev, uint32_t blkno, const oefs_blk_t* blk)
     {
         dev->free = dev->free->next;
         dev->free_count--;
-        memset(entry, 0, sizeof(entry_t));
     }
-    else if (!(entry = calloc(1, sizeof(entry_t))))
+    else if (!(entry = malloc(sizeof(entry_t))))
     {
         return NULL;
     }
 
+    entry->prev = NULL;
+    entry->next = NULL;
     entry->blkno = blkno;
-    memcpy(&entry->blk, blk, OEFS_BLOCK_SIZE);
+    oefs_blk_copy(&entry->blk, blk);
+    entry->index = 0;
 
     return entry;
 }
@@ -227,7 +229,7 @@ static int _cache_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 
         if ((entry = _get_entry(dev, blkno)))
         {
-            memcpy(blk->data, &entry->blk, OEFS_BLOCK_SIZE);
+            oefs_blk_copy(blk, &entry->blk);
             _touch_entry(dev, entry);
         }
         else
@@ -272,12 +274,12 @@ static int _cache_blkdev_put(
 
         if ((entry = _get_entry(dev, blkno)))
         {
-            if (memcmp(&entry->blk, blk->data, OEFS_BLOCK_SIZE) != 0)
+            if (memcmp(&entry->blk, blk->u.data, OEFS_BLOCK_SIZE) != 0)
             {
                 if (dev->next->put(dev->next, blkno, blk) != 0)
                     goto done;
 
-                memcpy(&entry->blk, blk->data, OEFS_BLOCK_SIZE);
+                oefs_blk_copy(&entry->blk, blk);
             }
 
             _touch_entry(dev, entry);

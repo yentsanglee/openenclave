@@ -75,7 +75,7 @@ static void _handle_get(oefs_oefs_ocall_args_t* args)
 
             count = sizeof(args->get.blk);
 
-            if (fread(args->get.blk.data, 1, count, stream) != count)
+            if (fread(args->get.blk.u.data, 1, count, stream) != count)
                 return;
         }
 
@@ -105,7 +105,7 @@ static void _handle_put(oefs_oefs_ocall_args_t* args)
 
             const size_t count = sizeof(p->put.blk);
 
-            if (fwrite(p->put.blk.data, 1, count, stream) != count)
+            if (fwrite(p->put.blk.u.data, 1, count, stream) != count)
             {
                 args->put.ret = -1;
                 p->put.ret = -1;

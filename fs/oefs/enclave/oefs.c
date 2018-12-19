@@ -733,7 +733,7 @@ static int _flush_bitmap(oefs_t* oefs)
         oefs_blk_t* blk_copy = (oefs_blk_t*)oefs->bitmap_copy + i;
 
         /* Flush this bitmap block if it changed. */
-        if (memcmp(blk, blk_copy, OEFS_BLOCK_SIZE) != 0)
+        if (!oefs_blk_equal(blk, blk_copy))
         {
             /* Calculate the block number to write. */
             uint32_t blkno = BITMAP_PHYSICAL_BLKNO + i;
@@ -741,7 +741,7 @@ static int _flush_bitmap(oefs_t* oefs)
             if (oefs->dev->put(oefs->dev, blkno, blk) != 0)
                 OEFS_RAISE(EIO);
 
-            memcpy(blk_copy, blk, OEFS_BLOCK_SIZE);
+            oefs_blk_copy(blk_copy, blk);
         }
     }
 
@@ -794,10 +794,10 @@ static int _oefs_write_data(
         copy_size = (remaining > OEFS_BLOCK_SIZE) ? OEFS_BLOCK_SIZE : remaining;
 
         /* Clear the block. */
-        memset(blk.data, 0, sizeof(oefs_blk_t));
+        memset(blk.u.data + copy_size, 0, sizeof(oefs_blk_t) - copy_size);
 
         /* Copy user data to the block. */
-        memcpy(blk.data, ptr, copy_size);
+        memcpy(blk.u.data, ptr, copy_size);
 
         /* Write the new block. */
         OEFS_CHECK(_oefs_write_block(oefs, blkno, &blk));
@@ -1578,7 +1578,7 @@ static int _oefs_read(
             }
 
             /* Copy data to user buffer */
-            memcpy(ptr, blk.data + offset, copy_bytes);
+            memcpy(ptr, blk.u.data + offset, copy_bytes);
 
             /* Advance to the next data to write. */
             remaining -= copy_bytes;
@@ -1683,7 +1683,7 @@ static int _oefs_write(
             }
 
             /* Copy user data into block. */
-            memcpy(blk.data + offset, ptr, copy_bytes);
+            memcpy(blk.u.data + offset, ptr, copy_bytes);
 
             /* Advance to next data to write. */
             ptr += copy_bytes;
@@ -2490,11 +2490,11 @@ static int _oefs_mkfs(
         memset(&blk, 0, sizeof(blk));
 
         /* Set the bit for the root inode. */
-        _set_bit(blk.data, sizeof(blk), 0);
+        _set_bit(blk.u.data, sizeof(blk), 0);
 
         /* Set the bits for the root directory. */
-        _set_bit(blk.data, sizeof(blk), 1);
-        _set_bit(blk.data, sizeof(blk), 2);
+        _set_bit(blk.u.data, sizeof(blk), 1);
+        _set_bit(blk.u.data, sizeof(blk), 2);
 
         /* Write the block. */
         if (dev->put(dev, blkno++, &blk) != 0)
