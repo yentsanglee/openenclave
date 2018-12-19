@@ -8,7 +8,7 @@
 #include <string.h>
 #include "blkdev.h"
 #include "common.h"
-#include "sha.h"
+#include "sha256.h"
 
 #define SHA256_SIZE 32
 
@@ -31,9 +31,8 @@ static int _generate_initialization_vector(
 {
     int ret = -1;
     uint8_t buf[IV_SIZE];
-    oefs_sha256_t khash;
+    sha256_t khash;
     mbedtls_aes_context aes;
-
     mbedtls_aes_init(&aes);
     memset(iv, 0, sizeof(IV_SIZE));
 
@@ -41,9 +40,23 @@ static int _generate_initialization_vector(
     memset(buf, 0, sizeof(buf));
     memcpy(buf, &blkno, sizeof(blkno));
 
-    /* Compute the hash of the key. */
-    if (oefs_sha256(&khash, key, OEFS_KEY_SIZE) != 0)
-        goto done;
+    /* Hash the key (pad out to 64-bytes first). */
+    {
+        struct
+        {
+            uint8_t key[OEFS_KEY_SIZE];
+            uint8_t padding[64 - OEFS_KEY_SIZE];
+        }
+        buf;
+        OE_STATIC_ASSERT(sizeof(buf) == 64);
+
+        memcpy(buf.key, key, sizeof(buf.key));
+        memset(buf.padding, 0, sizeof(buf.padding));
+
+        /* Compute the hash of the key. */
+        if (sha256(&khash, &buf, sizeof(buf)) != 0)
+            goto done;
+    }
 
     /* Create a SHA-256 hash of the key. */
     if (mbedtls_aes_setkey_enc(&aes, khash.data, sizeof(khash) * 8) != 0)

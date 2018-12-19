@@ -1,6 +1,5 @@
 #include "endian.h"
 #include "sha256.h"
-#include "sha.h"
 #include <stdio.h>
 
 #define USE_RORX

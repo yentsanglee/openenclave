@@ -14,7 +14,6 @@ add_library(oeoefsenclave STATIC
     oefs.c
     ramblkdev.c
     sha256_rorx.o
-    sha.c
     sha256.c)
 
 target_include_directories(oeoefsenclave PRIVATE 
