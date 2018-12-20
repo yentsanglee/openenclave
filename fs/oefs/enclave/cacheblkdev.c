@@ -84,7 +84,7 @@ static entry_t* _new_entry(blkdev_t* dev, uint32_t blkno, const oefs_blk_t* blk)
     return entry;
 }
 
-static void _free_entry(blkdev_t* dev, entry_t* entry)
+OE_INLINE void _free_entry(blkdev_t* dev, entry_t* entry)
 {
     if (dev->free_count < MAX_FREE)
     {
@@ -227,10 +227,6 @@ OE_INLINE int _cache_blkdev_flush(blkdev_t* dev)
         uint32_t blkno = dev->put_cache.blkno[i];
         const oefs_blk_t* blk = &dev->put_cache.blk[i];
 
-        /* Avoid writing block if next block has same block number. */
-        if (i + 1 < dev->put_cache.size && blkno == dev->put_cache.blkno[i + 1])
-            continue;
-
         if (dev->next->put(dev->next, blkno, blk) != 0)
             goto done;
     }
@@ -247,39 +243,29 @@ static int _cache_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
+    entry_t* entry;
 
     if (!dev || !blk)
         goto done;
 
-#if defined(DISABLE_CACHING)
+    if (_cache_blkdev_flush(dev) != 0)
+        goto done;
+
+    if ((entry = _get_entry(dev, blkno)))
     {
-        if (dev->next->get(dev->next, blkno, data) != 0)
-            goto done;
+        oefs_blk_copy(blk, &entry->blk);
+        _touch_entry(dev, entry);
     }
-#else
+    else
     {
-        entry_t* entry;
-
-        if (_cache_blkdev_flush(dev) != 0)
+        if (dev->next->get(dev->next, blkno, blk) != 0)
             goto done;
 
-        if ((entry = _get_entry(dev, blkno)))
-        {
-            oefs_blk_copy(blk, &entry->blk);
-            _touch_entry(dev, entry);
-        }
-        else
-        {
-            if (dev->next->get(dev->next, blkno, blk) != 0)
-                goto done;
+        if (!(entry = _new_entry(dev, blkno, blk)))
+            goto done;
 
-            if (!(entry = _new_entry(dev, blkno, blk)))
-                goto done;
-
-            _put_entry(dev, entry);
-        }
+        _put_entry(dev, entry);
     }
-#endif
 
     ret = 0;
 
@@ -294,6 +280,8 @@ static int _cache_blkdev_next_put(
     const oefs_blk_t* blk)
 {
     int ret = -1;
+    size_t size;
+    size_t index;
 
     if (dev->put_cache.size == PUT_CACHE_SIZE)
     {
@@ -301,9 +289,20 @@ static int _cache_blkdev_next_put(
             goto done;
     }
 
-    size_t i = dev->put_cache.size++;
-    dev->put_cache.blkno[i] = blkno;
-    oefs_blk_copy(&dev->put_cache.blk[i], blk);
+    size = dev->put_cache.size;
+
+    if (size && dev->put_cache.blkno[size - 1] == blkno)
+    {
+        index = size - 1;
+    }
+    else
+    {
+        index = size;
+        dev->put_cache.size++;
+    }
+
+    dev->put_cache.blkno[index] = blkno;
+    oefs_blk_copy(&dev->put_cache.blk[index], blk);
 
     ret = 0;
 
@@ -318,43 +317,33 @@ static int _cache_blkdev_put(
 {
     int ret = -1;
     blkdev_t* dev = (blkdev_t*)d;
+    entry_t* entry;
 
     if (!dev || !blk)
         goto done;
 
-#if defined(DISABLE_CACHING)
+    if ((entry = _get_entry(dev, blkno)))
     {
-        if (dev->next->put(dev->next, blkno, data) != 0)
-            goto done;
-    }
-#else
-    {
-        entry_t* entry;
-
-        if ((entry = _get_entry(dev, blkno)))
-        {
-            if (!oefs_blk_equal(&entry->blk, blk))
-            {
-                if (_cache_blkdev_next_put(dev, blkno, blk) != 0)
-                    goto done;
-
-                oefs_blk_copy(&entry->blk, blk);
-            }
-
-            _touch_entry(dev, entry);
-        }
-        else
+        if (!oefs_blk_equal(&entry->blk, blk))
         {
             if (_cache_blkdev_next_put(dev, blkno, blk) != 0)
                 goto done;
 
-            if (!(entry = _new_entry(dev, blkno, blk)))
-                goto done;
-
-            _put_entry(dev, entry);
+            oefs_blk_copy(&entry->blk, blk);
         }
+
+        _touch_entry(dev, entry);
     }
-#endif
+    else
+    {
+        if (_cache_blkdev_next_put(dev, blkno, blk) != 0)
+            goto done;
+
+        if (!(entry = _new_entry(dev, blkno, blk)))
+            goto done;
+
+        _put_entry(dev, entry);
+    }
 
     ret = 0;
 

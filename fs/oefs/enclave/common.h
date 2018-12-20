@@ -22,6 +22,8 @@ typedef struct _oefs_blk
     } u;
 } oefs_blk_t;
 
+OE_STATIC_ASSERT(sizeof(oefs_blk_t) == OEFS_BLOCK_SIZE);
+
 OE_INLINE void oefs_blk_copy(oefs_blk_t* dest, const oefs_blk_t* src)
 {
     for (size_t i = 0; i < OEFS_BLOCK_SIZE / sizeof(uint64_t); i++)
