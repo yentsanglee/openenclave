@@ -15,6 +15,7 @@
 #define TABLE_SIZE 4096
 #define MAX_ENTRIES 128
 #define MAX_FREE 64
+#define PUT_CACHE_SIZE 8
 
 typedef struct _entry entry_t;
 
@@ -47,6 +48,14 @@ typedef struct _blkdev
 
     entry_t* table[TABLE_SIZE];
     entry_list_t list;
+
+    struct
+    {
+        oefs_blk_t blk[PUT_CACHE_SIZE];
+        uint32_t blkno[PUT_CACHE_SIZE];
+        size_t size;
+    }
+    put_cache;
 
     entry_t* free;
     size_t free_count;
@@ -210,6 +219,30 @@ done:
     return ret;
 }
 
+OE_INLINE int _cache_blkdev_flush(blkdev_t* dev)
+{
+    int ret = -1;
+
+    for (size_t i = 0; i < dev->put_cache.size; i++)
+    {
+        uint32_t blkno = dev->put_cache.blkno[i];
+        const oefs_blk_t* blk = &dev->put_cache.blk[i];
+
+        if (i + 1 < dev->put_cache.size && blkno == dev->put_cache.blkno[i+1])
+            continue;
+
+        if (dev->next->put(dev->next, blkno, blk) != 0)
+            goto done;
+    }
+
+    dev->put_cache.size = 0;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 static int _cache_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 {
     int ret = -1;
@@ -226,6 +259,9 @@ static int _cache_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 #else
     {
         entry_t* entry;
+
+        if (_cache_blkdev_flush(dev) != 0)
+                goto done;
 
         if ((entry = _get_entry(dev, blkno)))
         {
@@ -249,6 +285,29 @@ static int _cache_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
 
 done:
 
+    return ret;
+}
+
+static int _cache_blkdev_next_put(
+    blkdev_t* dev,
+    uint32_t blkno,
+    const oefs_blk_t* blk)
+{
+    int ret = -1;
+
+    if (dev->put_cache.size == PUT_CACHE_SIZE)
+    {
+        if (_cache_blkdev_flush(dev) != 0)
+            goto done;
+    }
+
+    size_t i = dev->put_cache.size++;
+    dev->put_cache.blkno[i] = blkno;
+    oefs_blk_copy(&dev->put_cache.blk[i], blk);
+
+    ret = 0;
+
+done:
     return ret;
 }
 
@@ -276,7 +335,7 @@ static int _cache_blkdev_put(
         {
             if (!oefs_blk_equal(&entry->blk, blk))
             {
-                if (dev->next->put(dev->next, blkno, blk) != 0)
+                if (_cache_blkdev_next_put(dev, blkno, blk) != 0)
                     goto done;
 
                 oefs_blk_copy(&entry->blk, blk);
@@ -286,7 +345,7 @@ static int _cache_blkdev_put(
         }
         else
         {
-            if (dev->next->put(dev->next, blkno, blk) != 0)
+            if (_cache_blkdev_next_put(dev, blkno, blk) != 0)
                 goto done;
 
             if (!(entry = _new_entry(dev, blkno, blk)))
@@ -328,6 +387,9 @@ static int _cache_blkdev_end(oefs_blkdev_t* d)
     blkdev_t* dev = (blkdev_t*)d;
 
     if (!dev || !dev->next)
+        goto done;
+
+    if (_cache_blkdev_flush(dev) != 0)
         goto done;
 
     if (dev->next->end(dev->next) != 0)
