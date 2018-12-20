@@ -130,7 +130,7 @@ static int _host_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
     if (args->get.ret != 0)
         goto done;
 
-    *blk = args->get.blk;
+    oefs_blk_copy(blk, &args->get.blk);
 
     ret = 0;
 
