@@ -23,9 +23,10 @@ target_link_libraries(oeoefsenclave PUBLIC oeenclave mbedcrypto oelibc)
 
 find_program(YASM_EXE NAMES yasm)
 
-add_custom_command(OUTPUT sha256_rorx.o COMMAND ${YASM_EXE}
-    -f x64 -f elf64 -X gnu -g dwarf2 -D LINUX 
-    -o sha256_rorx.o ${CMAKE_CURRENT_SOURCE_DIR}/sha256_rorx.asm)
+add_custom_command(OUTPUT sha256_rorx.o
+    COMMAND ${YASM_EXE} -f x64 -f elf64 -X gnu -g dwarf2 -D LINUX
+    -o sha256_rorx.o ${CMAKE_CURRENT_SOURCE_DIR}/sha256_rorx.asm
+    DEPENDS sha256_rorx.asm)
 
 set_property(TARGET oeoefsenclave PROPERTY 
     ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
