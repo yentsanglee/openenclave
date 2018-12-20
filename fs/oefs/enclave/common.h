@@ -42,8 +42,12 @@ OE_INLINE bool oefs_blk_equal(const oefs_blk_t* b1, const oefs_blk_t* b2)
     const uint64_t* q = b2->u.words;
     size_t n = OEFS_BLOCK_SIZE / sizeof(uint64_t);
 
-    while (n-- && *p++ == *q++)
-        ;
+    while (n && *p == *q)
+    {
+        n--;
+        p++;
+        q++;
+    }
 
     return n == 0;
 }

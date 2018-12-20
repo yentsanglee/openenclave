@@ -776,7 +776,7 @@ static int _oefs_write_data(
     const uint8_t* ptr = (const uint8_t*)data;
     uint32_t remaining = size;
 
-    /* While there is data remaining to be written. */
+    /* Write while remaining data. */
     while (remaining)
     {
         uint32_t blkno;

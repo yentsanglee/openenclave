@@ -274,7 +274,7 @@ static int _cache_blkdev_put(
 
         if ((entry = _get_entry(dev, blkno)))
         {
-            if (memcmp(&entry->blk, blk->u.data, OEFS_BLOCK_SIZE) != 0)
+            if (!oefs_blk_equal(&entry->blk, blk))
             {
                 if (dev->next->put(dev->next, blkno, blk) != 0)
                     goto done;
