@@ -3,9 +3,15 @@
 #include <stdio.h>
 #include "endian.h"
 
-#define USE_RORX
-
 void sha256_rorx(void* input_data, uint32_t digest[8], uint64_t num_blks);
+
+void sha256_transform(void* input_data, uint32_t digest[8], uint64_t num_blks);
+
+#if defined(USE_SHA256_RORX)
+#define SHA256 sha256_rorx
+#else
+#define SHA256 sha256_transform
+#endif
 
 OE_INLINE void _digest_to_hash(sha256_t* hash, uint32_t digest[8])
 {
@@ -39,7 +45,7 @@ int sha256(sha256_t* hash, const void* data, size_t size)
     if (size % blksz)
         goto done;
 
-    sha256_rorx((void*)p, digest, n);
+    SHA256((void*)p, digest, n);
 
     /* Write the final block. */
     {
@@ -53,7 +59,7 @@ int sha256(sha256_t* hash, const void* data, size_t size)
         };
 
         final_block.size = oe_to_big_endian_u64((uint64_t)size << 3);
-        sha256_rorx((void*)&final_block, digest, 1);
+        SHA256((void*)&final_block, digest, 1);
         _digest_to_hash(hash, digest);
     }
 
@@ -85,7 +91,7 @@ void sha256_64(sha256_t* hash, const void* data)
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00,
     };
 
-    sha256_rorx((void*)data, digest, 1);
-    sha256_rorx((void*)_final, digest, 1);
+    SHA256((void*)data, digest, 1);
+    SHA256((void*)_final, digest, 1);
     _digest_to_hash(hash, digest);
 }
