@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include <openenclave/host.h>
 #include <openenclave/internal/tests.h>
 #include "fs_u.h"

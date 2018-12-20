@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include <pthread.h>
 
 typedef pthread_mutex_t sgx_thread_mutex_t;

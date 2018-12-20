@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 // clang-format off
 #define OE_DEFAULT_FS (&oe_sgxfs)
 #include <stdio.h>

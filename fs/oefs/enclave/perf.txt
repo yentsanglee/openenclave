@@ -1,9 +1,0 @@
-
-Test                           Milliseconds     Block Writes
-============================================================
-base                            270             11,689
-crypto                          348             11,689
-hash-list                       580             18,978
-auth-crypto                     660             20,536
-auth-crypto + hash-list        1151             27,825
-merkle-tree                     800             45,918

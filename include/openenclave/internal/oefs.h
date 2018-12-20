@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #ifndef _OE_OEFS_COMMON_H
 #define _OE_OEFS_COMMON_H
 

@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #ifndef _OEFS_ENDIAN_H
 #define _OEFS_ENDIAN_H
 

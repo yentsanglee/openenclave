@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #ifndef _CPIO_TRACE_H
 #define _CPIO_TRACE_H
 

@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include <openenclave/internal/hostfs.h>
 #include "../common/sgxfsargs.h"
 #include "sgx_tprotected_fs_u.h"

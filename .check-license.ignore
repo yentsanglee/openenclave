@@ -92,3 +92,7 @@ VERSION
 .gitattributes
 ./host/linux/pe.h
 ./fs/todo.txt
+./3rdparty/linux-sgx/linux-sgx
+./fs/oefs/enclave/sha256_transform.c
+./fs/oefs/enclave/sha256_rorx.asm
+./tests/fs/alphabet

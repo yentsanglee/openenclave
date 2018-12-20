@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include <openenclave/internal/keys.h>
 #include <openenclave/internal/sgxtypes.h>
 #include "sgx_error.h"

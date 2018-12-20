@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #ifndef _OE_TESTS_FS_TEST_DEFAULT_FS_MACRO_H
 #define _OE_TESTS_FS_TEST_DEFAULT_FS_MACRO_H
 

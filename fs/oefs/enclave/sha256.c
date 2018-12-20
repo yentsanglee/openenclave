@@ -1,17 +1,20 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include "sha256.h"
 #include <openenclave/internal/hexdump.h>
 #include <stdio.h>
 #include "endian.h"
-
-void sha256_rorx(void* input_data, uint32_t digest[8], uint64_t num_blks);
-
-void sha256_transform(void* input_data, uint32_t digest[8], uint64_t num_blks);
 
 #if defined(USE_SHA256_RORX)
 #define SHA256 sha256_rorx
 #else
 #define SHA256 sha256_transform
 #endif
+
+void sha256_rorx(void* input_data, uint32_t digest[8], uint64_t num_blks);
+
+void sha256_transform(void* input_data, uint32_t digest[8], uint64_t num_blks);
 
 OE_INLINE void _digest_to_hash(sha256_t* hash, uint32_t digest[8])
 {
@@ -29,8 +32,9 @@ int sha256(sha256_t* hash, const void* data, size_t size)
 {
     int ret = -1;
     const uint8_t* p = (const uint8_t*)data;
-    const size_t blksz = 64;
-    size_t n = size / blksz;
+    const size_t BLKSZ = 64;
+    size_t n = size / BLKSZ;
+    OE_ALIGNED(4)
     uint32_t digest[8] = {
         0x6a09e667ul,
         0xbb67ae85ul,
@@ -42,7 +46,7 @@ int sha256(sha256_t* hash, const void* data, size_t size)
         0x5be0cd19ul,
     };
 
-    if (size % blksz)
+    if (size % BLKSZ)
         goto done;
 
     SHA256((void*)p, digest, n);
@@ -51,7 +55,7 @@ int sha256(sha256_t* hash, const void* data, size_t size)
     {
         typedef struct _final_block
         {
-            uint8_t data[64 - sizeof(uint64_t)];
+            uint8_t data[BLKSZ - sizeof(uint64_t)];
             uint64_t size;
         } final_block_t;
         final_block_t final_block = {
@@ -71,6 +75,7 @@ done:
 
 void sha256_64(sha256_t* hash, const void* data)
 {
+    OE_ALIGNED(4)
     uint32_t digest[8] = {
         0x6a09e667ul,
         0xbb67ae85ul,
@@ -81,7 +86,6 @@ void sha256_64(sha256_t* hash, const void* data)
         0x1f83d9abul,
         0x5be0cd19ul,
     };
-    OE_ALIGNED(8)
     static const uint8_t _final[] = {
         0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
