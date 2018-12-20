@@ -228,6 +228,7 @@ OE_INLINE int _cache_blkdev_flush(blkdev_t* dev)
         uint32_t blkno = dev->put_cache.blkno[i];
         const oefs_blk_t* blk = &dev->put_cache.blk[i];
 
+        /* Avoid writing block if next block has same block number. */
         if (i + 1 < dev->put_cache.size && blkno == dev->put_cache.blkno[i+1])
             continue;
 
