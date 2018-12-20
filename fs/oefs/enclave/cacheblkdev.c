@@ -15,7 +15,7 @@
 #define TABLE_SIZE 4096
 #define MAX_ENTRIES 128
 #define MAX_FREE 64
-#define PUT_CACHE_SIZE 8
+#define PUT_CACHE_SIZE 16
 
 typedef struct _entry entry_t;
 
