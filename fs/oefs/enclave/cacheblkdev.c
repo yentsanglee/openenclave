@@ -12,8 +12,8 @@
 #include "common.h"
 #include "list.h"
 
-#define TABLE_SIZE 1024
-#define MAX_ENTRIES 64
+#define TABLE_SIZE 4096
+#define MAX_ENTRIES 128
 #define MAX_FREE 64
 
 typedef struct _entry entry_t;
@@ -113,12 +113,12 @@ OE_INLINE void _remove_entry(blkdev_t* dev, entry_t* entry)
 }
 
 /* Insert entry at front of the list. */
-static void _insert_entry(blkdev_t* dev, entry_t* entry)
+OE_INLINE void _insert_entry(blkdev_t* dev, entry_t* entry)
 {
     oefs_list_insert_front((oefs_list_t*)&dev->list, (oefs_list_node_t*)entry);
 }
 
-static entry_t* _get_entry(blkdev_t* dev, uint32_t blkno)
+OE_INLINE entry_t* _get_entry(blkdev_t* dev, uint32_t blkno)
 {
     size_t h = blkno % TABLE_SIZE;
     size_t n = SIZE_MAX;
