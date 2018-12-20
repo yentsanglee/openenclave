@@ -666,8 +666,8 @@ int oefs_merkle_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks)
     if (!extra_nblks)
         GOTO(done);
 
-    num_hash_blocks = oefs_round_to_multiple(
-        nblks + 1, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
+    num_hash_blocks =
+        oefs_round_to_multiple(nblks + 1, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
 
     *extra_nblks = 1 + num_hash_blocks;
 

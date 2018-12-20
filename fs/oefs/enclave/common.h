@@ -16,12 +16,10 @@
 
 typedef struct _oefs_blk
 {
-    union
-    {
+    union {
         uint64_t u64[OEFS_BLOCK_SIZE / sizeof(uint64_t)];
         uint8_t data[OEFS_BLOCK_SIZE];
-    }
-    u;
+    } u;
 } oefs_blk_t;
 
 OE_INLINE void oefs_blk_copy(oefs_blk_t* dest, const oefs_blk_t* src)

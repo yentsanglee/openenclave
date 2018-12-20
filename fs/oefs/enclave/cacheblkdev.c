@@ -54,8 +54,7 @@ typedef struct _blkdev
         oefs_blk_t blk[PUT_CACHE_SIZE];
         uint32_t blkno[PUT_CACHE_SIZE];
         size_t size;
-    }
-    put_cache;
+    } put_cache;
 
     entry_t* free;
     size_t free_count;
@@ -229,7 +228,7 @@ OE_INLINE int _cache_blkdev_flush(blkdev_t* dev)
         const oefs_blk_t* blk = &dev->put_cache.blk[i];
 
         /* Avoid writing block if next block has same block number. */
-        if (i + 1 < dev->put_cache.size && blkno == dev->put_cache.blkno[i+1])
+        if (i + 1 < dev->put_cache.size && blkno == dev->put_cache.blkno[i + 1])
             continue;
 
         if (dev->next->put(dev->next, blkno, blk) != 0)
@@ -262,7 +261,7 @@ static int _cache_blkdev_get(oefs_blkdev_t* d, uint32_t blkno, oefs_blk_t* blk)
         entry_t* entry;
 
         if (_cache_blkdev_flush(dev) != 0)
-                goto done;
+            goto done;
 
         if ((entry = _get_entry(dev, blkno)))
         {
