@@ -12,7 +12,7 @@
 #include "common.h"
 #include "list.h"
 
-#define TABLE_SIZE 1093
+#define TABLE_SIZE 1024
 #define MAX_ENTRIES 64
 #define MAX_FREE 64
 

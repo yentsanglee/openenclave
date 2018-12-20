@@ -31,10 +31,7 @@ typedef struct _header_block
     /* The total number of data blocks in the system. */
     uint64_t nblks;
 
-    /* The root hash of the Merkle tree. */
-    sha256_t hash;
-
-    uint8_t reserved[OEFS_BLOCK_SIZE - 48];
+    uint8_t reserved[OEFS_BLOCK_SIZE - 16];
 } header_block_t;
 
 OE_STATIC_ASSERT(sizeof(header_block_t) == OEFS_BLOCK_SIZE);
@@ -70,6 +67,22 @@ typedef struct _blkdev
 
 } blkdev_t;
 
+OE_INLINE sha256_t* _get_hash(blkdev_t* dev, size_t tree_index)
+{
+    uint32_t i = tree_index / HASHES_PER_BLOCK;
+    uint32_t j = tree_index % HASHES_PER_BLOCK;
+    return &dev->hash_blocks[i].hashes[j];
+}
+
+OE_INLINE void _set_hash(blkdev_t* dev, size_t tree_index, const sha256_t* hash)
+{
+    uint32_t i = tree_index / HASHES_PER_BLOCK;
+    uint32_t j = tree_index % HASHES_PER_BLOCK;
+    dev->hash_blocks[i].hashes[j] = *hash;
+    dev->dirty_hash_blocks[i] = 1;
+    dev->have_dirty_hash_blocks = true;
+}
+
 /* Get the index of the left child of the given node in the hash tree. */
 OE_INLINE size_t _left_child_index(size_t i)
 {
@@ -97,14 +110,9 @@ OE_INLINE sha256_t* _left_child(blkdev_t* dev, size_t i)
     size_t merkle_size = dev->header_block.nblks - 1;
 
     if (index < merkle_size)
-    {
         return &dev->merkle[index];
-    }
     else
-    {
-        sha256_t* hashes = (sha256_t*)dev->hash_blocks;
-        return &hashes[index - merkle_size];
-    }
+        return _get_hash(dev, index - merkle_size + 1);
 }
 
 OE_INLINE sha256_t* _right_child(blkdev_t* dev, size_t i)
@@ -113,14 +121,9 @@ OE_INLINE sha256_t* _right_child(blkdev_t* dev, size_t i)
     size_t merkle_size = dev->header_block.nblks - 1;
 
     if (index < merkle_size)
-    {
         return &dev->merkle[index];
-    }
     else
-    {
-        sha256_t* hashes = (sha256_t*)dev->hash_blocks;
-        return &hashes[index - merkle_size];
-    }
+        return _get_hash(dev, index - merkle_size + 1);
 }
 
 static void _hash2(sha256_t* hash, const sha256_t* left, const sha256_t* right)
@@ -136,19 +139,6 @@ static void _hash2(sha256_t* hash, const sha256_t* left, const sha256_t* right)
     sha256_copy(&data.left, left);
     sha256_copy(&data.right, right);
     sha256_64(hash, &data);
-}
-
-static void _set_hash(blkdev_t* dev, size_t blkno, const sha256_t* hash)
-{
-    uint32_t i = blkno / HASHES_PER_BLOCK;
-    uint32_t j = blkno % HASHES_PER_BLOCK;
-
-    oe_assert(blkno < dev->header_block.nblks);
-    oe_assert(i < dev->num_hash_blocks);
-
-    dev->hash_blocks[i].hashes[j] = *hash;
-    dev->dirty_hash_blocks[i] = 1;
-    dev->have_dirty_hash_blocks = true;
 }
 
 static int _load_header_block(blkdev_t* dev)
@@ -186,9 +176,6 @@ static int _flush_merkle(blkdev_t* dev)
 
     if (dev->have_dirty_hash_blocks)
     {
-        if (_flush_header_block(dev) != 0)
-            GOTO(done);
-
         /* Calculate the block number of the first hash block. */
         blkno = dev->header_block.nblks + 1;
 
@@ -226,11 +213,8 @@ static int _initialize_hash_blocks(blkdev_t* dev)
     if (sha256(&hash, &zero_blk, sizeof(zero_blk)) != 0)
         GOTO(done);
 
-    for (size_t i = 0; i < dev->num_hash_blocks; i++)
-    {
-        for (size_t j = 0; j < HASHES_PER_BLOCK; j++)
-            dev->hash_blocks[i].hashes[j] = hash;
-    }
+    for (size_t i = 1; i < dev->header_block.nblks + 1; i++)
+        _set_hash(dev, i, &hash);
 
     ret = 0;
 
@@ -285,7 +269,7 @@ static int _load_merkle(blkdev_t* dev)
 
     /* Calculate dev->num_hash_blocks */
     dev->num_hash_blocks =
-        oefs_round_to_multiple(dev->header_block.nblks, HASHES_PER_BLOCK) /
+        oefs_round_to_multiple(dev->header_block.nblks + 1, HASHES_PER_BLOCK) /
         HASHES_PER_BLOCK;
 
     /* Allocate the dev->hash_blocks[] array. */
@@ -324,7 +308,7 @@ static int _load_merkle(blkdev_t* dev)
     _compute_upper_hash_tree(dev);
 
     /* Fail if the computed root hash is wrong. */
-    if (!sha256_eq(&dev->header_block.hash, &dev->merkle[0]))
+    if (!sha256_eq(_get_hash(dev, 0), &dev->merkle[0]))
         GOTO(done);
 
     merkle = NULL;
@@ -374,7 +358,7 @@ static int _init_merkle(blkdev_t* dev, size_t nblks)
 
     /* Calculate dev->num_hash_blocks */
     dev->num_hash_blocks =
-        oefs_round_to_multiple(dev->header_block.nblks, HASHES_PER_BLOCK) /
+        oefs_round_to_multiple(dev->header_block.nblks + 1, HASHES_PER_BLOCK) /
         HASHES_PER_BLOCK;
 
     /* Allocate the dev->hash_blocks[] array. */
@@ -407,10 +391,14 @@ static int _init_merkle(blkdev_t* dev, size_t nblks)
     /* Compute the upper hash tree. */
     _compute_upper_hash_tree(dev);
 
-    /* Update the master hash in the header. */
-    dev->header_block.hash = dev->merkle[0];
+    /* Update the master hash in the hash block. */
+    _set_hash(dev, 0, &dev->merkle[0]);
 
-    /* Flush the header and hash blocks to disk. */
+    /* Flush the header block. */
+    if (_flush_header_block(dev) != 0)
+        GOTO(done);
+
+    /* Flush the hash blocks to disk. */
     if (_flush_merkle(dev) != 0)
         GOTO(done);
 
@@ -434,22 +422,9 @@ done:
     return ret;
 }
 
-static int _check_hash(blkdev_t* dev, uint32_t blkno, const sha256_t* hash)
+OE_INLINE int _check_hash(blkdev_t* dev, uint32_t blkno, const sha256_t* hash)
 {
-    int ret = -1;
-    uint32_t i = blkno / HASHES_PER_BLOCK;
-    uint32_t j = blkno % HASHES_PER_BLOCK;
-
-    oe_assert(blkno < dev->header_block.nblks);
-    oe_assert(i < dev->num_hash_blocks);
-
-    if (!sha256_eq(&dev->hash_blocks[i].hashes[j], hash))
-        GOTO(done);
-
-    ret = 0;
-
-done:
-    return ret;
+    return sha256_eq(_get_hash(dev, blkno + 1), hash) ? 0 : -1;
 }
 
 static void _update_hash_tree(
@@ -462,7 +437,7 @@ static void _update_hash_tree(
     size_t parent;
 
     /* Update the leaf hash. */
-    _set_hash(dev, blkno, hash);
+    _set_hash(dev, blkno + 1, hash);
 
     /* Get the index of the parent node. */
     parent = _parent_index(index);
@@ -472,16 +447,12 @@ static void _update_hash_tree(
     {
         sha256_t* left = _left_child(dev, parent);
         sha256_t* right = _right_child(dev, parent);
-        sha256_t hash;
-
-        _hash2(&hash, left, right);
-
-        dev->merkle[parent] = hash;
+        _hash2(&dev->merkle[parent], left, right);
         parent = _parent_index(parent);
     }
 
-    /* Update the root hash in the header. */
-    dev->header_block.hash = dev->merkle[0];
+    /* Update the root hash in the hash block. */
+    _set_hash(dev, 0, &dev->merkle[0]);
 }
 
 static int _merkle_blkdev_release(oefs_blkdev_t* blkdev)
@@ -687,7 +658,7 @@ done:
 int oefs_merkle_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks)
 {
     int ret = -1;
-    size_t hblks;
+    size_t num_hash_blocks;
 
     if (extra_nblks)
         *extra_nblks = 0;
@@ -695,9 +666,10 @@ int oefs_merkle_blkdev_get_extra_blocks(size_t nblks, size_t* extra_nblks)
     if (!extra_nblks)
         GOTO(done);
 
-    hblks = oefs_round_to_multiple(nblks, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
+    num_hash_blocks = oefs_round_to_multiple(
+        nblks + 1, HASHES_PER_BLOCK) / HASHES_PER_BLOCK;
 
-    *extra_nblks = 1 + hblks;
+    *extra_nblks = 1 + num_hash_blocks;
 
     ret = 0;
 
