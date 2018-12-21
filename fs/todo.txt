@@ -1,13 +1,11 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
+    (*) Rework interface to return errors.
+
     (*) Test flushing and refetching of OEFS.
 
-    (*) Combine auth-crypto and Merkle tree (combine tag and leaf hash).
-
     (*) Implement the fprintf/fscanf family of functions.
-
-    (*) Verify that errno's are handled correctly.
 
     (*) Work out library packaging dependencies.
 
