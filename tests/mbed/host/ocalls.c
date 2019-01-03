@@ -9,8 +9,10 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/uio.h>
-#include <unistd.h>
+#include <io.h>
+#include "../../../3rdparty/musl/musl/include/getopt.h"
+#include <process.h>
+#include <direct.h>
 #include "mbed_u.h"
 
 int mbed_test_open(const char* path, int flags, mode_t mode)

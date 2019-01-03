@@ -47,6 +47,7 @@ if (UNIX OR ADD_WINDOWS_ENCLAVE_TESTS OR USE_CLANGW)
         add_subdirectory(threadcxx)
         add_subdirectory(thread_local)
         add_subdirectory(VectorException)
+		add_subdirectory(mbed)
     endif()
 
 add_subdirectory(create-errors)
@@ -74,7 +75,6 @@ endif()
 if (OE_SGX AND UNIX)
 add_subdirectory(crypto_crls_cert_chains)
 add_subdirectory(libunwind)
-add_subdirectory(mbed)
 
 #Attestation supported only on Linux
 add_subdirectory(qeidentity)

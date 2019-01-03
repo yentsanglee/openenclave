@@ -5,7 +5,10 @@ enclave {
     include "fcntl.h"
     include "sys/types.h"
     include "sys/stat.h"
-    include "sys/uio.h"
+	include "io.h"
+	include "../../../3rdparty/musl/musl/include/getopt.h"
+	include "process.h"
+	include "direct.h"
 
     struct mbed_args {
         int skipped;
