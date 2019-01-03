@@ -7,8 +7,9 @@ oeedl_file(../../include/openenclave/socket.edl
     enclave-headers 
     socket_t_h)
 
-add_library(oesocket_enc STATIC
+add_library(oesocket_enc STATIC 
     socket_enc.c
+    socket_enc_insecure.c
     ${socket_t_h})
 
 if(CMAKE_C_COMPILER_ID MATCHES GNU)
