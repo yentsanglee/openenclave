@@ -73,7 +73,7 @@ target_link_libraries(oeenclave PUBLIC
 #    oelibc
 #    -Wl,--defsym,__ImageBase=0)
 
-target_include_directories(oeenclave PUBLIC /home/oeadmin/intel-sgx-ssl/openssl_source/openssl-OpenSSL_1_1_0h/include)
+target_include_directories(oeenclave PUBLIC /opt/openenclave/lib/oessl/include)
 
 set_property(TARGET oeenclave PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
