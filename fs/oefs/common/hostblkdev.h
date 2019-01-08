@@ -5,6 +5,7 @@
 #define _FS_HOSTBLKDEV_H
 
 #include "../enclave/common.h"
+#include "../enclave/blk.h"
 
 OE_EXTERNC_BEGIN
 

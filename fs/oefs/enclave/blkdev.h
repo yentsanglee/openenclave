@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include "common.h"
+#include "blk.h"
 
 OE_EXTERNC_BEGIN
 

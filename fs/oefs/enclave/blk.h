@@ -19,15 +19,11 @@ typedef struct _oefs_blk
 
 OE_STATIC_ASSERT(sizeof(oefs_blk_t) == OEFS_BLOCK_SIZE);
 
-#if 1
 OE_INLINE void oefs_blk_copy(oefs_blk_t* dest, const oefs_blk_t* src)
 {
     for (size_t i = 0; i < OEFS_BLOCK_SIZE / sizeof(uint64_t); i++)
         dest->u.u64[i] = src->u.u64[i];
 }
-#else
-void oefs_blk_copy(oefs_blk_t* dest, const oefs_blk_t* src);
-#endif
 
 OE_INLINE void oefs_blk_clear(oefs_blk_t* blk)
 {
