@@ -302,7 +302,7 @@ let oe_gen_args_header (ec: enclave_content) (dir:string)=
   in  
   let with_errno = List.exists (fun uf -> uf.Ast.uf_propagate_errno) ec.ufunc_decls in
   let header_fname = sprintf "%s_args.h" ec.file_shortnm in
-  let guard_macro = sprintf "%s_ARGS_H" (String.uppercase ec.enclave_name) in
+  let guard_macro = sprintf "%s_ARGS_H" (String.uppercase_ascii ec.enclave_name) in
   let os = open_file header_fname dir in  
     fprintf os "#ifndef %s\n" guard_macro;
     fprintf os "#define %s\n\n" guard_macro;
@@ -900,7 +900,7 @@ let validate_oe_support (ec: enclave_content) (ep: edger8r_params) =
 
 let gen_t_h (ec: enclave_content) (ep: edger8r_params) =
   let fname = ec.file_shortnm ^ "_t.h" in
-  let guard = sprintf "EDGER8R_%s_T_H" (String.uppercase ec.file_shortnm) in
+  let guard = sprintf "EDGER8R_%s_T_H" (String.uppercase_ascii ec.file_shortnm) in
   let os = open_file fname ep.trusted_dir in  
   fprintf os "#ifndef %s\n" guard;
   fprintf os "#define %s\n\n" guard;
@@ -971,7 +971,7 @@ let oe_emit_create_enclave_defn (os:out_channel)  (ec:enclave_content) =
 
 let gen_u_h (ec: enclave_content) (ep: edger8r_params) =
   let fname = ec.file_shortnm ^ "_u.h" in
-  let guard = sprintf "EDGER8R_%s_U_H" (String.uppercase ec.file_shortnm) in
+  let guard = sprintf "EDGER8R_%s_U_H" (String.uppercase_ascii ec.file_shortnm) in
   let os = open_file fname ep.untrusted_dir in  
   fprintf os "#ifndef %s\n" guard;
   fprintf os "#define %s\n\n" guard;
