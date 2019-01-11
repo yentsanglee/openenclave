@@ -9,6 +9,10 @@ struct timezone
     int tz_dsttime;
 };
 
-int gettimeofday(struct timeval *tv, struct timezone *tz);
+static inline int gettimeofday(struct timeval *tv, struct timezone *tz)
+{
+    extern int sassl_gettimeofday(struct timeval *tv, struct timezone *tz);
+    return sassl_gettimeofday(tv, tz);
+}
 
 #endif /* _SYS_TIME_H */

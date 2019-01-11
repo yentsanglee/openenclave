@@ -51,15 +51,17 @@ static inline void *memset(void *s, int c, size_t n)
     return sassl_memset(s, c, n);
 }
 
+void *sassl_memcpy(void *dest, const void *src, size_t n);
+
 static inline void *memcpy(void *dest, const void *src, size_t n)
 {
-    extern void *sassl_memcpy(void *dest, const void *src, size_t n);
     return sassl_memcpy(dest, src, n);
 }
 
+int sassl_memcmp(const void *s1, const void *s2, size_t n);
+
 static inline int memcmp(const void *s1, const void *s2, size_t n)
 {
-    extern int sassl_memcmp(const void *s1, const void *s2, size_t n);
     return sassl_memcmp(s1, s2, n);
 }
 

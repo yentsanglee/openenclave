@@ -71,10 +71,22 @@ struct stat
 #define st_mtime st_mtim.tv_sec
 #define st_ctime st_ctim.tv_sec
 
-int fstat(int fd, struct stat *buf);
+static inline int fstat(int fd, struct stat *buf)
+{
+    extern int sassl_fstat(int fd, struct stat *buf);
+    return sassl_fstat(fd, buf);
+}
 
-int stat(const char *pathname, struct stat *buf);
+static inline int stat(const char *pathname, struct stat *buf)
+{
+    extern int sassl_stat(const char *pathname, struct stat *buf);
+    return sassl_stat(pathname, buf);
+}
 
-int chmod(const char *pathname, mode_t mode);
+static inline int chmod(const char *pathname, mode_t mode)
+{
+    extern int sassl_chmod(const char *pathname, mode_t mode);
+    return chmod(pathname, mode);
+}
 
 #endif /* _STAT_H */

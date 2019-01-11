@@ -7,6 +7,8 @@
 include ../config.mak
 
 CC+=-I$(CURDIR)/include
+CC+=-fno-builtin
+CC+=-ffreestanding
 CC+=-nostdinc
 CC+=-DOPENSSL_IMPLEMENTS_strncasecmp
 CC+=-DOPENSSL_NO_SOCK

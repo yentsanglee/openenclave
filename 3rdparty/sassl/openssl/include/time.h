@@ -22,10 +22,22 @@ struct timespec
     long tv_nsec;
 };
 
-time_t time(time_t *tloc);
+static inline time_t time(time_t *tloc)
+{
+    extern time_t sassl_time(time_t *tloc);
+    return sassl_time(tloc);
+}
 
-struct tm *gmtime(const time_t *timep);
+static inline struct tm *gmtime(const time_t *timep)
+{
+    extern struct tm *sassl_gmtime(const time_t *timep);
+    return sassl_gmtime(timep);
+}
 
-struct tm *gmtime_r(const time_t *timep, struct tm *result);
+static inline struct tm *gmtime_r(const time_t *timep, struct tm *result)
+{
+    extern struct tm *sassl_gmtime_r(const time_t *timep, struct tm *result);
+    return sassl_gmtime_r(timep, result);
+}
 
 #endif /* _TIME_H */
