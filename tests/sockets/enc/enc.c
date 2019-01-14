@@ -3,7 +3,9 @@
 #include <openenclave/enclave.h>
 
 // enclave.h must come before socket.h
-#include <openenclave/bits/socket.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <unistd.h>
 
 #include <socket_test_t.h>
 #include <stdio.h>
@@ -16,7 +18,7 @@ int ecall_run_client(char* server, char* serv)
 {
     int status = OE_FAILURE;
     struct addrinfo* ai = NULL;
-    SOCKET s = INVALID_SOCKET;
+    int s = -1;
 
     printf("Connecting to %s %s...\n", server, serv);
 
@@ -32,11 +34,11 @@ int ecall_run_client(char* server, char* serv)
 
     /* Create connection. */
     s = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-    if (s == INVALID_SOCKET)
+    if (s == -1)
     {
         goto Done;
     }
-    if (connect(s, ai->ai_addr, (socklen_t) ai->ai_addrlen) == SOCKET_ERROR)
+    if (connect(s, ai->ai_addr, (socklen_t) ai->ai_addrlen) == -1)
     {
         goto Done;
     }
@@ -48,12 +50,12 @@ int ecall_run_client(char* server, char* serv)
     uint32_t netMessageLength = htonl((uint32_t) messageLength);
     ssize_t bytesSent =
         send(s, (char*)&netMessageLength, (int) sizeof(netMessageLength), 0);
-    if (bytesSent == SOCKET_ERROR)
+    if (bytesSent == -1)
     {
         goto Done;
     }
-    bytesSent = send(s, message, (int) messageLength, 0);
-    if (bytesSent == SOCKET_ERROR)
+    bytesSent = send(s, message, (size_t) messageLength, 0);
+    if (bytesSent == -1)
     {
         goto Done;
     }
@@ -63,7 +65,7 @@ int ecall_run_client(char* server, char* serv)
     char reply[80];
     ssize_t bytesReceived =
         recv(s, (char*)&replyLength, sizeof(replyLength), MSG_WAITALL);
-    if (bytesReceived == SOCKET_ERROR)
+    if (bytesReceived == -1)
     {
         goto Done;
     }
@@ -87,10 +89,10 @@ int ecall_run_client(char* server, char* serv)
     status = OE_OK;
 
 Done:
-    if (s != INVALID_SOCKET)
+    if (s != -1)
     {
         printf("Client closing socket\n");        
-        closesocket(s);
+        close(s);
     }
     if (ai != NULL)
     {
@@ -106,8 +108,8 @@ int ecall_run_server(char* serv)
 {
     int status = OE_FAILURE;
     struct addrinfo* ai = NULL;
-    SOCKET listener = INVALID_SOCKET;
-    SOCKET s = INVALID_SOCKET;
+    int listener = -1;
+    int s = -1;
 
     /* Resolve service name. */
     struct addrinfo hints = {0};
@@ -122,15 +124,15 @@ int ecall_run_server(char* serv)
 
     /* Create listener socket. */
     listener = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-    if (listener == INVALID_SOCKET)
+    if (listener == -1)
     {
         goto Done;
     }
-    if (bind(listener, ai->ai_addr, (int) ai->ai_addrlen) == SOCKET_ERROR)
+    if (bind(listener, ai->ai_addr, (unsigned int) ai->ai_addrlen) == -1)
     {
         goto Done;
     }
-    if (listen(listener, SOMAXCONN) == SOCKET_ERROR)
+    if (listen(listener, SOMAXCONN) == -1)
     {
         goto Done;
     }
@@ -138,9 +140,9 @@ int ecall_run_server(char* serv)
 
     /* Accept a client connection. */
     struct sockaddr_storage addr;
-    int addrlen = sizeof(addr);
+    unsigned int addrlen = sizeof(addr);
     s = accept(listener, (struct sockaddr*)&addr, &addrlen);
-    if (s == INVALID_SOCKET)
+    if (s == -1)
     {
         goto Done;
     }
@@ -151,7 +153,7 @@ int ecall_run_server(char* serv)
     char message[80];
     ssize_t bytesReceived = recv(
         s, (char*)&netMessageLength, sizeof(netMessageLength), MSG_WAITALL);
-    if (bytesReceived == SOCKET_ERROR)
+    if (bytesReceived == -1)
     {
         goto Done;
     }
@@ -167,29 +169,29 @@ int ecall_run_server(char* serv)
     }
 
     /* Send it back to the client, prefixed by its size. */
-    int bytesSent =
+    ssize_t bytesSent =
         send(s, (char*)&netMessageLength, sizeof(netMessageLength), 0);
-    if (bytesSent == SOCKET_ERROR)
+    if (bytesSent == -1)
     {
         goto Done;
     }
-    bytesSent = send(s, message, (int) messageLength, 0);
-    if (bytesSent == SOCKET_ERROR)
+    bytesSent = send(s, message, messageLength, 0);
+    if (bytesSent == -1)
     {
         goto Done;
     }
     status = OE_OK;
 
 Done:
-    if (s != INVALID_SOCKET)
+    if (s != -1)
     {
         printf("Server closing socket\n");
-        closesocket(s);
+        close(s);
     }
-    if (listener != INVALID_SOCKET)
+    if (listener != -1)
     {
         printf("Server closing listener socket\n");
-        closesocket(listener);
+        close(listener);
     }
     if (ai != NULL)
     {
