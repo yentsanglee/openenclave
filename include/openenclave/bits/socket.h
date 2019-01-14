@@ -44,7 +44,7 @@ typedef struct oe_addrinfo {
     int                 ai_family;
     int                 ai_socktype;
     int                 ai_protocol;
-    size_t              ai_addrlen;
+    unsigned int        ai_addrlen;
     struct oe_sockaddr* ai_addr;
     char*               ai_canonname;
     struct oe_addrinfo* ai_next;
@@ -166,7 +166,6 @@ int oe_fd_isset(_In_ oe_socket_t fd, _In_ oe_fd_set* set);
 
 #ifndef OE_NO_POSIX_SOCKET_API
 /* Map standard socket API names to the OE equivalents. */
-# define accept            oe_accept
 # define addrinfo          oe_addrinfo
 # define AI_PASSIVE        OE_AI_PASSIVE
 # define AI_CANONNAME      OE_AI_CANONNAME
@@ -176,17 +175,9 @@ int oe_fd_isset(_In_ oe_socket_t fd, _In_ oe_fd_set* set);
 # define AI_V4MAPPED       OE_AI_V4MAPPED
 # define AF_INET           OE_AF_INET
 # define AF_INET6          OE_AF_INET6
-# define bind              oe_bind
-# define connect           oe_connect
 # define FD_ISSET(fd, set) oe_fd_isset((oe_socket_t)(fd), (oe_fd_set*)(set))
 # define fd_set            oe_fd_set
 # define FIONBIO           OE_FIONBIO
-# define freeaddrinfo      oe_freeaddrinfo
-# define getpeername       oe_getpeername
-# define getsockname       oe_getsockname
-# define getsockopt        oe_getsockopt
-# define htonl             oe_htonl
-# define htons             oe_htons
 # define in_addr           oe_in_addr
 # define in6_addr          oe_in6_addr
 # define inet_addr         oe_inet_addr
@@ -194,7 +185,6 @@ int oe_fd_isset(_In_ oe_socket_t fd, _In_ oe_fd_set* set);
 # define IPV6_V6ONLY       OE_IPV6_V6ONLY
 # define IPPROTO_IPV6      OE_IPPROTO_IPV6
 # define IPPROTO_TCP       OE_IPPROTO_TCP
-# define listen            oe_listen
 # define MSG_WAITALL       OE_MSG_WAITALL
 # define NI_NOFQDN         OE_NI_NOFQDN
 # define NI_NUMERICHOST    OE_NI_NUMERICHOST
@@ -203,13 +193,7 @@ int oe_fd_isset(_In_ oe_socket_t fd, _In_ oe_fd_set* set);
 # define NI_DGRAM          OE_NI_DGRAM
 # define NI_MAXHOST        OE_NI_MAXHOST
 # define NI_MAXSERV        OE_NI_MAXSERV
-# define ntohl             oe_ntohl
-# define ntohs             oe_ntohs
-# define recv              oe_recv
 # define select            oe_select
-# define send              oe_send
-# define setsockopt        oe_setsockopt
-# define shutdown          oe_shutdown
 # define SOCK_STREAM       OE_SOCK_STREAM
 # define sockaddr          oe_sockaddr
 # define sockaddr_in       oe_sockaddr_in
@@ -281,14 +265,6 @@ oe_getaddrinfo_OE_SECURE_HARDWARE(
 
 #define oe_getaddrinfo(network_security, node, service, hints, res) \
     oe_getaddrinfo_ ## network_security((node), (service), (hints), (res))
-
-#ifdef OE_SECURE_POSIX_NETWORK_API
-#define getaddrinfo(node, service, hints, res) \
-    oe_getaddrinfo(OE_NETWORK_SECURE_HARDWARE, node, service, hints, res)
-#elif !defined(OE_NO_POSIX_SOCKET_API)
-#define getaddrinfo(node, service, hints, res) \
-    oe_getaddrinfo(OE_NETWORK_INSECURE, node, service, hints, res)
-#endif
 
 int
 oe_gethostname_OE_NETWORK_INSECURE(
@@ -439,14 +415,6 @@ oe_socket_OE_NETWORK_SECURE_HARDWARE(
 
 #define oe_socket(network_security, domain, type, protocol) \
     oe_socket_ ## network_security((domain), (type), (protocol))
-
-#ifdef OE_SECURE_POSIX_NETWORK_API
-#define socket(domain, type, protocol) \
-     oe_socket(OE_NETWORK_SECURE_HARDWARE, domain, type, protocol)
-#elif !defined(OE_NO_POSIX_SOCKET_API)
-#define socket(domain, type, protocol) \
-     oe_socket(OE_NETWORK_INSECURE, domain, type, protocol)
-#endif
 
 typedef struct {
     int unused;

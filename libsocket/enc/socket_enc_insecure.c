@@ -451,7 +451,7 @@ oe_getaddrinfo_OE_NETWORK_INSECURE(
         ai->ai_family = response[i].ai_family;
         ai->ai_socktype = response[i].ai_socktype;
         ai->ai_protocol = response[i].ai_protocol;
-        ai->ai_addrlen = (size_t) response[i].ai_addrlen;
+        ai->ai_addrlen = (unsigned int) response[i].ai_addrlen;
         if (response[i].ai_canonname[0] != 0) {
             ai->ai_canonname = oe_malloc(sizeof(response[i].ai_canonname) + 1);
             if (ai->ai_canonname == NULL) {
@@ -477,7 +477,7 @@ oe_getaddrinfo_OE_NETWORK_INSECURE(
     oe_wsa_set_last_error_OE_NETWORK_INSECURE(eai_result);
 
     if (eai_result != 0 && ailist != NULL) {
-        freeaddrinfo(ailist);
+        oe_freeaddrinfo(ailist);
     } else {
         *ppResult = ailist;
     }

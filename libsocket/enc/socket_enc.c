@@ -14,6 +14,8 @@ typedef struct {
     const oe_socket_provider_t* provider;
 } oe_internal_socket_t;
 
+oe_socket_t fd_map[1024];
+
 oe_socket_t oe_register_socket(
     const oe_socket_provider_t* provider,
     intptr_t provider_socket)
@@ -27,7 +29,11 @@ oe_socket_t oe_register_socket(
     return s;
 }
 
-void ecall_InitializeSockets() {}
+void ecall_InitializeSockets() {
+    int i;
+    for (i = 0; i < 1024; i++)
+        fd_map[i] = OE_INVALID_SOCKET;
+}
 
 static int
 fill_internal_fd_set(
@@ -224,7 +230,7 @@ uint32_t
 oe_htonl(
     uint32_t hostLong)
 {
-    return (uint16_t) swap_uint32(hostLong);
+    return swap_uint32(hostLong);
 }
 
 uint16_t
@@ -232,6 +238,27 @@ oe_htons(
     uint16_t hostShort)
 {
     return (uint16_t) swap_uint16(hostShort);
+}
+
+
+uint32_t htonl(uint32_t hostLong)
+{
+    return (uint16_t) swap_uint32(hostLong);
+}
+
+uint16_t htons(uint16_t hostShort)
+{
+    return (uint16_t) swap_uint16(hostShort);
+}
+
+uint32_t ntohl(uint32_t netLong)
+{
+    return swap_uint32(netLong);
+}
+
+uint16_t ntohs(uint16_t netShort)
+{
+    return (uint16_t) swap_uint16(netShort);
 }
 
 int
@@ -357,4 +384,161 @@ oe_freeaddrinfo(
         oe_free(ai);
         ailist = next;
     }
+}
+
+
+int accept(int s, oe_sockaddr* addr, unsigned int* addrlen)
+{
+   int len;
+   oe_socket_t sock = fd_map[s];
+   oe_socket_t sock2;
+   int sock2_int;
+
+   if (sock == OE_INVALID_SOCKET)
+       return -1;
+
+   sock2 = oe_accept(sock, addr, &len);
+   if (sock2 == OE_INVALID_SOCKET)
+       return -1;
+
+   sock2_int = (int) ((oe_internal_socket_t*) sock2)->provider_socket;
+   fd_map[sock2_int] = sock2;
+   *addrlen = (unsigned int) sock2_int;
+   return sock2_int;
+}
+
+int bind(int s, const oe_sockaddr* addr, unsigned int addrlen)
+{
+    oe_socket_t sock = fd_map[s];
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+    return oe_bind(sock, addr, (int) addrlen);
+}
+
+int connect(int s, const oe_sockaddr* addr, unsigned int addrlen)
+{
+    oe_socket_t sock = fd_map[s];
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+    return oe_connect(sock, addr, (int) addrlen);
+}
+
+int getpeername(int s, oe_sockaddr* addr, unsigned int* addrlen)
+{
+    oe_socket_t sock = fd_map[s];
+    int len = 0;
+    int res;
+
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+
+    res = oe_getpeername(sock, addr, &len);
+    *addrlen = (unsigned int) len;
+    return res;
+}
+
+int getsockname(int s, oe_sockaddr* addr, unsigned int* addrlen)
+{
+    oe_socket_t sock = fd_map[s];
+    int len = 0;
+    int res;
+
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+
+    res = oe_getsockname(sock, addr, &len);
+    *addrlen = (unsigned int) len;
+    return res;
+}
+
+int getsockopt(int s, int level, int opt_name, void* opt_val, unsigned int* opt_len)
+{
+    oe_socket_t sock = fd_map[s];
+    int len = 0;
+    int res;
+
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+
+    res = oe_getsockopt(sock, level, opt_name, (char*) opt_val, &len);
+    *opt_len = (unsigned int) len;
+    return res;
+}
+
+int listen(int s, int backlog)
+{
+    oe_socket_t sock = fd_map[s];
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+    return oe_listen(sock, backlog);
+}
+
+ssize_t recv(int s, void* buf, size_t bufsize, int flags)
+{
+    oe_socket_t sock = fd_map[s];
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+    return oe_recv(sock, buf, bufsize, flags);
+}
+
+ssize_t send(int s, const void* buf, size_t bufsize, int flags)
+{
+    oe_socket_t sock = fd_map[s];
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+    return oe_send(sock, (const char*) buf, (int) bufsize, flags);
+}
+
+int setsockopt(int s, int level, int opt, const void* opt_val, size_t optlen)
+{
+    oe_socket_t sock = fd_map[s];
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+    return oe_setsockopt(sock, level, opt, (const char*) opt_val, (int) optlen);
+}
+
+int shutdown(int s, int how)
+{
+    oe_socket_t sock = fd_map[s];
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+    return oe_shutdown(sock, how);
+}
+
+int socket(int domain, int type, int protocol)
+{
+    int fd;
+
+    oe_socket_t s = oe_socket_OE_NETWORK_INSECURE(domain, type, protocol);
+    if (s == OE_INVALID_SOCKET)
+        return -1;
+
+    fd = (int) ((oe_internal_socket_t*) s)->provider_socket;
+    fd_map[fd] = s;
+    return fd;
+}
+
+int close(int fd)
+{
+    oe_socket_t sock = fd_map[fd];
+    if (sock == OE_INVALID_SOCKET)
+        return -1;
+
+    oe_closesocket(sock);
+    fd_map[fd] = OE_INVALID_SOCKET;
+    return 0;
+}
+
+int getaddrinfo(
+    const char* nodename,
+    const char* servname,
+    const struct addrinfo* hints,
+    struct addrinfo** res)
+{
+    return oe_getaddrinfo_OE_NETWORK_INSECURE(nodename, servname, hints, res);
+}
+
+void freeaddrinfo(struct addrinfo* ai)
+{
+    oe_freeaddrinfo(ai);
 }
