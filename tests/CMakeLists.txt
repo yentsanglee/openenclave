@@ -68,6 +68,7 @@ if ( UNIX )
         add_subdirectory(libcxxrt)
         add_subdirectory(memory)
     endif()
+add_subdirectory(sockets)
 add_subdirectory(create-rapid)
 endif()
 
