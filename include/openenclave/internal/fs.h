@@ -134,7 +134,7 @@ struct _oe_file
 
 struct _oe_dir
 {
-    struct oe_dirent (*readdir)(oe_dir_t *dirp);
+    struct oe_dirent* (*readdir)(oe_dir_t *dirp);
 
     int (*closedir)(oe_dir_t *dirp);
 };
