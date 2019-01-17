@@ -23,7 +23,7 @@ oe_device_type_t;
 /* Base type for oe_file_t and oe_socket_t. */
 typedef struct _oe_device
 {
-    /* Type of this device: OE_DEVICE_FILE or OE_DEVICE_FILE. */
+    /* Type of this device: OE_DEVICE_FILE or OE_DEVICE_SOCKET. */
     oe_device_type_t type;
 
     /* Size of full structure including extended size. */
