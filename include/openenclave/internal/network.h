@@ -72,7 +72,11 @@ struct _oe_network
     void (*add_ref)(oe_fs_t* fs);
 
     /* Socket factory method. */
-    oe_socket_t* (*socket)(oe_network_t* network, int domain, int type, int protocol);
+    oe_socket_t* (*socket)(
+        oe_network_t* network,
+        int domain,
+        int type,
+        int protocol);
 
     int (*getaddrinfo)(
         oe_network_t* network,
