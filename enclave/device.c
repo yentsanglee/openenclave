@@ -1,4 +1,4 @@
-// Copyright(c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include "device.h"
@@ -9,10 +9,6 @@ static oe_device_t* device_table; // Resizable array of device entries
 size_t file_descriptor_table_len = 0;
 oe_device_t* oe_file_descriptor_table
 
-int HostFSTableIdx = -1;
-int EnclaveLocalFSTableIdx = -1;
-int HostNetworkTableIdx = -1;
-int EnclaveToEnclaveNetworkTableIdx = -1;
 
 static size_t resolver_table_len = 0;
 static oe_resolver_t* resolver_table; // Resizable array of device entries
@@ -23,8 +19,10 @@ void oe_device_init()
 {
     // Opt into file systems
 
-    device_table =
-        CreateHostFSDevice(device_table, &device_table_len, );
+    device_table = CreateHostFSDevice(
+        device_table, &device_table_len, OE_DEV_HOST_FILESYSTEM);
+    OE_DEV_HOST_SOCKET
+    OE_DEV_ENCLAVE_SOCKET
     device_table = CreateEnclaveLocalFSDevice(
         device_table, &device_table_len, &EnclaveLocalFSTableIdx);
 

@@ -41,10 +41,10 @@ extern "C"
 
     typedef struct oe_addrinfo
     {
-        int ai_flags;
-        int ai_family;
-        int ai_socktype;
-        int ai_protocol;
+        int64_t ai_flags;
+        int64_t ai_family;
+        int64_t ai_socktype;
+        int64_t ai_protocol;
         size_t ai_addrlen;
         struct oe_sockaddr* ai_addr;
         char* ai_canonname;
@@ -405,6 +405,7 @@ extern "C"
 
     int oe_shutdown(_In_ oe_socket_t s, _In_ int how);
 
+#if 0
     oe_socket_t oe_socket_OE_NETWORK_INSECURE(
         _In_ int domain,
         _In_ int type,
@@ -548,6 +549,7 @@ extern "C"
     oe_socket_t oe_register_socket(
         _In_ const oe_socket_provider_t* provider,
         intptr_t provider_socket);
+#endif
 
 #ifdef __cplusplus
 }

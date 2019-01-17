@@ -34,7 +34,7 @@ static void copy_output_fds(oe_provider_fd_set* dest, oe_fd_set_internal* src)
 }
 
 static int oe_insecure_select(
-    int a_nFds,
+    int64_t a_nFds,
     _Inout_opt_ oe_provider_fd_set* a_readfds,
     _Inout_opt_ oe_provider_fd_set* a_writefds,
     _Inout_opt_ oe_provider_fd_set* a_exceptfds,
@@ -85,7 +85,7 @@ static int oe_insecure_select(
     {
         copy_output_fds(a_exceptfds, &result.exceptFds);
     }
-    return result.socketsSet;
+    return (int)result.socketsSet;
 }
 
 int oe_gethostname_OE_NETWORK_INSECURE(
@@ -237,7 +237,7 @@ static ssize_t oe_insecure_recv(
     return (sock_error != 0) ? OE_SOCKET_ERROR : bytesReceived;
 }
 
-static int oe_insecure_send(
+static ssize_t oe_insecure_send(
     _In_ intptr_t s,
     _In_reads_bytes_(len) const char* buf,
     int len,
@@ -311,10 +311,10 @@ static int oe_insecure_connect(
 static intptr_t oe_insecure_accept(
     _In_ intptr_t a_Socket,
     _Out_writes_bytes_(*addrlen) struct sockaddr* a_SockAddr,
-    _Inout_ int* a_pAddrLen)
+    _Inout_ socklen_t* a_pAddrLen)
 {
     accept_Result result;
-    int addrlen = (a_pAddrLen != NULL) ? *a_pAddrLen : 0;
+    socklen_t addrlen = (a_pAddrLen != NULL) ? *a_pAddrLen : 0;
     oe_result_t oe_result = ocall_accept(&result, a_Socket, addrlen);
     if ((oe_result != OE_OK) || (result.addrlen > addrlen))
     {
@@ -412,9 +412,9 @@ int oe_getaddrinfo_OE_NETWORK_INSECURE(
     oe_addrinfo* ai;
     oe_addrinfo** pNext = &ailist;
 
-    size_t length_needed = 0;
+    socklen_t length_needed = 0;
     struct addrinfo_Buffer* response = NULL;
-    size_t len = 0;
+    socklen_t len = 0;
 
     *ppResult = NULL;
 
@@ -435,7 +435,8 @@ int oe_getaddrinfo_OE_NETWORK_INSECURE(
         if (len < length_needed)
         {
             free(response);
-            response = (struct addrinfo_Buffer*)oe_malloc(length_needed);
+            response =
+                (struct addrinfo_Buffer*)oe_malloc((size_t)length_needed);
             if (response == NULL)
             {
                 return OE_ENOMEM; // TODO: EAI_MEMORY
@@ -485,10 +486,10 @@ int oe_getaddrinfo_OE_NETWORK_INSECURE(
             response[i].ai_addr,
             (size_t)response[i].ai_addrlen);
 
-        ai->ai_flags = response[i].ai_flags;
-        ai->ai_family = response[i].ai_family;
-        ai->ai_socktype = response[i].ai_socktype;
-        ai->ai_protocol = response[i].ai_protocol;
+        ai->ai_flags = (int)response[i].ai_flags;
+        ai->ai_family = (int)response[i].ai_family;
+        ai->ai_socktype = (int)response[i].ai_socktype;
+        ai->ai_protocol = (int)response[i].ai_protocol;
         ai->ai_addrlen = (size_t)response[i].ai_addrlen;
         if (response[i].ai_canonname[0] != 0)
         {
@@ -534,9 +535,9 @@ int oe_getnameinfo_OE_NETWORK_INSECURE(
     _In_ const struct oe_sockaddr* sa,
     _In_ oe_socklen_t salen,
     _Out_writes_opt_z_(hostlen) char* host,
-    _In_ size_t hostlen,
+    _In_ socklen_t hostlen,
     _Out_writes_opt_z_(servlen) char* serv,
-    _In_ size_t servlen,
+    _In_ socklen_t servlen,
     _In_ int flags)
 {
     getnameinfo_Result result = {0};

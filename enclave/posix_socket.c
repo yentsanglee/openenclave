@@ -1,5 +1,5 @@
-#Copyright(c) Microsoft Corporation.All rights reserved.
-#Licensed under the MIT License.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #include "device.h"
 
@@ -9,6 +9,7 @@ int oe_socket(int domain, int type, int protocol)
     switch (domain)
     {
         case AF_ENCLAVE:
+
             break;
 
     case

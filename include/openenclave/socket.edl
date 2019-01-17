@@ -7,7 +7,7 @@ enclave {
     struct accept_Result {
         oe_socket_error_t error;
         intptr_t hNewSocket;
-        int64_t addrlen;
+        socklen_t addrlen;
         char addr[256];
     };
 
@@ -104,7 +104,7 @@ enclave {
             int64_t a_Protocol,
             [out, size=len] addrinfo_Buffer* buf,
             socklen_t len,
-            [out] size_t* length_needed);
+            [out] socklen_t* length_needed);
 
         gethostname_Result ocall_gethostname(void);
 

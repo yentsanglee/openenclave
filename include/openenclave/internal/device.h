@@ -1,95 +1,77 @@
-// Copyright(c) Microsoft Corporation.All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef __OE_ENCLAVE_DEVICE_H__
-#define __OE_ENCLAVE_DEVICE_H__ 1
+#ifndef _OE_DEVICE_H
+#define _OE_DEVICE_H
 
-namespace OE_DEVICE
+#include <openenclave/bits/types.h>
+#include <openenclave/internal/errno.h>
 
-    enum oe_device_type {
-        OE_DEV_NONE = 0,      // This entry is invalid
-        OE_DEV_SECURE_FILE,   // This entry describes a file in the enclaves
-                              // secure file system
-        OE_DEV_HOST_FILE,     // This entry describes a file in the hosts's file
-                              // system
-        OE_DEV_SOCKET,        // This entry describes an internet socket
-        OE_DEV_ENCLAVE_SOCKET // This entry describes an enclave to enclave
-                              // communication channel not available to the host
-    };
+OE_EXTERNC_BEGIN
 
-typedef struct oe_device_ops
+#define OE_PATH_MAX 4096
+
+typedef enum _oe_device_type
 {
+    OE_DEV_NONE = 0,      // This entry is invalid
+    OE_DEV_SECURE_FILE,   // This entry describes a file in the enclaves
+                          // secure file system
+    OE_DEV_HOST_FILE,     // This entry describes a file in the hosts's file
+                          // system
+    OE_DEV_SOCKET,        // This entry describes an internet socket
+    OE_DEV_ENCLAVE_SOCKET // This entry describes an enclave to enclave
+} oe_device_type_t;
+
+/* Base type for oe_file_t and oe_socket_t. */
+typedef struct _oe_device
+{
+    /* Type of this device: OE_DEVICE_FILE or OE_DEVICE_SOCKET. */
+    oe_device_type_t type;
+
+    /* sizeof additional data. To get a pointer to the device private data, ptr
+       = (oe_file_device_t)(devptr+1); usually sizeof(oe_file_t) or
+       sizeof(oe_socket_t). */
+
+    size_t size;
+
     int (*init)();
     int (*create)();
     int (*remove)();
 
-    int (*read)();
-    int (*write)();
-    int (*ioctl)();
-    int (*close)();
+    ssize_t (*read)(int fd, void* buf, size_t count);
 
-    union {
-        struct
-        {
-            int (*mount)();
-            int (*umount)();
-            int (*open)();
-            int (*seek)();
-            int (*stat)();
-            int (*fcntl)();
-        } FileDevice;
+    ssize_t (*write)(int fd, const void* buf, size_t count);
 
-        struct SocketDevice
-        {
-            int (*socket)(
-                int domain,
-                int type,
-                int protocol); // We mainly check these args to be sure
-                               // we can do what they are asking. Otherwise,
-                               // the effect of the args is implementation
-                               // specific
+    int (*ioctl)(int fd, unsigned long request, ...);
 
-            int (*connect)(
-                int sockfd,
-                const struct sockaddr* addr,
-                socklen_t addrlen);
-            int (
-                *accept)(int sockfd, struct sockaddr* addr, socklen_t* addrlen);
-            int (*bind)(
-                int sockfd,
-                const struct sockaddr* addr,
-                socklen_t addrlen);
-            int (*listen)(int sockfd, int backlog);
-            int (*getsockopt)(
-                int sockfd,
-                int level,
-                int optname,
-                void* optval,
-                socklen_t* optlen);
-            int (*setsockopt)(
-                int sockfd,
-                int level,
-                int optname,
-                const void* optval,
-                socklen_t optlen);
-        } SocketDevice;
-    };
-};
+    int (*close)(int fd);
+} oe_device_t;
 
-typdef struct oe_device_entry
+typedef struct _oe_device_entry
 {
-    enum oe_device_type;
+    oe_device_type_t type;
     char* devicename;
-    unsigned long flags; //
+    uint64_t flags;
+    oe_device_t* device;
+} oe_device_entry_t;
 
-    oe_device_ops* pops;
+int oe_device_init(); // Overridable function to set up device structures. Shoud
+                      // be ommited when new interface is complete.
+int oe_allocate_fd();
+void oe_release_fd(int fd);
 
-} * oe_device_t;
+oe_device_t* oe_device_alloc(
+    int device_id,
+    char* device_name,
+    int private_size); // Allocate a device of sizeof(struct
+int oe_device_addref(int device_id);
+int oe_device_release(int device_id);
 
-extern size_t file_descriptor_table_len;
-extern oe_device_t* _oe_file_descriptor_table;
+oe_device_t* oe_set_fd_device(int device_id, oe_device_t* pdevice);
+oe_device_t* oe_get_fd_device(int fd);
 
-int oe_device_init(); // Overridable function to set up device structures
-}
-;      // OE_DEVICE
-#endif // __OE_ENCLAVE_DEVICE_H__
+oe_device_t* oe_fd_to_device(int fd);
+
+OE_EXTERNC_END
+
+#endif // _OE_DEVICE_H

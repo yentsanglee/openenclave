@@ -1,6 +1,5 @@
-
-#Copyright(c) Microsoft Corporation.All rights reserved.
-#Licensed under the MIT License.
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
 #ifndef __OE_ENCLAVE_DEVICE_H__
 #define __OE_ENCLAVE_DEVICE_H__ 1
@@ -8,13 +7,13 @@
 namespace OE_DEVICE
 
     enum oe_device_type {
-        OE_DEV_NONE = 0,      // This entry is invalid
-        OE_DEV_SECURE_FILE,   // This entry describes a file in the enclaves
-                              // secure file system
-        OE_DEV_HOST_FILE,     // This entry describes a file in the hosts's file
-                              // system
-        OE_DEV_SOCKET,        // This entry describes an internet socket
-        OE_DEV_ENCLAVE_SOCKET // This entry describes an enclave to enclave
+        OE_DEV_NONE = -1,         // This entry is invalid
+        OE_DEV_SECURE_FILESYSTEM, // This entry describes a file in the enclaves
+                                  // secure file system
+        OE_DEV_HOST_FILESYSTEM,   // This entry describes a file in the hosts's
+                                  // file system
+        OE_DEV_HOST_SOCKET,       // This entry describes an internet socket
+        OE_DEV_ENCLAVE_SOCKET     // This entry describes an enclave to enclave
                               // communication channel not available to the host
     };
 
@@ -79,9 +78,10 @@ typedef struct oe_device_ops
 
 typdef struct oe_device_entry
 {
+    int32_t length;
     enum oe_device_type;
     char* devicename;
-    unsigned long flags; //
+    uint32_t flags; //
 
     oe_device_ops* pops;
 
@@ -91,6 +91,17 @@ extern size_t file_descriptor_table_len;
 extern oe_device_t* _oe_file_descriptor_table;
 
 int oe_device_init(); // Overridable function to set up device structures
+int oe_allocate_fd();
+void oe_release_fd(int fd);
+
+oe_device_t* oe_device_alloc(
+    int device_id,
+    char* device_name,
+    int private_size); // Allocate a device of sizeof(struct
+int oe_device_addref(int device_id);
+int oe_device_release(int device_id);
+
+oe_device_t oe_set_fd_device() oe_device_t oe_get_fd_device()
 }
 ;      // OE_DEVICE
 #endif // __OE_ENCLAVE_DEVICE_H__

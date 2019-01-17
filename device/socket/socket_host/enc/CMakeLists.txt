@@ -8,7 +8,7 @@ oeedl_file(../../../../include/openenclave/socket.edl
     socket_t_h)
 
 add_library(oesocket_host_enc OBJECT
-    socket_enc_insecure.c
+    host_socket.c
     ${socket_t_h})
 
 if(CMAKE_C_COMPILER_ID MATCHES GNU)
