@@ -54,6 +54,7 @@ endif()
 
 add_library(oecore STATIC
     ../../common/safecrt.c
+    device.c
     assert.c
     hexdump.c
     result.c
