@@ -26,7 +26,7 @@ typedef struct _oe_device
     /* Type of this device: OE_DEVICE_FILE or OE_DEVICE_SOCKET. */
     oe_device_type_t type;
 
-    /* Size of full structure including extended size. */
+    /* sizeof(oe_file_t) or sizeof(oe_socket_t). */
     size_t size;
 
     ssize_t (*read)(int fd, void *buf, size_t count);
