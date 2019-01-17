@@ -122,7 +122,7 @@ oe_result_t oe_get_key(
     return _get_key_imp(sgx_key_request, sgx_key);
 }
 
-oe_result_t oe_get_seal_key(
+oe_result_t oe_get_seal_key_v1(
     const uint8_t* key_info,
     size_t key_info_size,
     uint8_t* key_buffer,
@@ -157,6 +157,64 @@ oe_result_t oe_get_seal_key(
     return ret;
 }
 
+oe_result_t oe_get_seal_key_v2(
+    const uint8_t* key_info,
+    size_t key_info_size,
+    uint8_t** key_buffer,
+    size_t* key_buffer_size)
+{
+    oe_result_t result;
+    sgx_key_t* tmp_key_buffer = NULL;
+
+    // Check parameters.
+    if ((key_info == NULL) || (key_info_size != sizeof(sgx_key_request_t)))
+    {
+        return OE_INVALID_PARAMETER;
+    }
+
+    if ((key_buffer == NULL) || (key_buffer_size == NULL))
+    {
+        return OE_INVALID_PARAMETER;
+    }
+
+    *key_buffer = NULL;
+    *key_buffer_size = 0;
+
+    tmp_key_buffer = oe_calloc(1, sizeof(sgx_key_t));
+    if (tmp_key_buffer == NULL)
+    {
+        return OE_OUT_OF_MEMORY;
+    }
+
+    // Get the key based on input key info.
+    result = oe_get_key((sgx_key_request_t*)key_info, tmp_key_buffer);
+    if (result != OE_OK)
+    {
+        oe_free_seal_key((uint8_t*)tmp_key_buffer, NULL);
+        return result;
+    }
+
+    *key_buffer = (uint8_t*)tmp_key_buffer;
+    *key_buffer_size = sizeof(sgx_key_t);
+
+    return OE_OK;
+}
+
+void oe_free_seal_key(
+    uint8_t* key_buffer, /** [in] If non-NULL, frees the key buffer. */
+    uint8_t* key_info)   /** [in] If non-NULL, frees the key info. */
+{
+    if (key_buffer)
+    {
+        oe_secure_zero_fill(key_buffer, sizeof(sgx_key_t));
+        oe_free(key_buffer);
+    }
+    if (key_info)
+    {
+        oe_free(key_info);
+    }
+}
+
 /*
  * Get default key request attributes.
  * The ISV SVN and CPU SVN are set to value of current enclave.
@@ -182,12 +240,11 @@ static oe_result_t _get_default_key_request_attributes(
 
     // Set key request attributes(isv svn, cpu svn, and attribute masks)
     sgx_key_request->isv_svn = sgx_report.body.isvsvn;
-    OE_CHECK(
-        oe_memcpy_s(
-            &sgx_key_request->cpu_svn,
-            sizeof(sgx_key_request->cpu_svn),
-            sgx_report.body.cpusvn,
-            sizeof(sgx_report.body.cpusvn)));
+    OE_CHECK(oe_memcpy_s(
+        &sgx_key_request->cpu_svn,
+        sizeof(sgx_key_request->cpu_svn),
+        sgx_report.body.cpusvn,
+        sizeof(sgx_report.body.cpusvn)));
     sgx_key_request->attribute_mask.flags = OE_SEALKEY_DEFAULT_FLAGSMASK;
     sgx_key_request->attribute_mask.xfrm = OE_SEALKEY_DEFAULT_XFRMMASK;
     sgx_key_request->misc_attribute_mask = OE_SEALKEY_DEFAULT_MISCMASK;
@@ -196,7 +253,7 @@ done:
     return result;
 }
 
-oe_result_t oe_get_seal_key_by_policy(
+oe_result_t oe_get_seal_key_by_policy_v1(
     oe_seal_policy_t seal_policy,
     uint8_t* key_buffer,
     size_t* key_buffer_size,
@@ -257,12 +314,11 @@ oe_result_t oe_get_seal_key_by_policy(
 
         if (key_info != NULL)
         {
-            OE_CHECK(
-                oe_memcpy_s(
-                    key_info,
-                    *key_info_size,
-                    &sgx_key_request,
-                    sizeof(sgx_key_request_t)));
+            OE_CHECK(oe_memcpy_s(
+                key_info,
+                *key_info_size,
+                &sgx_key_request,
+                sizeof(sgx_key_request_t)));
             *key_info_size = sizeof(sgx_key_request_t);
         }
     }
@@ -273,5 +329,71 @@ oe_result_t oe_get_seal_key_by_policy(
     }
 
 done:
+    return result;
+}
+
+oe_result_t oe_get_seal_key_by_policy_v2(
+    oe_seal_policy_t seal_policy,
+    uint8_t** _key_buffer,
+    size_t* _key_buffer_size,
+    uint8_t** _key_info,
+    size_t* _key_info_size)
+{
+    oe_result_t result;
+    uint8_t* key_buffer = NULL;
+    size_t key_buffer_size = 0;
+    uint8_t* key_info = NULL;
+    size_t key_info_size = 0;
+
+    if (!_key_buffer || !_key_buffer_size)
+    {
+        return OE_INVALID_PARAMETER;
+    }
+
+    if ((_key_info && !_key_info_size) || (!_key_info && _key_info_size))
+    {
+        return OE_INVALID_PARAMETER;
+    }
+
+    *_key_buffer = NULL;
+    key_buffer_size = sizeof(sgx_key_t);
+    key_buffer = oe_calloc(1, key_buffer_size);
+    if (key_buffer == NULL)
+    {
+        return OE_OUT_OF_MEMORY;
+    }
+
+    if (_key_info)
+    {
+        *_key_info = NULL;
+        key_info_size = sizeof(sgx_key_request_t);
+        key_info = oe_calloc(1, key_info_size);
+        if (key_info == NULL)
+        {
+            oe_free(key_buffer);
+            return OE_OUT_OF_MEMORY;
+        }
+    }
+
+    result = oe_get_seal_key_by_policy_v1(
+        seal_policy, key_buffer, &key_buffer_size, key_info, &key_info_size);
+    if (result != OE_OK)
+    {
+        oe_free(key_info);
+        oe_free(key_buffer);
+    }
+    else
+    {
+        *_key_buffer = key_buffer;
+        *_key_buffer_size = key_buffer_size;
+        if (_key_info)
+        {
+            *_key_info = key_info;
+        }
+        if (_key_info_size)
+        {
+            *_key_info_size = key_info_size;
+        }
+    }
     return result;
 }

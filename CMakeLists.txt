@@ -5,7 +5,7 @@
 #
 # Please read The Ultimate Guide to CMake:
 # https://rix0r.nl/blog/2015/08/13/cmake-guide/
-cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
 # Read version from "VERSION" file.
 file(STRINGS "VERSION" OE_VERSION_WITH_V)
@@ -44,6 +44,13 @@ if (IS_DIRECTORY "${PROJECT_SOURCE_DIR}/.git")
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  # Install Git pre-commit hook
+  if (NOT WIN32)
+    file(
+      COPY scripts/pre-commit
+      DESTINATION "${PROJECT_SOURCE_DIR}/.git/hooks")
+  endif ()
 endif ()
 
 # Get Jenkins build number
@@ -97,9 +104,14 @@ include(package_settings)
 include(add_enclave)
 
 # User configurable options
-option(USE_LIBSGX "Build oehost using SGX library requiring FLC" OFF)
+if (UNIX)
+  option(USE_LIBSGX "Build oehost using SGX library requiring FLC" ON)
+elseif (WIN32)
+  option(USE_LIBSGX "Build oehost using SGX library requiring FLC" OFF)
+endif ()
+
 if (USE_LIBSGX AND WIN32)
-  message(FATAL_ERROR "USE_LIBSGX is not supported on Windows. Disable this when calling cmake with -DUSE_LIBSGX=OFF")
+  message(FATAL_ERROR "USE_LIBSGX is not yet supported on Windows.")
 endif ()
 
 # TODO: See #756: Fix this because it is incompatible with

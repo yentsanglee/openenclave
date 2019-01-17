@@ -1,7 +1,7 @@
 // oetools-image:tag  Docker image from OE Jenkins Registry
 OETOOLS_REPO = "https://oejenkinscidockerregistry.azurecr.io"
 OETOOLS_REPO_CREDENTIAL_ID = "oejenkinscidockerregistry"
-OETOOLS_IMAGE = "oetools-azure:1.8"
+OETOOLS_IMAGE = "oetools-azure:1.10"
 
 
 def PowerShellWrapper(psCmd) {
@@ -16,7 +16,7 @@ def ACCTest(String label, String compiler, String unit, String suite) {
             checkout scm
 
             timeout(15) {
-                sh "./scripts/test-build-config -p $unit -b $suite --compiler=$compiler"
+                sh "./scripts/test-build-config -p $unit -b $suite --compiler=$compiler --disable_sim"
             }
 
         }
@@ -49,7 +49,7 @@ def ACCContainerTest(String label) {
             docker.withRegistry(OETOOLS_REPO, OETOOLS_REPO_CREDENTIAL_ID) {
                 docker.image(OETOOLS_IMAGE).inside('--privileged -v /dev/sgx:/dev/sgx') {
                     timeout(15) {
-                        sh './scripts/test-build-config -p SGX1FLC -b RelWithDebInfo -d'
+                        sh './scripts/test-build-config -p SGX1FLC -b RelWithDebInfo --disable_sim'
                     }
                 }
             }
@@ -66,7 +66,7 @@ def checkPreCommitRequirements() {
             docker.withRegistry(OETOOLS_REPO, OETOOLS_REPO_CREDENTIAL_ID) {
                 docker.image(OETOOLS_IMAGE).inside {
                     timeout(2) {
-                        sh './scripts/check-precommit-reqs'
+                        sh './scripts/check-ci'
                     }
                 }
             }
@@ -75,7 +75,7 @@ def checkPreCommitRequirements() {
     stage('Sim default compiler') {
         // This particular test asserts that everything (at least
         // for simulation) can be built after using our
-        // install-prereqs script to bootstrap a machine.
+        // install-prereqs ansible playbook to to bootstrap a machine.
         node {
             cleanWs()
             checkout scm
@@ -85,18 +85,15 @@ def checkPreCommitRequirements() {
             buildImage.inside {
                 timeout(15) {
                     // This is run to test that it works with the dependencies
+                    // installed by our install-prereqs ansible playbook.
+                    sh './scripts/check-ci'
                     // installed by our install-prereqs script.
-                    sh './scripts/check-precommit-reqs'
 
-                    // We actually expect `ctest` to fail because it is an
-                    // older version that emits a failure if any tests are
-                    // skipped. In other stages, we explicitly install an
-                    // updated version of CMake.
                     dir('build') {
                         sh '''
-                        cmake ..
+                        cmake .. -DUSE_LIBSGX=OFF
                         make
-                        OE_SIMULATION=1 ctest --verbose --output-on-failure || true
+                        OE_SIMULATION=1 ctest --verbose --output-on-failure
                     '''
                         // Note that `make package` is not expected to work
                         // without extra configuration.

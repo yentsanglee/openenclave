@@ -53,20 +53,18 @@ static oe_result_t _oe_get_local_report(
         OE_RAISE(OE_OUT_OF_MEMORY);
 
     if (opt_params != NULL)
-        OE_CHECK(
-            oe_memcpy_s(
-                arg->opt_params, opt_params_size, opt_params, opt_params_size));
+        OE_CHECK(oe_memcpy_s(
+            arg->opt_params, opt_params_size, opt_params, opt_params_size));
 
     arg->opt_params_size = opt_params_size;
 
     OE_CHECK(oe_ecall(enclave, OE_ECALL_GET_SGX_REPORT, (uint64_t)arg, NULL));
 
-    OE_CHECK(
-        oe_memcpy_s(
-            report_buffer,
-            *report_buffer_size,
-            &arg->sgx_report,
-            sizeof(sgx_report_t)));
+    OE_CHECK(oe_memcpy_s(
+        report_buffer,
+        *report_buffer_size,
+        &arg->sgx_report,
+        sizeof(sgx_report_t)));
     *report_buffer_size = sizeof(sgx_report_t);
     result = OE_OK;
 
@@ -121,13 +119,12 @@ static oe_result_t _oe_get_remote_report(
     if (sgx_report == NULL)
         OE_RAISE(OE_OUT_OF_MEMORY);
 
-    OE_CHECK(
-        _oe_get_local_report(
-            enclave,
-            sgx_target_info,
-            sizeof(*sgx_target_info),
-            (uint8_t*)sgx_report,
-            &sgx_report_size));
+    OE_CHECK(_oe_get_local_report(
+        enclave,
+        sgx_target_info,
+        sizeof(*sgx_target_info),
+        (uint8_t*)sgx_report,
+        &sgx_report_size));
 
     /*
      * Get quote from Quoting Enclave.
@@ -153,7 +150,7 @@ done:
     return result;
 }
 
-oe_result_t oe_get_report(
+oe_result_t oe_get_report_v1(
     oe_enclave_t* enclave,
     uint32_t flags,
     const void* opt_params,
@@ -175,35 +172,32 @@ oe_result_t oe_get_report(
     {
         if (*report_buffer_size >= sizeof(oe_report_header_t))
         {
-            OE_CHECK(
-                oe_safe_add_u64(
-                    (uint64_t)report_buffer,
-                    sizeof(oe_report_header_t),
-                    (uint64_t*)&report_buffer));
+            OE_CHECK(oe_safe_add_u64(
+                (uint64_t)report_buffer,
+                sizeof(oe_report_header_t),
+                (uint64_t*)&report_buffer));
             *report_buffer_size -= sizeof(oe_report_header_t);
         }
     }
 
     if (flags & OE_REPORT_FLAGS_REMOTE_ATTESTATION)
     {
-        OE_CHECK(
-            _oe_get_remote_report(
-                enclave,
-                opt_params,
-                opt_params_size,
-                report_buffer,
-                report_buffer_size));
+        OE_CHECK(_oe_get_remote_report(
+            enclave,
+            opt_params,
+            opt_params_size,
+            report_buffer,
+            report_buffer_size));
     }
     else
     {
         // If no flags are specified, default to locally attestable report.
-        OE_CHECK(
-            _oe_get_local_report(
-                enclave,
-                opt_params,
-                opt_params_size,
-                report_buffer,
-                report_buffer_size));
+        OE_CHECK(_oe_get_local_report(
+            enclave,
+            opt_params,
+            opt_params_size,
+            report_buffer,
+            report_buffer_size));
     }
 
     header->version = OE_REPORT_HEADER_VERSION;
@@ -211,11 +205,8 @@ oe_result_t oe_get_report(
                               ? OE_REPORT_TYPE_SGX_REMOTE
                               : OE_REPORT_TYPE_SGX_LOCAL;
     header->report_size = *report_buffer_size;
-    OE_CHECK(
-        oe_safe_add_u64(
-            *report_buffer_size,
-            sizeof(oe_report_header_t),
-            report_buffer_size));
+    OE_CHECK(oe_safe_add_u64(
+        *report_buffer_size, sizeof(oe_report_header_t), report_buffer_size));
     result = OE_OK;
 
 done:
@@ -225,6 +216,70 @@ done:
     }
 
     return result;
+}
+
+oe_result_t oe_get_report_v2(
+    oe_enclave_t* enclave,
+    uint32_t flags,
+    const void* opt_params,
+    size_t opt_params_size,
+    uint8_t** report_buffer,
+    size_t* report_buffer_size)
+{
+    oe_result_t result;
+    uint8_t* tmp_report_buffer = NULL;
+    size_t tmp_report_buffer_size = 0;
+
+    if (!report_buffer || !report_buffer_size)
+        return OE_INVALID_PARAMETER;
+
+    *report_buffer = NULL;
+    *report_buffer_size = 0;
+
+    result = oe_get_report_v1(
+        enclave,
+        flags,
+        opt_params,
+        opt_params_size,
+        NULL,
+        &tmp_report_buffer_size);
+    if (result != OE_BUFFER_TOO_SMALL)
+    {
+        if (result == OE_OK)
+        {
+            result = OE_UNEXPECTED;
+        }
+        return result;
+    }
+
+    tmp_report_buffer = calloc(1, tmp_report_buffer_size);
+    if (tmp_report_buffer == NULL)
+    {
+        return OE_OUT_OF_MEMORY;
+    }
+
+    result = oe_get_report_v1(
+        enclave,
+        flags,
+        opt_params,
+        opt_params_size,
+        tmp_report_buffer,
+        &tmp_report_buffer_size);
+    if (result != OE_OK)
+    {
+        free(tmp_report_buffer);
+        return result;
+    }
+
+    *report_buffer = tmp_report_buffer;
+    *report_buffer_size = tmp_report_buffer_size;
+
+    return OE_OK;
+}
+
+void oe_free_report(uint8_t* report_buffer)
+{
+    free(report_buffer);
 }
 
 oe_result_t oe_verify_report(
@@ -256,16 +311,8 @@ oe_result_t oe_verify_report(
     if (header->report_type == OE_REPORT_TYPE_SGX_REMOTE)
     {
         // Quote attestation can be done entirely on the host side.
-        OE_CHECK(
-            VerifyQuoteImpl(
-                header->report,
-                header->report_size,
-                NULL,
-                0,
-                NULL,
-                0,
-                NULL,
-                0));
+        OE_CHECK(VerifyQuoteImpl(
+            header->report, header->report_size, NULL, 0, NULL, 0, NULL, 0));
     }
     else if (header->report_type == OE_REPORT_TYPE_SGX_LOCAL)
     {

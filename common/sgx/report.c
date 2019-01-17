@@ -36,23 +36,21 @@ static oe_result_t _oe_parse_sgx_report_body(
     OE_STATIC_ASSERT(
         sizeof(parsed_report->identity.unique_id) >=
         sizeof(report_body->mrenclave));
-    OE_CHECK(
-        oe_memcpy_s(
-            parsed_report->identity.unique_id,
-            sizeof(parsed_report->identity.unique_id),
-            report_body->mrenclave,
-            sizeof(report_body->mrenclave)));
+    OE_CHECK(oe_memcpy_s(
+        parsed_report->identity.unique_id,
+        sizeof(parsed_report->identity.unique_id),
+        report_body->mrenclave,
+        sizeof(report_body->mrenclave)));
 
     OE_STATIC_ASSERT(
         sizeof(parsed_report->identity.signer_id) >=
         sizeof(report_body->mrsigner));
 
-    OE_CHECK(
-        oe_memcpy_s(
-            parsed_report->identity.signer_id,
-            sizeof(parsed_report->identity.signer_id),
-            report_body->mrsigner,
-            sizeof(report_body->mrsigner)));
+    OE_CHECK(oe_memcpy_s(
+        parsed_report->identity.signer_id,
+        sizeof(parsed_report->identity.signer_id),
+        report_body->mrsigner,
+        sizeof(report_body->mrsigner)));
 
     if (report_body->isvprodid > OE_INT8_MAX)
         goto done;
@@ -106,9 +104,8 @@ oe_result_t oe_parse_report(
     else if (header->report_type == OE_REPORT_TYPE_SGX_REMOTE)
     {
         sgx_quote = (const sgx_quote_t*)header->report;
-        OE_CHECK(
-            _oe_parse_sgx_report_body(
-                &sgx_quote->report_body, true, parsed_report));
+        OE_CHECK(_oe_parse_sgx_report_body(
+            &sgx_quote->report_body, true, parsed_report));
         result = OE_OK;
     }
     else
@@ -141,12 +138,11 @@ static oe_result_t _oe_sgx_get_target_info(
 
     OE_CHECK(oe_memset_s(info, sizeof(*info), 0, sizeof(*info)));
 
-    OE_CHECK(
-        oe_memcpy_s(
-            info->mrenclave,
-            sizeof(info->mrenclave),
-            sgx_report->body.mrenclave,
-            sizeof(sgx_report->body.mrenclave)));
+    OE_CHECK(oe_memcpy_s(
+        info->mrenclave,
+        sizeof(info->mrenclave),
+        sgx_report->body.mrenclave,
+        sizeof(sgx_report->body.mrenclave)));
 
     info->attributes = sgx_report->body.attributes;
     info->misc_select = sgx_report->body.miscselect;
@@ -158,7 +154,7 @@ done:
     return result;
 }
 
-oe_result_t oe_get_target_info(
+oe_result_t oe_get_target_info_v1(
     const uint8_t* report,
     size_t report_size,
     void* target_info_buffer,
@@ -180,9 +176,8 @@ oe_result_t oe_get_target_info(
     {
         case OE_REPORT_TYPE_SGX_LOCAL:
         case OE_REPORT_TYPE_SGX_REMOTE:
-            OE_CHECK(
-                _oe_sgx_get_target_info(
-                    report, report_size, target_info_buffer, target_info_size));
+            OE_CHECK(_oe_sgx_get_target_info(
+                report, report_size, target_info_buffer, target_info_size));
             break;
         default:
             OE_RAISE(OE_INVALID_PARAMETER);
@@ -192,4 +187,57 @@ oe_result_t oe_get_target_info(
 
 done:
     return result;
+}
+
+oe_result_t oe_get_target_info_v2(
+    const uint8_t* report,
+    size_t report_size,
+    void** target_info_buffer,
+    size_t* target_info_size)
+{
+    oe_result_t result = OE_FAILURE;
+    size_t temp_size = 0;
+    void* temp_info = NULL;
+
+    if (!target_info_buffer || !target_info_size)
+    {
+        return OE_INVALID_PARAMETER;
+    }
+
+    *target_info_buffer = NULL;
+    *target_info_size = 0;
+
+    result = oe_get_target_info_v1(report, report_size, NULL, &temp_size);
+    if (result != OE_BUFFER_TOO_SMALL)
+    {
+        if (result == OE_OK)
+        {
+            /* Should not succeed! */
+            result = OE_UNEXPECTED;
+        }
+        return result;
+    }
+
+    temp_info = malloc(temp_size);
+    if (temp_info == NULL)
+    {
+        return OE_OUT_OF_MEMORY;
+    }
+
+    result = oe_get_target_info_v1(report, report_size, temp_info, &temp_size);
+    if (result != OE_OK)
+    {
+        free(temp_info);
+
+        return result;
+    }
+    *target_info_size = temp_size;
+    *target_info_buffer = temp_info;
+
+    return OE_OK;
+}
+
+void oe_free_target_info(void* target_info_buffer)
+{
+    free(target_info_buffer);
 }

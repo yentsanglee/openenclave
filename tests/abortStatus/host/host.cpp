@@ -126,11 +126,10 @@ static bool TestBasicAbort(const char* enclave_name)
             TestAbortStatus(enclave, functions[i].first, functions[i].second);
         }
 
-#ifdef OE_USE_DEBUG_MALLOC
-        if ((result = oe_terminate_enclave(enclave)) != OE_MEMORY_LEAK)
-#else
-        if ((result = oe_terminate_enclave(enclave)) != OE_OK)
-#endif
+        // Enclave should be terminated correctly but there are no guarantees
+        // that all memory will be freed after enclave has been aborted
+        result = oe_terminate_enclave(enclave);
+        if ((result != OE_MEMORY_LEAK) && (result != OE_OK))
         {
             oe_put_err("oe_terminate_enclave(): result=%u", result);
             return false;
@@ -175,27 +174,24 @@ static bool TestMultipleThreadAbort(const char* enclave_name)
         std::atomic<uint32_t> thread_ready_count(0);
         std::atomic<bool> is_enclave_crashed(false);
 
-        threads.push_back(
-            std::thread(
-                CrashEnclaveThread,
-                enclave,
-                &thread_ready_count,
-                &is_enclave_crashed,
-                *function));
+        threads.push_back(std::thread(
+            CrashEnclaveThread,
+            enclave,
+            &thread_ready_count,
+            &is_enclave_crashed,
+            *function));
 
-        threads.push_back(
-            std::thread(
-                EcallAfterCrashThread,
-                enclave,
-                &thread_ready_count,
-                &is_enclave_crashed));
+        threads.push_back(std::thread(
+            EcallAfterCrashThread,
+            enclave,
+            &thread_ready_count,
+            &is_enclave_crashed));
 
-        threads.push_back(
-            std::thread(
-                OcallAfterCrashThread,
-                enclave,
-                &thread_ready_count,
-                &is_enclave_crashed));
+        threads.push_back(std::thread(
+            OcallAfterCrashThread,
+            enclave,
+            &thread_ready_count,
+            &is_enclave_crashed));
 
         // All threads must exit gracefully.
         for (auto& t : threads)
@@ -203,12 +199,10 @@ static bool TestMultipleThreadAbort(const char* enclave_name)
             t.join();
         }
 
-#ifdef OE_USE_DEBUG_MALLOC
-        // Enclave should be terminated correctly.
-        if ((result = oe_terminate_enclave(enclave)) != OE_MEMORY_LEAK)
-#else
-        if ((result = oe_terminate_enclave(enclave)) != OE_OK)
-#endif
+        // Enclave should be terminated correctly but there are no guarantees
+        // that all memory will be freed after enclave has been aborted
+        result = oe_terminate_enclave(enclave);
+        if ((result != OE_MEMORY_LEAK) && (result != OE_OK))
         {
             oe_put_err("oe_terminate_enclave(): result=%u", result);
             return false;
