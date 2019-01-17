@@ -1,9 +1,6 @@
 /* Copyright (c) Microsoft Corporation. All rights reserved. */
 /* Licensed under the MIT License. */
 #pragma once
-#ifndef _OE_ENCLAVE_H
-#error openenclave/bits/socket.h should only be included with enclave.h
-#endif
 #include <openenclave/bits/sockettypes.h>
 #include <openenclave/bits/timetypes.h>
 
@@ -28,13 +25,13 @@ extern "C"
 
     typedef struct oe_fd_set
     {
-        unsigned int fd_count;            /* how many are SET? */
+        uint64_t fd_count;            /* how many are SET? */
         oe_socket_t fd_array[FD_SETSIZE]; /* an array of SOCKETs */
     } oe_fd_set;
 
     typedef struct oe_provider_fd_set
     {
-        unsigned int fd_count;         /* how many are SET? */
+        uint64_t fd_count;         /* how many are SET? */
         intptr_t fd_array[FD_SETSIZE]; /* an array of SOCKETs */
     } oe_provider_fd_set;
 

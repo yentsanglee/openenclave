@@ -57,40 +57,40 @@ gethostname_Result ocall_gethostname(void)
 socket_Result ocall_socket(
     oe_socket_address_family_t a_AddressFamily,
     oe_socket_type_t a_Type,
-    int a_Protocol)
+    int64_t a_Protocol)
 {
     socket_Result result = {0};
-    int fd = socket((int)a_AddressFamily, (int)a_Type, a_Protocol);
+    int fd = socket((int)a_AddressFamily, (int)a_Type, (int)a_Protocol);
     result.hSocket = (intptr_t)fd;
     result.error = (fd == -1) ? (oe_socket_error_t)errno : 0;
     return result;
 }
 
-oe_socket_error_t ocall_listen(intptr_t a_hSocket, int a_nMaxConnections)
+oe_socket_error_t ocall_listen(intptr_t a_hSocket, socklen_t a_nMaxConnections)
 {
     int fd = (int)a_hSocket;
-    int s = listen(fd, a_nMaxConnections);
+    int s = listen(fd, (int)a_nMaxConnections);
     return s == -1 ? (oe_socket_error_t)s : 0;
 }
 
-GetSockName_Result ocall_getsockname(intptr_t a_hSocket, int a_nNameLen)
+GetSockName_Result ocall_getsockname(intptr_t a_hSocket, socklen_t a_nNameLen)
 {
     GetSockName_Result result = {0};
     socklen_t socklen = (socklen_t)a_nNameLen;
     int fd = (int)a_hSocket;
     int err = getsockname(fd, (struct sockaddr*)result.addr, &socklen);
-    result.addrlen = (int)socklen;
+    result.addrlen = socklen;
     result.error = (err == -1) ? (oe_socket_error_t)errno : 0;
     return result;
 }
 
-GetSockName_Result ocall_getpeername(intptr_t a_hSocket, int a_nNameLen)
+GetSockName_Result ocall_getpeername(intptr_t a_hSocket, socklen_t a_nNameLen)
 {
     GetSockName_Result result = {0};
     socklen_t socklen = (socklen_t)a_nNameLen;
     int fd = (int)a_hSocket;
     int err = getpeername(fd, (struct sockaddr*)result.addr, &socklen);
-    result.addrlen = (int)socklen;
+    result.addrlen = socklen;
     result.error = (err == -1) ? (oe_socket_error_t)errno : 0;
     return result;
 }
@@ -99,11 +99,11 @@ send_Result ocall_send(
     intptr_t a_hSocket,
     const void* a_Message,
     size_t a_nMessageLen,
-    int a_Flags)
+    int64_t a_Flags)
 {
     send_Result result = {0};
     int fd = (int)a_hSocket;
-    result.bytesSent = (int)send(fd, a_Message, a_nMessageLen, a_Flags);
+    result.bytesSent = send(fd, a_Message, a_nMessageLen, (int)a_Flags);
     if (result.bytesSent == -1)
     {
         result.error = (oe_socket_error_t)errno;
@@ -115,13 +115,13 @@ send_Result ocall_send(
 ssize_t ocall_recv(
     intptr_t a_hSocket,
     void* a_Buffer,
-    size_t a_nBufferSize,
-    int a_Flags,
+    size_t  a_nBufferSize,
+    int64_t a_Flags,
     oe_socket_error_t* a_Error)
 {
     int fd = (int)a_hSocket;
 
-    ssize_t bytesReceived = recv(fd, a_Buffer, a_nBufferSize, a_Flags);
+    ssize_t bytesReceived = recv(fd, a_Buffer, a_nBufferSize, (int)a_Flags);
     if (bytesReceived == -1)
     {
         *a_Error = (oe_socket_error_t)errno;
@@ -137,13 +137,13 @@ ssize_t ocall_recv(
 int ocall_getaddrinfo(
     _In_z_ const char* a_NodeName,
     _In_z_ const char* a_ServiceName,
-    int a_Flags,
-    int a_Family,
-    int a_SockType,
-    int a_Protocol,
+    int64_t a_Flags,
+    int64_t a_Family,
+    int64_t a_SockType,
+    int64_t a_Protocol,
     _Out_writes_bytes_(len) addrinfo_Buffer* aibuffer,
     socklen_t len,
-    _Out_ socklen_t* length_needed)
+    _Out_ size_t* length_needed)
 {
     struct addrinfo* ailist = NULL;
     struct addrinfo* ai;
@@ -153,10 +153,10 @@ int ocall_getaddrinfo(
     *length_needed = 0;
     memset(aibuffer, 0, len);
 
-    hints.ai_flags = a_Flags;
-    hints.ai_family = a_Family;
-    hints.ai_socktype = a_SockType;
-    hints.ai_protocol = a_Protocol;
+    hints.ai_flags    = (int)a_Flags;
+    hints.ai_family   = (int)a_Family;
+    hints.ai_socktype = (int)a_SockType;
+    hints.ai_protocol = (int)a_Protocol;
 
     eai_error = getaddrinfo(a_NodeName, a_ServiceName, &hints, &ailist);
     if (ailist == NULL)
@@ -203,15 +203,14 @@ int ocall_getaddrinfo(
 getsockopt_Result ocall_getsockopt(
     intptr_t a_hSocket,
     int64_t a_nLevel,
-    int64_t a_nOptName,
+    socklen_t a_nOptName,
     socklen_t a_nOptLen)
 {
     getsockopt_Result result = {0};
     int fd = (int)a_hSocket;
     socklen_t len = (socklen_t)a_nOptLen;
-    int err =
-        getsockopt(fd, (int)a_nLevel, (int)a_nOptName, result.buffer, &len);
-    result.len = (int)len;
+    int err = getsockopt(fd, (int)a_nLevel, (int)a_nOptName, result.buffer, &len);
+    result.len = len;
     result.error = (err == -1) ? (oe_socket_error_t)errno : 0;
     return result;
 }
@@ -231,13 +230,29 @@ oe_socket_error_t ocall_setsockopt(
 
 ioctlsocket_Result ocall_ioctlsocket(
     intptr_t a_hSocket,
-    int64_t a_nCommand,
-    unsigned int a_uInputValue)
+    int64_t  a_nCommand,
+    uint64_t a_uInputValue)
 {
     ioctlsocket_Result result = {0};
-    int64_t fd = (int)a_hSocket;
-    result.outputValue = a_uInputValue;
-    int64_t err = fcntl(fd, a_nCommand, result.outputValue);
+    int fd = (int)a_hSocket;
+    int outputValue = (int)a_uInputValue;
+
+    int64_t err = 0;
+    switch(a_nCommand) {
+    case F_GETFL:
+        err = fcntl(fd, (int)a_nCommand, &outputValue);
+        result.outputValue = (uint64_t)outputValue;
+        break;
+
+    case F_SETFL:
+        err = fcntl(fd, (int)a_nCommand, outputValue);
+        result.outputValue = a_uInputValue;
+        break;
+
+    default:
+        break;
+
+    }
     result.error = (err == -1) ? (oe_socket_error_t)errno : 0;
     return result;
 }
@@ -276,7 +291,7 @@ static void copy_input_fds(
 }
 
 select_Result ocall_select(
-    int a_nFds,
+    int64_t a_nFds,
     oe_fd_set_internal a_ReadFds,
     oe_fd_set_internal a_WriteFds,
     oe_fd_set_internal a_ExceptFds,
@@ -328,7 +343,7 @@ oe_socket_error_t ocall_closesocket(intptr_t a_hSocket)
 oe_socket_error_t ocall_bind(
     intptr_t a_hSocket,
     const void* a_Name,
-    int a_nNameLen)
+    socklen_t a_nNameLen)
 {
     int fd = (int)a_hSocket;
     int s = bind(fd, (const struct sockaddr*)a_Name, (socklen_t)a_nNameLen);
@@ -338,14 +353,14 @@ oe_socket_error_t ocall_bind(
 oe_socket_error_t ocall_connect(
     intptr_t a_hSocket,
     const void* a_Name,
-    int a_nNameLen)
+    socklen_t a_nNameLen)
 {
     int fd = (int)a_hSocket;
     int s = connect(fd, (const struct sockaddr*)a_Name, (socklen_t)a_nNameLen);
     return s == -1 ? (oe_socket_error_t)errno : 0;
 }
 
-accept_Result ocall_accept(intptr_t a_hSocket, int a_nAddrLen)
+accept_Result ocall_accept(intptr_t a_hSocket, socklen_t a_nAddrLen)
 {
     int fd = (int)a_hSocket;
     socklen_t len = (socklen_t)a_nAddrLen;
@@ -354,7 +369,7 @@ accept_Result ocall_accept(intptr_t a_hSocket, int a_nAddrLen)
         fd,
         ((a_nAddrLen > 0) ? (struct sockaddr*)result.addr : NULL),
         ((a_nAddrLen > 0) ? &len : NULL));
-    result.addrlen = (int)len;
+    result.addrlen = len;
     result.error =
         (result.hNewSocket == (intptr_t)(-1)) ? (oe_socket_error_t)errno : 0;
     return result;
@@ -362,8 +377,8 @@ accept_Result ocall_accept(intptr_t a_hSocket, int a_nAddrLen)
 
 getnameinfo_Result ocall_getnameinfo(
     const void* a_Addr,
-    int a_AddrLen,
-    int a_Flags)
+    socklen_t a_AddrLen,
+    uint64_t  a_Flags)
 {
     getnameinfo_Result result = {0};
     result.error = (oe_socket_error_t)getnameinfo(
@@ -373,6 +388,6 @@ getnameinfo_Result ocall_getnameinfo(
         sizeof(result.host),
         result.serv,
         sizeof(result.serv),
-        a_Flags);
+        (int)a_Flags);
     return result;
 }
