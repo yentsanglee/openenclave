@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _OE_SOCK_OPS_H_H
-#define _OE_SOCK_OPS_H_H
+#ifndef _OE_SOCK_OPS_H
+#define _OE_SOCK_OPS_H
 
 #include <openenclave/bits/types.h>
 #include <openenclave/bits/types.h>
@@ -122,4 +122,4 @@ oe_sock_ops_t;
 
 OE_EXTERNC_END
 
-#endif // _OE_SOCK_OPS_H_H
+#endif // _OE_SOCK_OPS_H
