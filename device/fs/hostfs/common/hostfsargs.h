@@ -11,7 +11,8 @@ OE_EXTERNC_BEGIN
 #define OE_HOSTFS_MODE_MAX 8
 #define OE_HOSTFS_PATH_MAX 1024
 
-typedef enum _oe_hostfs_op {
+typedef enum _oe_hostfs_op
+{
     OE_HOSTFS_OP_NONE,
 
     OE_HOSTFS_OP_OPEN,

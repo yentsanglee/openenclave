@@ -29,9 +29,9 @@ typedef struct _oe_device_ops
 
     ssize_t (*write)(oe_device_t* dev, int fd, const void* buf, size_t count);
 
-    int (*ioctl)(oe_device_t* dev, int fd, unsigned long request, ...);
-
     int (*close)(oe_device_t* dev, int fd);
+
+    int (*ioctl)(oe_device_t* dev, int fd, unsigned long request, ...);
 
 } oe_device_ops_t;
 
