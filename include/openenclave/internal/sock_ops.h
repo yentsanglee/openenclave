@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _OE_SOCKET_OPS_H
-#define _OE_SOCKET_OPS_H
+#ifndef _OE_SOCK_OPS_H_H
+#define _OE_SOCK_OPS_H_H
 
 #include <openenclave/bits/types.h>
 #include <openenclave/bits/types.h>
@@ -13,7 +13,7 @@ typedef uint32_t socklen_t;
 struct oe_sockaddr;
 struct oe_addrinfo;
 
-typedef struct _oe_socket_ops
+typedef struct _oe_sock_ops
 {
     int (*socket)(
         oe_device_t* dev,
@@ -116,10 +116,10 @@ typedef struct _oe_socket_ops
         socklen_t servlen,
         int flags);
 }
-oe_socket_ops_t;
+oe_sock_ops_t;
 
 /* ATTN: where does select go? */
 
 OE_EXTERNC_END
 
-#endif // _OE_SOCKET_OPS_H
+#endif // _OE_SOCK_OPS_H_H

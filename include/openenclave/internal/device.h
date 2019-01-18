@@ -7,7 +7,7 @@
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/fs_ops.h>
-#include <openenclave/internal/socket_ops.h>
+#include <openenclave/internal/sock_ops.h>
 
 OE_EXTERNC_BEGIN
 
@@ -55,7 +55,7 @@ typedef struct _oe_device
     union
     {
         oe_fs_ops_t fs;
-        oe_socket_ops_t socket;
+        oe_sock_ops_t socket;
     }
     ops;
 

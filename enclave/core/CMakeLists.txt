@@ -56,6 +56,7 @@ add_library(oecore STATIC
     ../../common/safecrt.c
     assert.c
     hexdump.c
+    device.c
     result.c
     snprintf.c
     string.c
