@@ -34,24 +34,6 @@ typedef struct _oe_device
      */
     size_t size;
 
-    /* Decrement the internal reference count and release if zero. */
-    void (*release)(oe_device_t* dev);
-
-    /* Increment the internal reference count. */
-    void (*add_ref)(oe_device_t* dev);
-
-    int (*init)();
-    int (*create)();
-    int (*remove)();
-
-    ssize_t (*read)(oe_device_t* dev, int fd, void* buf, size_t count);
-
-    ssize_t (*write)(oe_device_t* dev, int fd, const void* buf, size_t count);
-
-    int (*ioctl)(oe_device_t* dev, int fd, unsigned long request, ...);
-
-    int (*close)(oe_device_t* dev, int fd);
-
     union
     {
         oe_fs_ops_t fs;

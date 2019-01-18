@@ -6,6 +6,7 @@
 
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/errno.h>
+#include <openenclave/internal/device_ops.h>
 
 OE_EXTERNC_BEGIN
 
@@ -13,7 +14,6 @@ OE_EXTERNC_BEGIN
 #define OE_FLAG_NONE 0
 #define OE_FLAG_MKFS 1
 #define OE_FLAG_CRYPTO 2
-#define OE_KEY_SIZE 32
 
 #define OE_DT_UNKNOWN 0
 #define OE_DT_FIFO 1
@@ -124,6 +124,8 @@ struct oe_stat
 
 struct _oe_fs_ops
 {
+    oe_device_ops_t device_ops;
+
     int (*open)(
         oe_device_t* dev,
         const char* pathname,

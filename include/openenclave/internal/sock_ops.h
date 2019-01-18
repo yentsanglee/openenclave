@@ -4,8 +4,9 @@
 #ifndef _OE_SOCK_OPS_H
 #define _OE_SOCK_OPS_H
 
+#include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
-#include <openenclave/bits/types.h>
+#include <openenclave/internal/device_ops.h>
 
 OE_EXTERNC_BEGIN
 
@@ -15,6 +16,8 @@ struct oe_addrinfo;
 
 typedef struct _oe_sock_ops
 {
+    oe_device_ops_t device_ops;
+
     int (*socket)(
         oe_device_t* dev,
         int domain,
