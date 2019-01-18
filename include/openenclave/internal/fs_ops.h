@@ -1,27 +1,29 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved._ops
 // Licensed under the MIT License.
 
-#ifndef _OE_FS_H
-#define _OE_FS_H
+#ifndef _OE_FS_OPS_H
+#define _OE_FS_OPS_H
 
-#include <openenclave/internal/device.h>
+#include <openenclave/bits/types.h>
+#include <openenclave/internal/errno.h>
 
 OE_EXTERNC_BEGIN
 
+#define OE_PATH_MAX 4096
 #define OE_FLAG_NONE 0
 #define OE_FLAG_MKFS 1
 #define OE_FLAG_CRYPTO 2
 #define OE_KEY_SIZE 32
 
 #define OE_DT_UNKNOWN 0
-#define OE_DT_FIFO 1 /* unused */
-#define OE_DT_CHR 2  /* unused */
+#define OE_DT_FIFO 1
+#define OE_DT_CHR 2
 #define OE_DT_DIR 4
-#define OE_DT_BLK 6 /* unused */
+#define OE_DT_BLK 6
 #define OE_DT_REG 8
-#define OE_DT_LNK 10  /* unused */
-#define OE_DT_SOCK 12 /* unused */
-#define OE_DT_WHT 14  /* unused */
+#define OE_DT_LNK 10
+#define OE_DT_SOCK 12
+#define OE_DT_WHT 14
 
 #define OE_S_IFSOCK 0xC000
 #define OE_S_IFLNK 0xA000
@@ -82,7 +84,8 @@ typedef uint32_t oe_mode_t;
 typedef int64_t oe_off_t;
 typedef struct _oe_file oe_file_t;
 typedef struct _oe_dir oe_dir_t;
-typedef struct _oe_fs oe_fs_t;
+typedef struct _oe_fs_ops oe_fs_ops_t;
+typedef struct _oe_device oe_device_t;
 
 struct oe_dirent
 {
@@ -119,49 +122,72 @@ struct oe_stat
     oe_timespec_t st_ctim;
 };
 
-struct _oe_file
+struct _oe_fs_ops
 {
-    oe_device_t device;
+    int (*open)(
+        oe_device_t* dev,
+        const char* pathname,
+        int flags,
+        oe_mode_t mode);
 
-    oe_off_t (*lseek)(int fd, oe_off_t offset, int whence);
+    oe_off_t (*lseek)(
+        oe_device_t* dev,
+        int fd,
+        oe_off_t offset,
+        int whence);
 
-    int (*fcntl)(int fd, int cmd, ...);
-};
+    int (*fcntl)(
+        oe_device_t* dev,
+        int fd,
+        int cmd,
+        ...);
 
-struct _oe_dir
-{
-    struct oe_dirent* (*readdir)(oe_dir_t* dirp);
+    oe_dir_t* (*opendir)(
+        oe_device_t* dev,
+        const char* path);
 
-    int (*closedir)(oe_dir_t* dirp);
-};
+    int (*stat)(
+        oe_device_t* dev,
+        const char* pathname,
+        struct oe_stat* buf);
 
-struct _oe_fs
-{
-    /* Decrement the internal reference count and release if zero. */
-    void (*release)(oe_fs_t* fs);
+    int (*link)(
+        oe_device_t* dev,
+        const char* oldpath,
+        const char* newpath);
 
-    /* Increment the internal reference count. */
-    void (*add_ref)(oe_fs_t* fs);
+    int (*unlink)(
+        oe_device_t* dev,
+        const char* pathname);
 
-    int (*open)(oe_fs_t* fs, const char* pathname, int flags, oe_mode_t mode);
+    int (*rename)(
+        oe_device_t* dev,
+        const char* oldpath,
+        const char* newpath);
 
-    oe_dir_t* (*opendir)(oe_fs_t* fs, const char* path);
+    int (*truncate)(
+        oe_device_t* dev,
+        const char* path,
+        oe_off_t length);
 
-    int (*stat)(oe_fs_t* fs, const char* pathname, struct oe_stat* buf);
+    int (*mkdir)(
+        oe_device_t* dev,
+        const char* pathname,
+        oe_mode_t mode);
 
-    int (*link)(oe_fs_t* fs, const char* oldpath, const char* newpath);
+    int (*rmdir)(
+        oe_device_t* dev,
+        const char* pathname);
 
-    int (*unlink)(oe_fs_t* fs, const char* pathname);
+    struct oe_dirent* (*readdir)(
+        oe_device_t* dev,
+        oe_dir_t* dirp);
 
-    int (*rename)(oe_fs_t* fs, const char* oldpath, const char* newpath);
-
-    int (*truncate)(oe_fs_t* fs, const char* path, oe_off_t length);
-
-    int (*mkdir)(oe_fs_t* fs, const char* pathname, oe_mode_t mode);
-
-    int (*rmdir)(oe_fs_t* fs, const char* pathname);
+    int (*closedir)(
+        oe_device_t* dev,
+        oe_dir_t* dirp);
 };
 
 OE_EXTERNC_END
 
-#endif // _OE_FS_H
+#endif // _OE_FS_OPS_H

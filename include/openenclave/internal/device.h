@@ -6,10 +6,10 @@
 
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/errno.h>
+#include <openenclave/internal/fs_ops.h>
+#include <openenclave/internal/socket_ops.h>
 
 OE_EXTERNC_BEGIN
-
-#define OE_PATH_MAX 4096
 
 typedef enum _oe_device_type
 {
@@ -28,23 +28,37 @@ typedef struct _oe_device
     /* Type of this device: OE_DEVICE_FILE or OE_DEVICE_SOCKET. */
     oe_device_type_t type;
 
-    /* sizeof additional data. To get a pointer to the device private data, ptr
-       = (oe_file_device_t)(devptr+1); usually sizeof(oe_file_t) or
-       sizeof(oe_socket_t). */
-
+    /* sizeof additional data. To get a pointer to the device private data,
+     * ptr = (oe_file_device_t)(devptr+1); usually sizeof(oe_file_t) or
+     * sizeof(oe_socket_t).
+     */
     size_t size;
+
+    /* Decrement the internal reference count and release if zero. */
+    void (*release)(oe_device_t* dev);
+
+    /* Increment the internal reference count. */
+    void (*add_ref)(oe_device_t* dev);
 
     int (*init)();
     int (*create)();
     int (*remove)();
 
-    ssize_t (*read)(int fd, void* buf, size_t count);
+    ssize_t (*read)(oe_device_t* dev, int fd, void* buf, size_t count);
 
-    ssize_t (*write)(int fd, const void* buf, size_t count);
+    ssize_t (*write)(oe_device_t* dev, int fd, const void* buf, size_t count);
 
-    int (*ioctl)(int fd, unsigned long request, ...);
+    int (*ioctl)(oe_device_t* dev, int fd, unsigned long request, ...);
 
-    int (*close)(int fd);
+    int (*close)(oe_device_t* dev, int fd);
+
+    union
+    {
+        oe_fs_ops_t fs;
+        oe_socket_ops_t socket;
+    }
+    ops;
+
 } oe_device_t;
 
 typedef struct _oe_device_entry
@@ -57,17 +71,22 @@ typedef struct _oe_device_entry
 
 int oe_device_init(); // Overridable function to set up device structures. Shoud
                       // be ommited when new interface is complete.
+
 int oe_allocate_fd();
+
 void oe_release_fd(int fd);
 
 oe_device_t* oe_device_alloc(
     int device_id,
     char* device_name,
     int private_size); // Allocate a device of sizeof(struct
+
 int oe_device_addref(int device_id);
+
 int oe_device_release(int device_id);
 
 oe_device_t* oe_set_fd_device(int device_id, oe_device_t* pdevice);
+
 oe_device_t* oe_get_fd_device(int fd);
 
 oe_device_t* oe_fd_to_device(int fd);
