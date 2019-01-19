@@ -37,9 +37,10 @@ function(add_libmbed_test_enc NAME )
      start.S
      ${gen}
     )
-    target_compile_options(libmbedtest_suite_${NAME} PRIVATE
-      -Wno-error
-    )
+
+    #target_compile_options(libmbedtest_suite_${NAME} PRIVATE
+    #  -Wno-error
+    #)
 
 
     target_include_directories(libmbedtest_suite_${NAME} PUBLIC
@@ -59,8 +60,9 @@ function(add_libmbed_selftest_enc NAME SOURCE )
         ${PROJECT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/tests
         PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
         )
-
-    target_compile_options(libmbedtest-${NAME}_enc PRIVATE -Wno-conversion -Wno-pointer-arith)
+if (NOT WIN32)
+	target_compile_options(libmbedtest-${NAME}_enc PRIVATE -Wno-conversion -Wno-pointer-arith)
+endif ()
     target_compile_definitions(libmbedtest-${NAME}_enc PRIVATE -DWITH_MAIN -D__TEST__="${SOURCE}")
     target_link_libraries(libmbedtest-${NAME}_enc mbedcrypto oelibc oecore)
 

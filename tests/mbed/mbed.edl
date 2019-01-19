@@ -6,7 +6,7 @@ enclave {
     include "sys/types.h"
     include "sys/stat.h"
 	include "io.h"
-	include "../../../3rdparty/musl/musl/include/getopt.h"
+	/* include "../../../3rdparty/musl/musl/include/getopt.h" */
 	include "process.h"
 	include "direct.h"
 
@@ -30,17 +30,17 @@ enclave {
         int mbed_test_open(
             [in, string] const char* path,
             int flags,
-            mode_t mode);
+            unsigned mode);
 
         ssize_t mbed_test_read(
             int fd,
             [out, size=buf_len] char* buf,
             size_t buf_len);
 
-        ssize_t mbed_test_readv(
+        /* ssize_t mbed_test_readv(
             int fd,
             [in, size=iovcnt] const struct iovec* iov,
-            int iovcnt);
+            int iovcnt); */
 
         int mbed_test_close(
             int fd);

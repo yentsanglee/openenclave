@@ -15,6 +15,10 @@
 #include <direct.h>
 #include "mbed_u.h"
 
+#if defined(_WIN32)
+	typedef unsigned mode_t;
+#endif
+
 int mbed_test_open(const char* path, int flags, mode_t mode)
 {
     return open(path, flags, mode);
@@ -25,10 +29,11 @@ ssize_t mbed_test_read(int fd, char* buf, size_t buf_len)
     return read(fd, buf, buf_len);
 }
 
+/*
 ssize_t mbed_test_readv(int fd, const struct iovec* iov, int iovcnt)
 {
     return readv(fd, iov, iovcnt);
-}
+} */
 
 int mbed_test_close(int fd)
 {

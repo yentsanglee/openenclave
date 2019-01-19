@@ -4,7 +4,7 @@
 set(MBEDTLS_WRAP_CFLAGS "-nostdinc -I${OE_INCDIR}/openenclave/libc -fPIC -fno-builtin-udivti3 ${SPECTRE_MITIGATION_FLAGS}")
 
 if (USE_CLANGW)
-  set(MBEDTLS_WRAP_CFLAGS "-target x86_64-pc-linux ${MBEDTLS_WRAP_CFLAGS}")
+  set(MBEDTLS_WRAP_CFLAGS "-target x86_64-pc-linux -I${OE_INCDIR}/openenclave/libc -fno-builtin-udivti3 ${SPECTRE_MITIGATION_FLAGS}")
   # Setup clang wrapper toolchain
   set(MBEDTLS_TOOLCHAIN "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_SOURCE_DIR}/toolchain-clangw.cmake")
 
