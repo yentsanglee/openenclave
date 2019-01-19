@@ -11,6 +11,7 @@
 OE_EXTERNC_BEGIN
 
 #define OE_PATH_MAX 4096
+#define OE_BUFSIZ 8192
 #define OE_FLAG_NONE 0
 #define OE_FLAG_MKFS 1
 #define OE_FLAG_CRYPTO 2
@@ -124,7 +125,7 @@ struct oe_stat
 
 struct _oe_fs_ops
 {
-    oe_device_ops_t device_ops;
+    oe_device_ops_t base;
 
     int (*open)(
         oe_device_t* dev,

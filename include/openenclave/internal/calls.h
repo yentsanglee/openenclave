@@ -99,6 +99,7 @@ typedef enum _oe_func
     OE_OCALL_GET_TIME,
     OE_OCALL_BACKTRACE_SYMBOLS,
     OE_OCALL_LOG,
+    OE_OCALL_HOSTFS,
     /* Caution: always add new OCALL function numbers here */
 
     __OE_FUNC_MAX = OE_ENUM_MAX,

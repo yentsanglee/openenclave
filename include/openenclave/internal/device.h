@@ -22,7 +22,6 @@ typedef enum _oe_device_type
     OE_DEV_ENCLAVE_SOCKET // This entry describes an enclave to enclave
 } oe_device_type_t;
 
-/* Base type for oe_file_t and oe_socket_t. */
 typedef struct _oe_device
 {
     /* Type of this device: OE_DEVICE_FILE or OE_DEVICE_SOCKET. */
