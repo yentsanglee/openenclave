@@ -446,6 +446,16 @@ done:
     return ret;
 }
 
+static int _hostfs_ioctl(oe_device_t* dev, int fd, unsigned long request, ...)
+{
+    /* Unsupported */
+    oe_errno = OE_ENOTTY;
+    (void)dev;
+    (void)fd;
+    (void)request;
+    return -1;
+}
+
 oe_device_t* new_hostfs(void)
 {
     device_t* ret = NULL;
@@ -459,6 +469,7 @@ oe_device_t* new_hostfs(void)
     ret->base.ops.fs.base.read = _hostfs_read;
     ret->base.ops.fs.base.write = _hostfs_write;
     ret->base.ops.fs.base.close = _hostfs_close;
+    ret->base.ops.fs.base.ioctl = _hostfs_ioctl;
     ret->magic = OE_HOSTFS_MAGIC;
     ret->host_fd = -1;
 
