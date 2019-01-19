@@ -30,12 +30,9 @@
 static oe_device_t* _devices[MAX_DEVICES];
 static oe_spinlock_t _devices_lock;
 
-static bool _valid_fd(int fd, bool obtain_lock)
+static bool _valid_fd_lockless(int fd)
 {
     bool ret = false;
-
-    if (obtain_lock)
-        oe_spin_lock(&_devices_lock);
 
     if (fd < 0 || fd >= MAX_DEVICES || _devices[fd] == NULL)
         goto done;
@@ -44,8 +41,16 @@ static bool _valid_fd(int fd, bool obtain_lock)
 
 done:
 
-    if (obtain_lock)
-        oe_spin_unlock(&_devices_lock);
+    return ret;
+}
+
+static bool _valid_fd(int fd)
+{
+    bool ret;
+
+    oe_spin_lock(&_devices_lock);
+    ret = _valid_fd_lockless(fd);
+    oe_spin_unlock(&_devices_lock);
 
     return ret;
 }
@@ -77,7 +82,7 @@ static int _release_fd(int fd)
 
     oe_spin_lock(&_devices_lock);
 
-    if (!_valid_fd(fd, false))
+    if (!_valid_fd_lockless(fd))
         goto done;
 
     _devices[fd] = NULL;
@@ -173,62 +178,9 @@ static device_t* _cast_device(const oe_device_t* device)
     return dev;
 }
 
-static int _hostfs_close(oe_device_t* device, int fd)
-{
-    int ret = -1;
-    device_t* fs = _cast_device(device);
-    device_t* file = _cast_device(_get_device(fd));
-    oe_host_batch_t* batch = _get_host_batch();
-    args_t* args = NULL;
+static ssize_t _hostfs_read(oe_device_t*, int fd, void *buf, size_t count);
 
-    oe_errno = 0;
-
-    /* Check parameters. */
-    if (!fs || !file || !batch || !_valid_fd(fd, true))
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    /* Input */
-    {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
-        {
-            oe_errno = OE_ENOMEM;
-            goto done;
-        }
-
-        args->op = OE_HOSTFS_OP_CLOSE;
-        args->u.close.ret = -1;
-        args->u.close.fd = file->host_fd;
-    }
-
-    /* Call */
-    {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
-        {
-            oe_errno = OE_EINVAL;
-            goto done;
-        }
-
-        if (args->u.close.ret != 0)
-        {
-            oe_errno = args->err;
-            goto done;
-        }
-    }
-
-    if (_release_fd(fd) != 0)
-    {
-        oe_errno = OE_EBADF;
-        goto done;
-    }
-
-    ret = 0;
-
-done:
-    return ret;
-}
+static int _hostfs_close(oe_device_t*, int fd);
 
 static int _hostfs_open(
     oe_device_t* device,
@@ -321,6 +273,179 @@ done:
     return ret;
 }
 
+static ssize_t _hostfs_read(
+    oe_device_t* device,
+    int fd,
+    void *buf,
+    size_t count)
+{
+    int ret = -1;
+    device_t* fs = _cast_device(device);
+    device_t* file = _cast_device(_get_device(fd));
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!fs || !file || !batch || !_valid_fd(fd) || (count && !buf))
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + count)))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTFS_OP_READ;
+        args->u.read.ret = -1;
+        args->u.read.fd = file->host_fd;
+        args->u.read.count = count;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if ((ret = args->u.open.ret) == -1)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    /* Output */
+    {
+        oe_memcpy(buf, args->buf, count);
+    }
+
+done:
+    return ret;
+}
+
+static ssize_t _hostfs_write(
+    oe_device_t* device,
+    int fd,
+    const void *buf,
+    size_t count)
+{
+    int ret = -1;
+    device_t* fs = _cast_device(device);
+    device_t* file = _cast_device(_get_device(fd));
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!fs || !file || !batch || !_valid_fd(fd) || (count && !buf))
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + count)))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTFS_OP_WRITE;
+        args->u.write.ret = -1;
+        args->u.write.fd = file->host_fd;
+        args->u.write.count = count;
+        oe_memcpy(args->buf, buf, count);
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if ((ret = args->u.open.ret) == -1)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int _hostfs_close(oe_device_t* device, int fd)
+{
+    int ret = -1;
+    device_t* fs = _cast_device(device);
+    device_t* file = _cast_device(_get_device(fd));
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!fs || !file || !batch || !_valid_fd(fd))
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTFS_OP_CLOSE;
+        args->u.close.ret = -1;
+        args->u.close.fd = file->host_fd;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if (args->u.close.ret != 0)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    if (_release_fd(fd) != 0)
+    {
+        oe_errno = OE_EBADF;
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 oe_device_t* new_hostfs(void)
 {
     device_t* ret = NULL;
@@ -331,6 +456,8 @@ oe_device_t* new_hostfs(void)
     ret->base.type = OE_DEV_HOST_FILE;
     ret->base.size = sizeof(device_t);
     ret->base.ops.fs.open = _hostfs_open;
+    ret->base.ops.fs.base.read = _hostfs_read;
+    ret->base.ops.fs.base.write = _hostfs_write;
     ret->base.ops.fs.base.close = _hostfs_close;
     ret->magic = OE_HOSTFS_MAGIC;
     ret->host_fd = -1;
