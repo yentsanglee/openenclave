@@ -61,6 +61,7 @@ typedef struct _oe_hostfs_args
         write;
         struct
         {
+            oe_off_t ret;
             int fd;
             oe_off_t offset;
             int whence;

@@ -139,15 +139,17 @@ struct _oe_fs_ops
         oe_off_t offset,
         int whence);
 
-    int (*fcntl)(
-        oe_device_t* dev,
-        int fd,
-        int cmd,
-        ...);
-
     oe_dir_t* (*opendir)(
         oe_device_t* dev,
         const char* path);
+
+    struct oe_dirent* (*readdir)(
+        oe_device_t* dev,
+        oe_dir_t* dirp);
+
+    int (*closedir)(
+        oe_device_t* dev,
+        oe_dir_t* dirp);
 
     int (*stat)(
         oe_device_t* dev,
@@ -181,14 +183,6 @@ struct _oe_fs_ops
     int (*rmdir)(
         oe_device_t* dev,
         const char* pathname);
-
-    struct oe_dirent* (*readdir)(
-        oe_device_t* dev,
-        oe_dir_t* dirp);
-
-    int (*closedir)(
-        oe_device_t* dev,
-        oe_dir_t* dirp);
 };
 
 OE_EXTERNC_END

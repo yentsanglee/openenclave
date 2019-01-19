@@ -156,7 +156,7 @@ static oe_host_batch_t* _get_host_batch(void)
 **==============================================================================
 */
 
-#define OE_HOSTFS_MAGIC 0x5f35f964
+#define MAGIC 0x5f35f964
 
 typedef struct _device
 {
@@ -166,13 +166,21 @@ typedef struct _device
 }
 device_t;
 
+struct _oe_dir
+{
+    uint32_t magic;
+    device_t* fs;
+    void* host_dir;
+    struct oe_dirent entry;
+};
+
 typedef oe_hostfs_args_t args_t;
 
 static device_t* _cast_device(const oe_device_t* device)
 {
     device_t* dev = (device_t*)device;
 
-    if (dev == NULL || dev->magic != OE_HOSTFS_MAGIC)
+    if (dev == NULL || dev->magic != MAGIC)
         return NULL;
 
     return dev;
@@ -248,7 +256,7 @@ static int _hostfs_open(
             goto done;
         }
 
-        file->magic = OE_HOSTFS_MAGIC;
+        file->magic = MAGIC;
         file->base.ops.fs = fs->base.ops.fs;
         file->host_fd = args->u.open.ret;
     }
@@ -389,6 +397,61 @@ done:
     return ret;
 }
 
+static oe_off_t _hostfs_lseek(
+    oe_device_t* device,
+    int fd,
+    oe_off_t offset,
+    int whence)
+{
+    oe_off_t ret = -1;
+    device_t* fs = _cast_device(device);
+    device_t* file = _cast_device(_get_device(fd));
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!fs || !file || !batch || !_valid_fd(fd))
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTFS_OP_LSEEK;
+        args->u.lseek.ret = -1;
+        args->u.lseek.fd = file->host_fd;
+        args->u.lseek.offset = offset;
+        args->u.lseek.whence = whence;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if ((ret = args->u.lseek.ret) == -1)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+done:
+    return ret;
+}
+
 static int _hostfs_close(oe_device_t* device, int fd)
 {
     int ret = -1;
@@ -456,6 +519,126 @@ static int _hostfs_ioctl(oe_device_t* dev, int fd, unsigned long request, ...)
     return -1;
 }
 
+static oe_dir_t* _hostfs_opendir(oe_device_t* device, const char* name)
+{
+    oe_dir_t* ret = NULL;
+    device_t* fs = _cast_device(device);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+    oe_dir_t* dir = NULL;
+
+    /* Check parameters */
+    if (!fs || !name || !batch)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTFS_OP_OPENDIR;
+        args->u.opendir.ret = NULL;
+        oe_strlcpy(args->u.opendir.name, name, OE_PATH_MAX);
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if (args->u.opendir.ret == NULL)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    /* Output */
+    {
+        if (!(dir = oe_calloc(1, sizeof(oe_dir_t))))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        dir->magic = MAGIC;
+        dir->fs = fs;
+        dir->host_dir = args->u.opendir.ret;
+    }
+
+    ret = dir;
+    dir = NULL;
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    if (dir)
+        oe_free(dir);
+
+    return ret;
+}
+
+static struct oe_dirent* _hostfs_readdir(oe_device_t* dev, oe_dir_t* dirp)
+{
+    struct oe_dirent* ret = NULL;
+    device_t* fs = _cast_device(dev);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    /* Check parameters */
+    if (!fs || !dirp || dirp->magic != MAGIC || !dirp->host_dir || !batch)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->u.readdir.ret = -1;
+        args->op = OE_HOSTFS_OP_READDIR;
+        args->u.readdir.dirp = dirp->host_dir;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+
+        if (args->u.readdir.ret != 0)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    /* Output */
+    {
+        dirp->entry = args->u.readdir.entry;
+        ret = &dirp->entry;
+    }
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
 oe_device_t* new_hostfs(void)
 {
     device_t* ret = NULL;
@@ -465,12 +648,14 @@ oe_device_t* new_hostfs(void)
 
     ret->base.type = OE_DEV_HOST_FILE;
     ret->base.size = sizeof(device_t);
+    ret->base.ops.fs.base.ioctl = _hostfs_ioctl;
     ret->base.ops.fs.open = _hostfs_open;
     ret->base.ops.fs.base.read = _hostfs_read;
     ret->base.ops.fs.base.write = _hostfs_write;
+    ret->base.ops.fs.lseek = _hostfs_lseek;
     ret->base.ops.fs.base.close = _hostfs_close;
-    ret->base.ops.fs.base.ioctl = _hostfs_ioctl;
-    ret->magic = OE_HOSTFS_MAGIC;
+    ret->base.ops.fs.opendir = _hostfs_opendir;
+    ret->magic = MAGIC;
     ret->host_fd = -1;
 
     /* ATTN: finish setting operations. */

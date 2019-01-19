@@ -13,17 +13,14 @@ typedef struct _oe_device oe_device_t;
 
 typedef struct _oe_device_ops
 {
+    /* What calls this? */
     int (*init)();
 
+    /* What calls this? */
     int (*create)();
 
+    /* What calls this? */
     int (*remove)();
-
-    /* Decrement the internal reference count and release if zero. */
-    void (*release)(oe_device_t* dev);
-
-    /* Increment the internal reference count. */
-    void (*add_ref)(oe_device_t* dev);
 
     ssize_t (*read)(oe_device_t* dev, int fd, void* buf, size_t count);
 
