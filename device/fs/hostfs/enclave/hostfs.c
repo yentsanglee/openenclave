@@ -983,35 +983,35 @@ done:
     return ret;
 }
 
-oe_device_t* new_hostfs(void)
+static oe_fs_ops_t _ops =
 {
-    fs_t* ret = NULL;
+    .base.ioctl = _hostfs_ioctl,
+    .open = _hostfs_open,
+    .base.read = _hostfs_read,
+    .base.write = _hostfs_write,
+    .lseek = _hostfs_lseek,
+    .base.close = _hostfs_close,
+    .opendir = _hostfs_opendir,
+    .readdir = _hostfs_readdir,
+    .closedir = _hostfs_closedir,
+    .stat = _hostfs_stat,
+    .link = _hostfs_link,
+    .unlink = _hostfs_unlink,
+    .rename = _hostfs_rename,
+    .truncate = _hostfs_truncate,
+    .mkdir = _hostfs_mkdir,
+    .rmdir = _hostfs_rmdir,
+};
 
-    if ((ret = oe_calloc(1, sizeof(fs_t))))
-        goto done;
+static fs_t _hostfs =
+{
+    .base.type = OE_DEV_HOST_FILE,
+    .base.size = sizeof(fs_t),
+    .base.ops.fs = &_ops,
+    .magic = FS_MAGIC,
+};
 
-    ret->base.type = OE_DEV_HOST_FILE;
-    ret->base.size = sizeof(fs_t);
-    ret->base.ops.fs.base.ioctl = _hostfs_ioctl;
-    ret->base.ops.fs.open = _hostfs_open;
-    ret->base.ops.fs.base.read = _hostfs_read;
-    ret->base.ops.fs.base.write = _hostfs_write;
-    ret->base.ops.fs.lseek = _hostfs_lseek;
-    ret->base.ops.fs.base.close = _hostfs_close;
-    ret->base.ops.fs.opendir = _hostfs_opendir;
-    ret->base.ops.fs.readdir = _hostfs_readdir;
-    ret->base.ops.fs.closedir = _hostfs_closedir;
-    ret->base.ops.fs.stat = _hostfs_stat;
-    ret->base.ops.fs.link = _hostfs_link;
-    ret->base.ops.fs.unlink = _hostfs_unlink;
-    ret->base.ops.fs.rename = _hostfs_rename;
-    ret->base.ops.fs.truncate = _hostfs_truncate;
-    ret->base.ops.fs.mkdir = _hostfs_mkdir;
-    ret->base.ops.fs.rmdir = _hostfs_rmdir;
-    ret->magic = FS_MAGIC;
-
-    /* ATTN: OE_DEV_HOST_FILE not needed: should be just OE_DEV_FILE. */
-
-done:
-    return &ret->base;
+oe_device_t* oe_get_hostfs(void)
+{
+    return &_hostfs.base;
 }

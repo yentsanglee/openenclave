@@ -35,8 +35,8 @@ typedef struct _oe_device
 
     union
     {
-        oe_fs_ops_t fs;
-        oe_sock_ops_t socket;
+        oe_fs_ops_t* fs;
+        oe_sock_ops_t* socket;
     }
     ops;
 
