@@ -171,9 +171,5 @@ enclave {
             oe_socket_address_family_t a_AddressFamily,
             oe_socket_type_t a_Type,
             int64_t a_Protocol);
-
-        oe_socket_error_t ocall_WSACleanup(void);
-
-        oe_socket_error_t ocall_WSAStartup(void);
     };
 };

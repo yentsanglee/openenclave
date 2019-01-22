@@ -4,6 +4,7 @@
 
 typedef enum oe_socket_error_t
 {
+    OE_OK = 0,
 #ifdef LINUX
     OE_ENOMEM = 8,
     OE_EACCES = 13,
