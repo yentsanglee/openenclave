@@ -64,14 +64,18 @@ static oe_host_batch_t* _get_host_batch(void)
 **==============================================================================
 */
 
-#define MAGIC 0x5f35f964
+#define FS_MAGIC   0x5f35f964
+#define FILE_MAGIC 0xfe48c6ff
+#define DIR_MAGIC  0x8add1b0b
 
-typedef struct _device
+typedef oe_hostfs_args_t args_t;
+
+typedef struct _fs
 {
     oe_device_t base;
     uint32_t magic;
 }
-device_t;
+fs_t;
 
 typedef struct _file
 {
@@ -83,23 +87,41 @@ file_t;
 
 typedef struct _dir
 {
-    oe_dir_t base;
+    oe_device_t base;
     uint32_t magic;
     void* host_dir;
     struct oe_dirent entry;
 }
 dir_t;
 
-typedef oe_hostfs_args_t args_t;
-
-static device_t* _cast_device(const oe_device_t* device)
+static fs_t* _cast_fs(const oe_device_t* device)
 {
-    device_t* dev = (device_t*)device;
+    fs_t* fs = (fs_t*)device;
 
-    if (dev == NULL || dev->magic != MAGIC)
+    if (fs == NULL || fs->magic != FS_MAGIC)
         return NULL;
 
-    return dev;
+    return fs;
+}
+
+static file_t* _cast_file(const oe_device_t* device)
+{
+    file_t* file = (file_t*)device;
+
+    if (file == NULL || file->magic != FILE_MAGIC)
+        return NULL;
+
+    return file;
+}
+
+static dir_t* _cast_dir(const oe_device_t* device)
+{
+    dir_t* dir = (dir_t*)device;
+
+    if (dir == NULL || dir->magic != DIR_MAGIC)
+        return NULL;
+
+    return dir;
 }
 
 static ssize_t _hostfs_read(oe_device_t*, void *buf, size_t count);
@@ -107,13 +129,13 @@ static ssize_t _hostfs_read(oe_device_t*, void *buf, size_t count);
 static int _hostfs_close(oe_device_t*);
 
 static oe_device_t* _hostfs_open(
-    oe_device_t* device,
+    oe_device_t* fs_,
     const char *pathname,
     int flags,
     oe_mode_t mode)
 {
     oe_device_t* ret = NULL;
-    device_t* fs = _cast_device(device);
+    fs_t* fs = _cast_fs(fs_);
     args_t* args = NULL;
     file_t* file = NULL;
     oe_host_batch_t* batch = _get_host_batch();
@@ -166,13 +188,15 @@ static oe_device_t* _hostfs_open(
 
     /* Output */
     {
-        if (!(file = oe_calloc(1, sizeof(device_t))))
+        if (!(file = oe_calloc(1, sizeof(file_t))))
         {
             oe_errno = OE_ENOMEM;
             goto done;
         }
 
-        file->magic = MAGIC;
+        file->base.type = OE_DEV_HOST_FILE;
+        file->base.size = sizeof(file_t);
+        file->magic = FILE_MAGIC;
         file->base.ops.fs = fs->base.ops.fs;
         file->host_fd = args->u.open.ret;
     }
@@ -191,20 +215,17 @@ done:
     return ret;
 }
 
-static ssize_t _hostfs_read(
-    oe_device_t* device,
-    void *buf,
-    size_t count)
+static ssize_t _hostfs_read(oe_device_t* file_, void *buf, size_t count)
 {
     int ret = -1;
-    file_t* file = (file_t*)device;
+    file_t* file = _cast_file(file_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
     oe_errno = 0;
 
     /* Check parameters. */
-    if (!file || !batch || !_valid_fd(fd) || (count && !buf))
+    if (!file || !batch || (count && !buf))
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -220,7 +241,6 @@ static ssize_t _hostfs_read(
 
         args->op = OE_HOSTFS_OP_READ;
         args->u.read.ret = -1;
-        args->u.read.fd = file->host_fd;
         args->u.read.count = count;
     }
 
@@ -249,21 +269,19 @@ done:
 }
 
 static ssize_t _hostfs_write(
-    oe_device_t* device,
-    int fd,
+    oe_device_t* file_,
     const void *buf,
     size_t count)
 {
     int ret = -1;
-    device_t* fs = _cast_device(device);
-    device_t* file = _cast_device(_get_device(fd));
+    file_t* file = _cast_file(file_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
     oe_errno = 0;
 
     /* Check parameters. */
-    if (!fs || !file || !batch || !_valid_fd(fd) || (count && !buf))
+    if (!file || !batch || (count && !buf))
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -305,22 +323,17 @@ done:
     return ret;
 }
 
-static oe_off_t _hostfs_lseek(
-    oe_device_t* device,
-    int fd,
-    oe_off_t offset,
-    int whence)
+static oe_off_t _hostfs_lseek(oe_device_t* file_, oe_off_t offset, int whence)
 {
     oe_off_t ret = -1;
-    device_t* fs = _cast_device(device);
-    device_t* file = _cast_device(_get_device(fd));
+    file_t* file = _cast_file(file_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
     oe_errno = 0;
 
     /* Check parameters. */
-    if (!fs || !file || !batch || !_valid_fd(fd))
+    if (!file || !batch)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -360,18 +373,17 @@ done:
     return ret;
 }
 
-static int _hostfs_close(oe_device_t* device, int fd)
+static int _hostfs_close(oe_device_t* file_)
 {
     int ret = -1;
-    device_t* fs = _cast_device(device);
-    device_t* file = _cast_device(_get_device(fd));
+    file_t* file = _cast_file(file_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
     oe_errno = 0;
 
     /* Check parameters. */
-    if (!fs || !file || !batch || !_valid_fd(fd))
+    if (!file || !batch)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -405,11 +417,8 @@ static int _hostfs_close(oe_device_t* device, int fd)
         }
     }
 
-    if (_release_fd(fd) != 0)
-    {
-        oe_errno = OE_EBADF;
-        goto done;
-    }
+    /* Release the file object. */
+    oe_free(file);
 
     ret = 0;
 
@@ -417,20 +426,19 @@ done:
     return ret;
 }
 
-static int _hostfs_ioctl(oe_device_t* dev, int fd, unsigned long request, ...)
+static int _hostfs_ioctl(oe_device_t* file, unsigned long request, ...)
 {
     /* Unsupported */
     oe_errno = OE_ENOTTY;
-    (void)dev;
-    (void)fd;
+    (void)file;
     (void)request;
     return -1;
 }
 
-static oe_dir_t* _hostfs_opendir(oe_device_t* device, const char* name)
+static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
 {
-    oe_dir_t* ret = NULL;
-    device_t* fs = _cast_device(device);
+    oe_device_t* ret = NULL;
+    fs_t* fs = _cast_fs(fs_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
     dir_t* dir = NULL;
@@ -472,14 +480,16 @@ static oe_dir_t* _hostfs_opendir(oe_device_t* device, const char* name)
 
     /* Output */
     {
-        if (!(dir = oe_calloc(1, sizeof(oe_dir_t))))
+        if (!(dir = oe_calloc(1, sizeof(dir_t))))
         {
             oe_errno = OE_ENOMEM;
             goto done;
         }
 
-        dir->magic = MAGIC;
-        dir->base.device = device;
+        dir->base.type = OE_DEV_HOST_FILE;
+        dir->base.size = sizeof(dir_t);
+        dir->magic = DIR_MAGIC;
+        dir->base.ops.fs = fs->base.ops.fs;
         dir->host_dir = args->u.opendir.ret;
     }
 
@@ -497,16 +507,15 @@ done:
     return ret;
 }
 
-static struct oe_dirent* _hostfs_readdir(oe_device_t* dev, oe_dir_t* dirp)
+static struct oe_dirent* _hostfs_readdir(oe_device_t* dir_)
 {
     struct oe_dirent* ret = NULL;
-    dir_t* dir = (dir_t*)dirp;
-    device_t* fs = _cast_device(dev);
+    dir_t* dir = _cast_dir(dir_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
     /* Check parameters */
-    if (!fs || !dir || dir->magic != MAGIC || !dir->host_dir || !batch)
+    if (!dir || !batch)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -548,16 +557,15 @@ done:
     return ret;
 }
 
-static int _hostfs_closedir(oe_device_t* dev, oe_dir_t* dirp)
+static int _hostfs_closedir(oe_device_t* dir_)
 {
     int ret = -1;
-    dir_t* dir = (dir_t*)dirp;
-    device_t* fs = _cast_device(dev);
+    dir_t* dir = _cast_dir(dir_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
     /* Check parameters */
-    if (!fs || !dir || dir->magic != MAGIC || !dir->host_dir || !batch)
+    if (!dir || !batch)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -585,6 +593,8 @@ static int _hostfs_closedir(oe_device_t* dev, oe_dir_t* dirp)
         }
     }
 
+    oe_free(dir);
+
 done:
 
     if (args)
@@ -594,12 +604,12 @@ done:
 }
 
 static int _hostfs_stat(
-    oe_device_t* dev,
+    oe_device_t* fs_,
     const char* pathname,
     struct oe_stat* buf)
 {
     int ret = -1;
-    device_t* fs = _cast_device(dev);
+    fs_t* fs = _cast_fs(fs_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -652,12 +662,12 @@ done:
 }
 
 static int _hostfs_link(
-    oe_device_t* dev,
+    oe_device_t* fs_,
     const char* oldpath,
     const char* newpath)
 {
     int ret = -1;
-    device_t* fs = _cast_device(dev);
+    fs_t* fs = _cast_fs(fs_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -711,12 +721,10 @@ done:
     return ret;
 }
 
-static int _hostfs_unlink(
-    oe_device_t* dev,
-    const char* pathname)
+static int _hostfs_unlink(oe_device_t* fs_, const char* pathname)
 {
     int ret = -1;
-    device_t* fs = _cast_device(dev);
+    fs_t* fs = _cast_fs(fs_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -764,12 +772,12 @@ done:
 }
 
 static int _hostfs_rename(
-    oe_device_t* dev,
+    oe_device_t* fs_,
     const char* oldpath,
     const char* newpath)
 {
     int ret = -1;
-    device_t* fs = _cast_device(dev);
+    fs_t* fs = _cast_fs(fs_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -823,13 +831,10 @@ done:
     return ret;
 }
 
-static int _hostfs_truncate(
-    oe_device_t* dev,
-    const char* path,
-    oe_off_t length)
+static int _hostfs_truncate(oe_device_t* fs_, const char* path, oe_off_t length)
 {
     int ret = -1;
-    device_t* fs = _cast_device(dev);
+    fs_t* fs = _cast_fs(fs_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -877,13 +882,10 @@ done:
     return ret;
 }
 
-static int _hostfs_mkdir(
-    oe_device_t* dev,
-    const char* pathname,
-    oe_mode_t mode)
+static int _hostfs_mkdir(oe_device_t* fs_, const char* pathname, oe_mode_t mode)
 {
     int ret = -1;
-    device_t* fs = _cast_device(dev);
+    fs_t* fs = _cast_fs(fs_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -931,12 +933,10 @@ done:
     return ret;
 }
 
-static int _hostfs_rmdir(
-    oe_device_t* dev,
-    const char* pathname)
+static int _hostfs_rmdir(oe_device_t* fs_, const char* pathname)
 {
     int ret = -1;
-    device_t* fs = _cast_device(dev);
+    fs_t* fs = _cast_fs(fs_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
@@ -985,13 +985,13 @@ done:
 
 oe_device_t* new_hostfs(void)
 {
-    device_t* ret = NULL;
+    fs_t* ret = NULL;
 
-    if ((ret = oe_calloc(1, sizeof(device_t))))
+    if ((ret = oe_calloc(1, sizeof(fs_t))))
         goto done;
 
     ret->base.type = OE_DEV_HOST_FILE;
-    ret->base.size = sizeof(device_t);
+    ret->base.size = sizeof(fs_t);
     ret->base.ops.fs.base.ioctl = _hostfs_ioctl;
     ret->base.ops.fs.open = _hostfs_open;
     ret->base.ops.fs.base.read = _hostfs_read;
@@ -1008,8 +1008,7 @@ oe_device_t* new_hostfs(void)
     ret->base.ops.fs.truncate = _hostfs_truncate;
     ret->base.ops.fs.mkdir = _hostfs_mkdir;
     ret->base.ops.fs.rmdir = _hostfs_rmdir;
-    ret->magic = MAGIC;
-    ret->host_fd = -1;
+    ret->magic = FS_MAGIC;
 
     /* ATTN: OE_DEV_HOST_FILE not needed: should be just OE_DEV_FILE. */
 

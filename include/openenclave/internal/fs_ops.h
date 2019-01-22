@@ -85,7 +85,6 @@ typedef uint32_t oe_mode_t;
 typedef int64_t oe_off_t;
 typedef uint64_t oe_ino_t;
 typedef struct _oe_file oe_file_t;
-typedef struct _oe_dir oe_dir_t;
 typedef struct _oe_fs_ops oe_fs_ops_t;
 typedef struct _oe_device oe_device_t;
 typedef uint32_t oe_uid_t;
@@ -105,11 +104,6 @@ struct oe_dirent
     uint8_t d_type;
     char d_name[OE_PATH_MAX];
     uint8_t __d_reserved;
-};
-
-struct _oe_dir
-{
-    oe_device_t* device;
 };
 
 typedef struct _oe_timespec
@@ -142,7 +136,7 @@ struct _oe_fs_ops
     oe_device_t* (*open)(oe_device_t* fs, const char* pathname, int flags,
         oe_mode_t mode);
 
-    oe_off_t (*lseek)(oe_device_t* gfile, int fd, oe_off_t offset, int whence);
+    oe_off_t (*lseek)(oe_device_t* file, oe_off_t offset, int whence);
 
     oe_device_t* (*opendir)(oe_device_t* fs, const char* path);
 
