@@ -8,9 +8,6 @@
 
 OE_EXTERNC_BEGIN
 
-#define OE_HOSTFS_MODE_MAX 8
-#define OE_HOSTFS_PATH_MAX 1024
-
 typedef enum _oe_hostfs_op
 {
     OE_HOSTFS_OP_NONE,
@@ -75,21 +72,21 @@ typedef struct _oe_hostfs_args
         close;
         struct
         {
-            oe_dir_t* ret;
+            void* ret;
             char name[OE_PATH_MAX];
         }
         opendir;
         struct
         {
             int ret;
-            oe_dir_t* dirp;
+            void* dirp;
             struct oe_dirent entry;
         }
         readdir;
         struct
         {
             int ret;
-            oe_dir_t* dirp;
+            void* dirp;
         }
         closedir;
         struct
@@ -99,13 +96,6 @@ typedef struct _oe_hostfs_args
             struct oe_stat buf;
         }
         stat;
-        struct
-        {
-            int ret;
-            int fd;
-            struct oe_stat buf;
-        }
-        fstat;
         struct
         {
             int ret;
@@ -133,6 +123,19 @@ typedef struct _oe_hostfs_args
             oe_off_t length;
         }
         truncate;
+        struct
+        {
+            int ret;
+            char pathname[OE_PATH_MAX];
+            oe_mode_t mode;
+        }
+        mkdir;
+        struct
+        {
+            int ret;
+            char pathname[OE_PATH_MAX];
+        }
+        rmdir;
     } u;
     uint8_t buf[];
 } oe_hostfs_args_t;

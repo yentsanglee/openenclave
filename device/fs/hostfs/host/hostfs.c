@@ -2,9 +2,9 @@
 // Licensed under the MIT License.
 
 #include <dirent.h>
-#include <openenclave/internal/hostfs.h>
-#include <stdio.h>
+#include <fcntl.h>
 #include <string.h>
+#include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "../common/hostfsargs.h"
@@ -26,62 +26,31 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_OPEN:
         {
-            args->u.fopen.ret = fopen(args->u.fopen.path, args->u.fopen.mode);
+            args->u.open.ret = open(args->u.open.pathname, args->u.open.flags,
+                args->u.open.mode);
             break;
         }
         case OE_HOSTFS_OP_CLOSE:
         {
-            args->u.fclose.ret = fclose(args->u.fclose.file);
+            args->u.close.ret = close(args->u.close.fd);
             break;
         }
         case OE_HOSTFS_OP_READ:
         {
-            args->u.fread.ret = fread(
-                args->u.fread.ptr,
-                args->u.fread.size,
-                args->u.fread.nmemb,
-                args->u.fread.file);
+            args->u.read.ret = read(args->u.read.fd, args->buf,
+                args->u.read.count);
             break;
         }
         case OE_HOSTFS_OP_WRITE:
         {
-            args->u.fwrite.ret = fwrite(
-                args->u.fwrite.ptr,
-                args->u.fwrite.size,
-                args->u.fwrite.nmemb,
-                args->u.fwrite.file);
-            fflush(args->u.fwrite.file);
-            break;
-        }
-        case OE_HOSTFS_OP_FTELL:
-        {
-            args->u.ftell.ret = ftell(args->u.ftell.file);
+            args->u.read.ret = write(args->u.read.fd, args->buf,
+                args->u.read.count);
             break;
         }
         case OE_HOSTFS_OP_LSEEK:
         {
-            args->u.fseek.ret = fseek(
-                args->u.fseek.file, args->u.fseek.offset, args->u.fseek.whence);
-            break;
-        }
-        case OE_HOSTFS_OP_FFLUSH:
-        {
-            args->u.fflush.ret = fflush(args->u.fflush.file);
-            break;
-        }
-        case OE_HOSTFS_OP_FERROR:
-        {
-            args->u.ferror.ret = ferror(args->u.ferror.file);
-            break;
-        }
-        case OE_HOSTFS_OP_FEOF:
-        {
-            args->u.feof.ret = feof(args->u.feof.file);
-            break;
-        }
-        case OE_HOSTFS_OP_CLEARERR:
-        {
-            clearerr(args->u.clearerr.file);
+            args->u.lseek.ret = lseek(
+                args->u.lseek.fd, args->u.lseek.offset, args->u.lseek.whence);
             break;
         }
         case OE_HOSTFS_OP_OPENDIR:
@@ -94,8 +63,7 @@ static void _handle_hostfs_ocall(void* args_)
             struct dirent entry;
             struct dirent* result = NULL;
             args->u.readdir.ret =
-                readdir_r(args->u.readdir.dir, &entry, &result);
-            args->u.readdir.result = NULL;
+                readdir_r(args->u.readdir.dirp, &entry, &result);
 
             if (args->u.readdir.ret == 0 && result)
             {
@@ -110,8 +78,6 @@ static void _handle_hostfs_ocall(void* args_)
                     args->u.readdir.entry.d_name,
                     result->d_name,
                     sizeof(args->u.readdir.entry.d_name) - 1);
-
-                args->u.readdir.result = &args->u.readdir.entry;
             }
             else
             {
@@ -122,14 +88,14 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_CLOSEDIR:
         {
-            args->u.closedir.ret = closedir(args->u.closedir.dir);
+            args->u.closedir.ret = closedir(args->u.closedir.dirp);
             break;
         }
         case OE_HOSTFS_OP_STAT:
         {
             struct stat buf;
 
-            if ((args->u.stat.ret = stat(args->u.stat.path, &buf)) == 0)
+            if ((args->u.stat.ret = stat(args->u.stat.pathname, &buf)) == 0)
             {
                 args->u.stat.buf.st_dev = buf.st_dev;
                 args->u.stat.buf.st_ino = buf.st_ino;
@@ -141,6 +107,12 @@ static void _handle_hostfs_ocall(void* args_)
                 args->u.stat.buf.st_size = buf.st_size;
                 args->u.stat.buf.st_blksize = buf.st_blksize;
                 args->u.stat.buf.st_blocks = buf.st_blocks;
+                args->u.stat.buf.st_atim.tv_sec = buf.st_atim.tv_sec;
+                args->u.stat.buf.st_atim.tv_nsec = buf.st_atim.tv_nsec;
+                args->u.stat.buf.st_mtim.tv_sec = buf.st_mtim.tv_sec;
+                args->u.stat.buf.st_mtim.tv_nsec = buf.st_mtim.tv_nsec;
+                args->u.stat.buf.st_ctim.tv_sec = buf.st_ctim.tv_sec;
+                args->u.stat.buf.st_ctim.tv_nsec = buf.st_ctim.tv_nsec;
             }
             else
             {
@@ -150,23 +122,35 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_UNLINK:
         {
-            args->u.remove.ret = remove(args->u.remove.path);
+            args->u.unlink.ret = unlink(args->u.unlink.pathname);
             break;
         }
         case OE_HOSTFS_OP_LINK:
         {
+            args->u.link.ret =
+                link(args->u.link.oldpath, args->u.link.newpath);
+            break;
+        }
+        case OE_HOSTFS_OP_RENAME:
+        {
             args->u.rename.ret =
-                rename(args->u.rename.old_path, args->u.rename.new_path);
+                rename(args->u.rename.oldpath, args->u.rename.newpath);
             break;
         }
         case OE_HOSTFS_OP_MKDIR:
         {
-            args->u.mkdir.ret = mkdir(args->u.mkdir.path, args->u.mkdir.mode);
+            args->u.mkdir.ret = mkdir(
+                args->u.mkdir.pathname, args->u.mkdir.mode);
             break;
         }
         case OE_HOSTFS_OP_RMDIR:
         {
-            args->u.rmdir.ret = rmdir(args->u.rmdir.path);
+            args->u.rmdir.ret = rmdir(args->u.rmdir.pathname);
+            break;
+        }
+        case OE_HOSTFS_OP_TRUNCATE:
+        {
+            args->u.truncate.ret = rmdir(args->u.truncate.path);
             break;
         }
     }

@@ -83,41 +83,53 @@ OE_EXTERNC_BEGIN
 
 typedef uint32_t oe_mode_t;
 typedef int64_t oe_off_t;
+typedef uint64_t oe_ino_t;
 typedef struct _oe_file oe_file_t;
 typedef struct _oe_dir oe_dir_t;
 typedef struct _oe_fs_ops oe_fs_ops_t;
 typedef struct _oe_device oe_device_t;
+typedef uint32_t oe_uid_t;
+typedef uint32_t oe_gid_t;
+typedef uint64_t oe_dev_t;
+typedef uint64_t oe_nlink_t;
+typedef int64_t oe_blksize_t;
+typedef int64_t oe_blkcnt_t;
+typedef int64_t oe_time_t;
+typedef int64_t oe_suseconds_t;
 
 struct oe_dirent
 {
-    uint32_t d_ino;
-    uint32_t d_off;
+    uint64_t d_ino;
+    oe_off_t d_off;
     uint16_t d_reclen;
     uint8_t d_type;
     char d_name[OE_PATH_MAX];
     uint8_t __d_reserved;
 };
 
+struct _oe_dir
+{
+    oe_device_t* device;
+};
+
 typedef struct _oe_timespec
 {
-    long tv_sec;
-    long tv_nsec;
+    oe_time_t tv_sec;
+    oe_suseconds_t tv_nsec;
 } oe_timespec_t;
 
 struct oe_stat
 {
-    uint32_t st_dev;
-    uint32_t st_ino;
-    uint16_t st_mode;
-    uint16_t __st_padding1;
-    uint32_t st_nlink;
-    uint16_t st_uid;
-    uint16_t st_gid;
-    uint32_t st_rdev;
-    uint32_t st_size;
-    uint32_t st_blksize;
-    uint32_t st_blocks;
-    uint32_t __st_padding2;
+    oe_dev_t st_dev;
+    oe_ino_t st_ino;
+    oe_nlink_t st_nlink;
+    oe_mode_t st_mode;
+    oe_uid_t st_uid;
+    oe_gid_t st_gid;
+    oe_dev_t st_rdev;
+    oe_off_t st_size;
+    oe_blksize_t st_blksize;
+    oe_blkcnt_t st_blocks;
     oe_timespec_t st_atim;
     oe_timespec_t st_mtim;
     oe_timespec_t st_ctim;
@@ -127,7 +139,7 @@ struct _oe_fs_ops
 {
     oe_device_ops_t base;
 
-    int (*open)(
+    oe_device_t* (*open)(
         oe_device_t* dev,
         const char* pathname,
         int flags,
