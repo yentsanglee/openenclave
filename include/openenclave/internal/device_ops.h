@@ -22,13 +22,13 @@ typedef struct _oe_device_ops
     /* What calls this? */
     int (*remove)();
 
-    ssize_t (*read)(oe_device_t* dev, void* buf, size_t count);
+    ssize_t (*read)(oe_device_t* file, void* buf, size_t count);
 
-    ssize_t (*write)(oe_device_t* dev, const void* buf, size_t count);
+    ssize_t (*write)(oe_device_t* file, const void* buf, size_t count);
 
-    int (*close)(oe_device_t* dev);
+    int (*close)(oe_device_t* file);
 
-    int (*ioctl)(oe_device_t* dev, unsigned long request, ...);
+    int (*ioctl)(oe_device_t* file, unsigned long request, ...);
 
 } oe_device_ops_t;
 

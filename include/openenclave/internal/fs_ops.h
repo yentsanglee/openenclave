@@ -139,62 +139,30 @@ struct _oe_fs_ops
 {
     oe_device_ops_t base;
 
-    oe_device_t* (*open)(
-        oe_device_t* dev,
-        const char* pathname,
-        int flags,
+    oe_device_t* (*open)(oe_device_t* fs, const char* pathname, int flags,
         oe_mode_t mode);
 
-    oe_off_t (*lseek)(
-        oe_device_t* dev,
-        int fd,
-        oe_off_t offset,
-        int whence);
+    oe_off_t (*lseek)(oe_device_t* gfile, int fd, oe_off_t offset, int whence);
 
-    oe_dir_t* (*opendir)(
-        oe_device_t* dev,
-        const char* path);
+    oe_device_t* (*opendir)(oe_device_t* fs, const char* path);
 
-    struct oe_dirent* (*readdir)(
-        oe_device_t* dev,
-        oe_dir_t* dirp);
+    struct oe_dirent* (*readdir)(oe_device_t* dir);
 
-    int (*closedir)(
-        oe_device_t* dev,
-        oe_dir_t* dirp);
+    int (*closedir)(oe_device_t* dir);
 
-    int (*stat)(
-        oe_device_t* dev,
-        const char* pathname,
-        struct oe_stat* buf);
+    int (*stat)(oe_device_t* fs, const char* pathname, struct oe_stat* buf);
 
-    int (*link)(
-        oe_device_t* dev,
-        const char* oldpath,
-        const char* newpath);
+    int (*link)(oe_device_t* fs, const char* oldpath, const char* newpath);
 
-    int (*unlink)(
-        oe_device_t* dev,
-        const char* pathname);
+    int (*unlink)(oe_device_t* fs, const char* pathname);
 
-    int (*rename)(
-        oe_device_t* dev,
-        const char* oldpath,
-        const char* newpath);
+    int (*rename)(oe_device_t* fs, const char* oldpath, const char* newpath);
 
-    int (*truncate)(
-        oe_device_t* dev,
-        const char* path,
-        oe_off_t length);
+    int (*truncate)(oe_device_t* fs, const char* path, oe_off_t length);
 
-    int (*mkdir)(
-        oe_device_t* dev,
-        const char* pathname,
-        oe_mode_t mode);
+    int (*mkdir)(oe_device_t* fs, const char* pathname, oe_mode_t mode);
 
-    int (*rmdir)(
-        oe_device_t* dev,
-        const char* pathname);
+    int (*rmdir)(oe_device_t* fs, const char* pathname);
 };
 
 OE_EXTERNC_END
