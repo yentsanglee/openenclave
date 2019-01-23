@@ -555,3 +555,16 @@ oe_socket_OE_NETWORK_INSECURE(
     oe_wsa_set_last_error(OE_NETWORK_INSECURE, (int) result.error);
     return oesocket;
 }
+
+
+int unlink(const char *pathname)
+{
+    int result;
+  oe_result_t t =  ocall_unlink(&result, pathname);
+  if(t != OE_OK)
+  {
+      return -1;
+  }
+  return result;
+
+}

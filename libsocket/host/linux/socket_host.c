@@ -343,3 +343,9 @@ getnameinfo_Result ocall_getnameinfo(
         a_Flags);
     return result;
 }
+
+
+int ocall_unlink(_In_z_ const char *path)
+{
+	return unlink(path);
+}

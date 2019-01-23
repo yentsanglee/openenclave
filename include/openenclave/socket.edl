@@ -175,5 +175,8 @@ enclave {
         oe_socket_error_t ocall_WSACleanup(void);
 
         oe_socket_error_t ocall_WSAStartup(void);
+        
+        int ocall_unlink(
+            [in, string] const char* pathName);
     };
 };
