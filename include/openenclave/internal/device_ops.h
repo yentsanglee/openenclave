@@ -10,26 +10,26 @@
 
 OE_EXTERNC_BEGIN
 
-typedef struct _oe_device oe_device_t;
+typedef struct _oe_device* oe_device_t;
 
 typedef struct _oe_device_ops
 {
     /* What calls this? */
-    int (*init)();
+    int (*init)(oe_device_t pthis);
 
     /* What calls this? */
-    int (*create)();
+    int (*clone)(oe_device_t polddevice, oe_device_t pthis);
 
     /* What calls this? */
-    int (*remove)();
+    int (*remove)(oe_device_t pthis);
 
-    ssize_t (*read)(oe_device_t* file, void* buf, size_t count);
+    ssize_t (*read)(oe_device_t file, void* buf, size_t count);
 
-    ssize_t (*write)(oe_device_t* file, const void* buf, size_t count);
+    ssize_t (*write)(oe_device_t file, const void* buf, size_t count);
 
-    int (*close)(oe_device_t* file);
+    int (*close)(oe_device_t file);
 
-    int (*ioctl)(oe_device_t* file, unsigned long request, oe_va_list ap);
+    int (*ioctl)(oe_device_t file, unsigned long request, oe_va_list ap);
 
 } oe_device_ops_t;
 

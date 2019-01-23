@@ -96,7 +96,7 @@ typedef int64_t oe_off_t;
 typedef uint64_t oe_ino_t;
 typedef struct _oe_file oe_file_t;
 typedef struct _oe_fs_ops oe_fs_ops_t;
-typedef struct _oe_device oe_device_t;
+typedef struct _oe_device* oe_device_t;
 typedef uint32_t oe_uid_t;
 typedef uint32_t oe_gid_t;
 typedef uint64_t oe_dev_t;
@@ -143,32 +143,32 @@ struct _oe_fs_ops
 {
     oe_device_ops_t base;
 
-    int (*mount)(oe_device_t* fs, const char* target, uint32_t flags);
+    int (*mount)(oe_device_t fs, const char* target, uint32_t flags);
 
-    oe_device_t* (*open)(oe_device_t* fs, const char* pathname, int flags,
-        oe_mode_t mode);
+    oe_device_t (
+        *open)(oe_device_t fs, const char* pathname, int flags, oe_mode_t mode);
 
-    oe_off_t (*lseek)(oe_device_t* file, oe_off_t offset, int whence);
+    oe_off_t (*lseek)(oe_device_t file, oe_off_t offset, int whence);
 
-    oe_device_t* (*opendir)(oe_device_t* fs, const char* path);
+    oe_device_t (*opendir)(oe_device_t fs, const char* path);
 
-    struct oe_dirent* (*readdir)(oe_device_t* dir);
+    struct oe_dirent* (*readdir)(oe_device_t dir);
 
-    int (*closedir)(oe_device_t* dir);
+    int (*closedir)(oe_device_t dir);
 
-    int (*stat)(oe_device_t* fs, const char* pathname, struct oe_stat* buf);
+    int (*stat)(oe_device_t fs, const char* pathname, struct oe_stat* buf);
 
-    int (*link)(oe_device_t* fs, const char* oldpath, const char* newpath);
+    int (*link)(oe_device_t fs, const char* oldpath, const char* newpath);
 
-    int (*unlink)(oe_device_t* fs, const char* pathname);
+    int (*unlink)(oe_device_t fs, const char* pathname);
 
-    int (*rename)(oe_device_t* fs, const char* oldpath, const char* newpath);
+    int (*rename)(oe_device_t fs, const char* oldpath, const char* newpath);
 
-    int (*truncate)(oe_device_t* fs, const char* path, oe_off_t length);
+    int (*truncate)(oe_device_t fs, const char* path, oe_off_t length);
 
-    int (*mkdir)(oe_device_t* fs, const char* pathname, oe_mode_t mode);
+    int (*mkdir)(oe_device_t fs, const char* pathname, oe_mode_t mode);
 
-    int (*rmdir)(oe_device_t* fs, const char* pathname);
+    int (*rmdir)(oe_device_t fs, const char* pathname);
 };
 
 OE_EXTERNC_END

@@ -19,6 +19,7 @@ typedef unsigned int uint32_t;
 typedef long int64_t;
 typedef unsigned long uint64_t;
 typedef unsigned long uintptr_t;
+typedef long intptr_t;
 typedef long ptrdiff_t;
 #elif defined(_MSC_VER)
 typedef long long ssize_t;
@@ -32,6 +33,7 @@ typedef unsigned int uint32_t;
 typedef long long int64_t;
 typedef unsigned long long uint64_t;
 typedef unsigned long long uintptr_t;
+typedef unsigned long intptr_t;
 typedef long long ptrdiff_t;
 #else
 #error "unknown compiler - please adapt basic types"

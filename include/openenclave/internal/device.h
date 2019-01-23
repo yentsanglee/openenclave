@@ -35,9 +35,11 @@ typedef struct _oe_device
      * sizeof(oe_socket_t).
      */
     size_t size;
+    const char* devicename;
 
     union
     {
+        oe_device_ops_t* base;
         oe_fs_ops_t* fs;
         oe_sock_ops_t* socket;
     }
@@ -48,7 +50,6 @@ typedef struct _oe_device
 typedef struct _oe_device_entry
 {
     oe_device_type_t type;
-    char* devicename;
     uint64_t flags;
     oe_device_t device;
 } oe_device_entry_t;
@@ -56,8 +57,8 @@ typedef struct _oe_device_entry
 int oe_allocate_devid(int devid);
 void oe_release_devid(int devid);
 
-oe_device_t* oe_set_devid_device(int device_id, oe_device_t pdevice);
-oe_device_t* oe_get_devid_device(int fd);
+oe_device_t oe_set_devid_device(int device_id, oe_device_t pdevice);
+oe_device_t oe_get_devid_device(int fd);
 
 int oe_device_init(); // Overridable function to set up device structures. Shoud
                       // be ommited when new interface is complete.
@@ -69,7 +70,7 @@ void oe_release_fd(int fd);
 oe_device_t oe_device_alloc(
     int device_id,
     const char* device_name,
-    int private_size); // Allocate a device of sizeof(struct
+    size_t private_size); // Allocate a device of sizeof(struct
 
 int oe_device_addref(int device_id);
 
@@ -78,6 +79,18 @@ int oe_device_release(int device_id);
 oe_device_t oe_set_fd_device(int device_id, oe_device_t pdevice);
 
 oe_device_t oe_get_fd_device(int fd);
+
+int oe_clone_fd(int fd);
+
+int oe_remove_device();
+
+ssize_t oe_read(int fd, void* buf, size_t count);
+
+ssize_t oe_write(int fd, const void* buf, size_t count);
+
+int oe_close(int fd);
+
+int oe_ioctl(int fd, unsigned long request, ...);
 
 OE_EXTERNC_END
 
