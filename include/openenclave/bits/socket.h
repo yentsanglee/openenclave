@@ -39,7 +39,7 @@ extern "C"
 
     typedef uint16_t oe_sa_family_t;
 
-    typedef int oe_socklen_t;
+    typedef uint32_t oe_socklen_t;
 
     typedef struct oe_addrinfo
     {
@@ -236,17 +236,17 @@ extern "C"
     int oe_accept(
         _In_ oe_sockfd_t s,
         _Out_writes_bytes_(*addrlen) struct oe_sockaddr* addr,
-        _Inout_ socklen_t* addrlen);
+        _Inout_ oe_socklen_t* addrlen);
 
     int oe_bind(
         _In_ oe_sockfd_t s,
         _In_reads_bytes_(namelen) const oe_sockaddr* name,
-        socklen_t namelen);
+        oe_socklen_t namelen);
 
     int oe_connect(
         _In_ int s,
         _In_reads_bytes_(namelen) const oe_sockaddr* name,
-        socklen_t namelen);
+        oe_socklen_t namelen);
 
     void oe_freeaddrinfo(_In_ oe_addrinfo* ailist);
 
@@ -294,7 +294,7 @@ extern "C"
         _In_ int level,
         _In_ int optname,
         _In_reads_bytes_(optlen) const void* optval,
-        _In_ socklen_t optlen);
+        _In_ oe_socklen_t optlen);
 
     int oe_shutdown(_In_ int s, _In_ int how);
 

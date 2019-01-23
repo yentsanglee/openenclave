@@ -26,11 +26,11 @@ typedef struct _oe_resolver
 
     int (*getnameinfo)(
         const struct oe_sockaddr* addr,
-        socklen_t addrlen,
+        oe_socklen_t addrlen,
         char* host,
-        socklen_t hostlen,
+        oe_socklen_t hostlen,
         char* serv,
-        socklen_t servlen);
+        oe_socklen_t servlen);
 } oe_resolver_t;
 
 #endif

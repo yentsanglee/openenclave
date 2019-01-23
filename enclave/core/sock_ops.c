@@ -46,7 +46,7 @@ intptr_t oe_socket(int domain, int type, int protocol)
 int oe_connect(
     oe_sockfd_t sockfd,
     const struct oe_sockaddr* addr,
-    socklen_t addrlen)
+    oe_socklen_t addrlen)
 
 {
     int rtnval = -1;
@@ -72,7 +72,7 @@ int oe_connect(
     return rtnval;
 }
 
-int oe_accept(oe_sockfd_t sockfd, struct oe_sockaddr* addr, socklen_t* addrlen)
+int oe_accept(oe_sockfd_t sockfd, struct oe_sockaddr* addr, oe_socklen_t* addrlen)
 
 {
     oe_sockfd_t newfd = -1;
@@ -230,7 +230,7 @@ int oe_shutdown(oe_sockfd_t sockfd, int how)
 int oe_getsockname(
     oe_sockfd_t sockfd,
     struct oe_sockaddr* addr,
-    socklen_t* addrlen)
+    oe_socklen_t* addrlen)
 
 {
     oe_device_t psock = oe_get_fd_device(sockfd);
@@ -256,7 +256,7 @@ int oe_getsockopt(
     int level,
     int optname,
     void* optval,
-    socklen_t* optlen)
+    oe_socklen_t* optlen)
 
 {
     oe_device_t psock = oe_get_fd_device(sockfd);
@@ -278,12 +278,8 @@ int oe_getsockopt(
         psock, level, optname, optval, optlen);
 }
 
-int oe_setsockopt(
-    oe_socklen_t sockfd,
-    int level,
-    int optname,
-    const void* optval,
-    socklen_t optlen)
+int
+oe_setsockopt( oe_sockfd_t sockfd, int level, int optname, const void* optval, oe_socklen_t optlen)
 
 {
     oe_device_t psock = oe_get_fd_device(sockfd);
@@ -305,7 +301,7 @@ int oe_setsockopt(
         psock, level, optname, optval, optlen);
 }
 
-int oe_bind(oe_sockfd_t sockfd, const oe_sockaddr* name, socklen_t namelen)
+int oe_bind(oe_sockfd_t sockfd, const oe_sockaddr* name, oe_socklen_t namelen)
 
 {
     oe_device_t psock = oe_get_fd_device(sockfd);
