@@ -8,7 +8,11 @@
 
 OE_EXTERNC_BEGIN
 
-oe_device_t* oe_fs_hostfs(void);
+/* The host calls this to install the host file system (HOSTFS). */
+void oe_fs_install_hostfs(void);
+
+/* The enclave calls this to get an instance of host file system (HOSTFS). */
+oe_device_t* oe_fs_get_hostfs(void);
 
 OE_INLINE oe_device_t* oe_fs_open(
     oe_device_t* fs,
@@ -48,7 +52,7 @@ OE_INLINE int oe_fs_ioctl(
     return file->ops.fs->base.ioctl(file, request, ap);
 }
 
-OE_INLINE ssize_t oe_fs_close(oe_device_t* file)
+OE_INLINE int oe_fs_close(oe_device_t* file)
 {
     return file->ops.fs->base.close(file);
 }

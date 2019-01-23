@@ -3,6 +3,9 @@
 
 enclave {
     trusted {
-        public void test_hostfs();
+        public void test_hostfs(
+            [string, in] const char* src_dir,
+            [string, in] const char* tmp_dir);
+
     };
 };

@@ -1,14 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <limits.h>
 #include <openenclave/host.h>
-#include <openenclave/internal/error.h>
 #include <openenclave/internal/tests.h>
+#include <openenclave/internal/fs.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "../../../host/strings.h"
 #include "hostfs_u.h"
 
 int main(int argc, const char* argv[])
@@ -18,17 +14,22 @@ int main(int argc, const char* argv[])
     const uint32_t flags = oe_get_create_flags();
     const oe_enclave_type_t type = OE_ENCLAVE_TYPE_SGX;
 
-    if (argc != 2)
+    if (argc != 4)
     {
-        fprintf(stderr, "Usage: %s ENCLAVE_PATH\n", argv[0]);
+        fprintf(stderr, "Usage: %s ENCLAVE_PATH SRC_DIR BIN_DIR\n", argv[0]);
         return 1;
     }
 
+    const char* enclave_path = argv[1];
+    const char* src_dir = argv[2];
+    const char* tmp_dir = argv[3];
 
-    r = oe_create_hostfs_enclave(argv[1], type, flags, NULL, 0, &enclave);
+    oe_fs_install_hostfs();
+
+    r = oe_create_hostfs_enclave(enclave_path, type, flags, NULL, 0, &enclave);
     OE_TEST(r == OE_OK);
 
-    r = test_hostfs(enclave);
+    r = test_hostfs(enclave, src_dir, tmp_dir);
     OE_TEST(r == OE_OK);
 
     r = oe_terminate_enclave(enclave);

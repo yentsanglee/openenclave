@@ -31,6 +31,9 @@
 #include "enclave.h"
 #include "ocalls.h"
 
+/* This callback is installed by the host by calling oe_install_hostfs(). */
+void (*oe_handle_hostfs_ocall_callback)(void* args);
+
 /*
 **==============================================================================
 **
@@ -505,6 +508,16 @@ static oe_result_t _handle_ocall(
         case OE_OCALL_LOG:
             oe_handle_log(enclave, arg_in);
             break;
+
+        case OE_OCALL_HOSTFS:
+        {
+            if (oe_handle_hostfs_ocall_callback)
+                oe_handle_hostfs_ocall_callback((void*)arg_in);
+            else
+                OE_RAISE(OE_NOT_FOUND);
+
+            break;
+        }
 
         default:
         {

@@ -78,11 +78,14 @@ static void _handle_hostfs_ocall(void* args_)
                     args->u.readdir.entry.d_name,
                     result->d_name,
                     sizeof(args->u.readdir.entry.d_name) - 1);
+
+                args->u.readdir.result = &args->u.readdir.entry;
             }
             else
             {
                 memset(
                     &args->u.readdir.entry, 0, sizeof(args->u.readdir.entry));
+                args->u.readdir.result = NULL;
             }
             break;
         }
@@ -150,13 +153,14 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_TRUNCATE:
         {
-            args->u.truncate.ret = rmdir(args->u.truncate.path);
+            args->u.truncate.ret = truncate(args->u.truncate.path,
+                args->u.truncate.length);
             break;
         }
     }
 }
 
-void oe_install_hostfs(void)
+void oe_fs_install_hostfs(void)
 {
     oe_handle_hostfs_ocall_callback = _handle_hostfs_ocall;
 }

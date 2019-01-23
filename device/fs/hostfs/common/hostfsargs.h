@@ -80,6 +80,7 @@ typedef struct _oe_hostfs_args
         {
             int ret;
             void* dirp;
+            struct oe_dirent* result;
             struct oe_dirent entry;
         }
         readdir;

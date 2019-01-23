@@ -14,6 +14,7 @@
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/atexit.h>
 #include <openenclave/internal/enclavelibc.h>
+#include <openenclave/internal/print.h>
 #include <openenclave/internal/fs.h>
 #include "../../common/hostbatch.h"
 #include "../common/hostfsargs.h"
@@ -195,7 +196,7 @@ static oe_device_t* _hostfs_open(
             goto done;
         }
 
-        file->base.type = OE_DEV_HOST_FILE;
+        file->base.type = OE_DEVICE_HOST_FILESYSTEM;
         file->base.size = sizeof(file_t);
         file->magic = FILE_MAGIC;
         file->base.ops.fs = fs->base.ops.fs;
@@ -242,6 +243,7 @@ static ssize_t _hostfs_read(oe_device_t* file_, void *buf, size_t count)
 
         args->op = OE_HOSTFS_OP_READ;
         args->u.read.ret = -1;
+        args->u.read.fd = file->host_fd;
         args->u.read.count = count;
     }
 
@@ -317,8 +319,6 @@ static ssize_t _hostfs_write(
             goto done;
         }
     }
-
-    ret = 0;
 
 done:
     return ret;
@@ -491,7 +491,7 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
             goto done;
         }
 
-        dir->base.type = OE_DEV_HOST_FILE;
+        dir->base.type = OE_DEVICE_HOST_FILESYSTEM;
         dir->base.size = sizeof(dir_t);
         dir->magic = DIR_MAGIC;
         dir->base.ops.fs = fs->base.ops.fs;
@@ -549,6 +549,7 @@ static struct oe_dirent* _hostfs_readdir(oe_device_t* dir_)
     }
 
     /* Output */
+    if (args->u.readdir.result)
     {
         dir->entry = args->u.readdir.entry;
         ret = &dir->entry;
@@ -1010,13 +1011,13 @@ static oe_fs_ops_t _ops =
 
 static fs_t _hostfs =
 {
-    .base.type = OE_DEV_HOST_FILE,
+    .base.type = OE_DEVICE_HOST_FILESYSTEM,
     .base.size = sizeof(fs_t),
     .base.ops.fs = &_ops,
     .magic = FS_MAGIC,
 };
 
-oe_device_t* oe_fs_hostfs(void)
+oe_device_t* oe_fs_get_hostfs(void)
 {
     return &_hostfs.base;
 }

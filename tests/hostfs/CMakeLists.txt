@@ -4,7 +4,11 @@
 add_subdirectory(host)
 
 if (BUILD_ENCLAVES)
-	add_subdirectory(enc)
+    add_subdirectory(enc)
 endif()
 
-add_enclave_test(tests/hostfs hostfs_host hostfs_enc)
+add_enclave_test(tests/hostfs
+    hostfs_host
+    hostfs_enc
+    "${PROJECT_SOURCE_DIR}"
+    "${CMAKE_BINARY_DIR}/tests/hostfs")
