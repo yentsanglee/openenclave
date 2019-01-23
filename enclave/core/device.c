@@ -38,7 +38,7 @@ extern int CreateEnclaveLocalResolver();
 #define READ_WRITE 1
 #define READ_ONLY 2
 
-int oe_device_init()
+int oe_device_tinit()
 
 {
     int rslt = -1;
@@ -171,26 +171,74 @@ oe_device_t* oe_get_devid_device(int devid)
 
 #if 0 // ATTN: does not compile yet.
 oe_device_t* oe_device_alloc(
-    int device_id,
-    const char* device_name,
+    int device_tid,
+    const char* device_tname,
     int private_size)
 
 {
-    oe_device_t* pparent_device = oe_get_devid_device(device_id);
-    oe_device_t* pdevice = (oe_device_t*)oe_malloc(
-        pparent_device->size + private_size); // Private size is
-    oe_memcpy(
-        pdevice, pparent_device); // We clone the device from the parent device
-    pdevice->device_name = device_name; // We do not clone the name
+    oe_device_t pparent_device = oe_get_devid_device(device_id);
+    oe_device_t pdevice = (oe_device_t)oe_malloc( pparent_device->size + private_size);
+    // We clone the device from the parent device
+    oe_memcpy( pdevice, pparent_device);
+    pdevice->device_tname = device_name; // We do not clone the name
 
     return pdevice;
 }
 #endif
 
-int oe_allocate_fd();
+int
+oe_allocate_fd()
 
-void oe_release_fd(int fd);
+{
+    // We could increase the size bump to some other number for performance.
+    static const size_t SIZE_BUMP = 5;
+    static const size_t MIN_FD = 3;
 
-oe_device_t* oe_set_fd_device(int device_id, oe_device_t* pdevice);
+    size_t fd = 0;
 
-oe_device_t* oe_get_fd_device(int fd);
+
+    if (_fd_table_len == 0)
+    {
+        _fd_table_len = SIZE_BUMP;
+        _fd_table = (oe_device_t*)oe_malloc( sizeof(_fd_table[0]) * _fd_table_len);
+        oe_memset( _fd_table, 0, sizeof(_fd_table[0]) * _fd_table_len);
+
+        // Setup stdin, out and error here.
+
+        return MIN_FD;  // Leave room for stdin, stdout, and stderr
+    }
+
+    for (fd = 0; fd < _fd_table_len; fd++ ) {
+
+    }
+
+    else if (devid >= (int)_fd_table_len)
+    {
+        _fd_table_len = (size_t)devid + SIZE_BUMP;
+        _fd_table = (oe_device_t**)oe_realloc(
+            _fd_table, sizeof(_fd_table[0]) * _fd_table_len);
+        _fd_table[devid] = NULL;
+    }
+
+    if (_device_table[devid] != NULL)
+    {
+        oe_errno = OE_EADDRINUSE;
+        return -1;
+    }
+
+    return devid;
+}
+
+
+void
+oe_release_fd(int fd);
+
+oe_device_t oe_set_fd_device(int device_id, oe_device_t* pdevice)
+
+{
+}
+
+oe_device_t oe_get_fd_device(int fd)
+
+{
+}
