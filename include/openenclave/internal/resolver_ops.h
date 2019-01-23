@@ -4,7 +4,9 @@
 #ifndef __OE_RESOLVER_H__
 #define __OE_RESOLVER_H__
 
-typedef struct oeResolver
+#include "sock_ops.h"
+
+typedef struct _oe_resolver
 {
     int (*init)();
     int (*remove)();
@@ -19,11 +21,11 @@ typedef struct oeResolver
     int (*getaddrinfo)(
         const char* node,
         const char* service,
-        const struct addrinfo* hints,
-        struct addrinfo** res);
+        const struct oe_addrinfo* hints,
+        struct oe_addrinfo** res);
 
     int (*getnameinfo)(
-        const struct sockaddr* addr,
+        const struct oe_sockaddr* addr,
         socklen_t addrlen,
         char* host,
         socklen_t hostlen,
