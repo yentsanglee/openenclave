@@ -14,6 +14,7 @@
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/atexit.h>
 #include <openenclave/internal/enclavelibc.h>
+#include <openenclave/internal/fs.h>
 #include "../../common/hostbatch.h"
 #include "../common/hostfsargs.h"
 
@@ -426,12 +427,16 @@ done:
     return ret;
 }
 
-static int _hostfs_ioctl(oe_device_t* file, unsigned long request, ...)
+static int _hostfs_ioctl(
+    oe_device_t* file,
+    unsigned long request,
+    oe_va_list ap)
 {
     /* Unsupported */
     oe_errno = OE_ENOTTY;
     (void)file;
     (void)request;
+    (void)ap;
     return -1;
 }
 
@@ -1011,7 +1016,7 @@ static fs_t _hostfs =
     .magic = FS_MAGIC,
 };
 
-oe_device_t* oe_get_hostfs(void)
+oe_device_t* oe_fs_hostfs(void)
 {
     return &_hostfs.base;
 }
