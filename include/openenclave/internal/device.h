@@ -7,19 +7,22 @@
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/fs_ops.h>
+#include <openenclave/internal/resolver_ops.h>
 #include <openenclave/internal/sock_ops.h>
 
 OE_EXTERNC_BEGIN
 
 typedef enum _oe_device_type
 {
-    OE_DEV_NONE = 0,      // This entry is invalid
-    OE_DEV_SECURE_FILE,   // This entry describes a file in the enclaves
-                          // secure file system
-    OE_DEV_HOST_FILE,     // This entry describes a file in the hosts's file
-                          // system
-    OE_DEV_SOCKET,        // This entry describes an internet socket
-    OE_DEV_ENCLAVE_SOCKET // This entry describes an enclave to enclave
+    OE_DEVICE_NONE = 0,           // This entry is invalid
+    OE_DEVICE_CONSOLE,            // Console device for stdin and stdout
+    OE_DEVICE_LOG,                // log device for stderr
+    OE_DEVICE_ENCLAVE_FILESYSTEM, // This entry describes a file in the enclaves
+                                  // secure file system
+    OE_DEVICE_HOST_FILESYSTEM,    // This entry describes a file in the hosts's
+                               // file system
+    OE_DEVICE_HOST_SOCKET,   // This entry describes an internet socket
+    OE_DEVICE_ENCLAVE_SOCKET // This entry describes an enclave to enclave
 } oe_device_type_t;
 
 typedef struct _oe_device
@@ -50,6 +53,12 @@ typedef struct _oe_device_entry
     oe_device_t* device;
 } oe_device_entry_t;
 
+int oe_allocate_devid(int devid);
+void oe_release_devid(int devid);
+
+oe_device_t* oe_set_devid_device(int device_id, oe_device_t* pdevice);
+oe_device_t* oe_get_devid_device(int fd);
+
 int oe_device_init(); // Overridable function to set up device structures. Shoud
                       // be ommited when new interface is complete.
 
@@ -59,7 +68,7 @@ void oe_release_fd(int fd);
 
 oe_device_t* oe_device_alloc(
     int device_id,
-    char* device_name,
+    const char* device_name,
     int private_size); // Allocate a device of sizeof(struct
 
 int oe_device_addref(int device_id);
@@ -69,8 +78,6 @@ int oe_device_release(int device_id);
 oe_device_t* oe_set_fd_device(int device_id, oe_device_t* pdevice);
 
 oe_device_t* oe_get_fd_device(int fd);
-
-oe_device_t* oe_fd_to_device(int fd);
 
 OE_EXTERNC_END
 

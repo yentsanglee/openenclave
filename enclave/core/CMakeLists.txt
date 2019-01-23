@@ -12,6 +12,7 @@ if (OE_SGX)
         sgx/cpuid.c
         sgx/debugmalloc.c
         sgx/entropy.c
+        sgx/errno.c
         sgx/exception.c
         sgx/globals.c
         sgx/hostcalls.c
@@ -46,6 +47,7 @@ elseif(OE_TRUSTZONE)
     message("TODO: ADD ARM files.")
     list(APPEND PLATFORM_SRC
         optee/abort.c
+        optee/errno.c
         optee/bounds.c
         optee/host.c
         optee/printf.c
