@@ -19,9 +19,14 @@ OE_INLINE int oe_fs_clone(oe_device_t* fs, oe_device_t** new_fs)
     return fs->ops.fs->base.clone(fs, new_fs);
 }
 
-OE_INLINE int oe_fs_free(oe_device_t* fs)
+OE_INLINE int oe_fs_release(oe_device_t* fs)
 {
-    return fs->ops.fs->base.free(fs);
+    return fs->ops.fs->base.release(fs);
+}
+
+OE_INLINE int oe_fs_shutdown(oe_device_t* fs)
+{
+    return fs->ops.fs->base.shutdown(fs);
 }
 
 OE_INLINE int oe_fs_mount(oe_device_t* fs, const char* target, uint32_t flags)

@@ -16,10 +16,9 @@ typedef struct _oe_device_ops
 {
     int (*clone)(oe_device_t* device, oe_device_t** new_device);
 
-    int (*free)(oe_device_t* device);
+    int (*shutdown)(oe_device_t* pthis);
 
-    /* What calls this? */
-    int (*remove)(oe_device_t* pthis);
+    int (*release)(oe_device_t* device);
 
     ssize_t (*read)(oe_device_t* file, void* buf, size_t count);
 

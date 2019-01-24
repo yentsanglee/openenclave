@@ -155,7 +155,7 @@ done:
     return ret;
 }
 
-static int _hostfs_free(oe_device_t* device)
+static int _hostfs_release(oe_device_t* device)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(device);
@@ -167,6 +167,23 @@ static int _hostfs_free(oe_device_t* device)
     }
 
     oe_free(fs);
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int _hostfs_shutdown(oe_device_t* device)
+{
+    int ret = -1;
+    fs_t* fs = _cast_fs(device);
+
+    if (!fs)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
     ret = 0;
 
 done:
@@ -1066,7 +1083,8 @@ done:
 
 static oe_fs_ops_t _ops = {
     .base.clone = _hostfs_clone,
-    .base.free = _hostfs_free,
+    .base.release = _hostfs_release,
+    .base.shutdown = _hostfs_shutdown,
     .base.ioctl = _hostfs_ioctl,
     .mount = _hostfs_mount,
     .unmount = _hostfs_unmount,

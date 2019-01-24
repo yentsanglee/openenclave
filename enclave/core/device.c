@@ -179,6 +179,7 @@ oe_device_t* oe_device_alloc(
     pdevice->size = pparent_device->size + private_size;
     pdevice->devicename = device_name; // We do not clone the name
 
+#if 0
     if (pdevice->ops.base->init != NULL)
     {
         if ((*pdevice->ops.base->init)(pdevice) < 0)
@@ -186,6 +187,7 @@ oe_device_t* oe_device_alloc(
             return NULL;
         }
     }
+#endif
 
     return pdevice;
 }
@@ -329,10 +331,10 @@ int oe_remove_device(int device_id)
         return -1; // erno is already set
     }
 
-    if (pdevice->ops.base->remove != NULL)
+    if (pdevice->ops.base->shutdown != NULL)
     {
         // The action routine sets errno
-        rtn = (*pdevice->ops.base->remove)(pdevice);
+        rtn = (*pdevice->ops.base->shutdown)(pdevice);
 
         if (rtn >= 0)
         {

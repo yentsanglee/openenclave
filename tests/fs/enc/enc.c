@@ -263,7 +263,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
     test_unlink_file(fs, tmp_dir);
     cleanup(fs, tmp_dir);
 
-    oe_fs_free(fs);
+    oe_fs_release(fs);
 }
 
 OE_SET_ENCLAVE_SGX(
