@@ -2,12 +2,12 @@
 # Licensed under the MIT License.
 
 
-oeedl_file(../hostfs.edl enclave gen)
+oeedl_file(../fs.edl enclave gen)
 
-#add_enclave(TARGET hostfs_enc SOURCES enc.c ${gen})
+#add_enclave(TARGET fs_enc SOURCES enc.c ${gen})
 
-add_executable(hostfs_enc enc.c ${gen})
+add_executable(fs_enc enc.c ${gen})
 
-target_include_directories(hostfs_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(fs_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(hostfs_enc oehostfsenclave oeenclave)
+target_link_libraries(fs_enc oehostfsenclave oeenclave)

@@ -5,7 +5,7 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/tests.h>
 #include <stdio.h>
-#include "hostfs_u.h"
+#include "fs_u.h"
 
 int main(int argc, const char* argv[])
 {
@@ -26,10 +26,10 @@ int main(int argc, const char* argv[])
 
     oe_fs_install_hostfs();
 
-    r = oe_create_hostfs_enclave(enclave_path, type, flags, NULL, 0, &enclave);
+    r = oe_create_fs_enclave(enclave_path, type, flags, NULL, 0, &enclave);
     OE_TEST(r == OE_OK);
 
-    r = test_hostfs(enclave, src_dir, tmp_dir);
+    r = test_fs(enclave, src_dir, tmp_dir);
     OE_TEST(r == OE_OK);
 
     r = oe_terminate_enclave(enclave);

@@ -7,7 +7,7 @@
 #include <openenclave/internal/tests.h>
 #include <stdio.h>
 #include <string.h>
-#include "hostfs_t.h"
+#include "fs_t.h"
 
 static const char ALPHABET[] = "abcdefghijklmnopqrstuvwxyz";
 static const oe_mode_t MODE = 0644;
@@ -23,21 +23,21 @@ static const char* _mkpath(
     return buf;
 }
 
-void cleanup(oe_device_t* hostfs, const char* tmp_dir)
+void cleanup(oe_device_t* fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
 
-    oe_fs_unlink(hostfs, _mkpath(path, tmp_dir, "alphabet"));
-    oe_fs_unlink(hostfs, _mkpath(path, tmp_dir, "alphabet.renamed"));
+    oe_fs_unlink(fs, _mkpath(path, tmp_dir, "alphabet"));
+    oe_fs_unlink(fs, _mkpath(path, tmp_dir, "alphabet.renamed"));
 
     _mkpath(path, tmp_dir, "dir1");
-    oe_fs_rmdir(hostfs, path);
+    oe_fs_rmdir(fs, path);
 
     _mkpath(path, tmp_dir, "dir2");
-    oe_fs_rmdir(hostfs, path);
+    oe_fs_rmdir(fs, path);
 }
 
-void test_create_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_create_file(oe_device_t* fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
     oe_device_t* file;
@@ -47,7 +47,7 @@ void test_create_file(oe_device_t* hostfs, const char* tmp_dir)
     /* Open the file for output. */
     {
         const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
-        OE_TEST(file = oe_fs_open(hostfs, path, flags, MODE));
+        OE_TEST(file = oe_fs_open(fs, path, flags, MODE));
     }
 
     /* Write to the file. */
@@ -62,7 +62,7 @@ void test_create_file(oe_device_t* hostfs, const char* tmp_dir)
     printf("=== Created %s\n", path);
 }
 
-void test_read_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_read_file(oe_device_t* fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
     oe_device_t* file;
@@ -73,7 +73,7 @@ void test_read_file(oe_device_t* hostfs, const char* tmp_dir)
     /* Open the file for input. */
     {
         const int flags = OE_O_RDONLY;
-        file = oe_fs_open(hostfs, path, flags, 0);
+        file = oe_fs_open(fs, path, flags, 0);
         OE_TEST(file);
     }
 
@@ -106,7 +106,7 @@ void test_read_file(oe_device_t* hostfs, const char* tmp_dir)
     OE_TEST(oe_fs_close(file) == 0);
 }
 
-void test_stat_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_stat_file(oe_device_t* fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
     struct oe_stat buf;
@@ -114,7 +114,7 @@ void test_stat_file(oe_device_t* hostfs, const char* tmp_dir)
     _mkpath(path, tmp_dir, "alphabet");
 
     /* Stat the file. */
-    OE_TEST(oe_fs_stat(hostfs, path, &buf) == 0);
+    OE_TEST(oe_fs_stat(fs, path, &buf) == 0);
 
     /* Check stats. */
     OE_TEST(buf.st_size == sizeof(ALPHABET));
@@ -122,7 +122,7 @@ void test_stat_file(oe_device_t* hostfs, const char* tmp_dir)
     OE_TEST(buf.st_mode == (OE_S_IFREG | MODE));
 }
 
-void test_readdir(oe_device_t* hostfs, const char* tmp_dir)
+void test_readdir(oe_device_t* fs, const char* tmp_dir)
 {
     oe_device_t* dir;
     struct oe_dirent* ent;
@@ -135,27 +135,27 @@ void test_readdir(oe_device_t* hostfs, const char* tmp_dir)
     bool found_dir2 = false;
     char path[OE_PATH_MAX];
 
-    dir = oe_fs_opendir(hostfs, tmp_dir);
+    dir = oe_fs_opendir(fs, tmp_dir);
     OE_TEST(dir);
 
     /* Create directories: "dir1" and "dir2". */
     {
         _mkpath(path, tmp_dir, "dir1");
-        OE_TEST(oe_fs_mkdir(hostfs, path, 0777) == 0);
+        OE_TEST(oe_fs_mkdir(fs, path, 0777) == 0);
 
         _mkpath(path, tmp_dir, "dir2");
-        OE_TEST(oe_fs_mkdir(hostfs, path, 0777) == 0);
+        OE_TEST(oe_fs_mkdir(fs, path, 0777) == 0);
     }
 
     /* Test stat on a directory. */
     {
         struct oe_stat buf;
-        OE_TEST(oe_fs_stat(hostfs, _mkpath(path, tmp_dir, "dir1"), &buf) == 0);
+        OE_TEST(oe_fs_stat(fs, _mkpath(path, tmp_dir, "dir1"), &buf) == 0);
         OE_TEST(OE_S_ISDIR(buf.st_mode));
     }
 
     /* Remove directory "dir2". */
-    OE_TEST(oe_fs_rmdir(hostfs, _mkpath(path, tmp_dir, "dir2")) == 0);
+    OE_TEST(oe_fs_rmdir(fs, _mkpath(path, tmp_dir, "dir2")) == 0);
 
     while ((ent = oe_fs_readdir(dir)))
     {
@@ -190,7 +190,7 @@ void test_readdir(oe_device_t* hostfs, const char* tmp_dir)
     oe_fs_closedir(dir);
 }
 
-void test_link_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_link_file(oe_device_t* fs, const char* tmp_dir)
 {
     char oldname[OE_PAGE_SIZE];
     char newname[OE_PAGE_SIZE];
@@ -199,11 +199,11 @@ void test_link_file(oe_device_t* hostfs, const char* tmp_dir)
     _mkpath(oldname, tmp_dir, "alphabet");
     _mkpath(newname, tmp_dir, "alphabet.linked");
 
-    OE_TEST(oe_fs_link(hostfs, oldname, newname) == 0);
-    OE_TEST(oe_fs_stat(hostfs, newname, &buf) == 0);
+    OE_TEST(oe_fs_link(fs, oldname, newname) == 0);
+    OE_TEST(oe_fs_stat(fs, newname, &buf) == 0);
 }
 
-void test_rename_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_rename_file(oe_device_t* fs, const char* tmp_dir)
 {
     char oldname[OE_PAGE_SIZE];
     char newname[OE_PAGE_SIZE];
@@ -212,11 +212,11 @@ void test_rename_file(oe_device_t* hostfs, const char* tmp_dir)
     _mkpath(oldname, tmp_dir, "alphabet.linked"),
     _mkpath(newname, tmp_dir, "alphabet.renamed");
 
-    OE_TEST(oe_fs_rename(hostfs, oldname, newname) == 0);
-    OE_TEST(oe_fs_stat(hostfs, newname, &buf) == 0);
+    OE_TEST(oe_fs_rename(fs, oldname, newname) == 0);
+    OE_TEST(oe_fs_stat(fs, newname, &buf) == 0);
 }
 
-void test_truncate_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_truncate_file(oe_device_t* fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
     struct oe_stat buf;
@@ -224,14 +224,14 @@ void test_truncate_file(oe_device_t* hostfs, const char* tmp_dir)
     _mkpath(path, tmp_dir, "alphabet");
 
     /* Remove the file. */
-    OE_TEST(oe_fs_truncate(hostfs, path, 5) == 0);
+    OE_TEST(oe_fs_truncate(fs, path, 5) == 0);
 
     /* Stat the file. */
-    OE_TEST(oe_fs_stat(hostfs, path, &buf) == 0);
+    OE_TEST(oe_fs_stat(fs, path, &buf) == 0);
     OE_TEST(buf.st_size == 5);
 }
 
-void test_unlink_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_unlink_file(oe_device_t* fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
     struct oe_stat buf;
@@ -239,29 +239,29 @@ void test_unlink_file(oe_device_t* hostfs, const char* tmp_dir)
     _mkpath(path, tmp_dir, "alphabet");
 
     /* Remove the file. */
-    OE_TEST(oe_fs_unlink(hostfs, path) == 0);
+    OE_TEST(oe_fs_unlink(fs, path) == 0);
 
     /* Stat the file. */
-    OE_TEST(oe_fs_stat(hostfs, path, &buf) != 0);
+    OE_TEST(oe_fs_stat(fs, path, &buf) != 0);
 }
 
-void test_hostfs(const char* src_dir, const char* tmp_dir)
+void test_fs(const char* src_dir, const char* tmp_dir)
 {
     (void)src_dir;
 
-    oe_device_t* hostfs = oe_fs_get_hostfs();
-    OE_TEST(hostfs);
+    oe_device_t* fs = oe_fs_get_hostfs();
+    OE_TEST(fs);
 
-    cleanup(hostfs, tmp_dir);
-    test_create_file(hostfs, tmp_dir);
-    test_read_file(hostfs, tmp_dir);
-    test_stat_file(hostfs, tmp_dir);
-    test_link_file(hostfs, tmp_dir);
-    test_rename_file(hostfs, tmp_dir);
-    test_readdir(hostfs, tmp_dir);
-    test_truncate_file(hostfs, tmp_dir);
-    test_unlink_file(hostfs, tmp_dir);
-    cleanup(hostfs, tmp_dir);
+    cleanup(fs, tmp_dir);
+    test_create_file(fs, tmp_dir);
+    test_read_file(fs, tmp_dir);
+    test_stat_file(fs, tmp_dir);
+    test_link_file(fs, tmp_dir);
+    test_rename_file(fs, tmp_dir);
+    test_readdir(fs, tmp_dir);
+    test_truncate_file(fs, tmp_dir);
+    test_unlink_file(fs, tmp_dir);
+    cleanup(fs, tmp_dir);
 }
 
 OE_SET_ENCLAVE_SGX(
