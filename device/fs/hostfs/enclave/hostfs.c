@@ -526,7 +526,7 @@ static struct oe_dirent* _hostfs_readdir(oe_device_t* dir_)
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
             goto done;
 
-        args->u.readdir.ret = -1;
+        args->u.readdir.ret = NULL;
         args->op = OE_HOSTFS_OP_READDIR;
         args->u.readdir.dirp = dir->host_dir;
     }
@@ -536,7 +536,7 @@ static struct oe_dirent* _hostfs_readdir(oe_device_t* dir_)
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
             goto done;
 
-        if (args->u.readdir.ret != 0)
+        if (!args->u.readdir.ret)
         {
             oe_errno = args->err;
             goto done;
@@ -544,7 +544,7 @@ static struct oe_dirent* _hostfs_readdir(oe_device_t* dir_)
     }
 
     /* Output */
-    if (args->u.readdir.result)
+    if (args->u.readdir.ret)
     {
         dir->entry = args->u.readdir.entry;
         ret = &dir->entry;

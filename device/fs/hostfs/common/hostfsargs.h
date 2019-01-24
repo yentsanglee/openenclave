@@ -71,9 +71,8 @@ typedef struct _oe_hostfs_args
         } opendir;
         struct
         {
-            int ret;
+            struct oe_dirent* ret;
             void* dirp;
-            struct oe_dirent* result;
             struct oe_dirent entry;
         } readdir;
         struct

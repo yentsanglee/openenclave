@@ -15,6 +15,8 @@ static void _handle_hostfs_ocall(void* args_)
 {
     oe_hostfs_args_t* args = (oe_hostfs_args_t*)args_;
 
+    /* ATTN: handle errno propagation. */
+
     if (!args)
         return;
 
@@ -60,12 +62,9 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_READDIR:
         {
-            struct dirent entry;
-            struct dirent* result = NULL;
-            args->u.readdir.ret =
-                readdir_r(args->u.readdir.dirp, &entry, &result);
+            struct dirent* result = readdir(args->u.readdir.dirp);
 
-            if (args->u.readdir.ret == 0 && result)
+            if (result)
             {
                 args->u.readdir.entry.d_ino = result->d_ino;
                 args->u.readdir.entry.d_off = result->d_off;
@@ -79,13 +78,13 @@ static void _handle_hostfs_ocall(void* args_)
                     result->d_name,
                     sizeof(args->u.readdir.entry.d_name) - 1);
 
-                args->u.readdir.result = &args->u.readdir.entry;
+                args->u.readdir.ret = &args->u.readdir.entry;
             }
             else
             {
                 memset(
                     &args->u.readdir.entry, 0, sizeof(args->u.readdir.entry));
-                args->u.readdir.result = NULL;
+                args->u.readdir.ret = NULL;
             }
             break;
         }
