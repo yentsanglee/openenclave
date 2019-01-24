@@ -45,20 +45,21 @@ typedef struct _oe_device
     }
     ops;
 
-} *oe_device_t;
+}
+oe_device_t;
 
 typedef struct _oe_device_entry
 {
     oe_device_type_t type;
     uint64_t flags;
-    oe_device_t device;
+    oe_device_t* device;
 } oe_device_entry_t;
 
 int oe_allocate_devid(int devid);
 void oe_release_devid(int devid);
 
-oe_device_t oe_set_devid_device(int device_id, oe_device_t pdevice);
-oe_device_t oe_get_devid_device(int fd);
+oe_device_t* oe_set_devid_device(int device_id, oe_device_t* pdevice);
+oe_device_t* oe_get_devid_device(int fd);
 
 int oe_device_init(); // Overridable function to set up device structures. Shoud
                       // be ommited when new interface is complete.
@@ -67,7 +68,7 @@ int oe_allocate_fd();
 
 void oe_release_fd(int fd);
 
-oe_device_t oe_device_alloc(
+oe_device_t* oe_device_alloc(
     int device_id,
     const char* device_name,
     size_t private_size); // Allocate a device of sizeof(struct
@@ -76,9 +77,9 @@ int oe_device_addref(int device_id);
 
 int oe_device_release(int device_id);
 
-oe_device_t oe_set_fd_device(int device_id, oe_device_t pdevice);
+oe_device_t* oe_set_fd_device(int device_id, oe_device_t* pdevice);
 
-oe_device_t oe_get_fd_device(int fd);
+oe_device_t* oe_get_fd_device(int fd);
 
 int oe_clone_fd(int fd);
 

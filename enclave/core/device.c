@@ -7,10 +7,10 @@
 #include <openenclave/internal/resolver_ops.h>
 
 static size_t _device_table_len = 0;
-static oe_device_t* _device_table = NULL; // Resizable array of device entries
+static oe_device_t** _device_table = NULL; // Resizable array of device entries
 
 static size_t _fd_table_len = 0;
-static oe_device_t* _fd_table = NULL;
+static oe_device_t** _fd_table = NULL;
 
 #if 0
 static size_t resolver_table_len = 0;
@@ -36,7 +36,7 @@ extern int CreateEnclaveLocalResolver();
 #define READ_WRITE 1
 #define READ_ONLY 2
 
-int oe_device_tinit()
+int oe_device_init()
 
 {
     int rslt = -1;
@@ -103,7 +103,7 @@ int oe_allocate_devid(int devid)
     if (_device_table_len == 0)
     {
         _device_table_len = (size_t)devid + SIZE_BUMP;
-        _device_table = (oe_device_t*)oe_malloc(
+        _device_table = (oe_device_t**)oe_malloc(
             sizeof(_device_table[0]) * _device_table_len);
         oe_memset(
             _device_table, 0, sizeof(_device_table[0]) * _device_table_len);
@@ -111,7 +111,7 @@ int oe_allocate_devid(int devid)
     else if (devid >= (int)_device_table_len)
     {
         _device_table_len = (size_t)devid + SIZE_BUMP;
-        _device_table = (oe_device_t*)oe_realloc(
+        _device_table = (oe_device_t**)oe_realloc(
             _device_table, sizeof(_device_table[0]) * _device_table_len);
         _device_table[devid] = NULL;
     }
@@ -135,7 +135,7 @@ void oe_release_devid(int devid)
     }
 }
 
-oe_device_t oe_set_devid_device(int device_id, oe_device_t pdevice)
+oe_device_t* oe_set_devid_device(int device_id, oe_device_t* pdevice)
 
 {
     if (device_id >= (int)_device_table_len)
@@ -154,7 +154,7 @@ oe_device_t oe_set_devid_device(int device_id, oe_device_t pdevice)
     return pdevice;
 }
 
-oe_device_t oe_get_devid_device(int devid)
+oe_device_t* oe_get_devid_device(int devid)
 
 {
     if (devid >= (int)_device_table_len)
@@ -166,14 +166,14 @@ oe_device_t oe_get_devid_device(int devid)
     return _device_table[devid];
 }
 
-oe_device_t oe_device_alloc(
+oe_device_t* oe_device_alloc(
     int device_id,
     const char* device_name,
     size_t private_size)
 
 {
-    oe_device_t pparent_device = oe_get_devid_device(device_id);
-    oe_device_t pdevice = (oe_device_t)oe_malloc( pparent_device->size + private_size);
+    oe_device_t* pparent_device = oe_get_devid_device(device_id);
+    oe_device_t* pdevice = (oe_device_t*)oe_malloc( pparent_device->size + private_size);
     // We clone the device from the parent device
     oe_memcpy(pdevice, pparent_device, pparent_device->size + private_size);
     pdevice->size = pparent_device->size + private_size;
@@ -204,7 +204,7 @@ oe_allocate_fd()
     if (_fd_table_len == 0)
     {
         _fd_table_len = SIZE_BUMP;
-        _fd_table = (oe_device_t*)oe_malloc( sizeof(_fd_table[0]) * _fd_table_len);
+        _fd_table = (oe_device_t**)oe_malloc( sizeof(_fd_table[0]) * _fd_table_len);
         oe_memset( _fd_table, 0, sizeof(_fd_table[0]) * _fd_table_len);
 
         // Setup stdin, out and error here.
@@ -223,7 +223,7 @@ oe_allocate_fd()
     if (fd >= _fd_table_len)
     {
         _fd_table_len = (size_t)fd + SIZE_BUMP;
-        _fd_table = (oe_device_t*)oe_realloc(
+        _fd_table = (oe_device_t**)oe_realloc(
             _fd_table, sizeof(_fd_table[0]) * _fd_table_len);
         _fd_table[fd] = NULL;
     }
@@ -247,7 +247,7 @@ void oe_release_fd(int fd)
     }
 }
 
-oe_device_t oe_set_fd_device(int fd, oe_device_t pdevice)
+oe_device_t* oe_set_fd_device(int fd, oe_device_t* pdevice)
 
 {
     if (fd >= (int)_fd_table_len)
@@ -266,7 +266,7 @@ oe_device_t oe_set_fd_device(int fd, oe_device_t pdevice)
     return pdevice;
 }
 
-oe_device_t oe_get_fd_device(int fd)
+oe_device_t* oe_get_fd_device(int fd)
 
 {
     if (fd >= (int)_fd_table_len)
@@ -288,8 +288,8 @@ int oe_clone_fd(int fd)
 
 {
     int newfd = -1;
-    oe_device_t pparent_device = NULL;
-    oe_device_t pnewdevice = NULL;
+    oe_device_t* pparent_device = NULL;
+    oe_device_t* pnewdevice = NULL;
 
     if (fd >= (int)_fd_table_len)
     {
@@ -298,7 +298,7 @@ int oe_clone_fd(int fd)
     }
 
     pparent_device = oe_get_devid_device(fd);
-    pnewdevice = (oe_device_t)oe_malloc(pparent_device->size);
+    pnewdevice = (oe_device_t*)oe_malloc(pparent_device->size);
     oe_memcpy(pnewdevice, pparent_device, pparent_device->size);
 
     if (pnewdevice->ops.base->clone != NULL)
@@ -322,7 +322,7 @@ int oe_remove_device(int device_id)
 
 {
     int rtn = -1;
-    oe_device_t pdevice = oe_get_devid_device(device_id);
+    oe_device_t* pdevice = oe_get_devid_device(device_id);
 
     if (!pdevice)
     {
@@ -346,7 +346,7 @@ int oe_remove_device(int device_id)
 ssize_t oe_read(int fd, void* buf, size_t count)
 
 {
-    oe_device_t pdevice = oe_get_fd_device(fd);
+    oe_device_t* pdevice = oe_get_fd_device(fd);
     if (!pdevice)
     {
         // Log error here
@@ -366,7 +366,7 @@ ssize_t oe_read(int fd, void* buf, size_t count)
 ssize_t oe_write(int fd, const void* buf, size_t count)
 
 {
-    oe_device_t pdevice = oe_get_fd_device(fd);
+    oe_device_t* pdevice = oe_get_fd_device(fd);
     if (!pdevice)
     {
         // Log error here
@@ -387,7 +387,7 @@ int oe_close(int fd)
 
 {
     int rtn = -1;
-    oe_device_t pdevice = oe_get_fd_device(fd);
+    oe_device_t* pdevice = oe_get_fd_device(fd);
 
     if (!pdevice)
     {
@@ -415,7 +415,7 @@ int oe_ioctl(int fd, unsigned long request, ...)
 
 {
     oe_va_list ap;
-    oe_device_t pdevice = oe_get_fd_device(fd);
+    oe_device_t* pdevice = oe_get_fd_device(fd);
     int rtn = -1;
 
     if (!pdevice)

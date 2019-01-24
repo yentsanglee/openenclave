@@ -95,7 +95,7 @@ typedef struct _dir
 }
 dir_t;
 
-static fs_t* _cast_fs(const oe_device_t device)
+static fs_t* _cast_fs(const oe_device_t* device)
 {
     fs_t* fs = (fs_t*)device;
 
@@ -105,7 +105,7 @@ static fs_t* _cast_fs(const oe_device_t device)
     return fs;
 }
 
-static file_t* _cast_file(const oe_device_t device)
+static file_t* _cast_file(const oe_device_t* device)
 {
     file_t* file = (file_t*)device;
 
@@ -115,7 +115,7 @@ static file_t* _cast_file(const oe_device_t device)
     return file;
 }
 
-static dir_t* _cast_dir(const oe_device_t device)
+static dir_t* _cast_dir(const oe_device_t* device)
 {
     dir_t* dir = (dir_t*)device;
 
@@ -125,17 +125,17 @@ static dir_t* _cast_dir(const oe_device_t device)
     return dir;
 }
 
-static ssize_t _hostfs_read(oe_device_t, void* buf, size_t count);
+static ssize_t _hostfs_read(oe_device_t*, void* buf, size_t count);
 
-static int _hostfs_close(oe_device_t);
+static int _hostfs_close(oe_device_t*);
 
-static oe_device_t _hostfs_open(
-    oe_device_t fs_,
+static oe_device_t* _hostfs_open(
+    oe_device_t* fs_,
     const char* pathname,
     int flags,
     oe_mode_t mode)
 {
-    oe_device_t ret = NULL;
+    oe_device_t* ret = NULL;
     fs_t* fs = _cast_fs(fs_);
     args_t* args = NULL;
     file_t* file = NULL;
@@ -216,7 +216,7 @@ done:
     return ret;
 }
 
-static ssize_t _hostfs_read(oe_device_t file_, void* buf, size_t count)
+static ssize_t _hostfs_read(oe_device_t* file_, void* buf, size_t count)
 {
     int ret = -1;
     file_t* file = _cast_file(file_);
@@ -270,7 +270,7 @@ done:
     return ret;
 }
 
-static ssize_t _hostfs_write(oe_device_t file_, const void* buf, size_t count)
+static ssize_t _hostfs_write(oe_device_t* file_, const void* buf, size_t count)
 {
     int ret = -1;
     file_t* file = _cast_file(file_);
@@ -320,7 +320,7 @@ done:
     return ret;
 }
 
-static oe_off_t _hostfs_lseek(oe_device_t file_, oe_off_t offset, int whence)
+static oe_off_t _hostfs_lseek(oe_device_t* file_, oe_off_t offset, int whence)
 {
     oe_off_t ret = -1;
     file_t* file = _cast_file(file_);
@@ -370,7 +370,7 @@ done:
     return ret;
 }
 
-static int _hostfs_close(oe_device_t file_)
+static int _hostfs_close(oe_device_t* file_)
 {
     int ret = -1;
     file_t* file = _cast_file(file_);
@@ -423,7 +423,7 @@ done:
     return ret;
 }
 
-static int _hostfs_ioctl(oe_device_t file, unsigned long request, oe_va_list ap)
+static int _hostfs_ioctl(oe_device_t* file, unsigned long request, oe_va_list ap)
 {
     /* Unsupported */
     oe_errno = OE_ENOTTY;
@@ -433,9 +433,9 @@ static int _hostfs_ioctl(oe_device_t file, unsigned long request, oe_va_list ap)
     return -1;
 }
 
-static oe_device_t _hostfs_opendir(oe_device_t fs_, const char* name)
+static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
 {
-    oe_device_t ret = NULL;
+    oe_device_t* ret = NULL;
     fs_t* fs = _cast_fs(fs_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
@@ -505,7 +505,7 @@ done:
     return ret;
 }
 
-static struct oe_dirent* _hostfs_readdir(oe_device_t dir_)
+static struct oe_dirent* _hostfs_readdir(oe_device_t* dir_)
 {
     struct oe_dirent* ret = NULL;
     dir_t* dir = _cast_dir(dir_);
@@ -556,7 +556,7 @@ done:
     return ret;
 }
 
-static int _hostfs_closedir(oe_device_t dir_)
+static int _hostfs_closedir(oe_device_t* dir_)
 {
     int ret = -1;
     dir_t* dir = _cast_dir(dir_);
@@ -603,7 +603,7 @@ done:
 }
 
 static int _hostfs_stat(
-    oe_device_t fs_,
+    oe_device_t* fs_,
     const char* pathname,
     struct oe_stat* buf)
 {
@@ -661,7 +661,7 @@ done:
 }
 
 static int _hostfs_link(
-    oe_device_t fs_,
+    oe_device_t* fs_,
     const char* oldpath,
     const char* newpath)
 {
@@ -720,7 +720,7 @@ done:
     return ret;
 }
 
-static int _hostfs_unlink(oe_device_t fs_, const char* pathname)
+static int _hostfs_unlink(oe_device_t* fs_, const char* pathname)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(fs_);
@@ -771,7 +771,7 @@ done:
 }
 
 static int _hostfs_rename(
-    oe_device_t fs_,
+    oe_device_t* fs_,
     const char* oldpath,
     const char* newpath)
 {
@@ -830,7 +830,7 @@ done:
     return ret;
 }
 
-static int _hostfs_truncate(oe_device_t fs_, const char* path, oe_off_t length)
+static int _hostfs_truncate(oe_device_t* fs_, const char* path, oe_off_t length)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(fs_);
@@ -881,7 +881,7 @@ done:
     return ret;
 }
 
-static int _hostfs_mkdir(oe_device_t fs_, const char* pathname, oe_mode_t mode)
+static int _hostfs_mkdir(oe_device_t* fs_, const char* pathname, oe_mode_t mode)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(fs_);
@@ -932,7 +932,7 @@ done:
     return ret;
 }
 
-static int _hostfs_rmdir(oe_device_t fs_, const char* pathname)
+static int _hostfs_rmdir(oe_device_t* fs_, const char* pathname)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(fs_);
@@ -1010,7 +1010,7 @@ static fs_t _hostfs =
     .magic = FS_MAGIC,
 };
 
-oe_device_t oe_fs_hostfs(void)
+oe_device_t* oe_fs_get_hostfs(void)
 {
     return &_hostfs.base;
 }

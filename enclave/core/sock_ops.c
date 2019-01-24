@@ -8,7 +8,7 @@ intptr_t oe_socket(int domain, int type, int protocol)
 
 {
     int sd = -1;
-    oe_device_t psock = NULL;
+    oe_device_t* psock = NULL;
 
     switch (domain)
     {
@@ -50,7 +50,7 @@ int oe_connect(
 
 {
     int rtnval = -1;
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
     if (!psock)
     {
         // Log error here
@@ -77,7 +77,7 @@ int oe_accept(oe_sockfd_t sockfd, struct oe_sockaddr* addr, oe_socklen_t* addrle
 {
     oe_sockfd_t newfd = -1;
     newfd = oe_clone_fd(sockfd);
-    oe_device_t psock = oe_get_fd_device(newfd);
+    oe_device_t* psock = oe_get_fd_device(newfd);
 
     if (!psock)
     {
@@ -104,7 +104,7 @@ int oe_accept(oe_sockfd_t sockfd, struct oe_sockaddr* addr, oe_socklen_t* addrle
 int oe_listen(oe_sockfd_t sockfd, int backlog)
 
 {
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
 
     if (!psock)
     {
@@ -125,7 +125,7 @@ int oe_listen(oe_sockfd_t sockfd, int backlog)
 ssize_t oe_recvmsg(oe_sockfd_t sockfd, void* buf, size_t len, int flags)
 
 {
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
 
     if (!psock)
     {
@@ -146,7 +146,7 @@ ssize_t oe_recvmsg(oe_sockfd_t sockfd, void* buf, size_t len, int flags)
 ssize_t oe_recv(oe_sockfd_t sockfd, void* buf, size_t len)
 
 {
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
 
     if (!psock)
     {
@@ -167,7 +167,7 @@ ssize_t oe_recv(oe_sockfd_t sockfd, void* buf, size_t len)
 ssize_t oe_sendmsg(oe_sockfd_t sockfd, const void* buf, size_t len, int flags)
 
 {
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
 
     if (!psock)
     {
@@ -188,7 +188,7 @@ ssize_t oe_sendmsg(oe_sockfd_t sockfd, const void* buf, size_t len, int flags)
 ssize_t oe_send(oe_sockfd_t sockfd, const void* buf, size_t len)
 
 {
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
 
     if (!psock)
     {
@@ -209,7 +209,7 @@ ssize_t oe_send(oe_sockfd_t sockfd, const void* buf, size_t len)
 int oe_shutdown(oe_sockfd_t sockfd, int how)
 
 {
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
 
     if (!psock)
     {
@@ -233,7 +233,7 @@ int oe_getsockname(
     oe_socklen_t* addrlen)
 
 {
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
 
     if (!psock)
     {
@@ -259,7 +259,7 @@ int oe_getsockopt(
     oe_socklen_t* optlen)
 
 {
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
 
     if (!psock)
     {
@@ -282,7 +282,7 @@ int
 oe_setsockopt( oe_sockfd_t sockfd, int level, int optname, const void* optval, oe_socklen_t optlen)
 
 {
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
 
     if (!psock)
     {
@@ -304,7 +304,7 @@ oe_setsockopt( oe_sockfd_t sockfd, int level, int optname, const void* optval, o
 int oe_bind(oe_sockfd_t sockfd, const oe_sockaddr* name, oe_socklen_t namelen)
 
 {
-    oe_device_t psock = oe_get_fd_device(sockfd);
+    oe_device_t* psock = oe_get_fd_device(sockfd);
 
     if (!psock)
     {
