@@ -27,13 +27,13 @@ extern "C"
 
     typedef struct oe_fd_set
     {
-        uint64_t fd_count;            /* how many are SET? */
-        int fd_array[FD_SETSIZE];     /* an array of SOCKETs */
+        uint64_t fd_count;        /* how many are SET? */
+        int fd_array[FD_SETSIZE]; /* an array of SOCKETs */
     } oe_fd_set;
 
     typedef struct oe_provider_fd_set
     {
-        uint64_t fd_count;         /* how many are SET? */
+        uint64_t fd_count;             /* how many are SET? */
         intptr_t fd_array[FD_SETSIZE]; /* an array of SOCKETs */
     } oe_provider_fd_set;
 

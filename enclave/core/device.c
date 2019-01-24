@@ -57,8 +57,7 @@ int oe_device_init()
         _device_table[OE_DEVICE_ENCLAVE_FILESYSTEM], "/", READ_WRITE);
 
     rslt = (*_device_table[OE_DEVICE_HOST_FILESYSTEM]->ops.fs->mount)(
-        _device_table[OE_DEVICE_ENCLAVE_FILESYSTEM],
-        "/host", READ_ONLY);
+        _device_table[OE_DEVICE_ENCLAVE_FILESYSTEM], "/host", READ_ONLY);
 
     // Opt into the network
 
@@ -173,7 +172,8 @@ oe_device_t* oe_device_alloc(
 
 {
     oe_device_t* pparent_device = oe_get_devid_device(device_id);
-    oe_device_t* pdevice = (oe_device_t*)oe_malloc( pparent_device->size + private_size);
+    oe_device_t* pdevice =
+        (oe_device_t*)oe_malloc(pparent_device->size + private_size);
     // We clone the device from the parent device
     oe_memcpy(pdevice, pparent_device, pparent_device->size + private_size);
     pdevice->size = pparent_device->size + private_size;
@@ -190,8 +190,7 @@ oe_device_t* oe_device_alloc(
     return pdevice;
 }
 
-int
-oe_allocate_fd()
+int oe_allocate_fd()
 
 {
     // We could increase the size bump to some other number for performance.
@@ -200,16 +199,16 @@ oe_allocate_fd()
 
     size_t fd = 0;
 
-
     if (_fd_table_len == 0)
     {
         _fd_table_len = SIZE_BUMP;
-        _fd_table = (oe_device_t**)oe_malloc( sizeof(_fd_table[0]) * _fd_table_len);
-        oe_memset( _fd_table, 0, sizeof(_fd_table[0]) * _fd_table_len);
+        _fd_table =
+            (oe_device_t**)oe_malloc(sizeof(_fd_table[0]) * _fd_table_len);
+        oe_memset(_fd_table, 0, sizeof(_fd_table[0]) * _fd_table_len);
 
         // Setup stdin, out and error here.
 
-        return MIN_FD;  // Leave room for stdin, stdout, and stderr
+        return MIN_FD; // Leave room for stdin, stdout, and stderr
     }
 
     for (fd = MIN_FD; fd < _fd_table_len; fd++)

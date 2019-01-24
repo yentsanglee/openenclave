@@ -3,8 +3,8 @@
 
 #include <dirent.h>
 #include <fcntl.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "../common/hostfsargs.h"
@@ -26,8 +26,8 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_OPEN:
         {
-            args->u.open.ret = open(args->u.open.pathname, args->u.open.flags,
-                args->u.open.mode);
+            args->u.open.ret = open(
+                args->u.open.pathname, args->u.open.flags, args->u.open.mode);
             break;
         }
         case OE_HOSTFS_OP_CLOSE:
@@ -37,14 +37,14 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_READ:
         {
-            args->u.read.ret = read(args->u.read.fd, args->buf,
-                args->u.read.count);
+            args->u.read.ret =
+                read(args->u.read.fd, args->buf, args->u.read.count);
             break;
         }
         case OE_HOSTFS_OP_WRITE:
         {
-            args->u.read.ret = write(args->u.read.fd, args->buf,
-                args->u.read.count);
+            args->u.read.ret =
+                write(args->u.read.fd, args->buf, args->u.read.count);
             break;
         }
         case OE_HOSTFS_OP_LSEEK:
@@ -130,8 +130,7 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_LINK:
         {
-            args->u.link.ret =
-                link(args->u.link.oldpath, args->u.link.newpath);
+            args->u.link.ret = link(args->u.link.oldpath, args->u.link.newpath);
             break;
         }
         case OE_HOSTFS_OP_RENAME:
@@ -142,8 +141,8 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_MKDIR:
         {
-            args->u.mkdir.ret = mkdir(
-                args->u.mkdir.pathname, args->u.mkdir.mode);
+            args->u.mkdir.ret =
+                mkdir(args->u.mkdir.pathname, args->u.mkdir.mode);
             break;
         }
         case OE_HOSTFS_OP_RMDIR:
@@ -153,8 +152,8 @@ static void _handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_TRUNCATE:
         {
-            args->u.truncate.ret = truncate(args->u.truncate.path,
-                args->u.truncate.length);
+            args->u.truncate.ret =
+                truncate(args->u.truncate.path, args->u.truncate.length);
             break;
         }
     }

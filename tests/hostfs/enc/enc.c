@@ -2,9 +2,9 @@
 // Licensed under the MIT License.
 
 #include <openenclave/enclave.h>
-#include <openenclave/internal/tests.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/fs_ops.h>
+#include <openenclave/internal/tests.h>
 #include <stdio.h>
 #include <string.h>
 #include "hostfs_t.h"
@@ -18,6 +18,7 @@ static const char* _mkpath(
     const char* path)
 {
     strlcpy(buf, target, OE_PATH_MAX);
+    strlcat(buf, "/", OE_PATH_MAX);
     strlcat(buf, path, OE_PATH_MAX);
     return buf;
 }
@@ -26,16 +27,22 @@ void cleanup(oe_device_t* hostfs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
 
-    oe_fs_unlink(hostfs, _mkpath(path, tmp_dir, "/alphabet"));
-    oe_fs_unlink(hostfs, _mkpath(path, tmp_dir, "/alphabet.renamed"));
+    oe_fs_unlink(hostfs, _mkpath(path, tmp_dir, "alphabet"));
+    oe_fs_unlink(hostfs, _mkpath(path, tmp_dir, "alphabet.renamed"));
+
+    _mkpath(path, tmp_dir, "dir1");
+    oe_fs_rmdir(hostfs, path);
+
+    _mkpath(path, tmp_dir, "dir2");
+    oe_fs_rmdir(hostfs, path);
 }
 
-void create_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_create_file(oe_device_t* hostfs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
     oe_device_t* file;
 
-    _mkpath(path, tmp_dir, "/alphabet");
+    _mkpath(path, tmp_dir, "alphabet");
 
     /* Open the file for output. */
     {
@@ -55,13 +62,13 @@ void create_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
     printf("=== Created %s\n", path);
 }
 
-void read_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_read_file(oe_device_t* hostfs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
     oe_device_t* file;
     char buf[OE_PAGE_SIZE];
 
-    _mkpath(path, tmp_dir, "/alphabet");
+    _mkpath(path, tmp_dir, "alphabet");
 
     /* Open the file for input. */
     {
@@ -81,12 +88,12 @@ void read_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
     OE_TEST(oe_fs_close(file) == 0);
 }
 
-void stat_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_stat_file(oe_device_t* hostfs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
     struct oe_stat buf;
 
-    _mkpath(path, tmp_dir, "/alphabet");
+    _mkpath(path, tmp_dir, "alphabet");
 
     /* Stat the file. */
     OE_TEST(oe_fs_stat(hostfs, path, &buf) == 0);
@@ -97,7 +104,7 @@ void stat_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
     OE_TEST(buf.st_mode == (OE_S_IFREG | MODE));
 }
 
-void find_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_readdir(oe_device_t* hostfs, const char* tmp_dir)
 {
     oe_device_t* dir;
     struct oe_dirent* ent;
@@ -106,9 +113,24 @@ void find_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
     bool found_alphabet_renamed = false;
     bool found_dot = false;
     bool found_dot_dot = false;
+    bool found_dir1 = false;
+    bool found_dir2 = false;
+    char path[OE_PATH_MAX];
 
     dir = oe_fs_opendir(hostfs, tmp_dir);
     OE_TEST(dir);
+
+    /* Create directories: "dir1" and "dir2". */
+    {
+        _mkpath(path, tmp_dir, "dir1");
+        OE_TEST(oe_fs_mkdir(hostfs, path, 0777) == 0);
+
+        _mkpath(path, tmp_dir, "dir2");
+        OE_TEST(oe_fs_mkdir(hostfs, path, 0777) == 0);
+    }
+
+    /* Remove directory "dir2". */
+    OE_TEST(oe_fs_rmdir(hostfs, _mkpath(path, tmp_dir, "dir2")) == 0);
 
     while ((ent = oe_fs_readdir(dir)))
     {
@@ -124,6 +146,12 @@ void find_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
         if (strcmp(ent->d_name, "..") == 0)
             found_dot_dot = true;
 
+        if (strcmp(ent->d_name, "dir1") == 0)
+            found_dir1 = true;
+
+        if (strcmp(ent->d_name, "dir2") == 0)
+            found_dir2 = true;
+
         count++;
     }
 
@@ -131,42 +159,44 @@ void find_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
     OE_TEST(found_alphabet_renamed);
     OE_TEST(found_dot);
     OE_TEST(found_dot_dot);
+    OE_TEST(found_dir1);
+    OE_TEST(!found_dir2);
 
     oe_fs_closedir(dir);
 }
 
-void link_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_link_file(oe_device_t* hostfs, const char* tmp_dir)
 {
     char oldname[OE_PAGE_SIZE];
     char newname[OE_PAGE_SIZE];
     struct oe_stat buf;
 
-    _mkpath(oldname, tmp_dir, "/alphabet");
-    _mkpath(newname, tmp_dir, "/alphabet.linked");
+    _mkpath(oldname, tmp_dir, "alphabet");
+    _mkpath(newname, tmp_dir, "alphabet.linked");
 
     OE_TEST(oe_fs_link(hostfs, oldname, newname) == 0);
     OE_TEST(oe_fs_stat(hostfs, newname, &buf) == 0);
 }
 
-void rename_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_rename_file(oe_device_t* hostfs, const char* tmp_dir)
 {
     char oldname[OE_PAGE_SIZE];
     char newname[OE_PAGE_SIZE];
     struct oe_stat buf;
 
-    _mkpath(oldname, tmp_dir, "/alphabet.linked"),
-    _mkpath(newname, tmp_dir, "/alphabet.renamed");
+    _mkpath(oldname, tmp_dir, "alphabet.linked"),
+        _mkpath(newname, tmp_dir, "alphabet.renamed");
 
     OE_TEST(oe_fs_rename(hostfs, oldname, newname) == 0);
     OE_TEST(oe_fs_stat(hostfs, newname, &buf) == 0);
 }
 
-void unlink_alphabet_file(oe_device_t* hostfs, const char* tmp_dir)
+void test_unlink_file(oe_device_t* hostfs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
     struct oe_stat buf;
 
-    _mkpath(path, tmp_dir, "/alphabet");
+    _mkpath(path, tmp_dir, "alphabet");
 
     /* Remove the file. */
     OE_TEST(oe_fs_unlink(hostfs, path) == 0);
@@ -183,13 +213,13 @@ void test_hostfs(const char* src_dir, const char* tmp_dir)
     OE_TEST(hostfs);
 
     cleanup(hostfs, tmp_dir);
-    create_alphabet_file(hostfs, tmp_dir);
-    read_alphabet_file(hostfs, tmp_dir);
-    stat_alphabet_file(hostfs, tmp_dir);
-    link_alphabet_file(hostfs, tmp_dir);
-    rename_alphabet_file(hostfs, tmp_dir);
-    find_alphabet_file(hostfs, tmp_dir);
-    unlink_alphabet_file(hostfs, tmp_dir);
+    test_create_file(hostfs, tmp_dir);
+    test_read_file(hostfs, tmp_dir);
+    test_stat_file(hostfs, tmp_dir);
+    test_link_file(hostfs, tmp_dir);
+    test_rename_file(hostfs, tmp_dir);
+    test_readdir(hostfs, tmp_dir);
+    test_unlink_file(hostfs, tmp_dir);
     cleanup(hostfs, tmp_dir);
 }
 

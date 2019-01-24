@@ -20,8 +20,14 @@ typedef struct _oe_sock_ops
 
     int (*socket)(oe_device_t* dev, int domain, int type, int protocol);
 
-    int (*connect)(oe_device_t* dev, const struct oe_sockaddr* addr, oe_socklen_t addrlen);
-    int ( *accept)(oe_device_t* dev, struct oe_sockaddr* addr, oe_socklen_t* addrlen);
+    int (*connect)(
+        oe_device_t* dev,
+        const struct oe_sockaddr* addr,
+        oe_socklen_t addrlen);
+    int (*accept)(
+        oe_device_t* dev,
+        struct oe_sockaddr* addr,
+        oe_socklen_t* addrlen);
     int (*bind)(
         oe_device_t* dev,
         const struct oe_sockaddr* addr,
@@ -31,7 +37,8 @@ typedef struct _oe_sock_ops
 
     ssize_t (*recvmsg)(oe_device_t* dev, void* buf, size_t len, int flags);
 
-    ssize_t (*sendmsg)(oe_device_t* dev, const void* buf, size_t len, int flags);
+    ssize_t (
+        *sendmsg)(oe_device_t* dev, const void* buf, size_t len, int flags);
 
     int (*shutdown)(oe_device_t* dev, int how);
     int (*getsockopt)(
@@ -63,8 +70,7 @@ typedef struct _oe_sock_ops
 
     int (*getnameinfo)( oe_device_t* dev, const struct oe_sockaddr *sa, socklen_t salen, char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags);
 #endif
-}
-oe_sock_ops_t;
+} oe_sock_ops_t;
 
 /* ATTN: where does select go? */
 

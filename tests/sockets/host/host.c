@@ -5,8 +5,8 @@
 #include <openenclave/internal/tests.h>
 #include <pthread.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "socket_test_u.h"
 

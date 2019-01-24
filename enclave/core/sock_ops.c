@@ -72,7 +72,10 @@ int oe_connect(
     return rtnval;
 }
 
-int oe_accept(oe_sockfd_t sockfd, struct oe_sockaddr* addr, oe_socklen_t* addrlen)
+int oe_accept(
+    oe_sockfd_t sockfd,
+    struct oe_sockaddr* addr,
+    oe_socklen_t* addrlen)
 
 {
     oe_sockfd_t newfd = -1;
@@ -278,8 +281,12 @@ int oe_getsockopt(
         psock, level, optname, optval, optlen);
 }
 
-int
-oe_setsockopt( oe_sockfd_t sockfd, int level, int optname, const void* optval, oe_socklen_t optlen)
+int oe_setsockopt(
+    oe_sockfd_t sockfd,
+    int level,
+    int optname,
+    const void* optval,
+    oe_socklen_t optlen)
 
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);

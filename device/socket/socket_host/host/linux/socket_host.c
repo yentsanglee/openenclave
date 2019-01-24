@@ -115,7 +115,7 @@ send_Result ocall_send(
 ssize_t ocall_recv(
     intptr_t a_hSocket,
     void* a_Buffer,
-    size_t  a_nBufferSize,
+    size_t a_nBufferSize,
     int64_t a_Flags,
     oe_socket_error_t* a_Error)
 {
@@ -153,8 +153,8 @@ int ocall_getaddrinfo(
     *length_needed = 0;
     memset(aibuffer, 0, len);
 
-    hints.ai_flags    = (int)a_Flags;
-    hints.ai_family   = (int)a_Family;
+    hints.ai_flags = (int)a_Flags;
+    hints.ai_family = (int)a_Family;
     hints.ai_socktype = (int)a_SockType;
     hints.ai_protocol = (int)a_Protocol;
 
@@ -209,7 +209,8 @@ getsockopt_Result ocall_getsockopt(
     getsockopt_Result result = {0};
     int fd = (int)a_hSocket;
     socklen_t len = (socklen_t)a_nOptLen;
-    int err = getsockopt(fd, (int)a_nLevel, (int)a_nOptName, result.buffer, &len);
+    int err =
+        getsockopt(fd, (int)a_nLevel, (int)a_nOptName, result.buffer, &len);
     result.len = len;
     result.error = (err == -1) ? (oe_socket_error_t)errno : 0;
     return result;
@@ -230,7 +231,7 @@ oe_socket_error_t ocall_setsockopt(
 
 ioctlsocket_Result ocall_ioctlsocket(
     intptr_t a_hSocket,
-    int64_t  a_nCommand,
+    int64_t a_nCommand,
     uint64_t a_uInputValue)
 {
     ioctlsocket_Result result = {0};
@@ -238,20 +239,20 @@ ioctlsocket_Result ocall_ioctlsocket(
     int outputValue = (int)a_uInputValue;
 
     int64_t err = 0;
-    switch(a_nCommand) {
-    case F_GETFL:
-        err = fcntl(fd, (int)a_nCommand, &outputValue);
-        result.outputValue = (uint64_t)outputValue;
-        break;
+    switch (a_nCommand)
+    {
+        case F_GETFL:
+            err = fcntl(fd, (int)a_nCommand, &outputValue);
+            result.outputValue = (uint64_t)outputValue;
+            break;
 
-    case F_SETFL:
-        err = fcntl(fd, (int)a_nCommand, outputValue);
-        result.outputValue = a_uInputValue;
-        break;
+        case F_SETFL:
+            err = fcntl(fd, (int)a_nCommand, outputValue);
+            result.outputValue = a_uInputValue;
+            break;
 
-    default:
-        break;
-
+        default:
+            break;
     }
     result.error = (err == -1) ? (oe_socket_error_t)errno : 0;
     return result;
@@ -378,7 +379,7 @@ accept_Result ocall_accept(intptr_t a_hSocket, socklen_t a_nAddrLen)
 getnameinfo_Result ocall_getnameinfo(
     const void* a_Addr,
     socklen_t a_AddrLen,
-    uint64_t  a_Flags)
+    uint64_t a_Flags)
 {
     getnameinfo_Result result = {0};
     result.error = (oe_socket_error_t)getnameinfo(

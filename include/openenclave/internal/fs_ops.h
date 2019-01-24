@@ -5,8 +5,8 @@
 #define _OE_FS_OPS_H
 
 #include <openenclave/bits/types.h>
-#include <openenclave/internal/errno.h>
 #include <openenclave/internal/device_ops.h>
+#include <openenclave/internal/errno.h>
 
 OE_EXTERNC_BEGIN
 
@@ -26,7 +26,7 @@ OE_EXTERNC_BEGIN
 #define OE_DT_SOCK 12
 #define OE_DT_WHT 14
 
-#define OE_S_IFMT  0170000
+#define OE_S_IFMT 0170000
 #define OE_S_IFDIR 0040000
 #define OE_S_IFCHR 0020000
 #define OE_S_IFBLK 0060000
@@ -35,13 +35,13 @@ OE_EXTERNC_BEGIN
 #define OE_S_IFLNK 0120000
 #define OE_S_IFSOCK 0140000
 
-#define OE_S_ISDIR(mode)  (((mode) & OE_S_IFMT) == OE_S_IFDIR)
-#define OE_S_ISCHR(mode)  (((mode) & OE_S_IFMT) == OE_S_IFCHR)
-#define OE_S_ISBLK(mode)  (((mode) & OE_S_IFMT) == OE_S_IFBLK)
-#define OE_S_ISREG(mode)  (((mode) & OE_S_IFMT) == OE_S_IFREG)
-#define OE_S_ISFIFO(mode) (((mode) & OE_S_IFMT) == OE_S_IFIFO)
-#define OE_S_ISLNK(mode)  (((mode) & OE_S_IFMT) == OE_S_IFLNK)
-#define OE_S_ISSOCK(mode) (((mode) & OE_S_IFMT) == OE_S_IFSOCK)
+#define OE_S_ISDIR(mode) (((mode)&OE_S_IFMT) == OE_S_IFDIR)
+#define OE_S_ISCHR(mode) (((mode)&OE_S_IFMT) == OE_S_IFCHR)
+#define OE_S_ISBLK(mode) (((mode)&OE_S_IFMT) == OE_S_IFBLK)
+#define OE_S_ISREG(mode) (((mode)&OE_S_IFMT) == OE_S_IFREG)
+#define OE_S_ISFIFO(mode) (((mode)&OE_S_IFMT) == OE_S_IFIFO)
+#define OE_S_ISLNK(mode) (((mode)&OE_S_IFMT) == OE_S_IFLNK)
+#define OE_S_ISSOCK(mode) (((mode)&OE_S_IFMT) == OE_S_IFSOCK)
 
 #define OE_S_ISUID 0x0800
 #define OE_S_ISGID 0x0400
@@ -146,8 +146,11 @@ struct _oe_fs_ops
 
     int (*mount)(oe_device_t* fs, const char* target, uint32_t flags);
 
-    oe_device_t* (
-        *open)(oe_device_t* fs, const char* pathname, int flags, oe_mode_t mode);
+    oe_device_t* (*open)(
+        oe_device_t* fs,
+        const char* pathname,
+        int flags,
+        oe_mode_t mode);
 
     oe_off_t (*lseek)(oe_device_t* file, oe_off_t offset, int whence);
 

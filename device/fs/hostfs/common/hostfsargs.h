@@ -32,111 +32,95 @@ typedef struct _oe_hostfs_args
 {
     oe_hostfs_op_t op;
     int err;
-    union
-    {
+    union {
         struct
         {
             int ret;
             char pathname[OE_PATH_MAX];
             int flags;
             oe_mode_t mode;
-        }
-        open;
+        } open;
         struct
         {
             ssize_t ret;
             int fd;
             size_t count;
-        }
-        read;
+        } read;
         struct
         {
             ssize_t ret;
             int fd;
             size_t count;
-        }
-        write;
+        } write;
         struct
         {
             oe_off_t ret;
             int fd;
             oe_off_t offset;
             int whence;
-        }
-        lseek;
+        } lseek;
         struct
         {
             int ret;
             int fd;
-        }
-        close;
+        } close;
         struct
         {
             void* ret;
             char name[OE_PATH_MAX];
-        }
-        opendir;
+        } opendir;
         struct
         {
             int ret;
             void* dirp;
             struct oe_dirent* result;
             struct oe_dirent entry;
-        }
-        readdir;
+        } readdir;
         struct
         {
             int ret;
             void* dirp;
-        }
-        closedir;
+        } closedir;
         struct
         {
             int ret;
             char pathname[OE_PATH_MAX];
             struct oe_stat buf;
-        }
-        stat;
+        } stat;
         struct
         {
             int ret;
             char oldpath[OE_PATH_MAX];
             char newpath[OE_PATH_MAX];
-        }
-        link;
+        } link;
         struct
         {
             int ret;
             char pathname[OE_PATH_MAX];
-        }
-        unlink;
+        } unlink;
         struct
         {
             int ret;
             char oldpath[OE_PATH_MAX];
             char newpath[OE_PATH_MAX];
-        }
-        rename;
+        } rename;
         struct
         {
             int ret;
             char path[OE_PATH_MAX];
             oe_off_t length;
-        }
-        truncate;
+        } truncate;
         struct
         {
             int ret;
             char pathname[OE_PATH_MAX];
             oe_mode_t mode;
-        }
-        mkdir;
+        } mkdir;
         struct
         {
             int ret;
             char pathname[OE_PATH_MAX];
-        }
-        rmdir;
+        } rmdir;
     } u;
     uint8_t buf[];
 } oe_hostfs_args_t;

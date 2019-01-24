@@ -20,9 +20,9 @@ typedef enum _oe_device_type
     OE_DEVICE_ENCLAVE_FILESYSTEM, // This entry describes a file in the enclaves
                                   // secure file system
     OE_DEVICE_HOST_FILESYSTEM,    // This entry describes a file in the hosts's
-                               // file system
-    OE_DEVICE_HOST_SOCKET,   // This entry describes an internet socket
-    OE_DEVICE_ENCLAVE_SOCKET // This entry describes an enclave to enclave
+                                  // file system
+    OE_DEVICE_HOST_SOCKET,        // This entry describes an internet socket
+    OE_DEVICE_ENCLAVE_SOCKET      // This entry describes an enclave to enclave
 } oe_device_type_t;
 
 typedef struct _oe_device
@@ -37,16 +37,13 @@ typedef struct _oe_device
     size_t size;
     const char* devicename;
 
-    union
-    {
+    union {
         oe_device_ops_t* base;
         oe_fs_ops_t* fs;
         oe_sock_ops_t* socket;
-    }
-    ops;
+    } ops;
 
-}
-oe_device_t;
+} oe_device_t;
 
 typedef struct _oe_device_entry
 {

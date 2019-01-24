@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include <openenclave/host.h>
-#include <openenclave/internal/tests.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/tests.h>
 #include <stdio.h>
 #include "hostfs_u.h"
 
