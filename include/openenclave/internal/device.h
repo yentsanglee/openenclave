@@ -12,23 +12,32 @@
 
 OE_EXTERNC_BEGIN
 
+
+// Well known  device ids
+static const int OE_DEVICE_CONSOLE = 1;
+static const int OE_DEVICE_LOG     = 2;
+static const int OE_DEVICE_ENCLAVE_FILESYSTEM = 3;
+static const int OE_DEVICE_HOST_FILESYSTEM    = 4; // This entry describes a file in the hosts's
+                                  // file system
+static const int OE_DEVICE_HOST_SOCKET        = 5; // This entry describes an internet socket
+static const int OE_DEVICE_ENCLAVE_SOCKET     = 6; // This entry describes an enclave to enclave
+
 typedef enum _oe_device_type
 {
-    OE_DEVICE_NONE = 0,           // This entry is invalid
-    OE_DEVICE_CONSOLE,            // Console device for stdin and stdout
-    OE_DEVICE_LOG,                // log device for stderr
-    OE_DEVICE_ENCLAVE_FILESYSTEM, // This entry describes a file in the enclaves
+    OE_DEVICE_NONE = 0,
+    OE_DEVICETYPE_FILESYSTEM,
                                   // secure file system
-    OE_DEVICE_HOST_FILESYSTEM,    // This entry describes a file in the hosts's
+    OE_DEVICETYPE_DIRECTORY,    // This entry describes a file in the hosts's
                                   // file system
-    OE_DEVICE_HOST_SOCKET,        // This entry describes an internet socket
-    OE_DEVICE_ENCLAVE_SOCKET      // This entry describes an enclave to enclave
+    OE_DEVICETYPE_FILE,        // This entry describes an internet socket
+    OE_DEVICETYPE_SOCKET      // This entry describes an enclave to enclave
 } oe_device_type_t;
 
 typedef struct _oe_device
 {
     /* Type of this device: OE_DEVICE_FILE or OE_DEVICE_SOCKET. */
     oe_device_type_t type;
+    int devid;              // Index of the device into the device table.
 
     /* sizeof additional data. To get a pointer to the device private data,
      * ptr = (oe_file_device_t)(devptr+1); usually sizeof(oe_file_t) or
