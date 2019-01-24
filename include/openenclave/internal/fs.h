@@ -8,32 +8,11 @@
 
 OE_EXTERNC_BEGIN
 
-typedef struct _fs
-{
-    struct _oe_device base;
-    uint32_t magic;
-} fs_t;
-
-typedef struct _file
-{
-    struct _oe_device base;
-    uint32_t magic;
-    int host_fd;
-} file_t;
-
-typedef struct _dir
-{
-    struct _oe_device base;
-    uint32_t magic;
-    void* host_dir;
-    struct oe_dirent entry;
-} dir_t;
-
 /* The host calls this to install the host file system (HOSTFS). */
 void oe_fs_install_hostfs(void);
 
 /* The enclave calls this to get an instance of host file system (HOSTFS). */
-oe_device_t oe_fs_get_hostfs(void);
+oe_device_t* oe_fs_get_hostfs(void);
 
 OE_INLINE oe_device_t* oe_fs_open(
     oe_device_t* fs,
