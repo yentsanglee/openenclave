@@ -148,3 +148,250 @@ int oe_open(const char* pathname, int flags, oe_mode_t mode)
 
     return fd;
 }
+
+oe_device_t* oe_opendir(const char* pathname)
+{
+    oe_device_t* pfs = NULL;
+    char filepath[OE_PATH_MAX] = {0};
+
+    if (!(pfs = _fs_lookup(pathname, filepath)))
+    {
+        oe_errno = OE_EBADF;
+        return NULL;
+    }
+
+    if (pfs->type != OE_DEVICETYPE_FILESYSTEM)
+    {
+        oe_errno = OE_EINVAL;
+        return NULL;
+    }
+
+    if (pfs->ops.fs->opendir == NULL)
+    {
+        oe_errno = OE_EINVAL;
+        return NULL;
+    }
+
+    return (*pfs->ops.fs->opendir)(pfs, filepath);
+}
+
+struct oe_dirent* oe_readdir(oe_device_t* dir)
+{
+    if (dir->type != OE_DEVICETYPE_DIRECTORY)
+    {
+        oe_errno = OE_EINVAL;
+        return NULL;
+    }
+
+    if (dir->ops.fs->readdir == NULL)
+    {
+        oe_errno = OE_EINVAL;
+        return NULL;
+    }
+
+    return (*dir->ops.fs->readdir)(dir);
+}
+
+int oe_closedir(oe_device_t* dir)
+{
+    if (dir->type != OE_DEVICETYPE_DIRECTORY)
+    {
+        oe_errno = OE_EINVAL;
+        return -1;
+    }
+
+    if (dir->ops.fs->closedir == NULL)
+    {
+        oe_errno = OE_EINVAL;
+        return -1;
+    }
+
+    return (*dir->ops.fs->closedir)(dir);
+}
+
+int oe_rmdir(const char* pathname)
+{
+    oe_device_t* pfs = NULL;
+    char filepath[OE_PATH_MAX] = {0};
+
+    if (!(pfs = _fs_lookup(pathname, filepath)))
+    {
+        return -1;
+    }
+
+    if (pfs->ops.fs->rmdir == NULL)
+    {
+        oe_errno = OE_EINVAL;
+        return -1;
+    }
+
+    return (*pfs->ops.fs->rmdir)(pfs, filepath);
+}
+
+int oe_stat(const char* pathname, struct oe_stat* buf)
+{
+    oe_device_t* pfs = NULL;
+    char filepath[OE_PATH_MAX] = {0};
+
+    if (!(pfs = _fs_lookup(pathname, filepath)))
+    {
+        oe_errno = OE_EBADF;
+        return -1;
+    }
+
+    if (pfs->ops.fs->stat == NULL)
+    {
+        oe_errno = OE_EINVAL;
+        return -1;
+    }
+
+    return (*pfs->ops.fs->stat)(pfs, filepath, buf);
+}
+
+int oe_link(const char* oldpath, const char* newpath)
+{
+    oe_device_t* pfs = NULL;
+    oe_device_t* newpfs = NULL;
+    char filepath[OE_PATH_MAX] = {0};
+    char newfilepath[OE_PATH_MAX] = {0};
+
+    if (!(pfs = _fs_lookup(oldpath, filepath)))
+    {
+        oe_errno = OE_EBADF;
+        return -1;
+    }
+
+    if (!(newpfs = _fs_lookup(newpath, newfilepath)))
+    {
+        oe_errno = OE_EBADF;
+        return -1;
+    }
+
+    if (pfs != newpfs)
+    {
+        oe_errno = OE_EXDEV;
+        return -1;
+    }
+
+    if (pfs->ops.fs->link == NULL)
+    {
+        oe_errno = OE_EPERM;
+        return -1;
+    }
+
+    return (*pfs->ops.fs->link)(pfs, filepath, newfilepath);
+}
+
+int oe_unlink(const char* pathname)
+{
+    oe_device_t* pfs = NULL;
+    char filepath[OE_PATH_MAX] = {0};
+
+    if (!(pfs = _fs_lookup(pathname, filepath)))
+    {
+        oe_errno = OE_EBADF;
+        return -1;
+    }
+
+    if (pfs->ops.fs->unlink == NULL)
+    {
+        oe_errno = OE_EINVAL;
+        return -1;
+    }
+
+    return (*pfs->ops.fs->unlink)(pfs, filepath);
+}
+
+int oe_rename(const char* oldpath, const char* newpath)
+{
+    oe_device_t* pfs = NULL;
+    oe_device_t* newpfs = NULL;
+    char filepath[OE_PATH_MAX] = {0};
+    char newfilepath[OE_PATH_MAX] = {0};
+
+    if (!(pfs = _fs_lookup(oldpath, filepath)))
+    {
+        oe_errno = OE_EBADF;
+        return -1;
+    }
+
+    if (!(newpfs = _fs_lookup(newpath, newfilepath)))
+    {
+        oe_errno = OE_EBADF;
+        return -1;
+    }
+
+    if (pfs != newpfs)
+    {
+        oe_errno = OE_EXDEV;
+        return -1;
+    }
+
+    if (pfs->ops.fs->rename == NULL)
+    {
+        oe_errno = OE_EPERM;
+        return -1;
+    }
+
+    return (*pfs->ops.fs->rename)(pfs, filepath, newfilepath);
+}
+
+int oe_truncate(const char* pathname, oe_off_t length)
+{
+    oe_device_t* pfs = NULL;
+    char filepath[OE_PATH_MAX] = {0};
+
+    if (!(pfs = _fs_lookup(pathname, filepath)))
+    {
+        oe_errno = OE_EBADF;
+        return -1;
+    }
+
+    if (pfs->ops.fs->truncate == NULL)
+    {
+        oe_errno = OE_EINVAL;
+        return -1;
+    }
+
+    return (*pfs->ops.fs->truncate)(pfs, filepath, length);
+}
+
+int oe_mkdir(const char* pathname, oe_mode_t mode)
+{
+    oe_device_t* pfs = NULL;
+    char filepath[OE_PATH_MAX] = {0};
+
+    if (!(pfs = _fs_lookup(pathname, filepath)))
+    {
+        oe_errno = OE_EBADF;
+        return -1;
+    }
+
+    if (pfs->ops.fs->mkdir == NULL)
+    {
+        oe_errno = OE_EINVAL;
+        return -1;
+    }
+
+    return (*pfs->ops.fs->mkdir)(pfs, filepath, mode);
+}
+
+oe_off_t oe_lseek(int fd, oe_off_t offset, int whence)
+
+{
+    oe_device_t* pfile = oe_get_fd_device(fd);
+    if (!pfile)
+    {
+        // Log error here
+        oe_errno = OE_EBADF;
+        return -1; // erno is already set
+    }
+
+    if (pfile->ops.fs->lseek == NULL)
+    {
+        oe_errno = OE_EINVAL;
+        return -1;
+    }
+
+    return (*pfile->ops.fs->lseek)(pfile, offset, whence);
+}
