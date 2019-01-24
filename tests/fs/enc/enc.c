@@ -248,9 +248,9 @@ void test_unlink_file(oe_device_t* fs, const char* tmp_dir)
 void test_fs(const char* src_dir, const char* tmp_dir)
 {
     (void)src_dir;
+    oe_device_t* fs;
 
-    oe_device_t* fs = oe_fs_get_hostfs();
-    OE_TEST(fs);
+    OE_TEST(oe_fs_clone(oe_fs_get_hostfs(), &fs) == 0);
 
     cleanup(fs, tmp_dir);
     test_create_file(fs, tmp_dir);
