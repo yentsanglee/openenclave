@@ -9,20 +9,51 @@ typedef struct _mount_point
     size_t pathlen; // an optimisation. I can easily skip paths that are the
                     // wrong length without needing to do a string compare.
     const char* mount_path;
-    oe_device_t* filesystem;
+    oe_device_t* fs;
     uint32_t flags;
-} * oe_mount_point_t;
+} oe_mount_point_t;
 
 const size_t _MOUNT_TABLE_SIZE_BUMP = 5;
 
 size_t _mount_table_len = 0;
 oe_mount_point_t* _mount_table = NULL;
 
-static oe_device_t* _find_fs_by_mount(const char* path)
+static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
 {
-    (void)path;
-    // check for dups.
-    return NULL;
+    oe_device_t* ret = NULL;
+    size_t match_len = 0;
+
+    if (!path)
+        goto done;
+
+    // pthread_spin_lock(&_lock);
+    {
+        /* Find the longest binding point that contains this path. */
+        for (size_t i = 0; i < _mount_table_len; i++)
+        {
+            size_t len = _mount_table[i].pathlen;
+
+            if (oe_strncmp(_mount_table[i].mount_path, path, len) == 0 &&
+                (path[len] == '/' || path[len] == '\0'))
+            {
+                if (len > match_len)
+                {
+                    if (suffix)
+                    {
+                        oe_strlcpy(suffix, path + len, OE_PATH_MAX);
+                    }
+
+                    match_len = len;
+                    ret = _mount_table[i].fs;
+                }
+            }
+        }
+    }
+    // pthread_spin_unlock(&_lock);
+
+done:
+
+    return ret;
 }
 
 int oe_mount(int device_id, const char* path, uint32_t flags)
@@ -59,7 +90,7 @@ int oe_mount(int device_id, const char* path, uint32_t flags)
     // Find an empty slot
     for (new_element = 0; new_element < _mount_table_len; new_element++)
     {
-        if (_mount_table[new_element]->pathlen == 0)
+        if (_mount_table[new_element].pathlen == 0)
         {
             break;
         }
@@ -74,13 +105,13 @@ int oe_mount(int device_id, const char* path, uint32_t flags)
         oe_memset(_mount_table+new_element, 0, (sizeof(_mount_table[0]) * _MOUNT_TABLE_SIZE_BUMP));
     }
 
-    _mount_table[new_element]->mount_path = path;
-    _mount_table[new_element]->pathlen = oe_strlen(path);
-    _mount_table[new_element]->filesystem = oe_device_alloc(device_id, path, 0);
+    _mount_table[new_element].mount_path = path;
+    _mount_table[new_element].pathlen = oe_strlen(path);
+    _mount_table[new_element].fs = oe_device_alloc(device_id, path, 0);
 
-   //rslt = (*_mount_table.ops.fs-
+    // rslt = (*_mount_table.ops.fs-
 
-   return 0;
+    return 0;
 }
 
 int oe_open(const char* pathname, int flags, oe_mode_t mode)
@@ -88,11 +119,14 @@ int oe_open(const char* pathname, int flags, oe_mode_t mode)
     int fd = -1;
     oe_device_t* pfs = NULL;
     oe_device_t* pfile = NULL;
+    char filepath[OE_PATH_MAX] = {0};
 
-    if (!(pfs = _find_fs_by_mount(pathname)))
+    if (!(pfs = _fs_lookup(pathname, filepath)))
     {
         return -1;
     }
+
+    pfile = oe_clone_device(pfs);
 
     if ((fd = oe_allocate_fd()) < 0)
     {
@@ -100,7 +134,7 @@ int oe_open(const char* pathname, int flags, oe_mode_t mode)
         return -1; // errno is already set
     }
 
-    if (!(pfile = (*pfile->ops.fs->open)(pfs, pathname, flags, mode)))
+    if (!(pfile = (*pfile->ops.fs->open)(pfile, filepath, flags, mode)))
     {
         oe_release_fd(fd);
         return -1;

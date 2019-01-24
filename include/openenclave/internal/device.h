@@ -66,6 +66,7 @@ void oe_release_devid(int devid);
 
 oe_device_t* oe_set_devid_device(int device_id, oe_device_t* pdevice);
 oe_device_t* oe_get_devid_device(int fd);
+oe_device_t* oe_clone_device(oe_device_t* pdevice);
 
 int oe_device_init(); // Overridable function to set up device structures. Shoud
                       // be ommited when new interface is complete.
