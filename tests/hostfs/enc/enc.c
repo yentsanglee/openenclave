@@ -77,11 +77,29 @@ void test_read_file(oe_device_t* hostfs, const char* tmp_dir)
         OE_TEST(file);
     }
 
-    /* Read the file. */
+    /* Read the whole file. */
     {
         ssize_t n = oe_fs_read(file, buf, sizeof(buf));
         OE_TEST(n == sizeof(ALPHABET));
         OE_TEST(memcmp(buf, ALPHABET, sizeof(ALPHABET)) == 0);
+    }
+
+    /* Read "lmnop" */
+    {
+        OE_TEST(oe_fs_lseek(file, 11, OE_SEEK_SET) == 11);
+        OE_TEST(oe_fs_read(file, buf, 5) == 5);
+        OE_TEST(memcmp(buf, "lmnop", 5) == 0);
+    }
+
+    /* Read one character at a time. */
+    {
+        OE_TEST(oe_fs_lseek(file, 0, OE_SEEK_SET) == 0);
+
+        for (size_t i = 0; i < OE_COUNTOF(ALPHABET); i++)
+        {
+            OE_TEST(oe_fs_read(file, buf, 1) == 1);
+            OE_TEST(ALPHABET[i] == buf[0]);
+        }
     }
 
     /* Close the file. */
@@ -127,6 +145,13 @@ void test_readdir(oe_device_t* hostfs, const char* tmp_dir)
 
         _mkpath(path, tmp_dir, "dir2");
         OE_TEST(oe_fs_mkdir(hostfs, path, 0777) == 0);
+    }
+
+    /* Test stat on a directory. */
+    {
+        struct oe_stat buf;
+        OE_TEST(oe_fs_stat(hostfs, _mkpath(path, tmp_dir, "dir1"), &buf) == 0);
+        OE_TEST(OE_S_ISDIR(buf.st_mode));
     }
 
     /* Remove directory "dir2". */
@@ -185,10 +210,25 @@ void test_rename_file(oe_device_t* hostfs, const char* tmp_dir)
     struct oe_stat buf;
 
     _mkpath(oldname, tmp_dir, "alphabet.linked"),
-        _mkpath(newname, tmp_dir, "alphabet.renamed");
+    _mkpath(newname, tmp_dir, "alphabet.renamed");
 
     OE_TEST(oe_fs_rename(hostfs, oldname, newname) == 0);
     OE_TEST(oe_fs_stat(hostfs, newname, &buf) == 0);
+}
+
+void test_truncate_file(oe_device_t* hostfs, const char* tmp_dir)
+{
+    char path[OE_PAGE_SIZE];
+    struct oe_stat buf;
+
+    _mkpath(path, tmp_dir, "alphabet");
+
+    /* Remove the file. */
+    OE_TEST(oe_fs_truncate(hostfs, path, 5) == 0);
+
+    /* Stat the file. */
+    OE_TEST(oe_fs_stat(hostfs, path, &buf) == 0);
+    OE_TEST(buf.st_size == 5);
 }
 
 void test_unlink_file(oe_device_t* hostfs, const char* tmp_dir)
@@ -219,6 +259,7 @@ void test_hostfs(const char* src_dir, const char* tmp_dir)
     test_link_file(hostfs, tmp_dir);
     test_rename_file(hostfs, tmp_dir);
     test_readdir(hostfs, tmp_dir);
+    test_truncate_file(hostfs, tmp_dir);
     test_unlink_file(hostfs, tmp_dir);
     cleanup(hostfs, tmp_dir);
 }
