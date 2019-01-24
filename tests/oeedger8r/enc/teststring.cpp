@@ -45,7 +45,7 @@ void test_string_edl_ocalls()
 
 void ecall_string_fun1(char* s)
 {
-    ecall_string_fun1_args_t args;
+    all_ecall_string_fun1_args_t args;
     check_type<char*>(args.s);
     check_type<size_t>(args.s_len);
 
@@ -58,7 +58,7 @@ void ecall_string_fun1(char* s)
 
 void ecall_string_fun2(const char* s)
 {
-    ecall_string_fun2_args_t args;
+    all_ecall_string_fun2_args_t args;
     // constness is discarded when marshaling.
     check_type<char*>(args.s);
     check_type<size_t>(args.s_len);
@@ -72,7 +72,7 @@ void ecall_string_fun2(const char* s)
 
 void ecall_string_fun3(char* s)
 {
-    ecall_string_fun3_args_t args;
+    all_ecall_string_fun3_args_t args;
     check_type<char*>(args.s);
 
     check_type<size_t>(args.s_len);
@@ -90,10 +90,10 @@ void ecall_string_fun3(char* s)
 
 void ecall_string_fun5(char* s)
 {
-    ecall_string_fun5_args_t args;
+    all_ecall_string_fun5_args_t args;
     check_type<char*>(args.s);
     // User check implies no s_len field is created.
-    assert_no_field_s_len<ecall_string_fun5_args_t>();
+    assert_no_field_s_len<all_ecall_string_fun5_args_t>();
 
     // Check that s has not been copied over.
     size_t s_len = strlen(s) + 1;
@@ -105,11 +105,11 @@ void ecall_string_fun5(char* s)
 
 void ecall_string_fun6(const char* s)
 {
-    ecall_string_fun6_args_t args;
+    all_ecall_string_fun6_args_t args;
     // constness is discarded when marshaling.
     check_type<char*>(args.s);
     // User check implies no s_len field is created.
-    assert_no_field_s_len<ecall_string_fun6_args_t>();
+    assert_no_field_s_len<all_ecall_string_fun6_args_t>();
 
     // Check that s has not been copied over.
     size_t s_len = strlen(s) + 1;
@@ -118,7 +118,7 @@ void ecall_string_fun6(const char* s)
 
 void ecall_string_fun7(char* s1, char* s2)
 {
-    ecall_string_fun7_args_t args;
+    all_ecall_string_fun7_args_t args;
 
     check_type<char*>(args.s1);
     check_type<size_t>(args.s1_len);
@@ -168,7 +168,7 @@ void test_wstring_edl_ocalls()
 
 void ecall_wstring_fun1(wchar_t* s)
 {
-    ecall_wstring_fun1_args_t args;
+    all_ecall_wstring_fun1_args_t args;
     check_type<wchar_t*>(args.s);
     check_type<size_t>(args.s_len);
 
@@ -181,7 +181,7 @@ void ecall_wstring_fun1(wchar_t* s)
 
 void ecall_wstring_fun2(const wchar_t* s)
 {
-    ecall_wstring_fun2_args_t args;
+    all_ecall_wstring_fun2_args_t args;
     // constness is discarded when marshaling.
     check_type<wchar_t*>(args.s);
     check_type<size_t>(args.s_len);
@@ -195,7 +195,7 @@ void ecall_wstring_fun2(const wchar_t* s)
 
 void ecall_wstring_fun3(wchar_t* s)
 {
-    ecall_wstring_fun3_args_t args;
+    all_ecall_wstring_fun3_args_t args;
     check_type<wchar_t*>(args.s);
 
     check_type<size_t>(args.s_len);
@@ -213,10 +213,10 @@ void ecall_wstring_fun3(wchar_t* s)
 
 void ecall_wstring_fun5(wchar_t* s)
 {
-    ecall_wstring_fun5_args_t args;
+    all_ecall_wstring_fun5_args_t args;
     check_type<wchar_t*>(args.s);
     // User check implies no s_len field is created.
-    assert_no_field_s_len<ecall_wstring_fun5_args_t>();
+    assert_no_field_s_len<all_ecall_wstring_fun5_args_t>();
 
     // Check that s has not been copied over.
     size_t s_len = wcslen(s) + 1;
@@ -228,11 +228,11 @@ void ecall_wstring_fun5(wchar_t* s)
 
 void ecall_wstring_fun6(const wchar_t* s)
 {
-    ecall_wstring_fun6_args_t args;
+    all_ecall_wstring_fun6_args_t args;
     // constness is discarded when marshaling.
     check_type<wchar_t*>(args.s);
     // User check implies no s_len field is created.
-    assert_no_field_s_len<ecall_wstring_fun6_args_t>();
+    assert_no_field_s_len<all_ecall_wstring_fun6_args_t>();
 
     // Check that s has not been copied over.
     size_t s_len = wcslen(s) + 1;
@@ -241,7 +241,7 @@ void ecall_wstring_fun6(const wchar_t* s)
 
 void ecall_wstring_fun7(wchar_t* s1, wchar_t* s2)
 {
-    ecall_wstring_fun7_args_t args;
+    all_ecall_wstring_fun7_args_t args;
 
     check_type<wchar_t*>(args.s1);
     check_type<size_t>(args.s1_len);

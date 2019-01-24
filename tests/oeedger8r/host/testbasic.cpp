@@ -223,7 +223,7 @@ void ocall_basic_types(
     unsigned int arg19,
     unsigned long long arg20)
 {
-    ocall_basic_types_args_t args;
+    all_ocall_basic_types_args_t args;
 
     // Assert types of fields of the marshaling struct.
     check_type<char>(args.arg1);
@@ -275,7 +275,7 @@ void ocall_basic_non_portable_types(
     unsigned long arg3,
     long double arg4)
 {
-    ocall_basic_non_portable_types_args_t args;
+    all_ocall_basic_non_portable_types_args_t args;
     // Assert types of fields of the marshaling struct.
     check_type<wchar_t>(args.arg1);
     check_type<long>(args.arg2);
@@ -307,146 +307,146 @@ uint64_t get_host_sizeof(type_enum_t t)
 
 char ocall_ret_char()
 {
-    check_return_type<ocall_ret_char_args_t, char>();
+    check_return_type<all_ocall_ret_char_args_t, char>();
     return '?';
 }
 
 wchar_t ocall_ret_wchar_t()
 {
-    check_return_type<ocall_ret_wchar_t_args_t, wchar_t>();
+    check_return_type<all_ocall_ret_wchar_t_args_t, wchar_t>();
     return wchar_t_value;
 }
 
 short ocall_ret_short()
 {
-    check_return_type<ocall_ret_short_args_t, short>();
+    check_return_type<all_ocall_ret_short_args_t, short>();
     return 444;
 }
 
 int ocall_ret_int()
 {
-    check_return_type<ocall_ret_int_args_t, int>();
+    check_return_type<all_ocall_ret_int_args_t, int>();
     return 555;
 }
 
 float ocall_ret_float()
 {
-    check_return_type<ocall_ret_float_args_t, float>();
+    check_return_type<all_ocall_ret_float_args_t, float>();
     return .333f;
 }
 
 double ocall_ret_double()
 {
-    check_return_type<ocall_ret_int_args_t, int>();
+    check_return_type<all_ocall_ret_int_args_t, int>();
     return .444;
 }
 
 long ocall_ret_long()
 {
-    check_return_type<ocall_ret_int_args_t, int>();
+    check_return_type<all_ocall_ret_int_args_t, int>();
     return 777;
 }
 
 size_t ocall_ret_size_t()
 {
-    check_return_type<ocall_ret_size_t_args_t, size_t>();
+    check_return_type<all_ocall_ret_size_t_args_t, size_t>();
     return 888;
 }
 
 unsigned ocall_ret_unsigned()
 {
-    check_return_type<ocall_ret_unsigned_args_t, unsigned>();
+    check_return_type<all_ocall_ret_unsigned_args_t, unsigned>();
     return 999;
 }
 
 int8_t ocall_ret_int8_t()
 {
-    check_return_type<ocall_ret_int8_t_args_t, int8_t>();
+    check_return_type<all_ocall_ret_int8_t_args_t, int8_t>();
     return 101;
 }
 
 int16_t ocall_ret_int16_t()
 {
-    check_return_type<ocall_ret_int16_t_args_t, int16_t>();
+    check_return_type<all_ocall_ret_int16_t_args_t, int16_t>();
     return 1111;
 }
 
 int32_t ocall_ret_int32_t()
 {
-    check_return_type<ocall_ret_int32_t_args_t, int32_t>();
+    check_return_type<all_ocall_ret_int32_t_args_t, int32_t>();
     return 121212;
 }
 
 int64_t ocall_ret_int64_t()
 {
-    check_return_type<ocall_ret_int64_t_args_t, int64_t>();
+    check_return_type<all_ocall_ret_int64_t_args_t, int64_t>();
     return 131313;
 }
 
 uint8_t ocall_ret_uint8_t()
 {
-    check_return_type<ocall_ret_uint8_t_args_t, uint8_t>();
+    check_return_type<all_ocall_ret_uint8_t_args_t, uint8_t>();
     return 141;
 }
 
 uint16_t ocall_ret_uint16_t()
 {
-    check_return_type<ocall_ret_uint16_t_args_t, uint16_t>();
+    check_return_type<all_ocall_ret_uint16_t_args_t, uint16_t>();
     return 1515;
 }
 
 uint32_t ocall_ret_uint32_t()
 {
-    check_return_type<ocall_ret_uint32_t_args_t, uint32_t>();
+    check_return_type<all_ocall_ret_uint32_t_args_t, uint32_t>();
     return 161616;
 }
 
 uint64_t ocall_ret_uint64_t()
 {
-    check_return_type<ocall_ret_uint64_t_args_t, uint64_t>();
+    check_return_type<all_ocall_ret_uint64_t_args_t, uint64_t>();
     return 171717;
 }
 
 long long ocall_ret_long_long()
 {
-    check_return_type<ocall_ret_long_long_args_t, long long>();
+    check_return_type<all_ocall_ret_long_long_args_t, long long>();
     return 181818;
 }
 
 unsigned char ocall_ret_unsigned_char()
 {
-    check_return_type<ocall_ret_unsigned_char_args_t, unsigned char>();
+    check_return_type<all_ocall_ret_unsigned_char_args_t, unsigned char>();
     return 255;
 }
 
 unsigned short ocall_ret_unsigned_short()
 {
-    check_return_type<ocall_ret_unsigned_short_args_t, unsigned short>();
+    check_return_type<all_ocall_ret_unsigned_short_args_t, unsigned short>();
     return 191;
 }
 
 unsigned int ocall_ret_unsigned_int()
 {
-    check_return_type<ocall_ret_unsigned_int_args_t, unsigned int>();
+    check_return_type<all_ocall_ret_unsigned_int_args_t, unsigned int>();
     return 202;
 }
 
 unsigned long ocall_ret_unsigned_long()
 {
-    check_return_type<ocall_ret_unsigned_long_args_t, unsigned long>();
+    check_return_type<all_ocall_ret_unsigned_long_args_t, unsigned long>();
     return 212121;
 }
 
 long double ocall_ret_long_double()
 {
-    check_return_type<ocall_ret_long_double_args_t, long double>();
+    check_return_type<all_ocall_ret_long_double_args_t, long double>();
     return 0.191919;
 }
 
 unsigned long long ocall_ret_unsigned_long_long()
 {
     check_return_type<
-        ocall_ret_unsigned_long_long_args_t,
+        all_ocall_ret_unsigned_long_long_args_t,
         unsigned long long>();
     return 2222222;
 }

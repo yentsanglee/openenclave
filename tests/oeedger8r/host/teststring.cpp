@@ -46,7 +46,7 @@ void test_string_edl_ecalls(oe_enclave_t* enclave)
 
 void ocall_string_fun1(char* s)
 {
-    ocall_string_fun1_args_t args;
+    all_ocall_string_fun1_args_t args;
     check_type<char*>(args.s);
     check_type<size_t>(args.s_len);
 
@@ -57,7 +57,7 @@ void ocall_string_fun1(char* s)
 
 void ocall_string_fun2(const char* s)
 {
-    ocall_string_fun2_args_t args;
+    all_ocall_string_fun2_args_t args;
     // constness is discarded when marshaling.
     check_type<char*>(args.s);
     check_type<size_t>(args.s_len);
@@ -69,7 +69,7 @@ void ocall_string_fun2(const char* s)
 
 void ocall_string_fun3(char* s)
 {
-    ocall_string_fun3_args_t args;
+    all_ocall_string_fun3_args_t args;
     check_type<char*>(args.s);
 
     check_type<size_t>(args.s_len);
@@ -85,10 +85,10 @@ void ocall_string_fun3(char* s)
 
 void ocall_string_fun5(char* s)
 {
-    ocall_string_fun5_args_t args;
+    all_ocall_string_fun5_args_t args;
     check_type<char*>(args.s);
     // User check implies no s_len field is created.
-    assert_no_field_s_len<ocall_string_fun5_args_t>();
+    assert_no_field_s_len<all_ocall_string_fun5_args_t>();
 
     // Change value to Hello.
     s[5] = '\0';
@@ -96,16 +96,16 @@ void ocall_string_fun5(char* s)
 
 void ocall_string_fun6(const char* s)
 {
-    ocall_string_fun6_args_t args;
+    all_ocall_string_fun6_args_t args;
     // constness is discarded when marshaling.
     check_type<char*>(args.s);
     // User check implies no s_len field is created.
-    assert_no_field_s_len<ocall_string_fun6_args_t>();
+    assert_no_field_s_len<all_ocall_string_fun6_args_t>();
 }
 
 void ocall_string_fun7(char* s1, char* s2)
 {
-    ocall_string_fun7_args_t args;
+    all_ocall_string_fun7_args_t args;
 
     check_type<char*>(args.s1);
     check_type<size_t>(args.s1_len);
@@ -157,7 +157,7 @@ void test_wstring_edl_ecalls(oe_enclave_t* enclave)
 
 void ocall_wstring_fun1(wchar_t* s)
 {
-    ocall_wstring_fun1_args_t args;
+    all_ocall_wstring_fun1_args_t args;
     check_type<wchar_t*>(args.s);
     check_type<size_t>(args.s_len);
 
@@ -168,7 +168,7 @@ void ocall_wstring_fun1(wchar_t* s)
 
 void ocall_wstring_fun2(const wchar_t* s)
 {
-    ocall_wstring_fun2_args_t args;
+    all_ocall_wstring_fun2_args_t args;
     // constness is discarded when marshaling.
     check_type<wchar_t*>(args.s);
     check_type<size_t>(args.s_len);
@@ -180,7 +180,7 @@ void ocall_wstring_fun2(const wchar_t* s)
 
 void ocall_wstring_fun3(wchar_t* s)
 {
-    ocall_wstring_fun3_args_t args;
+    all_ocall_wstring_fun3_args_t args;
     check_type<wchar_t*>(args.s);
 
     check_type<size_t>(args.s_len);
@@ -196,10 +196,10 @@ void ocall_wstring_fun3(wchar_t* s)
 
 void ocall_wstring_fun5(wchar_t* s)
 {
-    ocall_wstring_fun5_args_t args;
+    all_ocall_wstring_fun5_args_t args;
     check_type<wchar_t*>(args.s);
     // User check implies no s_len field is created.
-    assert_no_field_s_len<ocall_wstring_fun5_args_t>();
+    assert_no_field_s_len<all_ocall_wstring_fun5_args_t>();
 
     // Change value to Hello.
     s[5] = L'\0';
@@ -207,16 +207,16 @@ void ocall_wstring_fun5(wchar_t* s)
 
 void ocall_wstring_fun6(const wchar_t* s)
 {
-    ocall_wstring_fun6_args_t args;
+    all_ocall_wstring_fun6_args_t args;
     // constness is discarded when marshaling.
     check_type<wchar_t*>(args.s);
     // User check implies no s_len field is created.
-    assert_no_field_s_len<ocall_wstring_fun6_args_t>();
+    assert_no_field_s_len<all_ocall_wstring_fun6_args_t>();
 }
 
 void ocall_wstring_fun7(wchar_t* s1, wchar_t* s2)
 {
-    ocall_wstring_fun7_args_t args;
+    all_ocall_wstring_fun7_args_t args;
 
     check_type<wchar_t*>(args.s1);
     check_type<size_t>(args.s1_len);
