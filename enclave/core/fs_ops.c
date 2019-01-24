@@ -84,7 +84,6 @@ int oe_mount(int device_id, const char* path, uint32_t flags)
 }
 
 int oe_open(const char* pathname, int flags, oe_mode_t mode)
-
 {
     int fd = -1;
     oe_device_t* pfs = NULL;
@@ -101,13 +100,13 @@ int oe_open(const char* pathname, int flags, oe_mode_t mode)
         return -1; // errno is already set
     }
 
-    if ((*pfile->ops.fs->open)(pfs, pathname, flags, mode) < 0)
+    if (!(pfile = (*pfile->ops.fs->open)(pfs, pathname, flags, mode)))
     {
         oe_release_fd(fd);
         return -1;
     }
 
-    if (!(pfile = oe_set_fd_device(fd, pfile)))
+    if (!oe_set_fd_device(fd, pfile))
     {
         // Log error here
         return -1; // erno is already set
