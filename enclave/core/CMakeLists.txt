@@ -61,6 +61,7 @@ add_library(oecore STATIC
     device.c
     fs_ops.c
     sock_ops.c
+    resolver_ops.c
     result.c
     snprintf.c
     string.c
