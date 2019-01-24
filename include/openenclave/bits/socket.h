@@ -37,28 +37,10 @@ extern "C"
         intptr_t fd_array[FD_SETSIZE]; /* an array of SOCKETs */
     } oe_provider_fd_set;
 
-    typedef uint16_t oe_sa_family_t;
 
     typedef uint32_t oe_socklen_t;
 
-    typedef struct oe_addrinfo
-    {
-        int64_t ai_flags;
-        int64_t ai_family;
-        int64_t ai_socktype;
-        int64_t ai_protocol;
-        size_t ai_addrlen;
-        struct oe_sockaddr* ai_addr;
-        char* ai_canonname;
-        struct oe_addrinfo* ai_next;
-    } oe_addrinfo;
-
-    typedef struct oe_sockaddr
-    {
-        oe_sa_family_t sa_family;
-        char sa_data[14];
-    } oe_sockaddr;
-
+#if 0
 #ifndef _SS_MAXSIZE
 #define _SS_MAXSIZE 128
 #define _SS_ALIGNSIZE (sizeof(int64_t))
@@ -136,6 +118,14 @@ extern "C"
         oe_in6_addr sin6_addr;
         uint32_t sin6_scope_id;
     } oe_sockaddr_in6;
+#endif
+
+    typedef uint16_t oe_sa_family_t;
+    typedef struct oe_sockaddr
+    {
+        oe_sa_family_t sa_family;
+        char sa_data[14];
+    } oe_sockaddr;
 
     int oe_fd_isset(_In_ int fd, _In_ oe_fd_set* set);
 
@@ -248,7 +238,7 @@ extern "C"
         _In_reads_bytes_(namelen) const oe_sockaddr* name,
         oe_socklen_t namelen);
 
-    void oe_freeaddrinfo(_In_ oe_addrinfo* ailist);
+    // void oe_freeaddrinfo(_In_ oe_addrinfo* ailist);
 
     uint32_t oe_htonl(_In_ uint32_t hostLong);
 

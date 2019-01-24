@@ -4,19 +4,12 @@
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/errno.h>
-#include <openenclave/internal/resolver_ops.h>
 
 static size_t _device_table_len = 0;
 static oe_device_t** _device_table = NULL; // Resizable array of device entries
 
 static size_t _fd_table_len = 0;
 static oe_device_t** _fd_table = NULL;
-
-#if 0
-static size_t resolver_table_len = 0;
-static oe_resolver_t** resolver_table =
-    NULL; // Resizable array of device entries
-#endif
 
 // We define the device init for now. Eventually it should be a mandatory part
 // of the enclave

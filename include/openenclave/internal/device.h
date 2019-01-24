@@ -7,7 +7,6 @@
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/fs_ops.h>
-#include <openenclave/internal/resolver_ops.h>
 #include <openenclave/internal/sock_ops.h>
 
 OE_EXTERNC_BEGIN
@@ -54,12 +53,14 @@ typedef struct _oe_device
 
 } oe_device_t;
 
+#if 0
 typedef struct _oe_device_entry
 {
     oe_device_type_t type;
     uint64_t flags;
     oe_device_t* device;
 } oe_device_entry_t;
+#endif
 
 int oe_allocate_devid(int devid);
 void oe_release_devid(int devid);
