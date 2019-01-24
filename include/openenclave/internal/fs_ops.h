@@ -146,6 +146,8 @@ struct _oe_fs_ops
 
     int (*mount)(oe_device_t* fs, const char* target, uint32_t flags);
 
+    int (*unmount)(oe_device_t* fs);
+
     oe_device_t* (*open)(
         oe_device_t* fs,
         const char* pathname,

@@ -77,7 +77,6 @@ typedef struct _fs
 {
     struct _oe_device base;
     uint32_t magic;
-    bool mounted;
 } fs_t;
 
 typedef struct _file
@@ -141,7 +140,23 @@ static int _hostfs_mount(oe_device_t* device, const char* target, uint32_t flags
     }
 
     (void)flags;
-    fs->mounted = true;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int _hostfs_unmount(oe_device_t* device)
+{
+    int ret = -1;
+    fs_t* fs = _cast_fs(device);
+
+    if (!fs)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
 
     ret = 0;
 
@@ -1007,6 +1022,7 @@ done:
 static oe_fs_ops_t _ops = {
     .base.ioctl = _hostfs_ioctl,
     .mount = _hostfs_mount,
+    .unmount = _hostfs_unmount,
     .open = _hostfs_open,
     .base.read = _hostfs_read,
     .base.write = _hostfs_write,
@@ -1029,7 +1045,6 @@ static fs_t _hostfs = {
     .base.size = sizeof(fs_t),
     .base.ops.fs = &_ops,
     .magic = FS_MAGIC,
-    .mounted = false,
 };
 
 oe_device_t* oe_fs_get_hostfs(void)
