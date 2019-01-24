@@ -97,7 +97,6 @@ typedef uint64_t oe_ino_t;
 typedef struct _oe_file oe_file_t;
 typedef struct _oe_fs_ops oe_fs_ops_t;
 typedef struct _oe_device oe_device_t;
-typedef struct oe_device_t* oe_device_ptr_t;
 typedef uint32_t oe_uid_t;
 typedef uint32_t oe_gid_t;
 typedef uint64_t oe_dev_t;
