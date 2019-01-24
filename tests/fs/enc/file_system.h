@@ -17,7 +17,8 @@ class file_system<oe_device_t>
 {
 public:
 
-    typedef oe_device_t* handle;
+    typedef oe_device_t* file_handle;
+    typedef oe_device_t* dir_handle;
 
     file_system(oe_device_t* fs) : _fs(fs)
     {
@@ -28,27 +29,27 @@ public:
         oe_fs_release(_fs);
     }
 
-    handle open(const char* pathname, int flags, oe_mode_t mode)
+    file_handle open(const char* pathname, int flags, oe_mode_t mode)
     {
         return oe_fs_open(_fs, pathname, flags, mode);
     }
 
-    ssize_t write(handle file, const void* buf, size_t count)
+    ssize_t write(file_handle file, const void* buf, size_t count)
     {
         return oe_fs_write(file, buf, count);
     }
 
-    ssize_t read(handle file, void* buf, size_t count)
+    ssize_t read(file_handle file, void* buf, size_t count)
     {
         return oe_fs_read(file, buf, count);
     }
 
-    oe_off_t lseek(handle file, oe_off_t offset, int whence)
+    oe_off_t lseek(file_handle file, oe_off_t offset, int whence)
     {
         return oe_fs_lseek(file, offset, whence);
     }
 
-    int close(handle file)
+    int close(file_handle file)
     {
         return oe_fs_close(file);
     }
