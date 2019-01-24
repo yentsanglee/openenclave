@@ -302,7 +302,7 @@ int oe_clone_fd(int fd)
 
     if (pnewdevice->ops.base->clone != NULL)
     {
-        if ((*pnewdevice->ops.base->clone)(pparent_device, pnewdevice) < 0)
+        if ((*pnewdevice->ops.base->clone)(pparent_device, &pnewdevice) < 0)
         {
             // Errno is set in the action routine
             return -1;

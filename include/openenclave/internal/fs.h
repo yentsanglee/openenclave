@@ -14,6 +14,21 @@ void oe_fs_install_hostfs(void);
 /* The enclave calls this to get an instance of host file system (HOSTFS). */
 oe_device_t* oe_fs_get_hostfs(void);
 
+OE_INLINE int oe_fs_clone(oe_device_t* fs, oe_device_t** new_fs)
+{
+    return fs->ops.fs->base.clone(fs, new_fs);
+}
+
+OE_INLINE int oe_fs_mount(oe_device_t* fs, const char* target, uint32_t flags)
+{
+    return fs->ops.fs->mount(fs, target, flags);
+}
+
+OE_INLINE int oe_fs_unmount(oe_device_t* fs)
+{
+    return fs->ops.fs->unmount(fs);
+}
+
 OE_INLINE oe_device_t* oe_fs_open(
     oe_device_t* fs,
     const char* pathname,

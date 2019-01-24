@@ -128,6 +128,33 @@ static ssize_t _hostfs_read(oe_device_t*, void* buf, size_t count);
 
 static int _hostfs_close(oe_device_t*);
 
+static int _hostfs_clone(oe_device_t* device, oe_device_t** new_device)
+{
+    int ret = -1;
+    fs_t* fs = _cast_fs(device);
+    fs_t* new_fs = NULL;
+
+    if (!fs || !new_device)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    if (!(new_fs = oe_calloc(1, sizeof(fs_t))))
+    {
+        oe_errno = OE_ENOMEM;
+        goto done;
+    }
+
+    oe_memcpy(new_fs, fs, sizeof(fs_t));
+
+    *new_device = &new_fs->base;
+    ret = 0;
+
+done:
+    return ret;
+}
+
 static int _hostfs_mount(oe_device_t* device, const char* target, uint32_t flags)
 {
     int ret = -1;
@@ -1020,6 +1047,7 @@ done:
 }
 
 static oe_fs_ops_t _ops = {
+    .base.clone = _hostfs_clone,
     .base.ioctl = _hostfs_ioctl,
     .mount = _hostfs_mount,
     .unmount = _hostfs_unmount,
