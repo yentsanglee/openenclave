@@ -8,29 +8,25 @@
 
 typedef struct _oe_resolver
 {
-    int (*init)();
-    int (*remove)();
-    char* (
-        *resolvername)(); // Likely resolver names in reverse order of security:
-                          //    "enclavehosts"   -- resolve name using local
-                          //    list of hosts in hosts file "enclavedns"     --
-                          //    resolve name using ssl transport DNS request
-                          //    "host"           -- OCALL to the host and let it
-                          //    deal with it.
-
     int (*getaddrinfo)(
+        oe_device_t* dev,
         const char* node,
         const char* service,
         const struct oe_addrinfo* hints,
         struct oe_addrinfo** res);
 
+    void (*freeaddrinfo)(oe_device_t* dev, struct oe_addrinfo* res);
+    int (*gethostname)(oe_device_t* dev, char* name, size_t len);
+
     int (*getnameinfo)(
-        const struct oe_sockaddr* addr,
-        oe_socklen_t addrlen,
+        oe_device_t* dev,
+        const struct oe_sockaddr* sa,
+        oe_socklen_t salen,
         char* host,
         oe_socklen_t hostlen,
         char* serv,
-        oe_socklen_t servlen);
+        oe_socklen_t servlen,
+        int flags);
 } oe_resolver_t;
 
 #endif
