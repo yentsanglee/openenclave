@@ -14,9 +14,6 @@ typedef struct _oe_device oe_device_t;
 
 typedef struct _oe_device_ops
 {
-    /* What calls this? */
-    int (*init)(oe_device_t* pthis);
-
     int (*clone)(oe_device_t* device, oe_device_t** new_device);
 
     int (*free)(oe_device_t* device);
