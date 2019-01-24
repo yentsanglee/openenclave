@@ -8,10 +8,6 @@
 
 OE_EXTERNC_BEGIN
 
-#define FS_MAGIC 0x5f35f964
-#define FILE_MAGIC 0xfe48c6ff
-#define DIR_MAGIC 0x8add1b0b
-
 typedef struct _fs
 {
     struct _oe_device base;
@@ -32,36 +28,6 @@ typedef struct _dir
     void* host_dir;
     struct oe_dirent entry;
 } dir_t;
-
-OE_INLINE fs_t* _cast_fs(const oe_device_t device)
-{
-    fs_t* fs = (fs_t*)device;
-
-    if (fs == NULL || fs->magic != FS_MAGIC)
-        return NULL;
-
-    return fs;
-}
-
-OE_INLINE file_t* _cast_file(const oe_device_t device)
-{
-    file_t* file = (file_t*)device;
-
-    if (file == NULL || file->magic != FILE_MAGIC)
-        return NULL;
-
-    return file;
-}
-
-OE_INLINE dir_t* _cast_dir(const oe_device_t device)
-{
-    dir_t* dir = (dir_t*)device;
-
-    if (dir == NULL || dir->magic != DIR_MAGIC)
-        return NULL;
-
-    return dir;
-}
 
 /* The host calls this to install the host file system (HOSTFS). */
 void oe_fs_install_hostfs(void);
