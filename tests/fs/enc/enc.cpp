@@ -127,7 +127,7 @@ static void test_stat_file(FILE_SYSTEM& fs, const char* tmp_dir)
 template<class FILE_SYSTEM>
 static void test_readdir(FILE_SYSTEM& fs, const char* tmp_dir)
 {
-    oe_device_t* dir;
+    typename FILE_SYSTEM::dir_handle dir;
     struct oe_dirent* ent;
     size_t count = 0;
     bool found_alphabet = false;
@@ -271,13 +271,9 @@ void test_fs(const char* src_dir, const char* tmp_dir)
 {
     (void)src_dir;
 
-    /* Test the oe_fs_* functions with file_system<oe_device_t> class. */
-    {
-        oe_device_t* device;
-        OE_TEST(oe_fs_clone(oe_fs_get_hostfs(), &device) == 0);
-        file_system<oe_device_t> fs(device);
-        test_all(fs, tmp_dir);
-    }
+    /* Test the fs_file_system interface. */
+    hostfs_file_system fs;
+    test_all(fs, tmp_dir);
 }
 
 OE_SET_ENCLAVE_SGX(

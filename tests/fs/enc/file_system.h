@@ -7,26 +7,15 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/fs.h>
 
-template<class T>
-class file_system
-{
-};
-
-template<>
-class file_system<oe_device_t>
+class fs_file_system
 {
 public:
 
     typedef oe_device_t* file_handle;
     typedef oe_device_t* dir_handle;
 
-    file_system(oe_device_t* fs) : _fs(fs)
+    fs_file_system(oe_device_t* fs) : _fs(fs)
     {
-    }
-
-    ~file_system()
-    {
-        oe_fs_release(_fs);
     }
 
     file_handle open(const char* pathname, int flags, oe_mode_t mode)
@@ -106,6 +95,15 @@ public:
 
 private:
     oe_device_t* _fs;
+};
+
+class hostfs_file_system : public fs_file_system
+{
+public:
+
+    hostfs_file_system() : fs_file_system(oe_fs_get_hostfs())
+    {
+    }
 };
 
 #endif /* _file_system_h */
