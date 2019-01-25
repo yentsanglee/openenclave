@@ -11,8 +11,8 @@ class fs_file_system
 {
 public:
 
-    typedef oe_device_t* file_handle;
-    typedef oe_device_t* dir_handle;
+    typedef struct _fs_file_system_file_handle* file_handle;
+    typedef struct _fs_file_system_dir_handle* dir_handle;
 
     fs_file_system(oe_device_t* fs) : _fs(fs)
     {
@@ -20,42 +20,42 @@ public:
 
     file_handle open(const char* pathname, int flags, oe_mode_t mode)
     {
-        return oe_fs_open(_fs, pathname, flags, mode);
+        return (file_handle)oe_fs_open(_fs, pathname, flags, mode);
     }
 
     ssize_t write(file_handle file, const void* buf, size_t count)
     {
-        return oe_fs_write(file, buf, count);
+        return oe_fs_write((oe_device_t*)file, buf, count);
     }
 
     ssize_t read(file_handle file, void* buf, size_t count)
     {
-        return oe_fs_read(file, buf, count);
+        return oe_fs_read((oe_device_t*)file, buf, count);
     }
 
     oe_off_t lseek(file_handle file, oe_off_t offset, int whence)
     {
-        return oe_fs_lseek(file, offset, whence);
+        return oe_fs_lseek((oe_device_t*)file, offset, whence);
     }
 
     int close(file_handle file)
     {
-        return oe_fs_close(file);
+        return oe_fs_close((oe_device_t*)file);
     }
 
-    oe_device_t* opendir(const char* name)
+    dir_handle opendir(const char* name)
     {
-        return oe_fs_opendir(_fs, name);
+        return (dir_handle)oe_fs_opendir(_fs, name);
     }
 
-    struct oe_dirent* readdir(oe_device_t* dir)
+    struct oe_dirent* readdir(dir_handle dir)
     {
-        return oe_fs_readdir(dir);
+        return oe_fs_readdir((oe_device_t*)dir);
     }
 
-    int closedir(oe_device_t* dir)
+    int closedir(dir_handle dir)
     {
-        return oe_fs_closedir(dir);
+        return oe_fs_closedir((oe_device_t*)dir);
     }
 
     int unlink(const char* pathname)
