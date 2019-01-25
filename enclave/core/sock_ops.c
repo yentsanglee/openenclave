@@ -1,26 +1,32 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <openenclave/bits/socket.h>
 #include <openenclave/internal/device.h>
+#include <openenclave/internal/socket.h>
 
 intptr_t oe_socket(int domain, int type, int protocol)
 
 {
     int sd = -1;
     oe_device_t* psock = NULL;
+    oe_device_t* pdevice = NULL;
 
     switch (domain)
     {
         case OE_AF_ENCLAVE: // Temprory until we dicde how to indicate enclave
                             // sockets
-            psock =
-                oe_device_alloc(OE_DEVICE_ENCLAVE_SOCKET, "enclave_socket", 0);
+            pdevice = oe_get_devid_device(OE_DEVICE_ENCLAVE_SOCKET);
             break;
 
         default:
-            psock = oe_device_alloc(OE_DEVICE_HOST_SOCKET, "host_socket", 0);
+            pdevice = oe_get_devid_device(OE_DEVICE_HOST_SOCKET);
             break;
+    }
+    if ((psock = (*pdevice->ops.socket->socket)(
+             pdevice, domain, type, protocol)) == NULL)
+    {
+        oe_release_fd(sd);
+        return -1;
     }
     sd = oe_allocate_fd();
     if (sd < 0)
@@ -35,15 +41,10 @@ intptr_t oe_socket(int domain, int type, int protocol)
         return -1; // erno is already set
     }
 
-    if ((*psock->ops.socket->socket)(psock, domain, type, protocol) < 0)
-    {
-        oe_release_fd(sd);
-        return -1;
-    }
     return sd;
 }
 
-int oe_connect(
+oe_sockfd_t oe_connect(
     oe_sockfd_t sockfd,
     const struct oe_sockaddr* addr,
     oe_socklen_t addrlen)

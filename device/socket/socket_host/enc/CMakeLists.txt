@@ -7,18 +7,18 @@ oeedl_file(../../../../include/openenclave/socket.edl
     enclave-headers
     socket_t_h)
 
-add_library(oesocket_host_enc OBJECT
+add_library(oesocket_hostsocket_enc OBJECT
     host_socket.c
     ${socket_t_h})
 
 if(CMAKE_C_COMPILER_ID MATCHES GNU)
-target_compile_options(oesocket_host_enc PRIVATE -Wjump-misses-init)
+target_compile_options(oesocket_hostsocket_enc PRIVATE -Wjump-misses-init)
 endif()
 
-target_link_libraries(oesocket_host_enc PUBLIC oelibc)
+target_link_libraries(oesocket_hostsocket_enc PUBLIC oelibc)
 
-target_include_directories(oesocket_host_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(oesocket_hostsocket_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-set_property(TARGET oesocket_host_enc PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
+set_property(TARGET oesocket_hostsocket_enc PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
-install(TARGETS oesocket_host_enc ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+install(TARGETS oesocket_hostsocket_enc ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)

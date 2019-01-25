@@ -16,9 +16,10 @@ struct oe_addrinfo;
 
 typedef struct _oe_sock_ops
 {
-    oe_device_ops_t device_ops;
+    oe_device_ops_t base;
 
-    int (*socket)(oe_device_t* dev, int domain, int type, int protocol);
+    oe_device_t* (
+        *socket)(oe_device_t* dev, int domain, int type, int protocol);
 
     int (*connect)(
         oe_device_t* dev,
