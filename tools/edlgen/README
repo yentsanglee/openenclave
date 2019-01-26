@@ -1,0 +1,8 @@
+compile with:
+
+clang -I /usr/lib/llvm-3.8/include main.c -lclang
+
+
+run example: sys/socket.h
+
+./a.out sys/socket.h socket -I /usr/include/x86_64-linux-musl /usr/include/x86_64-linux-musl/sys/socket.h
