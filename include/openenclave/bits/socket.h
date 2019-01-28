@@ -37,7 +37,6 @@ extern "C"
         intptr_t fd_array[FD_SETSIZE]; /* an array of SOCKETs */
     } oe_provider_fd_set;
 
-
     typedef uint32_t oe_socklen_t;
 
 #if 0

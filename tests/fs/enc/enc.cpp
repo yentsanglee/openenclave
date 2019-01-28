@@ -7,8 +7,8 @@
 #include <openenclave/internal/tests.h>
 #include <stdio.h>
 #include <string.h>
-#include "fs_t.h"
 #include "file_system.h"
+#include "fs_t.h"
 
 static const char ALPHABET[] = "abcdefghijklmnopqrstuvwxyz";
 static const oe_mode_t MODE = 0644;
@@ -21,7 +21,7 @@ const char* mkpath(char buf[OE_PATH_MAX], const char* target, const char* path)
     return buf;
 }
 
-template<class FILE_SYSTEM>
+template <class FILE_SYSTEM>
 static void cleanup(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
@@ -36,7 +36,7 @@ static void cleanup(FILE_SYSTEM& fs, const char* tmp_dir)
     fs.rmdir(path);
 }
 
-template<class FILE_SYSTEM>
+template <class FILE_SYSTEM>
 static void test_create_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
@@ -62,7 +62,7 @@ static void test_create_file(FILE_SYSTEM& fs, const char* tmp_dir)
     printf("=== Created %s\n", path);
 }
 
-template<class FILE_SYSTEM>
+template <class FILE_SYSTEM>
 static void test_read_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
@@ -107,7 +107,7 @@ static void test_read_file(FILE_SYSTEM& fs, const char* tmp_dir)
     OE_TEST(fs.close(file) == 0);
 }
 
-template<class FILE_SYSTEM>
+template <class FILE_SYSTEM>
 static void test_stat_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
@@ -124,7 +124,7 @@ static void test_stat_file(FILE_SYSTEM& fs, const char* tmp_dir)
     OE_TEST(buf.st_mode == (OE_S_IFREG | MODE));
 }
 
-template<class FILE_SYSTEM>
+template <class FILE_SYSTEM>
 static void test_readdir(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     typename FILE_SYSTEM::dir_handle dir;
@@ -193,7 +193,7 @@ static void test_readdir(FILE_SYSTEM& fs, const char* tmp_dir)
     fs.closedir(dir);
 }
 
-template<class FILE_SYSTEM>
+template <class FILE_SYSTEM>
 static void test_link_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char oldname[OE_PAGE_SIZE];
@@ -207,7 +207,7 @@ static void test_link_file(FILE_SYSTEM& fs, const char* tmp_dir)
     OE_TEST(fs.stat(newname, &buf) == 0);
 }
 
-template<class FILE_SYSTEM>
+template <class FILE_SYSTEM>
 static void test_rename_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char oldname[OE_PAGE_SIZE];
@@ -215,13 +215,13 @@ static void test_rename_file(FILE_SYSTEM& fs, const char* tmp_dir)
     struct oe_stat buf;
 
     mkpath(oldname, tmp_dir, "alphabet.linked"),
-    mkpath(newname, tmp_dir, "alphabet.renamed");
+        mkpath(newname, tmp_dir, "alphabet.renamed");
 
     OE_TEST(fs.rename(oldname, newname) == 0);
     OE_TEST(fs.stat(newname, &buf) == 0);
 }
 
-template<class FILE_SYSTEM>
+template <class FILE_SYSTEM>
 static void test_truncate_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
@@ -237,7 +237,7 @@ static void test_truncate_file(FILE_SYSTEM& fs, const char* tmp_dir)
     OE_TEST(buf.st_size == 5);
 }
 
-template<class FILE_SYSTEM>
+template <class FILE_SYSTEM>
 static void test_unlink_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
@@ -252,7 +252,7 @@ static void test_unlink_file(FILE_SYSTEM& fs, const char* tmp_dir)
     OE_TEST(fs.stat(path, &buf) != 0);
 }
 
-template<class FILE_SYSTEM>
+template <class FILE_SYSTEM>
 void test_all(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     cleanup(fs, tmp_dir);

@@ -190,7 +190,10 @@ done:
     return ret;
 }
 
-static int _hostfs_mount(oe_device_t* device, const char* target, uint32_t flags)
+static int _hostfs_mount(
+    oe_device_t* device,
+    const char* target,
+    uint32_t flags)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(device);

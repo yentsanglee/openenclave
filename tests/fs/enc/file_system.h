@@ -9,8 +9,7 @@
 
 class fs_file_system
 {
-public:
-
+  public:
     typedef struct _fs_file_system_file_handle* file_handle;
     typedef struct _fs_file_system_dir_handle* dir_handle;
 
@@ -93,14 +92,13 @@ public:
         return oe_fs_truncate(_fs, path, length);
     }
 
-private:
+  private:
     oe_device_t* _fs;
 };
 
 class hostfs_file_system : public fs_file_system
 {
-public:
-
+  public:
     hostfs_file_system() : fs_file_system(oe_fs_get_hostfs())
     {
     }

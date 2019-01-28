@@ -83,8 +83,8 @@ int oe_mount(int device_id, const char* path, uint32_t flags)
     if (_mount_table == NULL)
     {
         _mount_table_len = _MOUNT_TABLE_SIZE_BUMP;
-        _mount_table = (oe_mount_point_t*)oe_calloc(1,
-            sizeof(_mount_table[0]) * _mount_table_len);
+        _mount_table = (oe_mount_point_t*)oe_calloc(
+            1, sizeof(_mount_table[0]) * _mount_table_len);
     }
 
     // Find an empty slot
@@ -102,7 +102,10 @@ int oe_mount(int device_id, const char* path, uint32_t flags)
         _mount_table_len += _MOUNT_TABLE_SIZE_BUMP;
         _mount_table = (oe_mount_point_t*)oe_malloc(
             sizeof(_mount_table[0]) * _mount_table_len);
-        oe_memset(_mount_table+new_element, 0, (sizeof(_mount_table[0]) * _MOUNT_TABLE_SIZE_BUMP));
+        oe_memset(
+            _mount_table + new_element,
+            0,
+            (sizeof(_mount_table[0]) * _MOUNT_TABLE_SIZE_BUMP));
     }
 
     _mount_table[new_element].mount_path = path;

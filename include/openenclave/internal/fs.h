@@ -14,6 +14,12 @@ void oe_fs_install_hostfs(void);
 /* The enclave calls this to get an instance of host file system (HOSTFS). */
 oe_device_t* oe_fs_get_hostfs(void);
 
+/* The host calls this to install the host file system (SGXFS). */
+void oe_fs_install_sgxfs(void);
+
+/* The enclave calls this to get an instance of host file system (SGXFS). */
+oe_device_t* oe_fs_get_sgxfs(void);
+
 OE_INLINE int oe_fs_clone(oe_device_t* fs, oe_device_t** new_fs)
 {
     return fs->ops.fs->base.clone(fs, new_fs);
