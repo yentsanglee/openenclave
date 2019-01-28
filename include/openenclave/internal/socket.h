@@ -139,26 +139,17 @@ extern "C"
 
     uint16_t oe_ntohs(_In_ uint16_t netShort);
 
-    ssize_t oe_recvmsg(
-        _In_ int s,
-        _Out_writes_bytes_(len) void* buf,
-        _In_ size_t len,
-        _In_ int flags);
-
     ssize_t oe_recv(
         _In_ int s,
         _Out_writes_bytes_(len) void* buf,
-        _In_ size_t len);
+        _In_ size_t len,
+        _In_ int flags);
 
-    ssize_t oe_sendmsg(
+    ssize_t oe_send(
         _In_ int s,
         _In_reads_bytes_(len) const void* buf,
         _In_ size_t len,
         _In_ int flags);
-    ssize_t oe_send(
-        _In_ int s,
-        _In_reads_bytes_(len) const void* buf,
-        _In_ size_t len);
 
     int oe_setsockopt(
         _In_ oe_sockfd_t s,

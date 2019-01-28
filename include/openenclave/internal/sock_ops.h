@@ -36,10 +36,8 @@ typedef struct _oe_sock_ops
 
     int (*listen)(oe_device_t* dev, int backlog);
 
-    ssize_t (*recvmsg)(oe_device_t* dev, void* buf, size_t len, int flags);
-
-    ssize_t (
-        *sendmsg)(oe_device_t* dev, const void* buf, size_t len, int flags);
+    ssize_t (*recv)(oe_device_t* dev, void* buf, size_t len, int flags);
+    ssize_t (*send)(oe_device_t* dev, const void* buf, size_t len, int flags);
 
     int (*shutdown)(oe_device_t* dev, int how);
     int (*getsockopt)(

@@ -21,11 +21,13 @@ typedef enum _oe_hostsock_op
     OE_HOSTSOCK_OP_ACCEPT,
     OE_HOSTSOCK_OP_BIND,
     OE_HOSTSOCK_OP_LISTEN,
-    OE_HOSTSOCK_OP_SHUTDOWN,
+    OE_HOSTSOCK_OP_SOCK_SHUTDOWN, // This is shutdown socket, not the device id
+                                  // shutdown
     OE_HOSTSOCK_OP_GETSOCKOPT,
     OE_HOSTSOCK_OP_SETSOCKOPT,
     OE_HOSTSOCK_OP_GETPEERNAME,
-    OE_HOSTSOCK_OP_GETSOCKNAME
+    OE_HOSTSOCK_OP_GETSOCKNAME,
+    OE_HOSTSOCK_OP_SHUTDOWN_DEVICE
 } oe_hostsock_op_t;
 
 typedef struct _oe_hostsock_args
@@ -97,7 +99,7 @@ typedef struct _oe_hostsock_args
             int64_t ret;
             int64_t host_fd;
             int how;
-        } shutdown;
+        } sock_shutdown;
         struct
         {
             int64_t ret;
@@ -114,6 +116,7 @@ typedef struct _oe_hostsock_args
         struct
         {
             int64_t ret;
+            int64_t host_fd;
             int level;
             int optname;
             oe_socklen_t optlen;
@@ -130,9 +133,14 @@ typedef struct _oe_hostsock_args
             int64_t host_fd;
             oe_socklen_t addrlen;
         } getpeername;
+        struct
+        {
+            int64_t ret;
+            int64_t host_fd;
+        } shutdown_device;
     } u;
     uint8_t buf[];
-} oe_hostfs_args_t;
+} oe_hostsock_args_t;
 
 OE_EXTERNC_END
 

@@ -40,7 +40,7 @@ static void _atexit_handler()
 
 static oe_host_batch_t* _get_host_batch(void)
 {
-    const size_t BATCH_SIZE = sizeof(oe_hostfs_args_t) + OE_BUFSIZ;
+    const size_t BATCH_SIZE = sizeof(oe_hostsock_args_t) + OE_BUFSIZ;
 
     if (_host_batch == NULL)
     {
@@ -68,7 +68,7 @@ static oe_host_batch_t* _get_host_batch(void)
 
 #define SOCKET_MAGIC 0x536f636b
 
-typedef oe_hostfs_args_t args_t;
+typedef oe_hostsock_args_t args_t;
 
 typedef struct _sock
 {
@@ -91,7 +91,7 @@ static sock_t* _cast_sock(const oe_device_t* device)
 static sock_t _hostsock;
 static ssize_t _hostsock_read(oe_device_t*, void* buf, size_t count);
 
-// static int _hostsock_close(oe_device_t*);
+static int _hostsock_close(oe_device_t*);
 
 static int _hostsock_clone(oe_device_t* device, oe_device_t** new_device)
 {
@@ -138,22 +138,6 @@ done:
     return ret;
 }
 
-static int _hostsock_shutdown(oe_device_t* device)
-{
-    int ret = -1;
-    sock_t* sock = _cast_sock(device);
-
-    if (!sock)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    ret = 0;
-
-done:
-    return ret;
-}
 
 static oe_device_t* _hostsock_socket(
     oe_device_t* sock_,
@@ -229,7 +213,230 @@ done:
     return ret;
 }
 
-static ssize_t _hostsock_read(oe_device_t* sock_, void* buf, size_t count)
+static int _hostsock_connect(
+    oe_device_t* sock_,
+    const struct oe_sockaddr* addr,
+    oe_socklen_t addrlen)
+{
+    int64_t ret = -1;
+    sock_t* sock = _cast_sock(sock_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock || !batch || !addr)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + addrlen)))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTSOCK_OP_CONNECT;
+        args->u.connect.ret = -1;
+        args->u.connect.host_fd = sock->host_fd;
+        args->u.connect.addrlen = addrlen;
+        oe_memcpy(args->buf, addr, addrlen);
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if ((ret = args->u.connect.ret) == -1)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+done:
+    return (int)ret;
+}
+
+static int _hostsock_accept(
+    oe_device_t* sock_,
+    struct oe_sockaddr* addr,
+    oe_socklen_t* addrlen)
+{
+    int64_t ret = -1;
+    sock_t* sock = _cast_sock(sock_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock || !batch || !addr || !addrlen)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + *addrlen)))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTSOCK_OP_ACCEPT;
+        args->u.accept.ret = -1;
+        args->u.accept.host_fd = sock->host_fd;
+        args->u.accept.addrlen = *addrlen;
+        oe_memcpy(args->buf, addr, *addrlen);
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if ((ret = args->u.accept.ret) == -1)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    /* Output */
+    {
+        *addrlen = args->u.accept.addrlen;
+        oe_memcpy(addr, args->buf, *addrlen);
+    }
+
+done:
+    return (int)ret;
+}
+
+static int _hostsock_bind(
+    oe_device_t* sock_,
+    const struct oe_sockaddr* addr,
+    oe_socklen_t addrlen)
+{
+    int64_t ret = -1;
+    sock_t* sock = _cast_sock(sock_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock || !batch || !addr || !addrlen)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + addrlen)))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTSOCK_OP_BIND;
+        args->u.bind.ret = -1;
+        args->u.bind.host_fd = sock->host_fd;
+        args->u.bind.addrlen = addrlen;
+        oe_memcpy(args->buf, addr, addrlen);
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if ((ret = args->u.bind.ret) == -1)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+done:
+    return (int)ret;
+}
+
+static int _hostsock_listen(oe_device_t* sock_, int backlog)
+{
+    int ret = -1;
+    sock_t* sock = _cast_sock(sock_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock_ || !batch)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTSOCK_OP_LISTEN;
+        args->u.listen.ret = -1;
+        args->u.listen.host_fd = sock->host_fd;
+        args->u.listen.backlog = backlog;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if (args->u.listen.ret != 0)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    /* Release the sock_ object. */
+    oe_free(sock);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static ssize_t _hostsock_recv(
+    oe_device_t* sock_,
+    void* buf,
+    size_t count,
+    int flags)
 {
     ssize_t ret = -1;
     sock_t* sock = _cast_sock(sock_);
@@ -257,7 +464,7 @@ static ssize_t _hostsock_read(oe_device_t* sock_, void* buf, size_t count)
         args->u.recv.ret = -1;
         args->u.recv.host_fd = sock->host_fd;
         args->u.recv.count = count;
-        args->u.recv.flags = 0;
+        args->u.recv.flags = flags;
     }
 
     /* Call */
@@ -284,10 +491,11 @@ done:
     return ret;
 }
 
-static ssize_t _hostsock_write(
+static ssize_t _hostsock_send(
     oe_device_t* sock_,
     const void* buf,
-    size_t count)
+    size_t count,
+    int flags)
 {
     ssize_t ret = -1;
     sock_t* sock = _cast_sock(sock_);
@@ -315,7 +523,7 @@ static ssize_t _hostsock_write(
         args->u.send.ret = -1;
         args->u.send.host_fd = sock->host_fd;
         args->u.send.count = count;
-        args->u.send.flags = 0;
+        args->u.send.flags = flags;
         oe_memcpy(args->buf, buf, count);
     }
 
@@ -338,68 +546,17 @@ done:
     return ret;
 }
 
-#if 0
-static oe_off_t _hostfs_lseek(oe_device_t* file_, oe_off_t offset, int whence)
-{
-    oe_off_t ret = -1;
-    file_t* file = _cast_file(file_);
-    oe_host_batch_t* batch = _get_host_batch();
-    args_t* args = NULL;
-
-    oe_errno = 0;
-
-    /* Check parameters. */
-    if (!file || !batch)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    /* Input */
-    {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
-        {
-            oe_errno = OE_ENOMEM;
-            goto done;
-        }
-
-        args->op = OE_HOSTFS_OP_LSEEK;
-        args->u.lseek.ret = -1;
-        args->u.lseek.fd = file->host_fd;
-        args->u.lseek.offset = offset;
-        args->u.lseek.whence = whence;
-    }
-
-    /* Call */
-    {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
-        {
-            oe_errno = OE_EINVAL;
-            goto done;
-        }
-
-        if ((ret = args->u.lseek.ret) == -1)
-        {
-            oe_errno = args->err;
-            goto done;
-        }
-    }
-
-done:
-    return ret;
-}
-
-static int _hostfs_close(oe_device_t* file_)
+static int _hostsock_close(oe_device_t* sock_)
 {
     int ret = -1;
-    file_t* file = _cast_file(file_);
+    sock_t* sock = _cast_sock(sock_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
     oe_errno = 0;
 
     /* Check parameters. */
-    if (!file || !batch)
+    if (!sock_ || !batch)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -413,14 +570,14 @@ static int _hostfs_close(oe_device_t* file_)
             goto done;
         }
 
-        args->op = OE_HOSTFS_OP_CLOSE;
+        args->op = OE_HOSTSOCK_OP_CLOSE;
         args->u.close.ret = -1;
-        args->u.close.fd = file->host_fd;
+        args->u.close.host_fd = sock->host_fd;
     }
 
     /* Call */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
             oe_errno = OE_EINVAL;
             goto done;
@@ -433,8 +590,8 @@ static int _hostfs_close(oe_device_t* file_)
         }
     }
 
-    /* Release the file object. */
-    oe_free(file);
+    /* Release the sock_ object. */
+    oe_free(sock);
 
     ret = 0;
 
@@ -442,29 +599,22 @@ done:
     return ret;
 }
 
-static int _hostfs_ioctl(
-    oe_device_t* file,
-    unsigned long request,
-    oe_va_list ap)
+static int _hostsock_getsockopt(
+    oe_device_t* sock_,
+    int level,
+    int optname,
+    void* optval,
+    oe_socklen_t* optlen)
 {
-    /* Unsupported */
-    oe_errno = OE_ENOTTY;
-    (void)file;
-    (void)request;
-    (void)ap;
-    return -1;
-}
-
-static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
-{
-    oe_device_t* ret = NULL;
-    fs_t* fs = _cast_fs(fs_);
+    int64_t ret = -1;
+    sock_t* sock = _cast_sock(sock_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
-    dir_t* dir = NULL;
 
-    /* Check parameters */
-    if (!fs || !name || !batch)
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock || !batch || !optval || !optlen)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -472,26 +622,29 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
 
     /* Input */
     {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + *optlen)))
         {
             oe_errno = OE_ENOMEM;
             goto done;
         }
 
-        args->op = OE_HOSTFS_OP_OPENDIR;
-        args->u.opendir.ret = NULL;
-        oe_strlcpy(args->u.opendir.name, name, OE_PATH_MAX);
+        args->op = OE_HOSTSOCK_OP_GETSOCKOPT;
+        args->u.getsockopt.ret = -1;
+        args->u.getsockopt.host_fd = sock->host_fd;
+        args->u.getsockopt.level = level;
+        args->u.getsockopt.optname = optname;
+        args->u.getsockopt.optlen = *optlen;
     }
 
     /* Call */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
             oe_errno = OE_EINVAL;
             goto done;
         }
 
-        if (args->u.opendir.ret == NULL)
+        if ((ret = args->u.getsockopt.ret) == -1)
         {
             oe_errno = args->err;
             goto done;
@@ -500,93 +653,98 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
 
     /* Output */
     {
-        if (!(dir = oe_calloc(1, sizeof(dir_t))))
+        *optlen = args->u.getsockopt.optlen;
+        oe_memcpy(optval, args->buf, *optlen);
+    }
+
+done:
+    return (int)ret;
+}
+
+static int _hostsock_setsockopt(
+    oe_device_t* sock_,
+    int level,
+    int optname,
+    const void* optval,
+    oe_socklen_t optlen)
+{
+    int64_t ret = -1;
+    sock_t* sock = _cast_sock(sock_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock || !batch || !optval || !optlen)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + optlen)))
         {
             oe_errno = OE_ENOMEM;
             goto done;
         }
 
-        dir->base.type = OE_DEVICE_HOST_FILESYSTEM;
-        dir->base.size = sizeof(dir_t);
-        dir->magic = DIR_MAGIC;
-        dir->base.ops.fs = fs->base.ops.fs;
-        dir->host_dir = args->u.opendir.ret;
-    }
-
-    ret = &dir->base;
-    dir = NULL;
-
-done:
-
-    if (args)
-        oe_host_batch_free(batch);
-
-    if (dir)
-        oe_free(dir);
-
-    return ret;
-}
-
-static struct oe_dirent* _hostfs_readdir(oe_device_t* dir_)
-{
-    struct oe_dirent* ret = NULL;
-    dir_t* dir = _cast_dir(dir_);
-    oe_host_batch_t* batch = _get_host_batch();
-    args_t* args = NULL;
-
-    /* Check parameters */
-    if (!dir || !batch)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    /* Input */
-    {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
-            goto done;
-
-        args->u.readdir.ret = NULL;
-        args->op = OE_HOSTFS_OP_READDIR;
-        args->u.readdir.dirp = dir->host_dir;
+        args->op = OE_HOSTSOCK_OP_SETSOCKOPT;
+        args->u.setsockopt.ret = -1;
+        args->u.setsockopt.host_fd = sock->host_fd;
+        args->u.setsockopt.level = level;
+        args->u.setsockopt.optname = optname;
+        args->u.setsockopt.optlen = optlen;
+        oe_memcpy(args->buf, optval, optlen);
     }
 
     /* Call */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
             goto done;
+        }
 
-        if (!args->u.readdir.ret)
+        if ((ret = args->u.setsockopt.ret) == -1)
         {
             oe_errno = args->err;
             goto done;
         }
     }
 
-    /* Output */
-    if (args->u.readdir.ret)
-    {
-        dir->entry = args->u.readdir.entry;
-        ret = &dir->entry;
-    }
-
 done:
-
-    if (args)
-        oe_host_batch_free(batch);
-
-    return ret;
+    return (int)ret;
 }
 
-static int _hostfs_closedir(oe_device_t* dir_)
+static int _hostsock_ioctl(
+    oe_device_t* sock_,
+    unsigned long request,
+    oe_va_list ap)
 {
-    int ret = -1;
-    dir_t* dir = _cast_dir(dir_);
+    /* Unsupported */
+    oe_errno = OE_ENOTTY;
+    (void)sock_;
+    (void)request;
+    (void)ap;
+    return -1;
+}
+
+static int _hostsock_getpeername(
+    oe_device_t* sock_,
+    struct oe_sockaddr* addr,
+    oe_socklen_t* addrlen)
+{
+    int64_t ret = -1;
+    sock_t* sock = _cast_sock(sock_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    /* Check parameters */
-    if (!dir || !batch)
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock || !batch || !addr || !addrlen)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -594,75 +752,28 @@ static int _hostfs_closedir(oe_device_t* dir_)
 
     /* Input */
     {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + *addrlen)))
+        {
+            oe_errno = OE_ENOMEM;
             goto done;
+        }
 
-        args->op = OE_HOSTFS_OP_CLOSEDIR;
-        args->u.closedir.ret = -1;
-        args->u.closedir.dirp = dir->host_dir;
+        args->op = OE_HOSTSOCK_OP_ACCEPT;
+        args->u.getpeername.ret = -1;
+        args->u.getpeername.host_fd = sock->host_fd;
+        args->u.getpeername.addrlen = *addrlen;
+        oe_memcpy(args->buf, addr, *addrlen);
     }
 
     /* Call */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
-            goto done;
-
-        if ((ret = args->u.closedir.ret) != 0)
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = args->err;
+            oe_errno = OE_EINVAL;
             goto done;
         }
-    }
 
-    oe_free(dir);
-
-done:
-
-    if (args)
-        oe_host_batch_free(batch);
-
-    return ret;
-}
-
-static int _hostfs_stat(
-    oe_device_t* fs_,
-    const char* pathname,
-    struct oe_stat* buf)
-{
-    int ret = -1;
-    fs_t* fs = _cast_fs(fs_);
-    oe_host_batch_t* batch = _get_host_batch();
-    args_t* args = NULL;
-
-    /* Check parameters */
-    if (!fs || !pathname || !buf || !batch)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    /* Input */
-    {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
-            goto done;
-
-        args->op = OE_HOSTFS_OP_STAT;
-        args->u.stat.ret = -1;
-
-        if (oe_strlcpy(args->u.stat.pathname, pathname, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
-            goto done;
-        }
-    }
-
-    /* Call */
-    {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
-            goto done;
-
-        if ((ret = args->u.stat.ret) != 0)
+        if ((ret = args->u.getpeername.ret) == -1)
         {
             oe_errno = args->err;
             goto done;
@@ -671,29 +782,97 @@ static int _hostfs_stat(
 
     /* Output */
     {
-        *buf = args->u.stat.buf;
+        *addrlen = args->u.getpeername.addrlen;
+        oe_memcpy(addr, args->buf, *addrlen);
     }
 
 done:
-
-    if (args)
-        oe_host_batch_free(batch);
-
-    return ret;
+    return (int)ret;
 }
 
-static int _hostfs_link(
-    oe_device_t* fs_,
-    const char* oldpath,
-    const char* newpath)
+static int _hostsock_getsockname(
+    oe_device_t* sock_,
+    struct oe_sockaddr* addr,
+    oe_socklen_t* addrlen)
 {
-    int ret = -1;
-    fs_t* fs = _cast_fs(fs_);
+    int64_t ret = -1;
+    sock_t* sock = _cast_sock(sock_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    /* Check parameters */
-    if (!fs || !oldpath || !newpath || !batch)
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock || !batch || !addr || !addrlen)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + *addrlen)))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTSOCK_OP_ACCEPT;
+        args->u.getsockname.ret = -1;
+        args->u.getsockname.host_fd = sock->host_fd;
+        args->u.getsockname.addrlen = *addrlen;
+        oe_memcpy(args->buf, addr, *addrlen);
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if ((ret = args->u.getsockname.ret) == -1)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    /* Output */
+    {
+        *addrlen = args->u.getsockname.addrlen;
+        oe_memcpy(addr, args->buf, *addrlen);
+    }
+
+done:
+    return (int)ret;
+}
+
+static ssize_t _hostsock_read(oe_device_t* sock_, void* buf, size_t count)
+{
+    return _hostsock_recv(sock_, buf, count, 0);
+}
+
+static ssize_t _hostsock_write(
+    oe_device_t* sock_,
+    const void* buf,
+    size_t count)
+{
+    return _hostsock_send(sock_, buf, count, 0);
+}
+
+static int _hostsock_socket_shutdown(oe_device_t* sock_, int how)
+{
+    int ret = -1;
+    sock_t* sock = _cast_sock(sock_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock_ || !batch)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -702,55 +881,52 @@ static int _hostfs_link(
     /* Input */
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
-            goto done;
-
-        args->op = OE_HOSTFS_OP_LINK;
-        args->u.link.ret = -1;
-
-        if (oe_strlcpy(args->u.link.oldpath, oldpath, OE_PATH_MAX) >=
-            OE_PATH_MAX)
         {
-            oe_errno = OE_ENAMETOOLONG;
+            oe_errno = OE_ENOMEM;
             goto done;
         }
 
-        if (oe_strlcpy(args->u.link.newpath, newpath, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
-            goto done;
-        }
+        args->op = OE_HOSTSOCK_OP_SOCK_SHUTDOWN;
+        args->u.sock_shutdown.ret = -1;
+        args->u.sock_shutdown.host_fd = sock->host_fd;
+        args->u.sock_shutdown.how = how;
     }
 
     /* Call */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
             goto done;
+        }
 
-        if ((ret = args->u.link.ret) != 0)
+        if (args->u.sock_shutdown.ret != 0)
         {
             oe_errno = args->err;
             goto done;
         }
     }
 
+    /* Release the sock_ object. */
+    oe_free(sock);
+
+    ret = 0;
+
 done:
-
-    if (args)
-        oe_host_batch_free(batch);
-
     return ret;
 }
 
-static int _hostfs_unlink(oe_device_t* fs_, const char* pathname)
+static int _hostsock_shutdown_device(oe_device_t* sock_)
 {
     int ret = -1;
-    fs_t* fs = _cast_fs(fs_);
+    sock_t* sock = _cast_sock(sock_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
 
-    /* Check parameters */
-    if (!fs || !pathname || !batch)
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock_ || !batch)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -759,271 +935,60 @@ static int _hostfs_unlink(oe_device_t* fs_, const char* pathname)
     /* Input */
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
-            goto done;
-
-        args->op = OE_HOSTFS_OP_UNLINK;
-        args->u.unlink.ret = -1;
-
-        if (oe_strlcpy(args->u.unlink.pathname, pathname, OE_PATH_MAX) >=
-            OE_PATH_MAX)
         {
-            oe_errno = OE_ENAMETOOLONG;
+            oe_errno = OE_ENOMEM;
             goto done;
         }
+
+        args->op = OE_HOSTSOCK_OP_SHUTDOWN_DEVICE;
+        args->u.shutdown_device.ret = -1;
+        args->u.shutdown_device.host_fd = sock->host_fd;
     }
 
     /* Call */
     {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = OE_EINVAL;
             goto done;
+        }
 
-        if ((ret = args->u.unlink.ret) != 0)
+        if (args->u.shutdown_device.ret != 0)
         {
             oe_errno = args->err;
             goto done;
         }
     }
 
-done:
+    /* Release the sock_ object. */
+    oe_free(sock);
 
-    if (args)
-        oe_host_batch_free(batch);
-
-    return ret;
-}
-
-static int _hostfs_rename(
-    oe_device_t* fs_,
-    const char* oldpath,
-    const char* newpath)
-{
-    int ret = -1;
-    fs_t* fs = _cast_fs(fs_);
-    oe_host_batch_t* batch = _get_host_batch();
-    args_t* args = NULL;
-
-    /* Check parameters */
-    if (!fs || !oldpath || !newpath || !batch)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    /* Input */
-    {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
-            goto done;
-
-        args->op = OE_HOSTFS_OP_RENAME;
-        args->u.rename.ret = -1;
-
-        if (oe_strlcpy(args->u.rename.oldpath, oldpath, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
-            goto done;
-        }
-
-        if (oe_strlcpy(args->u.rename.newpath, newpath, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
-            goto done;
-        }
-    }
-
-    /* Call */
-    {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
-            goto done;
-
-        if ((ret = args->u.rename.ret) != 0)
-        {
-            oe_errno = args->err;
-            goto done;
-        }
-    }
+    ret = 0;
 
 done:
-
-    if (args)
-        oe_host_batch_free(batch);
-
     return ret;
 }
-
-static int _hostfs_truncate(oe_device_t* fs_, const char* path, oe_off_t length)
-{
-    int ret = -1;
-    fs_t* fs = _cast_fs(fs_);
-    oe_host_batch_t* batch = _get_host_batch();
-    args_t* args = NULL;
-
-    /* Check parameters */
-    if (!fs || !path || !batch)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    /* Input */
-    {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
-            goto done;
-
-        args->op = OE_HOSTFS_OP_TRUNCATE;
-        args->u.truncate.ret = -1;
-        args->u.truncate.length = length;
-
-        if (oe_strlcpy(args->u.truncate.path, path, OE_PATH_MAX) >= OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
-            goto done;
-        }
-    }
-
-    /* Call */
-    {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
-            goto done;
-
-        if ((ret = args->u.truncate.ret) != 0)
-        {
-            oe_errno = args->err;
-            goto done;
-        }
-    }
-
-done:
-
-    if (args)
-        oe_host_batch_free(batch);
-
-    return ret;
-}
-
-static int _hostfs_mkdir(oe_device_t* fs_, const char* pathname, oe_mode_t mode)
-{
-    int ret = -1;
-    fs_t* fs = _cast_fs(fs_);
-    oe_host_batch_t* batch = _get_host_batch();
-    args_t* args = NULL;
-
-    /* Check parameters */
-    if (!fs || !pathname || !batch)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    /* Input */
-    {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
-            goto done;
-
-        args->op = OE_HOSTFS_OP_MKDIR;
-        args->u.mkdir.ret = -1;
-        args->u.mkdir.mode = mode;
-
-        if (oe_strlcpy(args->u.mkdir.pathname, pathname, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
-            goto done;
-        }
-    }
-
-    /* Call */
-    {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
-            goto done;
-
-        if ((ret = args->u.mkdir.ret) != 0)
-        {
-            oe_errno = args->err;
-            goto done;
-        }
-    }
-
-done:
-
-    if (args)
-        oe_host_batch_free(batch);
-
-    return ret;
-}
-
-static int _hostfs_rmdir(oe_device_t* fs_, const char* pathname)
-{
-    int ret = -1;
-    fs_t* fs = _cast_fs(fs_);
-    oe_host_batch_t* batch = _get_host_batch();
-    args_t* args = NULL;
-
-    /* Check parameters */
-    if (!fs || !pathname || !batch)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    /* Input */
-    {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
-            goto done;
-
-        args->op = OE_HOSTFS_OP_RMDIR;
-        args->u.rmdir.ret = -1;
-
-        if (oe_strlcpy(args->u.rmdir.pathname, pathname, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
-            goto done;
-        }
-    }
-
-    /* Call */
-    {
-        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
-            goto done;
-
-        if ((ret = args->u.rmdir.ret) != 0)
-        {
-            oe_errno = args->err;
-            goto done;
-        }
-    }
-
-done:
-
-    if (args)
-        oe_host_batch_free(batch);
-
-    return ret;
-}
-#endif
 
 static oe_sock_ops_t _ops = {
     .base.clone = _hostsock_clone,
     .base.release = _hostsock_release,
-    .base.shutdown = _hostsock_shutdown,
-    //    .base.ioctl  = _hostsock_ioctl,
+    .base.ioctl = _hostsock_ioctl,
     .base.read = _hostsock_read,
     .base.write = _hostsock_write,
-    //    .base.close  = _hostsock_close,
+    .base.close = _hostsock_close,
+    .base.shutdown = _hostsock_shutdown_device,
     .socket = _hostsock_socket,
-    //    .connect     = _hostsock_connect,
-    //    .accept      = _hostsock_accept,
-    //    .bind        = _hostsock_bind,
-    //    .listen      = _hostsock_listen,
-    //    .recvmsg     = _hostsock_recvmsg,
-    //    .sendmsg     = _hostsock_sendmsg,
-    //    .shutdown    = _hostsock_shutdown,
-    //    .getsockopt  = _hostsock_getsockopt,
-    //    .setsockopt  = _hostsock_setsockopt,
-    //    .getpeername = _hostsock_getpeername,
-    //    .getsockname = _hostsock_getsockname
+    .connect = _hostsock_connect,
+    .accept = _hostsock_accept,
+    .bind = _hostsock_bind,
+    .listen = _hostsock_listen,
+    .shutdown = _hostsock_socket_shutdown,
+    .getsockopt = _hostsock_getsockopt,
+    .setsockopt = _hostsock_setsockopt,
+    .getpeername = _hostsock_getpeername,
+    .getsockname = _hostsock_getsockname,
+    .recv = _hostsock_recv,
+    .send = _hostsock_send,
 };
 
 static sock_t _hostsock = {

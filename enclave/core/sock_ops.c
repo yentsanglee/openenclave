@@ -44,7 +44,7 @@ intptr_t oe_socket(int domain, int type, int protocol)
     return sd;
 }
 
-oe_sockfd_t oe_connect(
+int oe_connect(
     oe_sockfd_t sockfd,
     const struct oe_sockaddr* addr,
     oe_socklen_t addrlen)
@@ -137,17 +137,17 @@ ssize_t oe_recvmsg(oe_sockfd_t sockfd, void* buf, size_t len, int flags)
         return -1; // erno is already set
     }
 
-    if (psock->ops.socket->recvmsg == NULL)
+    if (psock->ops.socket->recv == NULL)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
     // The action routine sets errno
-    return (*psock->ops.socket->recvmsg)(psock, buf, len, flags);
+    return (*psock->ops.socket->recv)(psock, buf, len, flags);
 }
 
-ssize_t oe_recv(oe_sockfd_t sockfd, void* buf, size_t len)
+ssize_t oe_send(oe_sockfd_t sockfd, const void* buf, size_t len, int flags)
 
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);
@@ -158,56 +158,14 @@ ssize_t oe_recv(oe_sockfd_t sockfd, void* buf, size_t len)
         return -1; // erno is already set
     }
 
-    if (psock->ops.socket->recvmsg == NULL)
+    if (psock->ops.socket->send == NULL)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
     // The action routine sets errno
-    return (*psock->ops.socket->recvmsg)(psock, buf, len, 0);
-}
-
-ssize_t oe_sendmsg(oe_sockfd_t sockfd, const void* buf, size_t len, int flags)
-
-{
-    oe_device_t* psock = oe_get_fd_device(sockfd);
-
-    if (!psock)
-    {
-        // Log error here
-        return -1; // erno is already set
-    }
-
-    if (psock->ops.socket->sendmsg == NULL)
-    {
-        oe_errno = OE_EINVAL;
-        return -1;
-    }
-
-    // The action routine sets errno
-    return (*psock->ops.socket->sendmsg)(psock, buf, len, flags);
-}
-
-ssize_t oe_send(oe_sockfd_t sockfd, const void* buf, size_t len)
-
-{
-    oe_device_t* psock = oe_get_fd_device(sockfd);
-
-    if (!psock)
-    {
-        // Log error here
-        return -1; // erno is already set
-    }
-
-    if (psock->ops.socket->sendmsg == NULL)
-    {
-        oe_errno = OE_EINVAL;
-        return -1;
-    }
-
-    // The action routine sets errno
-    return (*psock->ops.socket->sendmsg)(psock, buf, len, 0);
+    return (*psock->ops.socket->send)(psock, buf, len, flags);
 }
 
 int oe_shutdown(oe_sockfd_t sockfd, int how)
