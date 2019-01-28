@@ -11,7 +11,7 @@ add_library(oesgxfsenclave STATIC
     file_read_write.cpp
     file_version.cpp
     lru_cache.cpp
-    #sgxfs.c
+    sgxfs.c
     sgx_tprotected_fs.cpp
     ocalls.c
     thread.c

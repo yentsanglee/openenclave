@@ -104,4 +104,12 @@ class hostfs_file_system : public fs_file_system
     }
 };
 
+class sgxfs_file_system : public fs_file_system
+{
+  public:
+    sgxfs_file_system() : fs_file_system(oe_fs_get_sgxfs())
+    {
+    }
+};
+
 #endif /* _file_system_h */
