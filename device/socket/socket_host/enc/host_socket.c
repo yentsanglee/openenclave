@@ -75,7 +75,11 @@ typedef struct _sock
     struct _oe_device base;
     uint32_t magic;
     int64_t host_fd;
-    int ready;
+    uint64_t ready_mask;
+    // epoll registers with us.
+    int max_event_fds;
+    int num_event_fds;
+    // oe_event_device_t *event_fds;
 } sock_t;
 
 static sock_t* _cast_sock(const oe_device_t* device)
@@ -969,6 +973,19 @@ done:
     return ret;
 }
 
+static int _hostsock_notify(oe_device_t* sock_, uint64_t notfication_mask)
+{
+    sock_t* sock = _cast_sock(sock_);
+
+    if (sock->read_mask != notification_mask)
+    {
+        // We notify any epolls in progress.
+    }
+    sock->ready_mask = notification_mask;
+}
+
+ssize_t (*get_host_fd)(oe_device_t* device);
+
 static oe_sock_ops_t _ops = {
     .base.clone = _hostsock_clone,
     .base.release = _hostsock_release,
@@ -976,6 +993,9 @@ static oe_sock_ops_t _ops = {
     .base.read = _hostsock_read,
     .base.write = _hostsock_write,
     .base.close = _hostsock_close,
+    .base.notify = _hostsock_notify,
+    .base.get_host_fd = _hostsock_gethostfd,
+    .base.ready_state = _hostsock_ready_state,
     .base.shutdown = _hostsock_shutdown_device,
     .socket = _hostsock_socket,
     .connect = _hostsock_connect,
@@ -996,6 +1016,10 @@ static sock_t _hostsock = {
     .base.size = sizeof(sock_t),
     .base.ops.socket = &_ops,
     .magic = SOCKET_MAGIC,
+    .ready_mask = 0,
+    .max_event_fds = 0,
+    .num_event_fds = 0,
+    // oe_event_device_t *event_fds;
 };
 
 oe_device_t* oe_socket_get_hostsock(void)

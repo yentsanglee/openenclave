@@ -4,7 +4,7 @@
 
 typedef enum oe_socket_error_t
 {
-    OE_OK = 0,
+    OE_SOCKET_OK = 0,
 #if defined(WIN32)
     OE_SOCKET_ENOMEM = 8,
     OE_SOCKET_EACCES = 10013,

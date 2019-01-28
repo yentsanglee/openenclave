@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/enclave.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/errno.h>
@@ -430,4 +431,65 @@ int oe_ioctl(int fd, unsigned long request, ...)
     oe_va_end(ap);
 
     return rtn;
+}
+
+oe_result_t _handle_oe_device_notification(uint64_t arg)
+{
+    oe_device_notification_args_t* pargs = (oe_device_notification_args_t*)arg;
+    uint64_t host_fd = pargs->host_fd;
+    uint64_t notification_mask = pargs->notify_mask;
+    int enclave_fd = 0;
+    oe_device_t* pdevice = NULL;
+    int rtn = -1;
+
+    enclave_fd = (int)oe_map_host_fd(host_fd);
+    if (enclave_fd >= 0)
+    {
+        pdevice = oe_get_fd_device(enclave_fd);
+        rtn = (*pdevice->ops.base->notify)(pdevice, notification_mask);
+    }
+
+    if (rtn != -1)
+    {
+        return OE_OK;
+    }
+    else
+    {
+        return OE_FAILURE;
+    }
+}
+
+// This is a very naive implementation of association between hostfd and enclave
+// fd Since it does a linear search of the fd table it could become a
+// performance issue, but that hasn't happened yet and is unlikely to do so
+// immediately. If per does become an issue, the host_fd could be hashed to an 8
+// bit hash value by treating it as a sum of 8 bytes then look for the value in
+// one of 256 buckets.
+
+ssize_t oe_map_host_fd(uint64_t host_fd)
+
+{
+    const static ssize_t NOT_FOUND = -1;
+    int enclave_fd = 0;
+    ssize_t candidate_host_fd = 0;
+    oe_device_t* pdevice = NULL;
+
+    for (; enclave_fd < (int)_fd_table_len; enclave_fd++)
+    {
+        pdevice = _fd_table[enclave_fd];
+        if (pdevice != NULL)
+        {
+            if (pdevice->ops.base->get_host_fd != NULL)
+            {
+                candidate_host_fd = (*pdevice->ops.base->get_host_fd)(pdevice);
+                // host_fd cannot be -1. So if we return -1 the comparison will
+                // always fail
+                if (candidate_host_fd == (ssize_t)host_fd)
+                {
+                    return enclave_fd;
+                }
+            }
+        }
+    }
+    return NOT_FOUND;
 }

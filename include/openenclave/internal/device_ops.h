@@ -20,6 +20,12 @@ typedef struct _oe_device_ops
 
     int (*release)(oe_device_t* device);
 
+    int (*notify)(oe_device_t* device, uint64_t notfication_mask);
+
+    ssize_t (*get_host_fd)(oe_device_t* device);
+
+    uint64_t (*ready_state)(oe_device_t* device);
+
     ssize_t (*read)(oe_device_t* file, void* buf, size_t count);
 
     ssize_t (*write)(oe_device_t* file, const void* buf, size_t count);

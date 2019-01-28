@@ -4,6 +4,7 @@
 #ifndef _OE_DEVICE_H
 #define _OE_DEVICE_H
 
+#include <openenclave/bits/result.h>
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/fs_ops.h>
@@ -33,6 +34,19 @@ typedef enum _oe_device_type
     OE_DEVICETYPE_SOCKET     // This entry describes an enclave to enclave
 } oe_device_type_t;
 
+// Ready mask. Tracks the values for epoll
+const uint64_t OE_READY_IN = 0x00000001;
+const uint64_t OE_READY_PRI = 0x00000002;
+const uint64_t OE_READY_OUT = 0x00000004;
+const uint64_t OE_READY_ERR = 0x00000008;
+const uint64_t OE_READY_HUP = 0x00000010;
+const uint64_t OE_READY_RDNORM = 0x00000040;
+const uint64_t OE_READY_RDBAND = 0x00000080;
+const uint64_t OE_READY_WRNORM = 0x00000100;
+const uint64_t OE_READY_WRBAND = 0x00000200;
+const uint64_t OE_READY_MSG = 0x00000400;
+const uint64_t OE_READY_RDHUP = 0x00002000;
+
 typedef struct _oe_device
 {
     /* Type of this device: OE_DEVICE_FILE or OE_DEVICE_SOCKET. */
@@ -53,15 +67,6 @@ typedef struct _oe_device
     } ops;
 
 } oe_device_t;
-
-#if 0
-typedef struct _oe_device_entry
-{
-    oe_device_type_t type;
-    uint64_t flags;
-    oe_device_t* device;
-} oe_device_entry_t;
-#endif
 
 int oe_allocate_devid(int devid);
 void oe_release_devid(int devid);
@@ -101,6 +106,18 @@ ssize_t oe_write(int fd, const void* buf, size_t count);
 int oe_close(int fd);
 
 int oe_ioctl(int fd, unsigned long request, ...);
+
+// Take a host fd from hostfs or host_sock and return the enclave file
+// descriptor index If the host fd is not found, we return -1
+ssize_t oe_map_host_fd(uint64_t host_fd);
+
+typedef struct _oe_device_notification_args
+{
+    uint64_t host_fd;
+    uint64_t notify_mask;
+} oe_device_notification_args_t;
+
+oe_result_t _handle_oe_device_notification(uint64_t args);
 
 OE_EXTERNC_END
 

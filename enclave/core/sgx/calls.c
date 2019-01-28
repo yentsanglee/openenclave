@@ -7,6 +7,7 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/atexit.h>
 #include <openenclave/internal/calls.h>
+#include <openenclave/internal/device.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/fault.h>
 #include <openenclave/internal/globals.h>
@@ -476,6 +477,13 @@ static void _handle_ecall(
             _handle_oelog_init(arg_in);
             break;
         }
+#if 0
+        case OE_ECALL_DEVICE_NOTIFICATION:
+        {
+            _handle_oe_device_notification(arg_in);
+            break;
+        }
+#endif
         default:
         {
             /* No function found with the number */
