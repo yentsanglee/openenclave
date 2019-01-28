@@ -35,17 +35,17 @@ typedef enum _oe_device_type
 } oe_device_type_t;
 
 // Ready mask. Tracks the values for epoll
-const uint64_t OE_READY_IN = 0x00000001;
-const uint64_t OE_READY_PRI = 0x00000002;
-const uint64_t OE_READY_OUT = 0x00000004;
-const uint64_t OE_READY_ERR = 0x00000008;
-const uint64_t OE_READY_HUP = 0x00000010;
-const uint64_t OE_READY_RDNORM = 0x00000040;
-const uint64_t OE_READY_RDBAND = 0x00000080;
-const uint64_t OE_READY_WRNORM = 0x00000100;
-const uint64_t OE_READY_WRBAND = 0x00000200;
-const uint64_t OE_READY_MSG = 0x00000400;
-const uint64_t OE_READY_RDHUP = 0x00002000;
+static const uint64_t OE_READY_IN = 0x00000001;
+static const uint64_t OE_READY_PRI = 0x00000002;
+static const uint64_t OE_READY_OUT = 0x00000004;
+static const uint64_t OE_READY_ERR = 0x00000008;
+static const uint64_t OE_READY_HUP = 0x00000010;
+static const uint64_t OE_READY_RDNORM = 0x00000040;
+static const uint64_t OE_READY_RDBAND = 0x00000080;
+static const uint64_t OE_READY_WRNORM = 0x00000100;
+static const uint64_t OE_READY_WRBAND = 0x00000200;
+static const uint64_t OE_READY_MSG = 0x00000400;
+static const uint64_t OE_READY_RDHUP = 0x00002000;
 
 typedef struct _oe_device
 {
