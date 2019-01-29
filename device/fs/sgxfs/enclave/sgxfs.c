@@ -185,45 +185,6 @@ done:
     return ret;
 }
 
-static int _sgxfs_mount(
-    oe_device_t* device,
-    const char* target,
-    uint32_t flags)
-{
-    int ret = -1;
-    fs_t* fs = _cast_fs(device);
-
-    if (!fs || !target)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    (void)flags;
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
-static int _sgxfs_unmount(oe_device_t* device)
-{
-    int ret = -1;
-    fs_t* fs = _cast_fs(device);
-
-    if (!fs)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
 static oe_device_t* _sgxfs_open(
     oe_device_t* fs_,
     const char* pathname,
@@ -779,8 +740,6 @@ static oe_fs_ops_t _ops = {
     .base.release = _sgxfs_release,
     .base.shutdown = _sgxfs_shutdown,
     .base.ioctl = _sgxfs_ioctl,
-    .mount = _sgxfs_mount,
-    .unmount = _sgxfs_unmount,
     .open = _sgxfs_open,
     .base.read = _sgxfs_read,
     .base.write = _sgxfs_write,

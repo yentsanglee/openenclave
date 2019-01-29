@@ -190,45 +190,6 @@ done:
     return ret;
 }
 
-static int _hostfs_mount(
-    oe_device_t* device,
-    const char* target,
-    uint32_t flags)
-{
-    int ret = -1;
-    fs_t* fs = _cast_fs(device);
-
-    if (!fs || !target)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    (void)flags;
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
-static int _hostfs_unmount(oe_device_t* device)
-{
-    int ret = -1;
-    fs_t* fs = _cast_fs(device);
-
-    if (!fs)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
 static oe_device_t* _hostfs_open(
     oe_device_t* fs_,
     const char* pathname,
@@ -1089,8 +1050,6 @@ static oe_fs_ops_t _ops = {
     .base.release = _hostfs_release,
     .base.shutdown = _hostfs_shutdown,
     .base.ioctl = _hostfs_ioctl,
-    .mount = _hostfs_mount,
-    .unmount = _hostfs_unmount,
     .open = _hostfs_open,
     .base.read = _hostfs_read,
     .base.write = _hostfs_write,
