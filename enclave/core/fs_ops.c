@@ -88,6 +88,7 @@ int oe_mount(int device_id, const char* path, uint32_t flags)
 {
     int ret = -1;
     oe_device_t* device = oe_get_devid_device(device_id);
+    oe_device_t* new_device = NULL;
 
     OE_UNUSED(flags);
 
@@ -123,6 +124,13 @@ int oe_mount(int device_id, const char* path, uint32_t flags)
         }
     }
 
+    /* Clone the device. */
+    if (device->ops.fs->base.clone(device, &new_device) != 0)
+    {
+        oe_errno = OE_ENOMEM;
+        goto done;
+    }
+
     /* Assign and initialize new mount point. */
     {
         size_t index = _mount_table_size;
@@ -135,13 +143,17 @@ int oe_mount(int device_id, const char* path, uint32_t flags)
         }
 
         oe_memcpy(_mount_table[index].path, path, path_len + 1);
-        _mount_table[index].fs = device;
+        _mount_table[index].fs = new_device;
         _mount_table_size++;
     }
 
+    new_device = NULL;
     ret = 0;
 
 done:
+
+    if (new_device)
+        new_device->ops.fs->base.release(new_device);
 
     oe_spin_unlock(&_lock);
     return ret;
@@ -150,8 +162,8 @@ done:
 int oe_unmount(int device_id, const char* path)
 {
     int ret = -1;
-    oe_device_t* device = oe_get_devid_device(device_id);
     size_t index = (size_t)-1;
+    oe_device_t* device = oe_get_devid_device(device_id);
 
     oe_spin_lock(&_lock);
 
@@ -180,9 +192,14 @@ int oe_unmount(int device_id, const char* path)
 
     /* Remove the entry by swapping with the last entry. */
     {
+        oe_device_t* fs = _mount_table[index].fs;
+
         oe_free(_mount_table[index].path);
+        fs = _mount_table[index].fs;
         _mount_table[index] = _mount_table[_mount_table_size-1];
         _mount_table_size--;
+
+        fs->ops.fs->base.release(fs);
     }
 
     ret = 0;
