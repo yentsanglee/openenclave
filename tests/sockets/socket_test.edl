@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 enclave {
-    from "openenclave/socket.edl" import *;
+  //  from "openenclave/socket.edl" import *;
 
     trusted {
         /* define ECALLs here. */
