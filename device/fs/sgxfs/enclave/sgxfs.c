@@ -769,7 +769,7 @@ oe_device_t* oe_fs_get_sgxfs(void)
     return &_sgxfs.base;
 }
 
-int oe_fs_init_sgxfs_device(void)
+int oe_register_sgxfs_device(void)
 {
     int ret = -1;
 

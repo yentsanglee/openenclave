@@ -1079,7 +1079,7 @@ oe_device_t* oe_fs_get_hostfs(void)
     return &_hostfs.base;
 }
 
-int oe_fs_init_hostfs_device(void)
+int oe_register_hostfs_device(void)
 {
     int ret = -1;
 
