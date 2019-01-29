@@ -12,9 +12,9 @@
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/atexit.h>
 
-#define MAX_MOUNT_TABLE_SIZE 128
-
 #define printf oe_host_printf
+
+#define MAX_MOUNT_TABLE_SIZE 128
 
 typedef struct _mount_point
 {
@@ -179,7 +179,6 @@ int oe_open(const char* pathname, int flags, oe_mode_t mode)
         goto done;
     }
 
-printf("SET=%d:%p\n", fd, file);
     if (!oe_set_fd_device(fd, file))
     {
         // oe_errno set by function.

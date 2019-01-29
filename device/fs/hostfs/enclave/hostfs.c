@@ -295,7 +295,7 @@ static oe_device_t* _hostfs_open(
             goto done;
         }
 
-        file->base.type = OE_DEVICE_ID_HOSTFS;
+        file->base.type = OE_DEVICETYPE_FILE,
         file->base.size = sizeof(file_t);
         file->magic = FILE_MAGIC;
         file->base.ops.fs = fs->base.ops.fs;
@@ -587,7 +587,7 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
             goto done;
         }
 
-        dir->base.type = OE_DEVICE_ID_HOSTFS;
+        dir->base.type = OE_DEVICETYPE_DIRECTORY;
         dir->base.size = sizeof(dir_t);
         dir->magic = DIR_MAGIC;
         dir->base.ops.fs = fs->base.ops.fs;

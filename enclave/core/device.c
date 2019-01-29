@@ -8,8 +8,6 @@
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/print.h>
 
-#define printf oe_host_printf
-
 static size_t _device_table_len = 0;
 static oe_device_t** _device_table = NULL; // Resizable array of device entries
 
@@ -420,9 +418,7 @@ int oe_close(int fd)
         goto done;
     }
 
-printf("<<<<<<<\n");
     oe_release_fd(fd);
-printf(">>>>>>>\n");
 
     ret = 0;
 

@@ -112,4 +112,92 @@ class sgxfs_file_system : public fs_file_system
     }
 };
 
+class fd_file_system
+{
+  public:
+    typedef int file_handle;
+    typedef struct _fs_file_system_dir_handle* dir_handle;
+
+    fd_file_system(void)
+    {
+    }
+
+    file_handle open(const char* pathname, int flags, oe_mode_t mode)
+    {
+        return (file_handle)oe_open(pathname, flags, mode);
+    }
+
+    ssize_t write(file_handle file, const void* buf, size_t count)
+    {
+        return oe_write(file, buf, count);
+    }
+
+    ssize_t read(file_handle file, void* buf, size_t count)
+    {
+        return oe_read(file, buf, count);
+    }
+
+    oe_off_t lseek(file_handle file, oe_off_t offset, int whence)
+    {
+        return oe_lseek(file, offset, whence);
+    }
+
+    int close(file_handle file)
+    {
+        return oe_close(file);
+    }
+
+    dir_handle opendir(const char* name)
+    {
+        return (dir_handle)oe_opendir(name);
+    }
+
+    struct oe_dirent* readdir(dir_handle dir)
+    {
+        return oe_readdir((oe_device_t*)dir);
+    }
+
+    int closedir(dir_handle dir)
+    {
+        return oe_closedir((oe_device_t*)dir);
+    }
+
+    int unlink(const char* pathname)
+    {
+        return oe_unlink(pathname);
+    }
+
+    int link(const char* oldpath, const char* newpath)
+    {
+        return oe_link(oldpath, newpath);
+    }
+
+    int rename(const char* oldpath, const char* newpath)
+    {
+        return oe_rename(oldpath, newpath);
+    }
+
+    int mkdir(const char* pathname, oe_mode_t mode)
+    {
+        return oe_mkdir(pathname, mode);
+    }
+
+    int rmdir(const char* pathname)
+    {
+        return oe_rmdir(pathname);
+    }
+
+    int stat(const char* pathname, struct oe_stat* buf)
+    {
+        return oe_stat(pathname, buf);
+    }
+
+    int truncate(const char* path, oe_off_t length)
+    {
+        return oe_truncate(path, length);
+    }
+
+  private:
+};
+
 #endif /* _file_system_h */

@@ -146,9 +146,6 @@ static void test_readdir(FILE_SYSTEM& fs, const char* tmp_dir)
 
     printf("--- %s()\n", __FUNCTION__);
 
-    dir = fs.opendir(tmp_dir);
-    OE_TEST(dir);
-
     /* Create directories: "dir1" and "dir2". */
     {
         mkpath(path, tmp_dir, "dir1");
@@ -167,6 +164,9 @@ static void test_readdir(FILE_SYSTEM& fs, const char* tmp_dir)
 
     /* Remove directory "dir2". */
     OE_TEST(fs.rmdir(mkpath(path, tmp_dir, "dir2")) == 0);
+
+    dir = fs.opendir(tmp_dir);
+    OE_TEST(dir);
 
     while ((ent = fs.readdir(dir)))
     {
@@ -309,16 +309,15 @@ void test_fs(const char* src_dir, const char* tmp_dir)
 
     /* Test the file descriptor interfaces. */
     {
+        printf("=== testing fd interface:\n");
+
         OE_TEST(oe_fs_init_hostfs_device() == 0);
 
         /* Mount this device. */
         OE_TEST(oe_mount(OE_DEVICE_ID_HOSTFS, "/", 0) == 0);
 
-        const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
-        int fd = oe_open("/tmp/myfile", flags, MODE);
-        OE_TEST(fd >= 0);
-
-        OE_TEST(oe_close(fd) == 0);
+        fd_file_system fs;
+        test_all(fs, tmp_dir);
     }
 }
 
