@@ -11,8 +11,8 @@ if(CMAKE_C_COMPILER_ID MATCHES GNU)
 target_compile_options(oehostsocket_host PRIVATE -Wjump-misses-init)
 endif()
 
-target_link_libraries(oehostsocket_host PUBLIC
-    oelibc)
+#target_link_libraries(oehostsocket_host PUBLIC
+#    oelibc)
 
 target_include_directories(oehostsocket_host PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
