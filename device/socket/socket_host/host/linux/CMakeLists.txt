@@ -4,7 +4,7 @@
 include(oeedl_file)
 
 add_library(oehostsocket_host STATIC
-    socket_host.c
+    host_socket.c
     ${socket_u_h})
 
 if(CMAKE_C_COMPILER_ID MATCHES GNU)

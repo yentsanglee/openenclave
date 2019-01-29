@@ -1,13 +1,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <errno.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "../common/hostsockargs.h"
+#include "../../common/hostsockargs.h"
+#include <sys/socket.h>
 
 void (*oe_handle_hostsock_ocall_callback)(void*);
 
@@ -37,25 +39,13 @@ static void _handle_hostsock_ocall(void* args_)
         }
         case OE_HOSTSOCK_OP_CLOSE:
         {
-            args->u.close.ret = close(args->u.close.fd);
-            break;
-        }
-        case OE_HOSTSOCK_OP_READ:
-        {
-            args->u.read.ret =
-                read(args->u.read.fd, args->buf, args->u.read.count);
-            break;
-        }
-        case OE_HOSTSOCK_OP_WRITE:
-        {
-            args->u.read.ret =
-                write(args->u.read.fd, args->buf, args->u.read.count);
+            args->u.close.ret = close((int)args->u.close.host_fd);
             break;
         }
         case OE_HOSTSOCK_OP_RECV:
         {
             args->u.recv.ret = recv(
-                args->u.recv.fd,
+                (int)args->u.recv.host_fd,
                 args->buf,
                 args->u.recv.count,
                 args->u.recv.flags);
@@ -64,10 +54,94 @@ static void _handle_hostsock_ocall(void* args_)
         case OE_HOSTSOCK_OP_SEND:
         {
             args->u.send.ret = send(
-                args->u.send.fd,
+                (int)args->u.send.host_fd,
                 args->buf,
                 args->u.send.count,
                 args->u.send.flags);
+            break;
+        }
+        case OE_HOSTSOCK_OP_CONNECT:
+        {
+            args->u.connect.ret = connect(
+                (int)args->u.connect.host_fd,
+                (const struct sockaddr *)args->buf,
+                args->u.connect.addrlen);
+            break;
+        }
+        case OE_HOSTSOCK_OP_ACCEPT:
+        {
+            args->u.accept.ret = accept(
+                (int)args->u.accept.host_fd,
+                (struct sockaddr *)args->buf,
+                &args->u.accept.addrlen);
+            break;
+        }
+        case OE_HOSTSOCK_OP_BIND:
+        {
+            args->u.bind.ret = bind(
+                (int)args->u.bind.host_fd,
+                (const struct sockaddr *)args->buf,
+                args->u.bind.addrlen);
+            break;
+        }
+        case OE_HOSTSOCK_OP_LISTEN:
+        {
+            args->u.listen.ret = listen(
+                (int)args->u.listen.host_fd,
+                args->u.listen.backlog);
+            break;
+        }
+        case OE_HOSTSOCK_OP_SOCK_SHUTDOWN:
+        {
+            args->u.sock_shutdown.ret = shutdown(
+                (int)args->u.sock_shutdown.host_fd,
+                args->u.sock_shutdown.how);
+            break;
+        }
+        case OE_HOSTSOCK_OP_GETSOCKOPT:
+        {
+            args->u.getsockopt.ret = getsockopt(
+                (int)args->u.getsockopt.host_fd,
+                args->u.getsockopt.level,
+                args->u.getsockopt.optname,
+                args->buf,
+                &args->u.getsockopt.optlen);
+            break;
+        }
+        case OE_HOSTSOCK_OP_SETSOCKOPT:
+        {
+            args->u.setsockopt.ret = getsockopt(
+                (int)args->u.setsockopt.host_fd,
+                args->u.setsockopt.level,
+                args->u.setsockopt.optname,
+                args->buf,
+                &args->u.setsockopt.optlen);
+            break;
+        }
+        case OE_HOSTSOCK_OP_GETPEERNAME:
+        {
+            args->u.getpeername.ret = getpeername(
+                (int)args->u.getpeername.host_fd,
+                (struct sockaddr *)args->buf,
+                &args->u.getpeername.addrlen);
+            break;
+        }
+        case OE_HOSTSOCK_OP_GETSOCKNAME:
+        {
+            args->u.getsockname.ret = getsockname(
+                (int)args->u.getsockname.host_fd,
+                (struct sockaddr *)args->buf,
+                &args->u.getsockname.addrlen);
+            break;
+        }
+        case OE_HOSTSOCK_OP_SHUTDOWN_DEVICE:
+        {
+            // 2do
+            break;
+        }
+        default:
+        {
+            // Invalid
             break;
         }
     }
