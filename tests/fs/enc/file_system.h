@@ -10,8 +10,8 @@
 class fs_file_system
 {
   public:
-    typedef struct _fs_file_system_file_handle* file_handle;
-    typedef struct _fs_file_system_dir_handle* dir_handle;
+    typedef oe_device_t* file_handle;
+    typedef oe_device_t* dir_handle;
 
     fs_file_system(oe_device_t* fs) : _fs(fs)
     {
@@ -116,7 +116,7 @@ class fd_file_system
 {
   public:
     typedef int file_handle;
-    typedef struct _fs_file_system_dir_handle* dir_handle;
+    typedef oe_device_t* dir_handle;
 
     fd_file_system(void)
     {

@@ -809,3 +809,25 @@ oe_device_t* oe_fs_get_sgxfs(void)
 {
     return &_sgxfs.base;
 }
+
+int oe_fs_init_sgxfs_device(void)
+{
+    int ret = -1;
+
+    /* Allocate the device id. */
+    if (oe_allocate_devid(OE_DEVICE_ID_SGXFS) != OE_DEVICE_ID_SGXFS)
+        goto done;
+
+    /* Add the sgxfs device to the device table. */
+    if (oe_set_devid_device(OE_DEVICE_ID_SGXFS, oe_fs_get_sgxfs()) != 0)
+        goto done;
+
+    /* Check that the above operation was successful. */
+    if (oe_get_devid_device(OE_DEVICE_ID_SGXFS) != oe_fs_get_sgxfs())
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}

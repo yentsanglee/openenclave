@@ -147,6 +147,52 @@ done:
     return ret;
 }
 
+int oe_unmount(int device_id, const char* path)
+{
+    int ret = -1;
+    oe_device_t* device = oe_get_devid_device(device_id);
+    size_t index = (size_t)-1;
+
+    oe_spin_lock(&_lock);
+
+    if (!device || device->type != OE_DEVICETYPE_FILESYSTEM || !path)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Find and remove this device. */
+    for (size_t i = 0; i < _mount_table_size; i++)
+    {
+        if (oe_strcmp(_mount_table[i].path, path) == 0)
+        {
+            index = i;
+            break;
+        }
+    }
+
+    /* If mount point not found. */
+    if (index == (size_t)-1)
+    {
+        oe_errno = OE_ENOENT;
+        goto done;
+    }
+
+    /* Remove the entry by swapping with the last entry. */
+    {
+        oe_free(_mount_table[index].path);
+        _mount_table[index] = _mount_table[_mount_table_size-1];
+        _mount_table_size--;
+    }
+
+    ret = 0;
+
+done:
+
+    oe_spin_unlock(&_lock);
+    return ret;
+}
+
 int oe_open(const char* pathname, int flags, oe_mode_t mode)
 {
     int ret = -1;

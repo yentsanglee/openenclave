@@ -178,6 +178,8 @@ struct _oe_fs_ops
 
 int oe_mount(int device_id, const char* path, uint32_t flags);
 
+int oe_unmount(int device_id, const char* path);
+
 int oe_open(const char* pathname, int flags, oe_mode_t mode);
 
 oe_off_t oe_lseek(int fd, oe_off_t offset, int whence);
