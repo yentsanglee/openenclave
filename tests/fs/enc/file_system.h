@@ -19,77 +19,77 @@ class fs_file_system
 
     file_handle open(const char* pathname, int flags, oe_mode_t mode)
     {
-        return (file_handle)oe_fs_open(_fs, pathname, flags, mode);
+        return (file_handle)_fs->ops.fs->open(_fs, pathname, flags, mode);
     }
 
     ssize_t write(file_handle file, const void* buf, size_t count)
     {
-        return oe_fs_write((oe_device_t*)file, buf, count);
+        return file->ops.fs->base.write((oe_device_t*)file, buf, count);
     }
 
     ssize_t read(file_handle file, void* buf, size_t count)
     {
-        return oe_fs_read((oe_device_t*)file, buf, count);
+        return file->ops.fs->base.read(file, buf, count);
     }
 
     oe_off_t lseek(file_handle file, oe_off_t offset, int whence)
     {
-        return oe_fs_lseek((oe_device_t*)file, offset, whence);
+        return _fs->ops.fs->lseek(file, offset, whence);
     }
 
     int close(file_handle file)
     {
-        return oe_fs_close((oe_device_t*)file);
+        return file->ops.fs->base.close((oe_device_t*)file);
     }
 
     dir_handle opendir(const char* name)
     {
-        return (dir_handle)oe_fs_opendir(_fs, name);
+        return _fs->ops.fs->opendir(_fs, name);
     }
 
     struct oe_dirent* readdir(dir_handle dir)
     {
-        return oe_fs_readdir((oe_device_t*)dir);
+        return dir->ops.fs->readdir(dir);
     }
 
     int closedir(dir_handle dir)
     {
-        return oe_fs_closedir((oe_device_t*)dir);
+        return dir->ops.fs->closedir(dir);
     }
 
     int unlink(const char* pathname)
     {
-        return oe_fs_unlink(_fs, pathname);
+        return _fs->ops.fs->unlink(_fs, pathname);
     }
 
     int link(const char* oldpath, const char* newpath)
     {
-        return oe_fs_link(_fs, oldpath, newpath);
+        return _fs->ops.fs->link(_fs, oldpath, newpath);
     }
 
     int rename(const char* oldpath, const char* newpath)
     {
-        return oe_fs_rename(_fs, oldpath, newpath);
+        return _fs->ops.fs->rename(_fs, oldpath, newpath);
     }
 
     int mkdir(const char* pathname, oe_mode_t mode)
     {
-        return oe_fs_mkdir(_fs, pathname, mode);
+        return _fs->ops.fs->mkdir(_fs, pathname, mode);
     }
 
     int rmdir(const char* pathname)
     {
-        return oe_fs_rmdir(_fs, pathname);
+        return _fs->ops.fs->rmdir(_fs, pathname);
     }
 
     int stat(const char* pathname, struct oe_stat* buf)
     {
-        return oe_fs_stat(_fs, pathname, buf);
+        return _fs->ops.fs->stat(_fs, pathname, buf);
     }
 
     int truncate(const char* path, oe_off_t length)
     {
-        return oe_fs_truncate(_fs, path, length);
+        return _fs->ops.fs->truncate(_fs, path, length);
     }
 
   private:

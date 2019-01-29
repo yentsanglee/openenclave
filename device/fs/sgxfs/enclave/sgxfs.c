@@ -438,33 +438,75 @@ static int _sgxfs_ioctl(
     return -1;
 }
 
-static oe_device_t* _sgxfs_opendir(oe_device_t* fs, const char* name)
+static oe_device_t* _sgxfs_opendir(oe_device_t* fs_, const char* name)
 {
-    (void)fs;
-    return oe_fs_opendir(oe_fs_get_hostfs(), name);
+    oe_device_t* hostfs = oe_fs_get_hostfs();
+    oe_device_t* dir = NULL;
+
+    OE_UNUSED(fs_);
+
+    if (!hostfs)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    dir = (*hostfs->ops.fs->opendir)(hostfs, name);
+
+done:
+    return dir;
 }
 
 static struct oe_dirent* _sgxfs_readdir(oe_device_t* dir)
 {
-    return oe_fs_readdir(dir);
+    struct oe_dirent* ret = NULL;
+
+    if (!dir)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    ret = (*dir->ops.fs->readdir)(dir);
+
+done:
+    return ret;
 }
 
 static int _sgxfs_closedir(oe_device_t* dir)
 {
-    return oe_fs_closedir(dir);
+    int ret = -1;
+
+    if (!dir)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    ret = (*dir->ops.fs->closedir)(dir);
+
+done:
+    return ret;
 }
 
 static int _sgxfs_stat(
-    oe_device_t* fs,
+    oe_device_t* fs_,
     const char* pathname,
     struct oe_stat* buf)
 {
     int ret = -1;
     SGX_FILE* stream = NULL;
+    oe_device_t* hostfs = oe_fs_get_hostfs();
 
-    (void)fs;
+    OE_UNUSED(fs_);
 
-    if (oe_fs_stat(oe_fs_get_hostfs(), pathname, buf) != 0)
+    if (!hostfs)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    if (hostfs->ops.fs->stat(hostfs, pathname, buf) != 0)
         goto done;
 
     /* Recalculate the size to omit the metadata headers. */
@@ -549,10 +591,23 @@ done:
     return ret;
 }
 
-static int _sgxfs_unlink(oe_device_t* fs, const char* pathname)
+static int _sgxfs_unlink(oe_device_t* fs_, const char* pathname)
 {
-    (void)fs;
-    return oe_fs_unlink(oe_fs_get_hostfs(), pathname);
+    int ret = -1;
+    oe_device_t* hostfs = oe_fs_get_hostfs();
+
+    OE_UNUSED(fs_);
+
+    if (!hostfs)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    ret = hostfs->ops.fs->unlink(hostfs, pathname);
+
+done:
+    return ret;
 }
 
 static int _sgxfs_rename(
@@ -566,8 +621,9 @@ static int _sgxfs_rename(
     SGX_FILE* out = NULL;
     char buf[OE_BUFSIZ];
     size_t n;
+    oe_device_t* hostfs = oe_fs_get_hostfs();
 
-    if (!fs || !oldpath || !newpath)
+    if (!fs || !hostfs || !oldpath || !newpath)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -598,7 +654,7 @@ static int _sgxfs_rename(
     }
 
     /* Delete the original file. */
-    if (oe_fs_unlink(oe_fs_get_hostfs(), oldpath) != 0)
+    if (hostfs->ops.fs->unlink(hostfs, oldpath) != 0)
     {
         goto done;
     }
@@ -723,16 +779,48 @@ done:
     return ret;
 }
 
-static int _sgxfs_mkdir(oe_device_t* fs, const char* pathname, oe_mode_t mode)
+static int _sgxfs_mkdir(oe_device_t* fs_, const char* pathname, oe_mode_t mode)
 {
-    (void)fs;
-    return oe_fs_mkdir(oe_fs_get_hostfs(), pathname, mode);
+    int ret = -1;
+    oe_device_t* hostfs = oe_fs_get_hostfs();
+
+    OE_UNUSED(fs_);
+
+    if (!hostfs)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    if (hostfs->ops.fs->mkdir(hostfs, pathname, mode) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
 }
 
 static int _sgxfs_rmdir(oe_device_t* fs, const char* pathname)
 {
-    (void)fs;
-    return oe_fs_rmdir(oe_fs_get_hostfs(), pathname);
+    int ret = -1;
+    oe_device_t* hostfs = oe_fs_get_hostfs();
+
+    OE_UNUSED(fs);
+
+    if (!hostfs)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    if (hostfs->ops.fs->rmdir(hostfs, pathname) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
 }
 
 static oe_fs_ops_t _ops = {

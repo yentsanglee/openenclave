@@ -59,7 +59,7 @@ add_library(oecore STATIC
     assert.c
     hexdump.c
     device.c
-    fs_ops.c
+    fs.c
     sock_ops.c
     resolver_ops.c
     result.c
