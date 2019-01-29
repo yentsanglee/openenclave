@@ -176,6 +176,10 @@ struct _oe_fs_ops
     int (*rmdir)(oe_device_t* fs, const char* pathname);
 };
 
+int oe_mount(int device_id, const char* path, uint32_t flags);
+
+int oe_open(const char* pathname, int flags, oe_mode_t mode);
+
 OE_EXTERNC_END
 
 #endif // _OE_FS_OPS_H

@@ -4,7 +4,11 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/enclavelibc.h>
+#include <openenclave/internal/atexit.h>
 #include <openenclave/internal/errno.h>
+#include <openenclave/internal/print.h>
+
+#define printf oe_host_printf
 
 static size_t _device_table_len = 0;
 static oe_device_t** _device_table = NULL; // Resizable array of device entries
@@ -12,9 +16,19 @@ static oe_device_t** _device_table = NULL; // Resizable array of device entries
 static size_t _fd_table_len = 0;
 static oe_device_t** _fd_table = NULL;
 
+static void _free_device_table(void)
+{
+    oe_free(_device_table);
+}
+
+static void _free_fd_table(void)
+{
+    oe_free(_fd_table);
+}
+
 // We define the device init for now. Eventually it should be a mandatory part
 // of the enclave
-#define DEFAULT_DEVICE_INIT
+//#define DEFAULT_DEVICE_INIT
 #if defined(DEFAULT_DEVICE_INIT)
 
 extern int CreateHostFSDevice(oe_device_type_t device_id);
@@ -37,30 +51,30 @@ int oe_device_init()
 
     // Opt into file systems
 
-    if (CreateHostFSDevice(OE_DEVICE_HOST_FILESYSTEM) < 0)
+    if (CreateHostFSDevice(OE_DEVICE_ID_HOSTFS) < 0)
     {
         // Log an error and continue
     }
 
-    if (CreateEnclaveLocalFSDevice(OE_DEVICE_ENCLAVE_FILESYSTEM) < 0)
+    if (CreateEnclaveLocalFSDevice(OE_DEVICE_ID_SGXFS) < 0)
     {
         // Log an error and continue
     }
 
-    rslt = (*_device_table[OE_DEVICE_ENCLAVE_FILESYSTEM]->ops.fs->mount)(
-        _device_table[OE_DEVICE_ENCLAVE_FILESYSTEM], "/", READ_WRITE);
+    rslt = (*_device_table[OE_DEVICE_ID_SGXFS]->ops.fs->mount)(
+        _device_table[OE_DEVICE_ID_SGXFS], "/", READ_WRITE);
 
-    rslt = (*_device_table[OE_DEVICE_HOST_FILESYSTEM]->ops.fs->mount)(
-        _device_table[OE_DEVICE_ENCLAVE_FILESYSTEM], "/host", READ_ONLY);
+    rslt = (*_device_table[OE_DEVICE_ID_HOSTFS]->ops.fs->mount)(
+        _device_table[OE_DEVICE_ID_SGXFS], "/host", READ_ONLY);
 
     // Opt into the network
 
-    if (CreateHostNetInterface(OE_DEVICE_HOST_SOCKET) < 0)
+    if (CreateHostNetInterface(OE_DEVICE_ID_HOST_SOCKET) < 0)
     {
         // Log an error and continue
     }
 
-    if (CreateEnclaveToEnclaveNetInterface(OE_DEVICE_ENCLAVE_SOCKET) < 0)
+    if (CreateEnclaveToEnclaveNetInterface(OE_DEVICE_ID_ENCLAVE_SOCKET) < 0)
     {
         // Log an error and continue
     }
@@ -100,6 +114,7 @@ int oe_allocate_devid(int devid)
             sizeof(_device_table[0]) * _device_table_len);
         oe_memset(
             _device_table, 0, sizeof(_device_table[0]) * _device_table_len);
+        oe_atexit(_free_device_table);
     }
     else if (devid >= (int)_device_table_len)
     {
@@ -128,29 +143,33 @@ void oe_release_devid(int devid)
     }
 }
 
-oe_device_t* oe_set_devid_device(int device_id, oe_device_t* pdevice)
-
+int oe_set_devid_device(int devid, oe_device_t* pdevice)
 {
-    if (device_id >= (int)_device_table_len)
+    int ret = -1;
+
+    if (devid < 0 || (size_t)devid > _device_table_len)
     {
         oe_errno = OE_EINVAL;
-        return NULL;
+        goto done;
     }
 
-    if (_device_table[device_id] != NULL)
+    if (_device_table[devid] != NULL)
     {
         oe_errno = OE_EADDRINUSE;
-        return NULL;
+        goto done;
     }
 
-    _device_table[device_id] = pdevice; // We don't clone
-    return pdevice;
+    _device_table[devid] = pdevice; // We don't clone
+
+    ret = 0;
+
+done:
+    return ret;
 }
 
 oe_device_t* oe_get_devid_device(int devid)
-
 {
-    if (devid >= (int)_device_table_len)
+    if (devid < 0 || (size_t)devid >= _device_table_len)
     {
         oe_errno = OE_EINVAL;
         return NULL;
@@ -198,9 +217,8 @@ int oe_allocate_fd()
     if (_fd_table_len == 0)
     {
         _fd_table_len = SIZE_BUMP;
-        _fd_table =
-            (oe_device_t**)oe_malloc(sizeof(_fd_table[0]) * _fd_table_len);
-        oe_memset(_fd_table, 0, sizeof(_fd_table[0]) * _fd_table_len);
+        _fd_table = oe_calloc(1, sizeof(_fd_table[0]) * _fd_table_len);
+        oe_atexit(_free_fd_table);
 
         // Setup stdin, out and error here.
 
@@ -235,34 +253,37 @@ int oe_allocate_fd()
 void oe_release_fd(int fd)
 
 {
-    if (fd < (int)_fd_table_len)
+    if (fd >= 0 && (size_t)fd < _fd_table_len)
     {
-        oe_free(_fd_table[fd]);
         _fd_table[fd] = NULL;
     }
 }
 
-oe_device_t* oe_set_fd_device(int fd, oe_device_t* pdevice)
-
+oe_device_t* oe_set_fd_device(int fd, oe_device_t* device)
 {
-    if (fd >= (int)_fd_table_len)
+    oe_device_t* ret = NULL;
+
+    if (fd < 0 || (size_t)fd >= _fd_table_len)
     {
         oe_errno = OE_EINVAL;
-        return NULL;
+        goto done;
     }
 
     if (_fd_table[fd] != NULL)
     {
         oe_errno = OE_EADDRINUSE;
-        return NULL;
+        goto done;
     }
 
-    _fd_table[fd] = pdevice; // We don't clone
-    return pdevice;
+    _fd_table[fd] = device; // We don't clone
+
+    ret = device;
+
+done:
+    return ret;
 }
 
 oe_device_t* oe_get_fd_device(int fd)
-
 {
     if (fd >= (int)_fd_table_len)
     {
@@ -270,9 +291,9 @@ oe_device_t* oe_get_fd_device(int fd)
         return NULL;
     }
 
-    if (_fd_table[fd] != NULL)
+    if (_fd_table[fd] == NULL)
     {
-        oe_errno = OE_EADDRINUSE;
+        oe_errno = OE_EBADF;
         return NULL;
     }
 
@@ -379,31 +400,34 @@ ssize_t oe_write(int fd, const void* buf, size_t count)
 }
 
 int oe_close(int fd)
-
 {
-    int rtn = -1;
-    oe_device_t* pdevice = oe_get_fd_device(fd);
+    int ret = -1;
+    oe_device_t* device = oe_get_fd_device(fd);
 
-    if (!pdevice)
+    if (!device)
     {
-        // Log error here
-        return -1; // erno is already set
+        goto done;
     }
 
-    if (pdevice->ops.base->close == NULL)
+    if (device->ops.base->close == NULL)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
-    // The action routine sets errno
-    rtn = (*pdevice->ops.base->close)(pdevice);
-
-    if (rtn >= 0)
+    if ((*device->ops.base->close)(device) != 0)
     {
-        oe_release_fd(fd);
+        goto done;
     }
-    return rtn;
+
+printf("<<<<<<<\n");
+    oe_release_fd(fd);
+printf(">>>>>>>\n");
+
+    ret = 0;
+
+done:
+    return ret;
 }
 
 int oe_ioctl(int fd, unsigned long request, ...)

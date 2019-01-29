@@ -13,21 +13,29 @@
 OE_EXTERNC_BEGIN
 
 // Well known  device ids
-static const int OE_DEVICE_CONSOLE = 1;
-static const int OE_DEVICE_LOG = 2;
-static const int OE_DEVICE_ENCLAVE_FILESYSTEM = 3;
-static const int OE_DEVICE_HOST_FILESYSTEM = 4; // This entry describes a file
-                                                // in the hosts's file system
-static const int OE_DEVICE_HOST_SOCKET =
-    5; // This entry describes an internet socket
-static const int OE_DEVICE_ENCLAVE_SOCKET =
-    6; // This entry describes an enclave to enclave
+enum
+{
+    OE_DEVICE_ID_CONSOLE = 1,
+
+    OE_DEVICE_ID_LOG = 2,
+
+    // The Intel SGX protected file system.
+    OE_DEVICE_ID_SGXFS = 3,
+
+    // This entry describes a file in the hosts's file system
+    OE_DEVICE_ID_HOSTFS = 4,
+
+    // This entry describes an internet socket
+    OE_DEVICE_ID_HOST_SOCKET = 5,
+
+    // This entry describes an enclave to enclave
+    OE_DEVICE_ID_ENCLAVE_SOCKET = 6,
+};
 
 typedef enum _oe_device_type
 {
-    OE_DEVICE_NONE = 0,
+    OE_DEVICE_ID_NONE = 0,
     OE_DEVICETYPE_FILESYSTEM,
-    // secure file system
     OE_DEVICETYPE_DIRECTORY, // This entry describes a file in the hosts's
                              // file system
     OE_DEVICETYPE_FILE,      // This entry describes an internet socket
@@ -49,7 +57,7 @@ static const uint64_t OE_READY_RDHUP = 0x00002000;
 
 typedef struct _oe_device
 {
-    /* Type of this device: OE_DEVICE_FILE or OE_DEVICE_SOCKET. */
+    /* Type of this device: OE_DEVICE_ID_FILE or OE_DEVICE_ID_SOCKET. */
     oe_device_type_t type;
     int devid; // Index of the device into the device table.
 
@@ -71,8 +79,8 @@ typedef struct _oe_device
 int oe_allocate_devid(int devid);
 void oe_release_devid(int devid);
 
-oe_device_t* oe_set_devid_device(int device_id, oe_device_t* pdevice);
-oe_device_t* oe_get_devid_device(int fd);
+int oe_set_devid_device(int device_id, oe_device_t* pdevice);
+oe_device_t* oe_get_devid_device(int device_id);
 oe_device_t* oe_clone_device(oe_device_t* pdevice);
 
 int oe_device_init(); // Overridable function to set up device structures. Shoud

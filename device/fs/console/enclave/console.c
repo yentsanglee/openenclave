@@ -250,7 +250,7 @@ static oe_fs_ops_t _ops = {
 };
 
 static fs_t _console = {
-    .base.type = OE_DEVICE_CONSOLE,
+    .base.type = OE_DEVICE_ID_CONSOLE,
     .base.size = sizeof(fs_t),
     .base.ops.fs = &_ops,
     .magic = FS_MAGIC,

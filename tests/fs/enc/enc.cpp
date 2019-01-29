@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include <openenclave/enclave.h>
+#include <openenclave/internal/device.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/fs_ops.h>
 #include <openenclave/internal/tests.h>
@@ -304,6 +305,20 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         printf("=== testing sgxfs:\n");
         sgxfs_file_system fs;
         test_all(fs, tmp_dir);
+    }
+
+    /* Test the file descriptor interfaces. */
+    {
+        OE_TEST(oe_fs_init_hostfs_device() == 0);
+
+        /* Mount this device. */
+        OE_TEST(oe_mount(OE_DEVICE_ID_HOSTFS, "/", 0) == 0);
+
+        const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
+        int fd = oe_open("/tmp/myfile", flags, MODE);
+        OE_TEST(fd >= 0);
+
+        OE_TEST(oe_close(fd) == 0);
     }
 }
 

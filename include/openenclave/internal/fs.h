@@ -141,6 +141,8 @@ OE_INLINE int oe_fs_rmdir(oe_device_t* fs, const char* pathname)
     return fs->ops.fs->rmdir(fs, pathname);
 }
 
+int oe_fs_init_hostfs_device(void);
+
 OE_EXTERNC_END
 
 #endif // _OE_FS_H

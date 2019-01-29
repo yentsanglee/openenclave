@@ -295,7 +295,7 @@ static oe_device_t* _hostfs_open(
             goto done;
         }
 
-        file->base.type = OE_DEVICE_HOST_FILESYSTEM;
+        file->base.type = OE_DEVICE_ID_HOSTFS;
         file->base.size = sizeof(file_t);
         file->magic = FILE_MAGIC;
         file->base.ops.fs = fs->base.ops.fs;
@@ -587,7 +587,7 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
             goto done;
         }
 
-        dir->base.type = OE_DEVICE_HOST_FILESYSTEM;
+        dir->base.type = OE_DEVICE_ID_HOSTFS;
         dir->base.size = sizeof(dir_t);
         dir->magic = DIR_MAGIC;
         dir->base.ops.fs = fs->base.ops.fs;
@@ -1109,7 +1109,7 @@ static oe_fs_ops_t _ops = {
 };
 
 static fs_t _hostfs = {
-    .base.type = OE_DEVICE_HOST_FILESYSTEM,
+    .base.type = OE_DEVICETYPE_FILESYSTEM,
     .base.size = sizeof(fs_t),
     .base.ops.fs = &_ops,
     .magic = FS_MAGIC,
@@ -1118,4 +1118,26 @@ static fs_t _hostfs = {
 oe_device_t* oe_fs_get_hostfs(void)
 {
     return &_hostfs.base;
+}
+
+int oe_fs_init_hostfs_device(void)
+{
+    int ret = -1;
+
+    /* Allocate the device id. */
+    if (oe_allocate_devid(OE_DEVICE_ID_HOSTFS) != OE_DEVICE_ID_HOSTFS)
+        goto done;
+
+    /* Add the hostfs device to the device table. */
+    if (oe_set_devid_device(OE_DEVICE_ID_HOSTFS, oe_fs_get_hostfs()) != 0)
+        goto done;
+
+    /* Check that the above operation was successful. */
+    if (oe_get_devid_device(OE_DEVICE_ID_HOSTFS) != oe_fs_get_hostfs())
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
 }

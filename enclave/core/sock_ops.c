@@ -15,11 +15,11 @@ intptr_t oe_socket(int domain, int type, int protocol)
     {
         case OE_AF_ENCLAVE: // Temprory until we dicde how to indicate enclave
                             // sockets
-            pdevice = oe_get_devid_device(OE_DEVICE_ENCLAVE_SOCKET);
+            pdevice = oe_get_devid_device(OE_DEVICE_ID_ENCLAVE_SOCKET);
             break;
 
         default:
-            pdevice = oe_get_devid_device(OE_DEVICE_HOST_SOCKET);
+            pdevice = oe_get_devid_device(OE_DEVICE_ID_HOST_SOCKET);
             break;
     }
     if ((psock = (*pdevice->ops.socket->socket)(

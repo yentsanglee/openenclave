@@ -1,39 +1,69 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+// clang-format off
+#include <openenclave/enclave.h>
+#include <openenclave/internal/thread.h>
+// clang-format on
+
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/enclavelibc.h>
+#include <openenclave/internal/thread.h>
+#include <openenclave/internal/print.h>
+#include <openenclave/internal/atexit.h>
+
+#define MAX_MOUNT_TABLE_SIZE 128
+
+#define printf oe_host_printf
 
 typedef struct _mount_point
 {
-    size_t pathlen; // an optimisation. I can easily skip paths that are the
-                    // wrong length without needing to do a string compare.
-    const char* mount_path;
+    char* path;
     oe_device_t* fs;
     uint32_t flags;
-} oe_mount_point_t;
+} mount_point_t;
 
-const size_t _MOUNT_TABLE_SIZE_BUMP = 5;
+static mount_point_t _mount_table[MAX_MOUNT_TABLE_SIZE];
+size_t _mount_table_size = 0;
+static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
 
-size_t _mount_table_len = 0;
-oe_mount_point_t* _mount_table = NULL;
+static bool _installed_free_mount_table = false;
+
+static void _free_mount_table(void)
+{
+    for (size_t i = 0; i < _mount_table_size; i++)
+    {
+        oe_free(_mount_table[i].path);
+    }
+}
 
 static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
 {
     oe_device_t* ret = NULL;
     size_t match_len = 0;
 
-    if (!path)
-        goto done;
-
-    // pthread_spin_lock(&_lock);
+    oe_spin_lock(&_lock);
     {
         /* Find the longest binding point that contains this path. */
-        for (size_t i = 0; i < _mount_table_len; i++)
+        for (size_t i = 0; i < _mount_table_size; i++)
         {
-            size_t len = _mount_table[i].pathlen;
+            size_t len = oe_strlen(_mount_table[i].path);
+            const char* mpath = _mount_table[i].path;
 
-            if (oe_strncmp(_mount_table[i].mount_path, path, len) == 0 &&
+            if (mpath[0] == '/' && mpath[1] == '\0')
+            {
+                if (len > match_len)
+                {
+                    if (suffix)
+                    {
+                        oe_strlcpy(suffix, path, OE_PATH_MAX);
+                    }
+
+                    match_len = len;
+                    ret = _mount_table[i].fs;
+                }
+            }
+            else if (oe_strncmp(mpath, path, len) == 0 &&
                 (path[len] == '/' || path[len] == '\0'))
             {
                 if (len > match_len)
@@ -49,133 +79,150 @@ static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
             }
         }
     }
-    // pthread_spin_unlock(&_lock);
-
-done:
+    oe_spin_unlock(&_lock);
 
     return ret;
 }
 
 int oe_mount(int device_id, const char* path, uint32_t flags)
-
 {
-    size_t mount_path_len = (size_t)-1;
-    size_t new_element = 0;
-    oe_device_t* pfs_device = oe_get_devid_device(device_id);
-    int new_devid = -1;
+    int ret = -1;
+    oe_device_t* device = oe_get_devid_device(device_id);
 
-    (void)mount_path_len;
-    (void)new_devid;
-    (void)flags;
+    OE_UNUSED(flags);
 
-    if (pfs_device == NULL)
+    oe_spin_lock(&_lock);
+
+    if (!device || device->type != OE_DEVICETYPE_FILESYSTEM || !path)
     {
-        oe_errno = OE_EBADFD;
-        return -1;
+        oe_errno = OE_EINVAL;
+        goto done;
     }
 
-    if (path == NULL)
+    /* Install _free_mount_table() if not already installed. */
+    if (_installed_free_mount_table == false)
     {
-        oe_errno = OE_EBADF;
-        return -1;
+        oe_atexit(_free_mount_table);
+        _installed_free_mount_table = true;
     }
 
-    if (_mount_table == NULL)
+    /* Fail if mount table exhausted. */
+    if (_mount_table_size == MAX_MOUNT_TABLE_SIZE)
     {
-        _mount_table_len = _MOUNT_TABLE_SIZE_BUMP;
-        _mount_table = (oe_mount_point_t*)oe_calloc(
-            1, sizeof(_mount_table[0]) * _mount_table_len);
+        oe_errno = OE_ENOMEM;
+        goto done;
     }
 
-    // Find an empty slot
-    for (new_element = 0; new_element < _mount_table_len; new_element++)
+    /* Reject duplicate mount paths. */
+    for (size_t i = 0; i < _mount_table_size; i++)
     {
-        if (_mount_table[new_element].pathlen == 0)
+        if (oe_strcmp(_mount_table[i].path, path) == 0)
         {
-            break;
+            oe_errno = OE_EEXIST;
+            goto done;
         }
     }
 
-    if (new_element >= _mount_table_len)
+    /* Assign and initialize new mount point. */
     {
-        new_element = _mount_table_len;
-        _mount_table_len += _MOUNT_TABLE_SIZE_BUMP;
-        _mount_table = (oe_mount_point_t*)oe_malloc(
-            sizeof(_mount_table[0]) * _mount_table_len);
-        oe_memset(
-            _mount_table + new_element,
-            0,
-            (sizeof(_mount_table[0]) * _MOUNT_TABLE_SIZE_BUMP));
+        size_t index = _mount_table_size;
+        size_t path_len = oe_strlen(path);
+
+        if (!(_mount_table[index].path = oe_malloc(path_len + 1)))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        oe_memcpy(_mount_table[index].path, path, path_len + 1);
+        _mount_table[index].fs = device;
+        _mount_table_size++;
     }
 
-    _mount_table[new_element].mount_path = path;
-    _mount_table[new_element].pathlen = oe_strlen(path);
-    _mount_table[new_element].fs = oe_device_alloc(device_id, path, 0);
+    ret = 0;
 
-    // rslt = (*_mount_table.ops.fs-
+done:
 
-    return 0;
+    oe_spin_unlock(&_lock);
+    return ret;
 }
 
 int oe_open(const char* pathname, int flags, oe_mode_t mode)
 {
+    int ret = -1;
     int fd = -1;
-    oe_device_t* pfs = NULL;
-    oe_device_t* pfile = NULL;
+    oe_device_t* fs;
+    oe_device_t* file;
     char filepath[OE_PATH_MAX] = {0};
 
-    if (!(pfs = _fs_lookup(pathname, filepath)))
+    if (!pathname)
     {
-        return -1;
+        oe_errno = OE_EINVAL;
+        goto done;
     }
 
-    pfile = oe_clone_device(pfs);
+    if (!(fs = _fs_lookup(pathname, filepath)))
+    {
+        oe_errno = OE_ENOENT;
+        goto done;
+    }
 
     if ((fd = oe_allocate_fd()) < 0)
     {
-        // Log error here
-        return -1; // errno is already set
+        // oe_errno set by function.
+        goto done;
     }
 
-    if (!(pfile = (*pfile->ops.fs->open)(pfile, filepath, flags, mode)))
+    if (!(file = (*fs->ops.fs->open)(fs, filepath, flags, mode)))
     {
+        // oe_errno set by function.
+        goto done;
+    }
+
+printf("SET=%d:%p\n", fd, file);
+    if (!oe_set_fd_device(fd, file))
+    {
+        // oe_errno set by function.
+        goto done;
+    }
+
+    ret = fd;
+    fd = -1;
+
+done:
+
+    /* ATTN: release file. */
+
+    if (fd != -1)
         oe_release_fd(fd);
-        return -1;
-    }
 
-    if (!oe_set_fd_device(fd, pfile))
-    {
-        // Log error here
-        return -1; // erno is already set
-    }
-
-    return fd;
+    return ret;
 }
 
 oe_device_t* oe_opendir(const char* pathname)
 {
-    oe_device_t* pfs = NULL;
+    oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    if (!(pfs = _fs_lookup(pathname, filepath)))
+    if (!(fs = _fs_lookup(pathname, filepath)))
     {
         oe_errno = OE_EBADF;
         return NULL;
     }
 
-    if (pfs->type != OE_DEVICETYPE_FILESYSTEM)
+    if (fs->type != OE_DEVICETYPE_FILESYSTEM)
     {
         oe_errno = OE_EINVAL;
         return NULL;
     }
 
-    if (pfs->ops.fs->opendir == NULL)
+    if (fs->ops.fs->opendir == NULL)
     {
         oe_errno = OE_EINVAL;
         return NULL;
     }
 
-    return (*pfs->ops.fs->opendir)(pfs, filepath);
+    return (*fs->ops.fs->opendir)(fs, filepath);
 }
 
 struct oe_dirent* oe_readdir(oe_device_t* dir)
@@ -214,187 +261,186 @@ int oe_closedir(oe_device_t* dir)
 
 int oe_rmdir(const char* pathname)
 {
-    oe_device_t* pfs = NULL;
+    oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    if (!(pfs = _fs_lookup(pathname, filepath)))
+    if (!(fs = _fs_lookup(pathname, filepath)))
     {
         return -1;
     }
 
-    if (pfs->ops.fs->rmdir == NULL)
+    if (fs->ops.fs->rmdir == NULL)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
-    return (*pfs->ops.fs->rmdir)(pfs, filepath);
+    return (*fs->ops.fs->rmdir)(fs, filepath);
 }
 
 int oe_stat(const char* pathname, struct oe_stat* buf)
 {
-    oe_device_t* pfs = NULL;
+    oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    if (!(pfs = _fs_lookup(pathname, filepath)))
+    if (!(fs = _fs_lookup(pathname, filepath)))
     {
         oe_errno = OE_EBADF;
         return -1;
     }
 
-    if (pfs->ops.fs->stat == NULL)
+    if (fs->ops.fs->stat == NULL)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
-    return (*pfs->ops.fs->stat)(pfs, filepath, buf);
+    return (*fs->ops.fs->stat)(fs, filepath, buf);
 }
 
 int oe_link(const char* oldpath, const char* newpath)
 {
-    oe_device_t* pfs = NULL;
-    oe_device_t* newpfs = NULL;
+    oe_device_t* fs = NULL;
+    oe_device_t* newfs = NULL;
     char filepath[OE_PATH_MAX] = {0};
     char newfilepath[OE_PATH_MAX] = {0};
 
-    if (!(pfs = _fs_lookup(oldpath, filepath)))
+    if (!(fs = _fs_lookup(oldpath, filepath)))
     {
         oe_errno = OE_EBADF;
         return -1;
     }
 
-    if (!(newpfs = _fs_lookup(newpath, newfilepath)))
+    if (!(newfs = _fs_lookup(newpath, newfilepath)))
     {
         oe_errno = OE_EBADF;
         return -1;
     }
 
-    if (pfs != newpfs)
+    if (fs != newfs)
     {
         oe_errno = OE_EXDEV;
         return -1;
     }
 
-    if (pfs->ops.fs->link == NULL)
+    if (fs->ops.fs->link == NULL)
     {
         oe_errno = OE_EPERM;
         return -1;
     }
 
-    return (*pfs->ops.fs->link)(pfs, filepath, newfilepath);
+    return (*fs->ops.fs->link)(fs, filepath, newfilepath);
 }
 
 int oe_unlink(const char* pathname)
 {
-    oe_device_t* pfs = NULL;
+    oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    if (!(pfs = _fs_lookup(pathname, filepath)))
+    if (!(fs = _fs_lookup(pathname, filepath)))
     {
         oe_errno = OE_EBADF;
         return -1;
     }
 
-    if (pfs->ops.fs->unlink == NULL)
+    if (fs->ops.fs->unlink == NULL)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
-    return (*pfs->ops.fs->unlink)(pfs, filepath);
+    return (*fs->ops.fs->unlink)(fs, filepath);
 }
 
 int oe_rename(const char* oldpath, const char* newpath)
 {
-    oe_device_t* pfs = NULL;
-    oe_device_t* newpfs = NULL;
+    oe_device_t* fs = NULL;
+    oe_device_t* newfs = NULL;
     char filepath[OE_PATH_MAX] = {0};
     char newfilepath[OE_PATH_MAX] = {0};
 
-    if (!(pfs = _fs_lookup(oldpath, filepath)))
+    if (!(fs = _fs_lookup(oldpath, filepath)))
     {
         oe_errno = OE_EBADF;
         return -1;
     }
 
-    if (!(newpfs = _fs_lookup(newpath, newfilepath)))
+    if (!(newfs = _fs_lookup(newpath, newfilepath)))
     {
         oe_errno = OE_EBADF;
         return -1;
     }
 
-    if (pfs != newpfs)
+    if (fs != newfs)
     {
         oe_errno = OE_EXDEV;
         return -1;
     }
 
-    if (pfs->ops.fs->rename == NULL)
+    if (fs->ops.fs->rename == NULL)
     {
         oe_errno = OE_EPERM;
         return -1;
     }
 
-    return (*pfs->ops.fs->rename)(pfs, filepath, newfilepath);
+    return (*fs->ops.fs->rename)(fs, filepath, newfilepath);
 }
 
 int oe_truncate(const char* pathname, oe_off_t length)
 {
-    oe_device_t* pfs = NULL;
+    oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    if (!(pfs = _fs_lookup(pathname, filepath)))
+    if (!(fs = _fs_lookup(pathname, filepath)))
     {
         oe_errno = OE_EBADF;
         return -1;
     }
 
-    if (pfs->ops.fs->truncate == NULL)
+    if (fs->ops.fs->truncate == NULL)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
-    return (*pfs->ops.fs->truncate)(pfs, filepath, length);
+    return (*fs->ops.fs->truncate)(fs, filepath, length);
 }
 
 int oe_mkdir(const char* pathname, oe_mode_t mode)
 {
-    oe_device_t* pfs = NULL;
+    oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    if (!(pfs = _fs_lookup(pathname, filepath)))
+    if (!(fs = _fs_lookup(pathname, filepath)))
     {
         oe_errno = OE_EBADF;
         return -1;
     }
 
-    if (pfs->ops.fs->mkdir == NULL)
+    if (fs->ops.fs->mkdir == NULL)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
-    return (*pfs->ops.fs->mkdir)(pfs, filepath, mode);
+    return (*fs->ops.fs->mkdir)(fs, filepath, mode);
 }
 
 oe_off_t oe_lseek(int fd, oe_off_t offset, int whence)
-
 {
-    oe_device_t* pfile = oe_get_fd_device(fd);
-    if (!pfile)
+    oe_device_t* file = oe_get_fd_device(fd);
+    if (!file)
     {
         // Log error here
         oe_errno = OE_EBADF;
         return -1; // erno is already set
     }
 
-    if (pfile->ops.fs->lseek == NULL)
+    if (file->ops.fs->lseek == NULL)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
-    return (*pfile->ops.fs->lseek)(pfile, offset, whence);
+    return (*file->ops.fs->lseek)(file, offset, whence);
 }
