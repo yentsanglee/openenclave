@@ -311,22 +311,16 @@ void test_fs(const char* src_dir, const char* tmp_dir)
     {
         printf("=== testing fd-hostfs:\n");
 
-        OE_TEST(oe_register_hostfs_device() == 0);
-        OE_TEST(oe_mount(OE_DEVICE_ID_HOSTFS, "/", 0) == 0);
-        fd_file_system fs;
+        fd_hostfs_file_system fs;
         test_all(fs, tmp_dir);
-        OE_TEST(oe_unmount(OE_DEVICE_ID_HOSTFS, "/") == 0);
     }
 
     /* Test the SGXFS file descriptor interfaces. */
     {
         printf("=== testing fd-sgxfs:\n");
 
-        OE_TEST(oe_register_sgxfs_device() == 0);
-        OE_TEST(oe_mount(OE_DEVICE_ID_SGXFS, "/", 0) == 0);
-        fd_file_system fs;
+        fd_sgxfs_file_system fs;
         test_all(fs, tmp_dir);
-        OE_TEST(oe_unmount(OE_DEVICE_ID_HOSTFS, "/") == 0);
     }
 }
 
