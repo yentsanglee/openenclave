@@ -34,12 +34,18 @@ enum
 
 typedef enum _oe_device_type
 {
-    OE_DEVICE_ID_NONE = 0,
+    OE_DEVICE_TYPE_NONE = 0,
+
     OE_DEVICETYPE_FILESYSTEM,
-    OE_DEVICETYPE_DIRECTORY, // This entry describes a file in the hosts's
-                             // file system
-    OE_DEVICETYPE_FILE,      // This entry describes an internet socket
-    OE_DEVICETYPE_SOCKET     // This entry describes an enclave to enclave
+
+    // This entry describes a file in the hosts's file system
+    OE_DEVICETYPE_DIRECTORY,
+
+    // This entry describes an internet socket
+    OE_DEVICETYPE_FILE,
+
+    // This entry describes an enclave to enclave
+    OE_DEVICETYPE_SOCKET,
 } oe_device_type_t;
 
 // Ready mask. Tracks the values for epoll

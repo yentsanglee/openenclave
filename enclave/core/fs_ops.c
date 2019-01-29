@@ -12,9 +12,9 @@
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/atexit.h>
 
-#define printf oe_host_printf
+#define MAX_MOUNT_TABLE_SIZE 64
 
-#define MAX_MOUNT_TABLE_SIZE 128
+/* ATTN: define and enforce mounting flags. */
 
 typedef struct _mount_point
 {
@@ -32,9 +32,7 @@ static bool _installed_free_mount_table = false;
 static void _free_mount_table(void)
 {
     for (size_t i = 0; i < _mount_table_size; i++)
-    {
         oe_free(_mount_table[i].path);
-    }
 }
 
 static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
@@ -495,7 +493,7 @@ oe_off_t oe_lseek(int fd, oe_off_t offset, int whence)
     {
         // Log error here
         oe_errno = OE_EBADF;
-        return -1; // erno is already set
+        return -1;
     }
 
     if (file->ops.fs->lseek == NULL)
