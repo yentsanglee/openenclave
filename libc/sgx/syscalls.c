@@ -13,6 +13,7 @@
 #include <openenclave/internal/syscall.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/time.h>
+#include <openenclave/internal/fs.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -243,6 +244,19 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         }
 
         /* The hook ignored the syscall so fall through */
+    }
+
+
+    /* Handle any file-system syscalls. */
+    {
+        long ret;
+        int err;
+
+        if (oe_handle_fs_syscall(n, x1, x2, x3, x4, x5, x6, &ret, &err) == 0)
+        {
+            errno = err;
+            return ret;
+        }
     }
 
     switch (n)
