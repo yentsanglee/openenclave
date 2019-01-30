@@ -112,8 +112,7 @@ struct oe_dirent
     oe_off_t d_off;
     uint16_t d_reclen;
     uint8_t d_type;
-    char d_name[OE_PATH_MAX];
-    uint8_t __d_reserved;
+    char d_name[256];
 };
 
 typedef struct _oe_timespec
@@ -138,6 +137,12 @@ struct oe_stat
     oe_timespec_t st_mtim;
     oe_timespec_t st_ctim;
 };
+
+typedef struct _oe_iovec
+{
+    void* iov_base;
+    size_t iov_len;
+} oe_iovec_t;
 
 struct _oe_fs_ops
 {

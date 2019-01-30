@@ -502,3 +502,92 @@ oe_off_t oe_lseek(int fd, oe_off_t offset, int whence)
 
     return (*file->ops.fs->lseek)(file, offset, whence);
 }
+
+ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt)
+{
+    ssize_t ret = -1;
+    ssize_t nread = 0;
+
+    if (fd < 0 || !iov)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    for (int i = 0; i < iovcnt; i++)
+    {
+        const oe_iovec_t* p = &iov[i];
+        ssize_t n;
+
+        n = oe_read(fd, p->iov_base, p->iov_len);
+
+        if (n < 0)
+            goto done;
+
+        nread += n;
+
+        if ((size_t)n < p->iov_len)
+            break;
+    }
+
+    ret = nread;
+
+done:
+    return ret;
+}
+
+ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt)
+{
+    ssize_t ret = -1;
+    ssize_t nwritten = 0;
+
+    if (fd < 0 || !iov)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    for (int i = 0; i < iovcnt; i++)
+    {
+        const oe_iovec_t* p = &iov[i];
+        ssize_t n;
+
+        n = oe_write(fd, p->iov_base, p->iov_len);
+
+        if ((size_t)n != p->iov_len)
+        {
+            oe_errno = OE_EIO;
+            goto done;
+        }
+
+        nwritten += n;
+    }
+
+    ret = nwritten;
+
+done:
+    return ret;
+}
+
+int oe_access(const char *pathname, int mode)
+{
+    int ret = -1;
+    struct oe_stat buf;
+
+    OE_UNUSED(mode);
+
+    if (!pathname)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    if (oe_stat(pathname, &buf) != 0)
+    {
+        oe_errno = OE_ENOENT;
+        goto done;
+    }
+
+done:
+    return ret;
+}

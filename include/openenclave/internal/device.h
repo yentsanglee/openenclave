@@ -133,6 +133,17 @@ typedef struct _oe_device_notification_args
 
 oe_result_t _handle_oe_device_notification(uint64_t args);
 
+int oe_handle_device_syscall(
+    long num,
+    long arg1,
+    long arg2,
+    long arg3,
+    long arg4,
+    long arg5,
+    long arg6,
+    long* ret_out,
+    int* errno_out);
+
 OE_EXTERNC_END
 
 #endif // _OE_DEVICE_H

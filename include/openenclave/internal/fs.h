@@ -52,6 +52,12 @@ int oe_stat(const char* pathname, struct oe_stat* buf);
 
 int oe_truncate(const char* path, oe_off_t length);
 
+ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt);
+
+ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt);
+
+int oe_access(const char *pathname, int mode);
+
 OE_EXTERNC_END
 
 #endif // _OE_FS_H

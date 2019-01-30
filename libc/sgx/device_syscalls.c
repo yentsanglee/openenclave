@@ -7,8 +7,9 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/device.h>
 
-int oe_handle_fs_syscall(
+int oe_handle_device_syscall(
     long num,
     long arg1,
     long arg2,
