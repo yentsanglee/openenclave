@@ -3,7 +3,10 @@
 #include <openenclave/enclave.h>
 
 // enclave.h must come before socket.h
-#include <openenclave/bits/socket.h>
+#include <openenclave/internal/device.h>
+#include <openenclave/internal/netinet/in.h>
+#include <openenclave/internal/sockaddr.h>
+#include <openenclave/internal/socket.h>
 
 #include <socket_test_t.h>
 #include <stdio.h>
@@ -12,99 +15,57 @@
 /* This client connects to an echo server, sends a text message,
  * and outputs the text reply.
  */
-int ecall_run_client(char* server, char* serv)
+int ecall_run_client(char* recv_buff, ssize_t recv_buff_len)
 {
-    int status = OE_FAILURE;
-    struct addrinfo* ai = NULL;
-    SOCKET s = INVALID_SOCKET;
+    oe_sockfd_t sockfd = 0;
+    ssize_t n = 0;
+    struct oe_sockaddr_in serv_addr = {0};
 
-    printf("Connecting to %s %s...\n", server, serv);
-
-    /* Resolve server name. */
-    struct addrinfo hints = {0};
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    int err = getaddrinfo(server, serv, &hints, &ai);
-    if (err != 0)
+    memset(recv_buff, '0', (size_t)recv_buff_len);
+    printf("create socket\n");
+    if ((sockfd = oe_socket(OE_AF_INET, OE_SOCK_STREAM, 0)) < 0)
     {
-        goto Done;
+        printf("\n Error : Could not create socket \n");
+        return OE_FAILURE;
     }
+    serv_addr.sin_family = OE_AF_INET;
+    serv_addr.sin_addr.s_addr = oe_htonl(OE_INADDR_LOOPBACK);
+    serv_addr.sin_port = oe_htons(1492);
 
-    /* Create connection. */
-    s = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-    if (s == INVALID_SOCKET)
+    printf("socket fd = %d\n", sockfd);
+    printf("Connecting...\n");
+    if (oe_connect(sockfd, (struct oe_sockaddr*)&serv_addr, sizeof(serv_addr)) <
+        0)
     {
-        goto Done;
-    }
-    if (connect(s, ai->ai_addr, (socklen_t)ai->ai_addrlen) == SOCKET_ERROR)
-    {
-        goto Done;
+        printf("\n Error : Connect Failed \n");
+        oe_close(sockfd);
+        return OE_FAILURE;
     }
 
-    /* Send a message, prefixed by its size. */
-    const char* message = "Hello, world!";
-    printf("Sending message: %s\n", message);
-    size_t messageLength = strlen(message);
-    uint32_t netMessageLength = htonl((uint32_t)messageLength);
-    ssize_t bytesSent =
-        send(s, (char*)&netMessageLength, (int)sizeof(netMessageLength), 0);
-    if (bytesSent == SOCKET_ERROR)
+    printf("reading...\n");
+    while ((n = oe_read(sockfd, recv_buff, (size_t)recv_buff_len) - 1) > 0)
     {
-        goto Done;
-    }
-    bytesSent = send(s, message, (int)messageLength, 0);
-    if (bytesSent == SOCKET_ERROR)
-    {
-        goto Done;
+        recv_buff[n] = 0;
     }
 
-    /* Receive a text reply, prefixed by its size. */
-    uint32_t replyLength;
-    char reply[80];
-    ssize_t bytesReceived =
-        recv(s, (char*)&replyLength, sizeof(replyLength), MSG_WAITALL);
-    if (bytesReceived == SOCKET_ERROR)
+    printf("finished reading: %ld bytes...\n", n);
+    if (n < 0)
     {
-        goto Done;
-    }
-    replyLength = ntohl(replyLength);
-    if (replyLength > sizeof(reply) - 1)
-    {
-        goto Done;
-    }
-    bytesReceived = recv(s, reply, replyLength, MSG_WAITALL);
-    if (bytesReceived != bytesSent)
-    {
-        goto Done;
+        printf("Read error, Fail\n");
+        oe_close(sockfd);
+        return OE_FAILURE;
     }
 
-    /* Add null termination. */
-    reply[replyLength] = 0;
-
-    /* Print the reply. */
-    printf("Received reply: %s\n", reply);
-
-    status = OE_OK;
-
-Done:
-    if (s != INVALID_SOCKET)
-    {
-        printf("Client closing socket\n");
-        closesocket(s);
-    }
-    if (ai != NULL)
-    {
-        freeaddrinfo(ai);
-    }
-    return status;
+    return OE_OK;
 }
 
 /* This server acts as an echo server.  It accepts a connection,
  * receives messages, and echoes them back.
  */
-int ecall_run_server(char* serv)
+int ecall_run_server()
 {
     int status = OE_FAILURE;
+#if 0
     struct addrinfo* ai = NULL;
     SOCKET listener = INVALID_SOCKET;
     SOCKET s = INVALID_SOCKET;
@@ -195,6 +156,7 @@ Done:
     {
         freeaddrinfo(ai);
     }
+#endif
     return status;
 }
 

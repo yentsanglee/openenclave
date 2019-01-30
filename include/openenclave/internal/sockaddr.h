@@ -23,12 +23,12 @@ OE_EXTERNC_BEGIN
 #define _SS_PAD2SIZE \
     (_SS_MAXSIZE - (sizeof(oe_sa_family_t) + _SS_PAD1SIZE + _SS_ALIGNSIZE))
 #endif
-#ifndef INET_ADDRSTRLEN
-#define INET_ADDRSTRLEN 22
-#endif
-#ifndef INET6_ADDRSTRLEN
-#define INET6_ADDRSTRLEN 65
-#endif
+
+#define __SOCKADDR_COMMON(sa_prefix) oe_sa_family_t sa_prefix##family
+
+#define __SOCKADDR_COMMON_SIZE (sizeof(unsigned short int))
+
+#define _SS_SIZE 128
 
 typedef unsigned short int oe_sa_family_t;
 
@@ -40,61 +40,6 @@ typedef struct oe_sockaddr_storage
     char __ss_pad2[_SS_PAD2SIZE];
 } oe_sockaddr_storage;
 
-typedef struct oe_in_addr
-{
-    uint32_t s_addr;
-} oe_in_addr;
-
-#ifndef INADDR_ANY
-#define INADDR_ANY 0x00000000
-#endif
-#ifndef INADDR_NONE
-#define INADDR_NONE 0xffffffff
-#endif
-#ifndef IN6_IS_ADDR_V4MAPPED
-#define IN6_IS_ADDR_V4MAPPED(a)                            \
-    (((a)->s6_words[0] == 0) && ((a)->s6_words[1] == 0) && \
-     ((a)->s6_words[2] == 0) && ((a)->s6_words[3] == 0) && \
-     ((a)->s6_words[4] == 0) && ((a)->s6_words[5] == 0xffff))
-#endif
-
-typedef struct oe_sockaddr_in
-{
-    oe_sa_family_t sin_family;
-    uint16_t sin_port;
-    oe_in_addr sin_addr;
-} oe_sockaddr_in;
-
-typedef struct oe_in6_addr
-{
-    union {
-        uint8_t Byte[16];
-        uint16_t Word[8];
-    } u;
-} oe_in6_addr;
-
-#ifndef s6_addr
-#define s6_addr u.Byte
-#endif
-#ifndef s6_words
-#define s6_words u.Word
-#endif
-
-#ifndef IN6ADDR_LOOPBACK_INIT
-#define IN6ADDR_LOOPBACK_INIT                          \
-    {                                                  \
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 \
-    }
-#endif
-
-typedef struct oe_sockaddr_in6
-{
-    oe_sa_family_t sin6_family;
-    uint16_t sin6_port;
-    uint32_t sin6_flowinfo;
-    oe_in6_addr sin6_addr;
-    uint32_t sin6_scope_id;
-} oe_sockaddr_in6;
 
 typedef uint16_t oe_sa_family_t;
 typedef struct oe_sockaddr

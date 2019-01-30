@@ -2,12 +2,11 @@
 // Licensed under the MIT License.
 
 enclave {
-  //  from "openenclave/socket.edl" import *;
 
     trusted {
         /* define ECALLs here. */
-        public int ecall_run_client([in, string] char* server, [in, string] char* port);
-        public int ecall_run_server([in, string] char* port);
+        public int ecall_run_client([user_check]char *buf, ssize_t buflen);
+        public int ecall_run_server();
     };
 
     untrusted {

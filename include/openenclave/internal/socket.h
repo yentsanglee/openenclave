@@ -110,6 +110,8 @@ extern "C"
 #define TCP_NODELAY OE_TCP_NODELAY
 #endif
 
+    oe_sockfd_t oe_socket(int domain, int type, int protocol);
+
     int oe_accept(
         _In_ oe_sockfd_t s,
         _Out_writes_bytes_(*addrlen) struct oe_sockaddr* addr,

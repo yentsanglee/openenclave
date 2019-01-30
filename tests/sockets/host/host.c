@@ -27,7 +27,7 @@ void* enclave_server_thread(void* arg)
 {
     oe_enclave_t* server_enclave = (oe_enclave_t*)arg;
     int retval = 0;
-    OE_TEST(ecall_run_server(server_enclave, &retval, SERVER_PORT) == OE_OK);
+    OE_TEST(ecall_run_server(server_enclave, &retval) == OE_OK);
     return NULL;
 }
 
@@ -58,6 +58,7 @@ void* host_server_thread(void* arg)
         sleep(1);
     }
 
+    printf("exit from server thread\n");
     return NULL;
 }
 
@@ -67,7 +68,7 @@ char* host_client()
     int sockfd = 0;
     ssize_t n = 0;
     static char recvBuff[1024];
-    struct sockaddr_in serv_addr;
+    struct sockaddr_in serv_addr = {0};
 
     memset(recvBuff, '0', sizeof(recvBuff));
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -75,9 +76,6 @@ char* host_client()
         printf("\n Error : Could not create socket \n");
         return NULL;
     }
-
-    memset(&serv_addr, '0', sizeof(serv_addr));
-
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     serv_addr.sin_port = htons(1492);
@@ -91,8 +89,6 @@ char* host_client()
     while ((n = read(sockfd, recvBuff, sizeof(recvBuff) - 1)) > 0)
     {
         recvBuff[n] = 0;
-
-        printf("%s\n", recvBuff);
     }
 
     if (n < 0)
@@ -136,8 +132,10 @@ int main(int argc, const char* argv[])
     OE_TEST(
         pthread_create(&server_thread_id, NULL, host_server_thread, NULL) == 0);
 
-    sleep(1); // Give the server time to launch
+    sleep(3); // Give the server time to launch
     char* test_data = host_client();
+
+    printf("received: %s\n", test_data);
     OE_TEST(strcmp(test_data, TESTDATA) == 0);
 
 #if 0

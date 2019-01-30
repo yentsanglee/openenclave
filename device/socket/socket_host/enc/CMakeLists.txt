@@ -1,24 +1,19 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-include(oeedl_file)
+set(LINUX_SGX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/linux-sgx)
 
-oeedl_file(../../../../include/openenclave/socket.edl
-    enclave-headers
-    socket_t_h)
-
-add_library(oesocket_hostsocket_enc OBJECT
+add_library(oesocket_hostsocket_enc STATIC
     host_socket.c
-    ${socket_t_h})
+    ../../../fs/common/hostbatch.c)
 
-if(CMAKE_C_COMPILER_ID MATCHES GNU)
-target_compile_options(oesocket_hostsocket_enc PRIVATE -Wjump-misses-init)
-endif()
+target_include_directories(oesocket_hostsocket_enc PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(oesocket_hostsocket_enc PUBLIC oelibc)
+target_link_libraries(oesocket_hostsocket_enc PUBLIC oeenclave mbedcrypto oelibc)
 
-target_include_directories(oesocket_hostsocket_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+set_property(TARGET oesocket_hostsocket_enc PROPERTY
+    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
-set_property(TARGET oesocket_hostsocket_enc PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
-
-install(TARGETS oesocket_hostsocket_enc ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+install(TARGETS oesocket_hostsocket_enc
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)

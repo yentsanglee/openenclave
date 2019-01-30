@@ -4,7 +4,7 @@
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/socket.h>
 
-intptr_t oe_socket(int domain, int type, int protocol)
+oe_sockfd_t oe_socket(int domain, int type, int protocol)
 
 {
     int sd = -1;

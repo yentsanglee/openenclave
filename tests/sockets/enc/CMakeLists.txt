@@ -12,4 +12,4 @@ add_enclave(
 )
 
 target_include_directories(socket_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(socket_enc oesocket_enc)
+target_link_libraries(socket_enc oesocket_hostsocket_enc)
