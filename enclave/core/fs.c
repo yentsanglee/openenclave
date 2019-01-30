@@ -9,6 +9,7 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/atexit.h>
+#include <openenclave/internal/print.h>
 
 #define MAX_MOUNT_TABLE_SIZE 64
 
@@ -27,6 +28,9 @@ static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
 
 static bool _installed_free_mount_table = false;
 
+static oe_once_t _device_id_once = OE_ONCE_INIT;
+static oe_thread_key_t _device_id_key = OE_THREADKEY_INITIALIZER;
+
 static void _free_mount_table(void)
 {
     for (size_t i = 0; i < _mount_table_size; i++)
@@ -37,6 +41,24 @@ static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
 {
     oe_device_t* ret = NULL;
     size_t match_len = 0;
+
+    /* First check whether a device id is set for this thread. */
+    {
+        int device_id;
+
+        if ((device_id = oe_get_thread_default_device()) != 0)
+        {
+            oe_device_t* device = oe_get_devid_device(device_id);
+
+            if (!device || device->type != OE_DEVICETYPE_FILESYSTEM)
+                goto done;
+
+            /* Use this device. */
+            oe_strlcpy(suffix, path, OE_PATH_MAX);
+            ret = device;
+            goto done;
+        }
+    }
 
     oe_spin_lock(&_lock);
     {
@@ -77,8 +99,64 @@ static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
     }
     oe_spin_unlock(&_lock);
 
+done:
     return ret;
 }
+
+static void _create_device_id_key()
+{
+    if (oe_thread_key_create(&_device_id_key, NULL) != 0)
+        oe_abort();
+}
+
+int oe_set_thread_default_device(int device_id)
+{
+    int ret = -1;
+
+    if (device_id <= 0)
+        goto done;
+
+    if (oe_once(&_device_id_once, _create_device_id_key) != 0)
+        goto done;
+
+    if (oe_thread_setspecific(_device_id_key, (void*)(uint64_t)device_id) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int oe_clear_thread_default_device(void)
+{
+    int ret = -1;
+
+    if (oe_once(&_device_id_once, _create_device_id_key) != 0)
+        goto done;
+
+    if (oe_thread_setspecific(_device_id_key, NULL) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int oe_get_thread_default_device(void)
+{
+    int ret = -1;
+
+    if (oe_once(&_device_id_once, _create_device_id_key) != 0)
+        goto done;
+
+    ret = (int)(uint64_t)oe_thread_getspecific(_device_id_key);
+
+done:
+    return ret;
+}
+
 
 int oe_mount(int device_id, const char* path, uint32_t flags)
 {

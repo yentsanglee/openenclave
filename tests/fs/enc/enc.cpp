@@ -354,6 +354,18 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         stream_sgxfs_file_system fs;
         test_all(fs, tmp_dir);
     }
+
+    /* Test oe_set_thread_default_device() */
+    {
+        printf("=== testing oe_set_thread_default_device:\n");
+
+        oe_register_hostfs_device();
+        fd_file_system fs;
+        OE_TEST(oe_set_thread_default_device(OE_DEVICE_ID_HOSTFS) == 0);
+        OE_TEST(oe_get_thread_default_device() == OE_DEVICE_ID_HOSTFS);
+        test_all(fs, tmp_dir);
+        OE_TEST(oe_clear_thread_default_device() == 0);
+    }
 }
 
 OE_SET_ENCLAVE_SGX(

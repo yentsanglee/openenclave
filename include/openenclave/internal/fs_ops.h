@@ -106,6 +106,8 @@ typedef int64_t oe_blkcnt_t;
 typedef int64_t oe_time_t;
 typedef int64_t oe_suseconds_t;
 
+typedef struct _IO_FILE FILE;
+
 struct oe_dirent
 {
     uint64_t d_ino;

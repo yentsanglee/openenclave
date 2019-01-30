@@ -24,6 +24,15 @@ int oe_register_hostfs_device(void);
 
 int oe_register_sgxfs_device(void);
 
+/* Set the default device for this thread (used in lieu of the mount table). */
+int oe_set_thread_default_device(int device_id);
+
+/* Clear the default device for this thread. */
+int oe_clear_thread_default_device(void);
+
+/* Get the default device for this thread. */
+int oe_get_thread_default_device(void);
+
 int oe_mount(int device_id, const char* path, uint32_t flags);
 
 int oe_unmount(int device_id, const char* path);
@@ -57,6 +66,8 @@ ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt);
 ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt);
 
 int oe_access(const char *pathname, int mode);
+
+FILE *oe_fopen(int device_id, const char *path, const char *mode);
 
 OE_EXTERNC_END
 
