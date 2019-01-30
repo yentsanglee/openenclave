@@ -338,6 +338,22 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         fd_sgxfs_file_system fs;
         test_all(fs, tmp_dir);
     }
+
+    /* Test stream I/O hostfs functions. */
+    {
+        printf("=== testing stream I/O hostfs functions:\n");
+
+        stream_hostfs_file_system fs;
+        test_all(fs, tmp_dir);
+    }
+
+    /* Test stream I/O sgxfs functions. */
+    {
+        printf("=== testing stream I/O sgxfs functions:\n");
+
+        stream_sgxfs_file_system fs;
+        test_all(fs, tmp_dir);
+    }
 }
 
 OE_SET_ENCLAVE_SGX(
