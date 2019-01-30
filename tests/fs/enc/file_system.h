@@ -347,4 +347,20 @@ class fd_hostfs_file_system : public fd_file_system
     }
 };
 
+class fd_sgxfs_file_system : public fd_file_system
+{
+  public:
+
+    fd_sgxfs_file_system()
+    {
+        oe_register_sgxfs_device();
+        OE_TEST(oe_mount(OE_DEVICE_ID_SGXFS, "/", 0) == 0);
+    }
+
+    ~fd_sgxfs_file_system()
+    {
+        OE_TEST(oe_unmount(OE_DEVICE_ID_SGXFS, "/") == 0);
+    }
+};
+
 #endif /* _file_system_h */

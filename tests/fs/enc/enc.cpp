@@ -323,11 +323,19 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         test_all(fs, tmp_dir);
     }
 
-    /* Test the standard C file descriptor interfaces. */
+    /* Test the HOSTFS standard C descriptor interfaces. */
     {
         printf("=== testing fd-hostfs:\n");
 
         fd_hostfs_file_system fs;
+        test_all(fs, tmp_dir);
+    }
+
+    /* Test the SGXFS standard C descriptor interfaces. */
+    {
+        printf("=== testing fd-sgxfs:\n");
+
+        fd_sgxfs_file_system fs;
         test_all(fs, tmp_dir);
     }
 }
