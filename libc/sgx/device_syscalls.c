@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <stdio.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/device.h>
 
@@ -231,9 +232,8 @@ int oe_handle_device_syscall(
         case SYS_rmdir:
         {
             const char* pathname = (const char*)arg1;
-            int ret = -1;
-            *errno_out = oe_rmdir(pathname);
-            *ret_out = ret;
+            *ret_out = oe_rmdir(pathname);
+            *errno_out = oe_errno;
             return 0;
         }
         case SYS_access:

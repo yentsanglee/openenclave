@@ -115,7 +115,7 @@ template <class FILE_SYSTEM>
 static void test_stat_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
-    struct oe_stat buf;
+    typename FILE_SYSTEM::stat_type buf;
 
     printf("--- %s()\n", __FUNCTION__);
 
@@ -134,7 +134,7 @@ template <class FILE_SYSTEM>
 static void test_readdir(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     typename FILE_SYSTEM::dir_handle dir;
-    struct oe_dirent* ent;
+    typename FILE_SYSTEM::dirent_type* ent;
     size_t count = 0;
     bool found_alphabet = false;
     bool found_alphabet_renamed = false;
@@ -157,7 +157,7 @@ static void test_readdir(FILE_SYSTEM& fs, const char* tmp_dir)
 
     /* Test stat on a directory. */
     {
-        struct oe_stat buf;
+        typename FILE_SYSTEM::stat_type buf;
         OE_TEST(fs.stat(mkpath(path, tmp_dir, "dir1"), &buf) == 0);
         OE_TEST(OE_S_ISDIR(buf.st_mode));
     }
@@ -206,7 +206,7 @@ static void test_link_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char oldname[OE_PAGE_SIZE];
     char newname[OE_PAGE_SIZE];
-    struct oe_stat buf;
+    typename FILE_SYSTEM::stat_type buf;
 
     printf("--- %s()\n", __FUNCTION__);
 
@@ -223,7 +223,7 @@ static void test_rename_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char oldname[OE_PAGE_SIZE];
     char newname[OE_PAGE_SIZE];
-    struct oe_stat buf;
+    typename FILE_SYSTEM::stat_type buf;
 
     printf("--- %s()\n", __FUNCTION__);
 
@@ -239,7 +239,7 @@ template <class FILE_SYSTEM>
 static void test_truncate_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
-    struct oe_stat buf;
+    typename FILE_SYSTEM::stat_type buf;
 
     printf("--- %s()\n", __FUNCTION__);
 
@@ -257,7 +257,7 @@ template <class FILE_SYSTEM>
 static void test_unlink_file(FILE_SYSTEM& fs, const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
-    struct oe_stat buf;
+    typename FILE_SYSTEM::stat_type buf;
 
     printf("--- %s()\n", __FUNCTION__);
 
@@ -307,19 +307,27 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         test_all(fs, tmp_dir);
     }
 
-    /* Test the HOSTFS file descriptor interfaces. */
+    /* Test the HOSTFS oe file descriptor interfaces. */
+    {
+        printf("=== testing oe-fd-hostfs:\n");
+
+        oe_fd_hostfs_file_system fs;
+        test_all(fs, tmp_dir);
+    }
+
+    /* Test the SGXFS oe file descriptor interfaces. */
+    {
+        printf("=== testing oe-fd-sgxfs:\n");
+
+        oe_fd_sgxfs_file_system fs;
+        test_all(fs, tmp_dir);
+    }
+
+    /* Test the standard C file descriptor interfaces. */
     {
         printf("=== testing fd-hostfs:\n");
 
         fd_hostfs_file_system fs;
-        test_all(fs, tmp_dir);
-    }
-
-    /* Test the SGXFS file descriptor interfaces. */
-    {
-        printf("=== testing fd-sgxfs:\n");
-
-        fd_sgxfs_file_system fs;
         test_all(fs, tmp_dir);
     }
 }

@@ -172,10 +172,6 @@ add_library(oelibc STATIC
     ${MUSLSRC}/ctype/wcswidth.c
     ${MUSLSRC}/ctype/wctrans.c
     ${MUSLSRC}/ctype/wcwidth.c
-    ${MUSLSRC}/dirent/opendir.c
-    ${MUSLSRC}/dirent/closedir.c
-    ${MUSLSRC}/dirent/readdir.c
-    ${MUSLSRC}/dirent/readdir_r.c
     ${MUSLSRC}/fcntl/open.c
     ${MUSLSRC}/env/clearenv.c
     ${MUSLSRC}/env/__environ.c
@@ -470,6 +466,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/search/insque.c
     ${MUSLSRC}/search/lsearch.c
     ${MUSLSRC}/search/tsearch_avl.c
+    ${MUSLSRC}/stat/mkdir.c
     ${MUSLSRC}/stat/stat.c
     ${MUSLSRC}/stdio/asprintf.c
     ${MUSLSRC}/stdio/asprintf.c
@@ -685,9 +682,17 @@ add_library(oelibc STATIC
     ${MUSLSRC}/time/time.c
     ${MUSLSRC}/time/__tm_to_secs.c
     ${MUSLSRC}/time/__year_to_secs.c
+    ${MUSLSRC}/unistd/read.c
+    ${MUSLSRC}/unistd/write.c
+    ${MUSLSRC}/unistd/access.c
+    ${MUSLSRC}/unistd/lseek.c
+    ${MUSLSRC}/unistd/truncate.c
+    ${MUSLSRC}/unistd/link.c
+    ${MUSLSRC}/unistd/unlink.c
     ${MUSLSRC}/unistd/close.c
     ${MUSLSRC}/unistd/dup.c
     ${MUSLSRC}/unistd/dup3.c
+    ${MUSLSRC}/unistd/rmdir.c
     ${PLATFORM_SRC})
 
 maybe_build_using_clangw(oelibc)

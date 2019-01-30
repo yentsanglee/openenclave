@@ -6,12 +6,19 @@
 
 #include <openenclave/enclave.h>
 #include <openenclave/internal/fs.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 class fs_file_system
 {
   public:
     typedef oe_device_t* file_handle;
     typedef oe_device_t* dir_handle;
+    typedef struct oe_stat stat_type;
+    typedef struct oe_dirent dirent_type;
 
     fs_file_system(oe_device_t* fs) : _fs(fs)
     {
@@ -112,13 +119,15 @@ class sgxfs_file_system : public fs_file_system
     }
 };
 
-class fd_file_system
+class oe_fd_file_system
 {
   public:
     typedef int file_handle;
     typedef oe_device_t* dir_handle;
+    typedef struct oe_stat stat_type;
+    typedef struct oe_dirent dirent_type;
 
-    fd_file_system(void)
+    oe_fd_file_system(void)
     {
     }
 
@@ -200,6 +209,128 @@ class fd_file_system
   private:
 };
 
+class oe_fd_hostfs_file_system : public oe_fd_file_system
+{
+  public:
+
+    oe_fd_hostfs_file_system()
+    {
+        oe_register_hostfs_device();
+        OE_TEST(oe_mount(OE_DEVICE_ID_HOSTFS, "/", 0) == 0);
+    }
+
+    ~oe_fd_hostfs_file_system()
+    {
+        OE_TEST(oe_unmount(OE_DEVICE_ID_HOSTFS, "/") == 0);
+    }
+};
+
+class oe_fd_sgxfs_file_system : public oe_fd_file_system
+{
+  public:
+
+    oe_fd_sgxfs_file_system()
+    {
+        oe_register_sgxfs_device();
+        OE_TEST(oe_mount(OE_DEVICE_ID_SGXFS, "/", 0) == 0);
+    }
+
+    ~oe_fd_sgxfs_file_system()
+    {
+        OE_TEST(oe_unmount(OE_DEVICE_ID_SGXFS, "/") == 0);
+    }
+};
+
+class fd_file_system
+{
+  public:
+    typedef int file_handle;
+    typedef DIR* dir_handle;
+    typedef struct stat stat_type;
+    typedef struct dirent dirent_type;
+
+    fd_file_system(void)
+    {
+    }
+
+    file_handle open(const char* pathname, int flags, mode_t mode)
+    {
+        return (file_handle)::open(pathname, flags, mode);
+    }
+
+    ssize_t write(file_handle file, const void* buf, size_t count)
+    {
+        return ::write(file, buf, count);
+    }
+
+    ssize_t read(file_handle file, void* buf, size_t count)
+    {
+        return ::read(file, buf, count);
+    }
+
+    off_t lseek(file_handle file, off_t offset, int whence)
+    {
+        return ::lseek(file, offset, whence);
+    }
+
+    int close(file_handle file)
+    {
+        return ::close(file);
+    }
+
+    dir_handle opendir(const char* name)
+    {
+        return (dir_handle)::opendir(name);
+    }
+
+    struct dirent* readdir(dir_handle dir)
+    {
+        return ::readdir(dir);
+    }
+
+    int closedir(dir_handle dir)
+    {
+        return ::closedir(dir);
+    }
+
+    int unlink(const char* pathname)
+    {
+        return ::unlink(pathname);
+    }
+
+    int link(const char* oldpath, const char* newpath)
+    {
+        return ::link(oldpath, newpath);
+    }
+
+    int rename(const char* oldpath, const char* newpath)
+    {
+        return ::rename(oldpath, newpath);
+    }
+
+    int mkdir(const char* pathname, mode_t mode)
+    {
+        return ::mkdir(pathname, mode);
+    }
+
+    int rmdir(const char* pathname)
+    {
+        return ::rmdir(pathname);
+    }
+
+    int stat(const char* pathname, struct stat* buf)
+    {
+        return ::stat(pathname, buf);
+    }
+
+    int truncate(const char* path, off_t length)
+    {
+        return ::truncate(path, length);
+    }
+
+  private:
+};
+
 class fd_hostfs_file_system : public fd_file_system
 {
   public:
@@ -213,22 +344,6 @@ class fd_hostfs_file_system : public fd_file_system
     ~fd_hostfs_file_system()
     {
         OE_TEST(oe_unmount(OE_DEVICE_ID_HOSTFS, "/") == 0);
-    }
-};
-
-class fd_sgxfs_file_system : public fd_file_system
-{
-  public:
-
-    fd_sgxfs_file_system()
-    {
-        oe_register_sgxfs_device();
-        OE_TEST(oe_mount(OE_DEVICE_ID_SGXFS, "/", 0) == 0);
-    }
-
-    ~fd_sgxfs_file_system()
-    {
-        OE_TEST(oe_unmount(OE_DEVICE_ID_SGXFS, "/") == 0);
     }
 };
 
