@@ -366,6 +366,14 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         test_all(fs, tmp_dir);
         OE_TEST(oe_clear_thread_default_device() == 0);
     }
+
+    /* Test thread stream I/O hostfs functions. */
+    {
+        printf("=== testing stream I/O hostfs functions:\n");
+
+        thread_stream_file_system fs(OE_DEVICE_ID_HOSTFS);
+        test_all(fs, tmp_dir);
+    }
 }
 
 OE_SET_ENCLAVE_SGX(

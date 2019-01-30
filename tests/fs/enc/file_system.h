@@ -593,4 +593,201 @@ class stream_sgxfs_file_system : public stream_file_system
     }
 };
 
+class thread_stream_file_system
+{
+  public:
+    typedef FILE* file_handle;
+    typedef DIR* dir_handle;
+    typedef struct stat stat_type;
+    typedef struct dirent dirent_type;
+
+    thread_stream_file_system(int device_id) : _device_id(device_id)
+    {
+    }
+
+    file_handle open(const char* pathname, int flags, mode_t mode)
+    {
+        FILE* ret = NULL;
+        const char* fopen_mode;
+
+        (void)mode;
+
+        switch((flags & 0x00000003))
+        {
+            case OE_O_RDONLY:
+            {
+                fopen_mode = "r";
+                break;
+            }
+            case OE_O_RDWR:
+            {
+                if (flags & OE_O_CREAT)
+                {
+                    if (flags & OE_O_TRUNC)
+                    {
+                        fopen_mode = "w+";
+                    }
+                    else if (flags & OE_O_APPEND)
+                    {
+                        fopen_mode = "a+";
+                    }
+                    else
+                    {
+                        errno = OE_EINVAL;
+                        goto done;
+                    }
+                }
+                else
+                {
+                    fopen_mode = "r+";
+                }
+                break;
+            }
+            case OE_O_WRONLY:
+            {
+                if (flags & OE_O_CREAT)
+                {
+                    if (flags & OE_O_TRUNC)
+                    {
+                        fopen_mode = "w";
+                    }
+                    else if (flags & OE_O_APPEND)
+                    {
+                        fopen_mode = "a";
+                    }
+                    else
+                    {
+                        errno = OE_EINVAL;
+                        goto done;
+                    }
+                }
+                else
+                {
+                    fopen_mode = "w";
+                }
+                break;
+            }
+            default:
+            {
+                errno = OE_EINVAL;
+                goto done;
+            }
+        }
+
+        ret = ::oe_fopen_dev(_device_id, pathname, fopen_mode);
+
+    done:
+        return ret;
+    }
+
+    ssize_t write(file_handle file, const void* buf, size_t count)
+    {
+        ssize_t ret = -1;
+
+        if (::fwrite(buf, 1, count, file) != count)
+        {
+            errno = ::ferror(file);
+            goto done;
+        }
+
+        ret = (ssize_t)count;
+
+    done:
+        return ret;
+    }
+
+    ssize_t read(file_handle file, void* buf, size_t count)
+    {
+        ssize_t ret = -1;
+        size_t n;
+
+        if ((n = ::fread(buf, 1, count, file)) == 0)
+        {
+            if (::feof(file))
+            {
+                errno = ::ferror(file);
+                goto done;
+            }
+        }
+
+        ret = (ssize_t)n;
+
+    done:
+        return ret;
+    }
+
+    off_t lseek(file_handle file, off_t offset, int whence)
+    {
+        off_t ret = -1;
+
+        if (::fseek(file, offset, whence) != 0)
+        {
+            goto done;
+        }
+
+        ret = ::ftell(file);
+
+    done:
+        return ret;
+    }
+
+    int close(file_handle file)
+    {
+        return ::fclose(file);
+    }
+
+    dir_handle opendir(const char* name)
+    {
+        return (dir_handle)::oe_opendir_dev(_device_id, name);
+    }
+
+    struct dirent* readdir(dir_handle dir)
+    {
+        return ::readdir(dir);
+    }
+
+    int closedir(dir_handle dir)
+    {
+        return ::closedir(dir);
+    }
+
+    int unlink(const char* pathname)
+    {
+        return ::oe_unlink_dev(_device_id, pathname);
+    }
+
+    int link(const char* oldpath, const char* newpath)
+    {
+        return ::oe_link_dev(_device_id, oldpath, newpath);
+    }
+
+    int rename(const char* oldpath, const char* newpath)
+    {
+        return ::oe_rename_dev(_device_id, oldpath, newpath);
+    }
+
+    int mkdir(const char* pathname, mode_t mode)
+    {
+        return ::oe_mkdir_dev(_device_id, pathname, mode);
+    }
+
+    int rmdir(const char* pathname)
+    {
+        return ::oe_rmdir_dev(_device_id, pathname);
+    }
+
+    int stat(const char* pathname, struct stat* buf)
+    {
+        return ::oe_stat_dev(_device_id, pathname, (struct oe_stat*)buf);
+    }
+
+    int truncate(const char* path, off_t length)
+    {
+        return ::oe_truncate_dev(_device_id, path, length);
+    }
+
+  private:
+    int _device_id;
+};
+
 #endif /* _file_system_h */
