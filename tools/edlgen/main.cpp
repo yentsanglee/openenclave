@@ -1,8 +1,24 @@
 #include <clang-c/Index.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "sys/socket.h"
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+struct param
+{
+    CXType ctype;
+    string edl_type;
+};
+
+struct function
+{
+    CXType return_type;
+    string name;
+    vector<param> params;
+};
 
 typedef struct _parse_data
 {
@@ -12,14 +28,16 @@ typedef struct _parse_data
     FILE* edl;
     FILE* types;
     char* types_name;
+    const char* prefix;
 } parse_data;
 
-#define EDL_PREAMBLE        \
-"enclave {\n"               \
-"    include \"%s\"\n"      \
-"    include \"%s\"\n\n"    \
-"    trusted {\n"           \
-"    };\n\n"                \
+#define EDL_PREAMBLE                   \
+"enclave {\n"                          \
+"    include \"%s\"\n"                 \
+"    include \"%s\"\n\n"               \
+"    trusted {\n"                      \
+"        public void init_%s();\n"     \
+"    };\n\n"                           \
 "    untrusted {\n"
     
 #define EDL_EPILOGUE        \
@@ -31,13 +49,6 @@ typedef struct _parse_data
 #define OCALL_FUNC "oe_host_ocall_%s"
 
 const char vars[] = "abcdefghijklmnopqrstuvwxyz";
-
-const char type_quals[] =
-{
-    "volatile",
-    "restrict",
-    "const"
-};
 
 void gen_enclave(CXCursor c, FILE* file)
 {
@@ -161,23 +172,23 @@ void gen_host(CXCursor c, FILE* file)
     clang_disposeString(func_name);
 }
 
-const char* filter_type(CXType type)
+string filter_type(CXType type)
 {
-    if (
-
-
     CXString str = clang_getTypeSpelling(type);
-
-
-
-    const char *cstr = clang_getCString(str);
-    char* buf = calloc(strlen(cstr) + 1, 1);
-    
-    // Remove volatile and restrict
-
-    
-
+    string cstr = clang_getCString(str);
     clang_disposeString(str);
+
+    if (type.kind != CXType_Pointer)
+        return cstr;
+
+    // Remove volatile and restrict qualifiers from type
+    if (clang_isRestrictQualifiedType(type))
+        cstr.erase(cstr.find("restrict"), sizeof("restrict") - 1);
+
+   if (clang_isVolatileQualifiedType(type))
+      cstr.erase(cstr.find("volatile"), sizeof("volatile") - 1);
+
+   return cstr;
 }
 
 void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
@@ -190,7 +201,7 @@ void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
     //      - Pointer: If the next parameter is an unsigned 
     //        number, assume that is the size parameter. Otherwise,
     //        assume it's a pointer to a single type.
-    CXString typestr;
+    string typestr;
 
     if (c_type.kind == CXType_ConstantArray)
     {
@@ -200,27 +211,33 @@ void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
             fprintf(file, "[in] ");
         else
             fprintf(file, "[in, out] ");
+        
+        CXString str = clang_getTypeSpelling(clang_getElementType(c_type));
+        typestr = clang_getCString(str);
+        clang_disposeString(str);
 
-        typestr = clang_getTypeSpelling(clang_getElementType(c_type));
         fprintf(
             file,
             "%s %c[%lld]",
-            clang_getCString(typestr),
+            typestr.c_str(),
             varname,
             clang_getNumElements(c_type));
-        goto done;
+
+        return;
     }    
 
     if (c_type.kind != CXType_Pointer)
     {
         // Regular struct / type case
-        typestr = clang_getTypeSpelling(c_type);
-        fprintf(file, "%s %c", clang_getCString(typestr), varname);
-        goto done;
+        CXString str = clang_getTypeSpelling(c_type);
+        typestr = clang_getCString(str);
+        clang_disposeString(str);
+        fprintf(file, "%s %c", typestr.c_str(), varname);
+        return;
     }
 
     // Pointer case. 
-    typestr = clang_getTypeSpelling(c_type);
+    typestr = filter_type(c_type);
     if (clang_isConstQualifiedType(c_type) || clang_isConstQualifiedType(clang_getPointeeType(c_type)))
         fprintf(file, "[in");
     else
@@ -231,16 +248,16 @@ void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
         clang_getPointeeType(c_type).kind == CXType_Char_S) &&
         clang_isConstQualifiedType(clang_getPointeeType(c_type)))
     {
-        fprintf(file, ", string] %s %c", clang_getCString(typestr), varname);
-        goto done;
+        fprintf(file, ", string] %s %c", typestr.c_str(), varname);
+        return;
     }
 
     // Non string pointer case:
     // If there is no next parameter, assume that it's a single element.
     if (next.kind == CXType_Invalid)
     {
-        fprintf(file, "] %s %c", clang_getCString(typestr), varname);
-        goto done;
+        fprintf(file, "] %s %c", typestr.c_str(), varname);
+        return;
     }
 
     // If the next type is a pointer, it's a bit more complicated,
@@ -257,25 +274,22 @@ void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
     if (t != CXType_UShort && t != CXType_UInt && t != CXType_ULong && t != CXType_ULongLong)
     {
         // No size parameter, so we just handle the normal case.
-        fprintf(file, "] %s %c", clang_getCString(typestr), varname);
-        goto done;
+        fprintf(file, "] %s %c", typestr.c_str(), varname);
+        return;
     }
     
     // Size parameter isn't a pointer, so just use it.
     if (canon.kind != CXType_Pointer)
     { 
-        fprintf(file, ", size=%c] %s %c", (char) (varname + 1), clang_getCString(typestr), varname);
-        goto done;
+        fprintf(file, ", size=%c] %s %c", (char) (varname + 1), typestr.c_str(), varname);
+        return;
     }
 
     // Size parameter is a pointer, so add the extra parameter
     char nextv = (char) (varname + 1);
     CXString nextstr = clang_getTypeSpelling(clang_getPointeeType(next));
-    fprintf(file, ", size=%c_] %s %c, %s %c_", nextv, clang_getCString(typestr), varname, clang_getCString(nextstr), nextv);
+    fprintf(file, ", size=%c_] %s %c, %s %c_", nextv, typestr.c_str(), varname, clang_getCString(nextstr), nextv);
     clang_disposeString(nextstr);
-
-done:
-    clang_disposeString(typestr);
 }
 
 void gen_edl(CXCursor c, FILE* file)
@@ -379,7 +393,7 @@ int gen_files(CXCursor cursor, parse_data* data)
     fprintf(data->enclave, "#include \"%s\"\n\n", data->types_name);
     fprintf(data->host, "#include <%s>\n", data->header_name);
     fprintf(data->host, "#include \"%s\"\n\n", data->types_name);
-    fprintf(data->edl, EDL_PREAMBLE, data->header_name, data->types_name);
+    fprintf(data->edl, EDL_PREAMBLE, data->header_name, data->types_name, data->prefix);
     fprintf(data->types, "#include <%s>\n", data->header_name);
 
     // Traverse through the AST to fill out the files
@@ -419,6 +433,7 @@ void init_params(char** argv, parse_data* data)
     printf("%s\n", tmp);
     data->types = fopen(tmp, "w");
     data->types_name = tmp;
+    data->prefix = prefix;
 
     printf("%s %p %p %p %p %s\n", data->header_name, data->enclave, data->host, data->edl, data->types, data->types_name);
 }
