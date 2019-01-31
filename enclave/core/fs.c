@@ -669,3 +669,84 @@ int oe_access(const char *pathname, int mode)
 done:
     return ret;
 }
+
+oe_device_t* oe_opendir_dev(int device_id, const char* pathname)
+{
+    oe_set_thread_default_device(device_id);
+    oe_device_t* ret = oe_opendir(pathname);
+    oe_clear_thread_default_device();
+
+    return ret;
+}
+
+int oe_unlink_dev(int device_id, const char* pathname)
+{
+    oe_set_thread_default_device(device_id);
+    int ret = oe_unlink(pathname);
+    oe_clear_thread_default_device();
+
+    return ret;
+}
+
+int oe_link_dev(int device_id, const char* oldpath, const char* newpath)
+{
+    oe_set_thread_default_device(device_id);
+    int ret = oe_link(oldpath, newpath);
+    oe_clear_thread_default_device();
+
+    return ret;
+}
+
+int oe_rename_dev(int device_id, const char* oldpath, const char* newpath)
+{
+    oe_set_thread_default_device(device_id);
+    int ret = oe_rename(oldpath, newpath);
+    oe_clear_thread_default_device();
+
+    return ret;
+}
+
+int oe_mkdir_dev(int device_id, const char* pathname, oe_mode_t mode)
+{
+    oe_set_thread_default_device(device_id);
+    int ret = oe_mkdir(pathname, mode);
+    oe_clear_thread_default_device();
+
+    return ret;
+}
+
+int oe_rmdir_dev(int device_id, const char* pathname)
+{
+    oe_set_thread_default_device(device_id);
+    int ret = oe_rmdir(pathname);
+    oe_clear_thread_default_device();
+
+    return ret;
+}
+
+int oe_stat_dev(int device_id, const char* pathname, struct oe_stat* buf)
+{
+    oe_set_thread_default_device(device_id);
+    int ret = oe_stat(pathname, (struct oe_stat*)buf);
+    oe_clear_thread_default_device();
+
+    return ret;
+}
+
+int oe_truncate_dev(int device_id, const char* path, oe_off_t length)
+{
+    oe_set_thread_default_device(device_id);
+    int ret = oe_truncate(path, length);
+    oe_clear_thread_default_device();
+
+    return ret;
+}
+
+int oe_access_dev(int device_id, const char *pathname, int mode)
+{
+    oe_set_thread_default_device(device_id);
+    int ret = oe_access(pathname, mode);
+    oe_clear_thread_default_device();
+
+    return ret;
+}

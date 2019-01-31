@@ -6,6 +6,7 @@
 
 #include <openenclave/enclave.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/stdioex.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -248,7 +249,7 @@ class fd_file_system
   public:
     typedef int file_handle;
     typedef DIR* dir_handle;
-    typedef struct stat stat_type;
+    typedef struct oe_stat stat_type;
     typedef struct dirent dirent_type;
 
     fd_file_system(void)
@@ -320,9 +321,9 @@ class fd_file_system
         return ::rmdir(pathname);
     }
 
-    int stat(const char* pathname, struct stat* buf)
+    int stat(const char* pathname, struct oe_stat* buf)
     {
-        return ::stat(pathname, buf);
+        return ::stat(pathname, (struct stat*)buf);
     }
 
     int truncate(const char* path, off_t length)
@@ -596,10 +597,10 @@ class stream_sgxfs_file_system : public stream_file_system
 class thread_stream_file_system
 {
   public:
-    typedef FILE* file_handle;
-    typedef DIR* dir_handle;
-    typedef struct stat stat_type;
-    typedef struct dirent dirent_type;
+    typedef OE_FILE* file_handle;
+    typedef oe_device_t* dir_handle;
+    typedef struct oe_stat stat_type;
+    typedef struct oe_dirent dirent_type;
 
     thread_stream_file_system(int device_id) : _device_id(device_id)
     {
@@ -607,7 +608,7 @@ class thread_stream_file_system
 
     file_handle open(const char* pathname, int flags, mode_t mode)
     {
-        FILE* ret = NULL;
+        OE_FILE* ret = NULL;
         const char* fopen_mode;
 
         (void)mode;
@@ -684,9 +685,9 @@ class thread_stream_file_system
     {
         ssize_t ret = -1;
 
-        if (::fwrite(buf, 1, count, file) != count)
+        if (::oe_fwrite(buf, 1, count, file) != count)
         {
-            errno = ::ferror(file);
+            errno = ::oe_ferror(file);
             goto done;
         }
 
@@ -701,11 +702,11 @@ class thread_stream_file_system
         ssize_t ret = -1;
         size_t n;
 
-        if ((n = ::fread(buf, 1, count, file)) == 0)
+        if ((n = ::oe_fread(buf, 1, count, file)) == 0)
         {
-            if (::feof(file))
+            if (::oe_feof(file))
             {
-                errno = ::ferror(file);
+                errno = ::oe_ferror(file);
                 goto done;
             }
         }
@@ -720,12 +721,12 @@ class thread_stream_file_system
     {
         off_t ret = -1;
 
-        if (::fseek(file, offset, whence) != 0)
+        if (::oe_fseek(file, offset, whence) != 0)
         {
             goto done;
         }
 
-        ret = ::ftell(file);
+        ret = ::oe_ftell(file);
 
     done:
         return ret;
@@ -733,7 +734,7 @@ class thread_stream_file_system
 
     int close(file_handle file)
     {
-        return ::fclose(file);
+        return ::oe_fclose(file);
     }
 
     dir_handle opendir(const char* name)
@@ -741,14 +742,14 @@ class thread_stream_file_system
         return (dir_handle)::oe_opendir_dev(_device_id, name);
     }
 
-    struct dirent* readdir(dir_handle dir)
+    struct oe_dirent* readdir(dir_handle dir)
     {
-        return ::readdir(dir);
+        return ::oe_readdir(dir);
     }
 
     int closedir(dir_handle dir)
     {
-        return ::closedir(dir);
+        return ::oe_closedir(dir);
     }
 
     int unlink(const char* pathname)
@@ -776,9 +777,9 @@ class thread_stream_file_system
         return ::oe_rmdir_dev(_device_id, pathname);
     }
 
-    int stat(const char* pathname, struct stat* buf)
+    int stat(const char* pathname, struct oe_stat* buf)
     {
-        return ::oe_stat_dev(_device_id, pathname, (struct oe_stat*)buf);
+        return ::oe_stat_dev(_device_id, pathname, buf);
     }
 
     int truncate(const char* path, off_t length)

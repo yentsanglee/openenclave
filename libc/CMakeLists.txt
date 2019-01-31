@@ -71,7 +71,7 @@ add_library(oelibc STATIC
     link.c
     locale.c
     malloc.c
-    fs.c
+    stdioex.c
     pthread.c
     stdlib.c
     strerror.c
