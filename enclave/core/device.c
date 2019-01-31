@@ -311,7 +311,7 @@ int oe_clone_fd(int fd)
         return -1;
     }
 
-    pparent_device = oe_get_devid_device(fd);
+    pparent_device = oe_get_fd_device(fd);
     pnewdevice = (oe_device_t*)oe_malloc(pparent_device->size);
     oe_memcpy(pnewdevice, pparent_device, pparent_device->size);
 

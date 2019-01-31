@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include <openenclave/internal/device.h>
+#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/socket.h>
 
 oe_sockfd_t oe_socket(int domain, int type, int protocol)
@@ -80,9 +81,9 @@ int oe_accept(
 
 {
     oe_sockfd_t newfd = -1;
-    newfd = oe_clone_fd(sockfd);
-    oe_device_t* psock = oe_get_fd_device(newfd);
-
+    newfd = oe_allocate_fd();
+    oe_device_t* psock = oe_get_fd_device(sockfd);
+    oe_device_t* pnewsock = NULL;
     if (!psock)
     {
         // Log error here
@@ -96,12 +97,15 @@ int oe_accept(
     }
 
     // Create new file descriptor
+    (void)(*psock->ops.base->clone)(psock, &pnewsock);
 
-    if ((*psock->ops.socket->accept)(psock, addr, addrlen) < 0)
+    if ((*pnewsock->ops.socket->accept)(pnewsock, addr, addrlen) < 0)
     {
+        oe_free(pnewsock);
         oe_release_fd(newfd);
         return -1;
     }
+    pnewsock = oe_set_fd_device(newfd, pnewsock);
     return newfd;
 }
 

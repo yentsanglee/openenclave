@@ -16,6 +16,8 @@ void (*oe_handle_hostsock_ocall_callback)(void*);
 static void _handle_hostsock_ocall(void* args_)
 {
     oe_hostsock_args_t* args = (oe_hostsock_args_t*)args_;
+    socklen_t* addrlen = NULL;
+    struct sockaddr* paddr = NULL;
 
     /* ATTN: handle errno propagation. */
 
@@ -71,10 +73,14 @@ static void _handle_hostsock_ocall(void* args_)
         }
         case OE_HOSTSOCK_OP_ACCEPT:
         {
+            if (args->u.accept.addrlen != (socklen_t)-1)
+            {
+                addrlen = &args->u.accept.addrlen;
+                paddr = (struct sockaddr*)args->buf;
+            }
             args->u.accept.ret = accept(
-                (int)args->u.accept.host_fd,
-                (struct sockaddr*)args->buf,
-                &args->u.accept.addrlen);
+                (int)args->u.accept.host_fd, (struct sockaddr*)paddr, addrlen);
+            printf("accept returned %ld\n", args->u.accept.ret);
             break;
         }
         case OE_HOSTSOCK_OP_BIND:

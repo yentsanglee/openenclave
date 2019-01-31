@@ -2,6 +2,7 @@
 /* Licensed under the MIT License. */
 
 #include <openenclave/enclave.h>
+#include <openenclave/internal/time.h>
 
 // enclave.h must come before socket.h
 #include <openenclave/internal/device.h>
@@ -86,98 +87,61 @@ int ecall_run_client(char* recv_buff, ssize_t* recv_buff_len)
 int ecall_run_server()
 {
     int status = OE_FAILURE;
-#if 0
-    struct addrinfo* ai = NULL;
-    SOCKET listener = INVALID_SOCKET;
-    SOCKET s = INVALID_SOCKET;
+    const static char TESTDATA[] = "This is TEST DATA\n";
+    int listenfd = oe_socket(OE_AF_INET, OE_SOCK_STREAM, 0);
+    int connfd = 0;
+    struct oe_sockaddr_in serv_addr = {0};
 
-    /* Resolve service name. */
-    struct addrinfo hints = {0};
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-    int err = getaddrinfo(NULL, serv, &hints, &ai);
-    if (err != 0)
+    const int optVal = 1;
+    const oe_socklen_t optLen = sizeof(optVal);
+    int rtn = oe_setsockopt(
+        listenfd, OE_SOL_SOCKET, OE_SO_REUSEADDR, (void*)&optVal, optLen);
+    if (rtn > 0)
     {
-        goto Done;
+        printf("oe_setsockopt failed errno = %d\n", oe_errno);
     }
 
-    /* Create listener socket. */
-    listener = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-    if (listener == INVALID_SOCKET)
-    {
-        goto Done;
-    }
-    if (bind(listener, ai->ai_addr, (int)ai->ai_addrlen) == SOCKET_ERROR)
-    {
-        goto Done;
-    }
-    if (listen(listener, SOMAXCONN) == SOCKET_ERROR)
-    {
-        goto Done;
-    }
-    printf("Listening on %s...\n", serv);
+    serv_addr.sin_family = OE_AF_INET;
+    serv_addr.sin_addr.s_addr = oe_htonl(OE_INADDR_LOOPBACK);
+    serv_addr.sin_port = oe_htons(1492);
 
-    /* Accept a client connection. */
-    struct sockaddr_storage addr;
-    int addrlen = sizeof(addr);
-    s = accept(listener, (struct sockaddr*)&addr, &addrlen);
-    if (s == INVALID_SOCKET)
-    {
-        goto Done;
-    }
+    printf("accepting\n");
+    oe_bind(listenfd, (struct oe_sockaddr*)&serv_addr, sizeof(serv_addr));
+    oe_listen(listenfd, 10);
 
-    /* Receive a text message, prefixed by its size. */
-    uint32_t netMessageLength;
-    uint32_t messageLength;
-    char message[80];
-    ssize_t bytesReceived = recv(
-        s, (char*)&netMessageLength, sizeof(netMessageLength), MSG_WAITALL);
-    if (bytesReceived == SOCKET_ERROR)
+    while (1)
     {
-        goto Done;
-    }
-    messageLength = ntohl(netMessageLength);
-    if (messageLength > sizeof(message))
-    {
-        goto Done;
-    }
-    bytesReceived = recv(s, message, messageLength, MSG_WAITALL);
-    if (bytesReceived != messageLength)
-    {
-        goto Done;
+        oe_sleep(1);
+        printf("accepting\n");
+        connfd = oe_accept(listenfd, (struct oe_sockaddr*)NULL, NULL);
+        if (connfd >= 0)
+        {
+            printf("accepted fd = %d\n", connfd);
+            do
+            {
+                ssize_t n = oe_write(connfd, TESTDATA, strlen(TESTDATA));
+                if (n > 0)
+                {
+                    printf("write test data n = %ld\n", n);
+                    oe_close(connfd);
+                    break;
+                }
+                else
+                {
+                    printf("write test data n = %ld errno = %d\n", n, oe_errno);
+                }
+                oe_sleep(3);
+            } while (1);
+            break;
+        }
+        else
+        {
+            printf("accept failed errno = %d \n", oe_errno);
+        }
     }
 
-    /* Send it back to the client, prefixed by its size. */
-    int bytesSent =
-        send(s, (char*)&netMessageLength, sizeof(netMessageLength), 0);
-    if (bytesSent == SOCKET_ERROR)
-    {
-        goto Done;
-    }
-    bytesSent = send(s, message, (int)messageLength, 0);
-    if (bytesSent == SOCKET_ERROR)
-    {
-        goto Done;
-    }
-    status = OE_OK;
-
-Done:
-    if (s != INVALID_SOCKET)
-    {
-        printf("Server closing socket\n");
-        closesocket(s);
-    }
-    if (listener != INVALID_SOCKET)
-    {
-        printf("Server closing listener socket\n");
-        closesocket(listener);
-    }
-    if (ai != NULL)
-    {
-        freeaddrinfo(ai);
-    }
-#endif
+    oe_close(listenfd);
+    printf("exit from server thread\n");
     return status;
 }
 
