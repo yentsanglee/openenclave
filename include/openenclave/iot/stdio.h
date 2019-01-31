@@ -7,6 +7,10 @@
 # error openenclave/bits/stdio.h should only be included with enclave.h
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     OE_FILE_INSECURE = 0,
     OE_FILE_SECURE_HARDWARE = 1,     /** Inaccessible from normal world. */
@@ -23,7 +27,7 @@ typedef enum {
 #define OE_PRIMITIVE_CAT(a, ...) a ## __VA_ARGS__
 
 typedef struct oe_file OE_FILE;
-typedef struct oe_dir OE_DIR;
+typedef struct _oe_device OE_DIR;
 
 int oe_fclose(OE_FILE* stream);
 int oe_feof(OE_FILE* stream);
@@ -123,6 +127,10 @@ int vfprintf(
 
 #ifndef STDIO_H
 int printf(const char* fmt, ...);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 int vprintf(const char* format, va_list argptr);

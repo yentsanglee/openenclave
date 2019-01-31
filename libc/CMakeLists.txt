@@ -67,6 +67,7 @@ add_library(oelibc STATIC
     arc4random.c
     atexit.c
     dladdr.c
+    iotstdio.c
     libunwind_stubs.c
     link.c
     locale.c

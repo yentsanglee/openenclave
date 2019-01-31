@@ -4,7 +4,6 @@
 #ifndef _OE_STDIOEX_H
 #define _OE_STDIOEX_H
 
-#include <stdio.h>
 #include <stdint.h>
 
 #ifdef __cplusplus

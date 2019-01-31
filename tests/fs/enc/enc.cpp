@@ -374,6 +374,12 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         thread_stream_file_system fs(OE_DEVICE_ID_HOSTFS);
         test_all(fs, tmp_dir);
     }
+
+    /* Test IOT scenario. */
+    {
+        extern void test_iot(const char* tmp_dir);
+        test_iot(tmp_dir);
+    }
 }
 
 OE_SET_ENCLAVE_SGX(

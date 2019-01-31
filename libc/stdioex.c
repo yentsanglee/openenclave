@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <errno.h>
+#include <stdio.h>
 #include <openenclave/internal/stdioex.h>
 #include <openenclave/internal/fs.h>
 
