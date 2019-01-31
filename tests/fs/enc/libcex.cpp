@@ -2,11 +2,9 @@
 // Licensed under the MIT License.
 
 // clang-format off
-#define _FILE_DEFINED
 #define OE_SECURE_POSIX_FILE_API
-#include <openenclave/enclave.h>
-//#include <openenclave/libcex/stdio.h>
 #include <stdio.h>
+#include <openenclave/enclave.h>
 #include <openenclave/internal/tests.h>
 #include <openenclave/internal/enclavelibc.h>
 // clang-format on
