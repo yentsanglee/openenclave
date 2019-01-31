@@ -31,6 +31,7 @@ static void _handle_hostsock_ocall(void* args_)
         }
         case OE_HOSTSOCK_OP_SOCKET:
         {
+printf("host socket\n");
             args->u.socket.ret = socket(
                 args->u.socket.domain,
                 args->u.socket.type,
@@ -148,7 +149,7 @@ static void _handle_hostsock_ocall(void* args_)
     args->err = errno;
 }
 
-void oe_fs_install_hostsock(void)
+void oe_socket_install_hostsock(void)
 {
     oe_handle_hostsock_ocall_callback = _handle_hostsock_ocall;
 }

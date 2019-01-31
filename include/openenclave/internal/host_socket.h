@@ -17,6 +17,7 @@
 OE_EXTERNC_BEGIN
 
 oe_device_t* oe_socket_get_hostsock();
+void oe_socket_install_hostsock();
 
 OE_EXTERNC_END
 
