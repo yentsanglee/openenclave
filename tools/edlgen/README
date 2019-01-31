@@ -1,6 +1,6 @@
 compile with:
 
-clang -I /usr/lib/llvm-3.8/include main.c -lclang
+clang++ -I /usr/lib/llvm-3.8/include main.cpp -lclang
 
 
 run example: sys/socket.h

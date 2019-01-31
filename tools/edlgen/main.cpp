@@ -50,15 +50,19 @@ typedef struct _parse_data
 
 const char vars[] = "abcdefghijklmnopqrstuvwxyz";
 
-void gen_enclave(CXCursor c, FILE* file)
+void gen_enclave(CXCursor c, FILE* file, vector<bool> extra_params)
 {
     // Format of function:
     // return_type func_name(arg_type1 a, arg_type2, b, ...)
     // {
-    //     OCALL_RESULT result = OCALL_FUNC(a, b, ...);
-    //     errno = result.errno;
-    //     return result.ret;
+    //     OCALL_RESULT retval;
+    //     OCALL_FUNC(&retval, a, b, ...);
+    //     errno = retval.errno;
+    //     return retval.ret;
     // }
+    //
+    // If OCALL has an extra parameter (i.e FUNC(void* [size=b_] a, size_t b_, size_t* b)),
+    // then we call the OCALL like FUNC(&retval, a, *b, b);
     CXType func_type;
     CXString return_type;
     const char* return_type_str;
@@ -98,78 +102,32 @@ void gen_enclave(CXCursor c, FILE* file)
     // Implement the function.
     fprintf(
         file,
-        INDENT OCALL_RESULT " result = " OCALL_FUNC "(",
-        func_name_str,
+        INDENT OCALL_RESULT " retval;\n",
+        func_name_str);
+
+    fprintf(
+        file,
+        INDENT OCALL_FUNC "(&retval, ",
         func_name_str);
 
     for (int i = 0; i < num_args; i++)
     {
+        if (extra_params[i])
+            fprintf(file, "*%c, ", vars[i]);
+
         fprintf(file, "%c", vars[i]);
         if (i != num_args - 1)
             fprintf(file, ", ");
     }
 
     fprintf(file, ");\n");
-    fprintf(file, INDENT "errno = result.errno;\n");
-    fprintf(file, INDENT "return result.ret;\n");
+    fprintf(file, INDENT "errno = retval.errno;\n");
+    fprintf(file, INDENT "return retval.ret;\n");
 
     // Finish the function implementation.
     fprintf(file, "}\n\n");
     clang_disposeString(func_name);
     clang_disposeString(return_type);
-}
-
-void gen_host(CXCursor c, FILE* file)
-{
-    // Format for OCALL functions:
-    // OCALL_RESULT OCALL_NAME(arg_type1 a, arg_type2 b, ...)
-    // {
-    //     OCALL_RESULT result;
-    //     result.ret = func_name(a, b, ...);
-    //     result.errno = errno;
-    //     return result;
-    // } 
-    CXType func_type;
-    CXString func_name;
-    const char* func_name_str;
-    int num_args;
-
-    func_type = clang_getCursorType(c);
-    func_name = clang_getCursorSpelling(c);
-    func_name_str = clang_getCString(func_name);
-
-    // Write the function header.
-    fprintf(file, OCALL_RESULT " " OCALL_FUNC "(", func_name_str, func_name_str);
-    num_args = clang_Cursor_getNumArguments(c);
-    for (int i = 0; i < num_args; i++)
-    {
-         CXString arg_type =
-            clang_getTypeSpelling(clang_getArgType(func_type, i));
-
-        fprintf(file, "%s %c", clang_getCString(arg_type), vars[i]);
-        if (i != num_args - 1)
-            fprintf(file, ", ");
-
-        clang_disposeString(arg_type);
-    }
-    fprintf(file, ")\n{\n");
-
-    // Execute the function and put the return code + errno in the struct.
-    fprintf(file, INDENT OCALL_RESULT " result;\n", func_name_str);
-    fprintf(file, INDENT "result.ret = %s(", func_name_str);
-    for (int i = 0; i < num_args; i++)
-    {
-        fprintf(file, "%c", vars[i]);
-        if (i != num_args - 1)
-            fprintf(file, ", ");
-    }
-    fprintf(file, ");\n");
-    fprintf(file, INDENT "result.errno = errno;\n");
-    fprintf(file, INDENT "return result;\n");
-
-    // Finish the implementation.
-    fprintf(file, "}\n\n");
-    clang_disposeString(func_name);
 }
 
 string filter_type(CXType type)
@@ -191,7 +149,64 @@ string filter_type(CXType type)
    return cstr;
 }
 
-void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
+void gen_host(CXCursor c, FILE* file, vector<bool> extra_params)
+{
+    // Format for OCALL functions:
+    // OCALL_RESULT OCALL_NAME(arg_type1 a, extra_param b_, arg_type2 b, ...)
+    // {
+    //     OCALL_RESULT result;
+    //     result.ret = func_name(a, b, ...);
+    //     result.errno = errno;
+    //     return result;
+    // } 
+    CXType func_type;
+    CXString func_name;
+    const char* func_name_str;
+    int num_args;
+
+    func_type = clang_getCursorType(c);
+    func_name = clang_getCursorSpelling(c);
+    func_name_str = clang_getCString(func_name);
+
+    // Write the function header.
+    fprintf(file, OCALL_RESULT " " OCALL_FUNC "(", func_name_str, func_name_str);
+    num_args = clang_Cursor_getNumArguments(c);
+    for (int i = 0; i < num_args; i++)
+    {
+        string arg_type = filter_type(clang_getArgType(func_type, i));
+
+        if (extra_params[i])
+        {
+            CXString arg_type2 = clang_getTypeSpelling(clang_getPointeeType(clang_getArgType(func_type, i)));
+            fprintf(file, "%s %c_, ", clang_getCString(arg_type2), vars[i]);
+            clang_disposeString(arg_type2);
+        }
+
+        fprintf(file, "%s %c", arg_type.c_str(), vars[i]);
+        if (i != num_args - 1)
+            fprintf(file, ", ");
+    }
+    fprintf(file, ")\n{\n");
+
+    // Execute the function and put the return code + errno in the struct.
+    fprintf(file, INDENT OCALL_RESULT " result;\n", func_name_str);
+    fprintf(file, INDENT "result.ret = %s(", func_name_str);
+    for (int i = 0; i < num_args; i++)
+    {
+        fprintf(file, "%c", vars[i]);
+        if (i != num_args - 1)
+            fprintf(file, ", ");
+    }
+    fprintf(file, ");\n");
+    fprintf(file, INDENT "result.errno = errno;\n");
+    fprintf(file, INDENT "return result;\n");
+
+    // Finish the implementation.
+    fprintf(file, "}\n\n");
+    clang_disposeString(func_name);
+}
+
+bool gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
 {
     // For param_types 
     //  - If it's a array (i.e. int[2]), convert to edl syntax
@@ -223,7 +238,7 @@ void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
             varname,
             clang_getNumElements(c_type));
 
-        return;
+        return false;
     }    
 
     if (c_type.kind != CXType_Pointer)
@@ -233,7 +248,7 @@ void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
         typestr = clang_getCString(str);
         clang_disposeString(str);
         fprintf(file, "%s %c", typestr.c_str(), varname);
-        return;
+        return false;
     }
 
     // Pointer case. 
@@ -249,7 +264,7 @@ void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
         clang_isConstQualifiedType(clang_getPointeeType(c_type)))
     {
         fprintf(file, ", string] %s %c", typestr.c_str(), varname);
-        return;
+        return false;
     }
 
     // Non string pointer case:
@@ -257,7 +272,7 @@ void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
     if (next.kind == CXType_Invalid)
     {
         fprintf(file, "] %s %c", typestr.c_str(), varname);
-        return;
+        return false;
     }
 
     // If the next type is a pointer, it's a bit more complicated,
@@ -275,14 +290,14 @@ void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
     {
         // No size parameter, so we just handle the normal case.
         fprintf(file, "] %s %c", typestr.c_str(), varname);
-        return;
+        return false;
     }
     
     // Size parameter isn't a pointer, so just use it.
     if (canon.kind != CXType_Pointer)
     { 
         fprintf(file, ", size=%c] %s %c", (char) (varname + 1), typestr.c_str(), varname);
-        return;
+        return false;
     }
 
     // Size parameter is a pointer, so add the extra parameter
@@ -290,9 +305,10 @@ void gen_edl_type(CXType c_type, FILE* file, char varname, CXType next)
     CXString nextstr = clang_getTypeSpelling(clang_getPointeeType(next));
     fprintf(file, ", size=%c_] %s %c, %s %c_", nextv, typestr.c_str(), varname, clang_getCString(nextstr), nextv);
     clang_disposeString(nextstr);
+    return true;
 }
 
-void gen_edl(CXCursor c, FILE* file)
+vector<bool> gen_edl(CXCursor c, FILE* file)
 {
     // Format for EDL defs:
     // OCALL_RESULT OCALL_FUNC(param_type a, ...);
@@ -301,6 +317,7 @@ void gen_edl(CXCursor c, FILE* file)
     CXType func_type;
     int num_args;
     int found_ptr = 0;
+    vector<bool> extra_params;
 
     // Get the function name.
     func_name = clang_getCursorSpelling(c);
@@ -311,6 +328,7 @@ void gen_edl(CXCursor c, FILE* file)
     func_type = clang_getCursorType(c);
     num_args = clang_Cursor_getNumArguments(c);
 
+    extra_params.push_back(false);
     for (int i = 0; i < num_args; i++)
     {
         CXType type = clang_getArgType(func_type, i);
@@ -319,10 +337,13 @@ void gen_edl(CXCursor c, FILE* file)
         if (i != num_args - 1)
            next = clang_getArgType(func_type, i + 1);
          
-        gen_edl_type(type, file, vars[i], next);
+        bool extra = gen_edl_type(type, file, vars[i], next);
  
         if (i != num_args - 1)
+        {
             fprintf(file, ", ");
+            extra_params.push_back(extra);
+        }
 
         found_ptr |= (type.kind == CXType_Pointer);
     }
@@ -332,6 +353,8 @@ void gen_edl(CXCursor c, FILE* file)
 
     clang_disposeString(func_name);
     fprintf(file, ");\n\n");
+
+    return extra_params;
 }
 
 void gen_types(CXCursor c, FILE* file)
@@ -375,10 +398,10 @@ enum CXChildVisitResult gen_functions(CXCursor cursor, CXCursor parent, CXClient
 
     // Generate the function signatures. Once we are done, we can just skip
     // to the next node, since we don't care about any other data.
-    gen_enclave(cursor, files->enclave);
-    gen_host(cursor, files->host);
-    gen_edl(cursor, files->edl);
+    vector<bool> extra_params = gen_edl(cursor, files->edl);
     gen_types(cursor, files->types);
+    gen_host(cursor, files->host, extra_params);
+    gen_enclave(cursor, files->enclave, extra_params);
     return CXChildVisit_Continue;
 }
 
