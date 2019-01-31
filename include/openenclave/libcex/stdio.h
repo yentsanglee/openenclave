@@ -37,52 +37,52 @@ typedef struct oe_dir OE_DIR;
 
 LIBCEX_INLINE int oe_feof(OE_FILE* stream)
 {
-    extern int __libcex_oe_feof(OE_FILE * stream);
-    return __libcex_oe_feof(stream);
+    extern int libcex_oe_feof(OE_FILE * stream);
+    return libcex_oe_feof(stream);
 }
 
 LIBCEX_INLINE int oe_ferror(OE_FILE* stream)
 {
-    extern int __libcex_oe_ferror(OE_FILE * stream);
-    return __libcex_oe_ferror(stream);
+    extern int libcex_oe_ferror(OE_FILE * stream);
+    return libcex_oe_ferror(stream);
 }
 
 LIBCEX_INLINE int oe_fflush(OE_FILE* stream)
 {
-    extern int __libcex_oe_fflush(OE_FILE * stream);
-    return __libcex_oe_fflush(stream);
+    extern int libcex_oe_fflush(OE_FILE * stream);
+    return libcex_oe_fflush(stream);
 }
 
 LIBCEX_INLINE char* oe_fgets(char* s, int size, OE_FILE* stream)
 {
-    extern char* __libcex_oe_fgets(char* s, int size, OE_FILE* stream);
-    return __libcex_oe_fgets(s, size, stream);
+    extern char* libcex_oe_fgets(char* s, int size, OE_FILE* stream);
+    return libcex_oe_fgets(s, size, stream);
 }
 
 LIBCEX_INLINE int oe_fputs(const char* s, OE_FILE* stream)
 {
-    extern int __libcex_oe_fputs(const char* s, OE_FILE* stream);
-    return __libcex_oe_fputs(s, stream);
+    extern int libcex_oe_fputs(const char* s, OE_FILE* stream);
+    return libcex_oe_fputs(s, stream);
 }
 
 LIBCEX_INLINE size_t
 oe_fread(void* ptr, size_t size, size_t nmemb, OE_FILE* stream)
 {
-    extern size_t __libcex_oe_fread(
+    extern size_t libcex_oe_fread(
         void* ptr, size_t size, size_t nmemb, OE_FILE* stream);
-    return __libcex_oe_fread(ptr, size, nmemb, stream);
+    return libcex_oe_fread(ptr, size, nmemb, stream);
 }
 
 LIBCEX_INLINE int oe_fseek(OE_FILE* stream, long offset, int whence)
 {
-    extern int __libcex_oe_fseek(OE_FILE * stream, long offset, int whence);
-    return __libcex_oe_fseek(stream, offset, whence);
+    extern int libcex_oe_fseek(OE_FILE * stream, long offset, int whence);
+    return libcex_oe_fseek(stream, offset, whence);
 }
 
 LIBCEX_INLINE long oe_ftell(OE_FILE* stream)
 {
-    extern long __libcex_oe_ftell(OE_FILE * stream);
-    return __libcex_oe_ftell(stream);
+    extern long libcex_oe_ftell(OE_FILE * stream);
+    return libcex_oe_ftell(stream);
 }
 
 LIBCEX_INLINE OE_FILE* oe_fopen(
@@ -90,9 +90,9 @@ LIBCEX_INLINE OE_FILE* oe_fopen(
     const char* path,
     const char* mode)
 {
-    extern OE_FILE* __libcex_oe_fopen(
+    extern OE_FILE* libcex_oe_fopen(
         oe_file_security_t security, const char* path, const char* mode);
-    return __libcex_oe_fopen(security, path, mode);
+    return libcex_oe_fopen(security, path, mode);
 }
 
 LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_INSECURE(
@@ -119,17 +119,17 @@ LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_ENCRYPTION(
 LIBCEX_INLINE size_t
 oe_fwrite(const void* ptr, size_t size, size_t nmemb, OE_FILE* stream)
 {
-    size_t __libcex_oe_fwrite(
+    size_t libcex_oe_fwrite(
         const void* ptr, size_t size, size_t nmemb, OE_FILE* stream);
-    return __libcex_oe_fwrite(ptr, size, nmemb, stream);
+    return libcex_oe_fwrite(ptr, size, nmemb, stream);
 }
 
 LIBCEX_INLINE int oe_remove(oe_file_security_t security, const char* pathname)
 {
-    extern int __libcex_oe_remove(
+    extern int libcex_oe_remove(
         oe_file_security_t security, const char* pathname);
 
-    return __libcex_oe_remove(security, pathname);
+    return libcex_oe_remove(security, pathname);
 }
 
 LIBCEX_INLINE int oe_remove_OE_FILE_INSECURE(const char* pathname)
@@ -149,9 +149,9 @@ LIBCEX_INLINE int oe_remove_OE_FILE_SECURE_ENCRYPTION(const char* pathname)
 
 LIBCEX_INLINE OE_DIR* oe_opendir(oe_file_security_t security, const char* name)
 {
-    extern OE_DIR* __libcex_oe_opendir(
+    extern OE_DIR* libcex_oe_opendir(
         oe_file_security_t security, const char* name);
-    return __libcex_oe_opendir(security, name);
+    return libcex_oe_opendir(security, name);
 }
 
 LIBCEX_INLINE OE_DIR* oe_opendir_FILE_INSECURE(const char* name)
@@ -171,20 +171,20 @@ LIBCEX_INLINE OE_DIR* oe_opendir_FILE_SECURE_ENCRYPTION(const char* name)
 
 LIBCEX_INLINE int oe_fclose(OE_FILE* stream)
 {
-    extern int __libcex_oe_fclose(OE_FILE * stream);
-    return __libcex_oe_fclose(stream);
+    extern int libcex_oe_fclose(OE_FILE * stream);
+    return libcex_oe_fclose(stream);
 }
 
 LIBCEX_INLINE int oe_closedir(OE_DIR* dirp)
 {
-    extern int __libcex_oe_closedir(OE_DIR * dirp);
-    return __libcex_oe_closedir(dirp);
+    extern int libcex_oe_closedir(OE_DIR * dirp);
+    return libcex_oe_closedir(dirp);
 }
 
 LIBCEX_INLINE struct oe_dirent* oe_readdir(OE_DIR* dirp)
 {
-    extern struct oe_dirent* __libcex_oe_readdir(OE_DIR * dirp);
-    return __libcex_oe_readdir(dirp);
+    extern struct oe_dirent* libcex_oe_readdir(OE_DIR * dirp);
+    return libcex_oe_readdir(dirp);
 }
 
 /*
@@ -195,7 +195,7 @@ LIBCEX_INLINE struct oe_dirent* oe_readdir(OE_DIR* dirp)
 **==============================================================================
 */
 
-LIBCEX_INLINE OE_FILE* __fopen(const char* path, const char* mode)
+LIBCEX_INLINE OE_FILE* __inline_oe_fopen(const char* path, const char* mode)
 {
 #ifdef OE_SECURE_POSIX_FILE_API
     return oe_fopen(OE_FILE_SECURE_BEST_EFFORT, path, mode);
@@ -204,7 +204,7 @@ LIBCEX_INLINE OE_FILE* __fopen(const char* path, const char* mode)
 #endif
 }
 
-LIBCEX_INLINE int __remove(const char* pathname)
+LIBCEX_INLINE int __inline_oe_remove(const char* pathname)
 {
 #ifdef OE_SECURE_POSIX_FILE_API
     return oe_remove(OE_FILE_SECURE_BEST_EFFORT, pathname);
@@ -215,8 +215,8 @@ LIBCEX_INLINE int __remove(const char* pathname)
 
 #ifndef OE_NO_POSIX_FILE_API
 /* Map POSIX API names to the OE equivalents. */
-#define fopen __fopen
-#define remove __remove
+#define fopen __inline_oe_fopen
+#define remove __inline_oe_remove
 #define fclose oe_fclose
 #define feof oe_feof
 #define ferror oe_ferror
