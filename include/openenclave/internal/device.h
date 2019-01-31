@@ -15,21 +15,26 @@ OE_EXTERNC_BEGIN
 // Well known  device ids
 enum
 {
+    OE_DEVICE_ID_NONE = 0,
+
     OE_DEVICE_ID_CONSOLE = 1,
 
     OE_DEVICE_ID_LOG = 2,
 
-    // The Intel SGX protected file system.
-    OE_DEVICE_ID_SGXFS = 3,
-
     // This entry describes a file in the hosts's file system
-    OE_DEVICE_ID_HOSTFS = 4,
+    OE_DEVICE_ID_HOSTFS = 3,
+
+    // The Intel SGX protected file system.
+    OE_DEVICE_ID_SGXFS = 4,
+
+    // This entry describes a file in the secure hardward file system.
+    OE_DEVICE_ID_SHWFS = 5,
 
     // This entry describes an internet socket
-    OE_DEVICE_ID_HOST_SOCKET = 5,
+    OE_DEVICE_ID_HOST_SOCKET = 6,
 
     // This entry describes an enclave to enclave
-    OE_DEVICE_ID_ENCLAVE_SOCKET = 6,
+    OE_DEVICE_ID_ENCLAVE_SOCKET = 7,
 };
 
 typedef enum _oe_device_type
