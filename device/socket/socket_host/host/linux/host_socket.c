@@ -1,15 +1,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <errno.h>
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "../../common/hostsockargs.h"
-#include <sys/socket.h>
 
 void (*oe_handle_hostsock_ocall_callback)(void*);
 
@@ -31,7 +31,7 @@ static void _handle_hostsock_ocall(void* args_)
         }
         case OE_HOSTSOCK_OP_SOCKET:
         {
-printf("host socket\n");
+            printf("host socket\n");
             args->u.socket.ret = socket(
                 args->u.socket.domain,
                 args->u.socket.type,
@@ -65,7 +65,7 @@ printf("host socket\n");
         {
             args->u.connect.ret = connect(
                 (int)args->u.connect.host_fd,
-                (const struct sockaddr *)args->buf,
+                (const struct sockaddr*)args->buf,
                 args->u.connect.addrlen);
             break;
         }
@@ -73,7 +73,7 @@ printf("host socket\n");
         {
             args->u.accept.ret = accept(
                 (int)args->u.accept.host_fd,
-                (struct sockaddr *)args->buf,
+                (struct sockaddr*)args->buf,
                 &args->u.accept.addrlen);
             break;
         }
@@ -81,22 +81,20 @@ printf("host socket\n");
         {
             args->u.bind.ret = bind(
                 (int)args->u.bind.host_fd,
-                (const struct sockaddr *)args->buf,
+                (const struct sockaddr*)args->buf,
                 args->u.bind.addrlen);
             break;
         }
         case OE_HOSTSOCK_OP_LISTEN:
         {
-            args->u.listen.ret = listen(
-                (int)args->u.listen.host_fd,
-                args->u.listen.backlog);
+            args->u.listen.ret =
+                listen((int)args->u.listen.host_fd, args->u.listen.backlog);
             break;
         }
         case OE_HOSTSOCK_OP_SOCK_SHUTDOWN:
         {
             args->u.sock_shutdown.ret = shutdown(
-                (int)args->u.sock_shutdown.host_fd,
-                args->u.sock_shutdown.how);
+                (int)args->u.sock_shutdown.host_fd, args->u.sock_shutdown.how);
             break;
         }
         case OE_HOSTSOCK_OP_GETSOCKOPT:
@@ -123,7 +121,7 @@ printf("host socket\n");
         {
             args->u.getpeername.ret = getpeername(
                 (int)args->u.getpeername.host_fd,
-                (struct sockaddr *)args->buf,
+                (struct sockaddr*)args->buf,
                 &args->u.getpeername.addrlen);
             break;
         }
@@ -131,7 +129,7 @@ printf("host socket\n");
         {
             args->u.getsockname.ret = getsockname(
                 (int)args->u.getsockname.host_fd,
-                (struct sockaddr *)args->buf,
+                (struct sockaddr*)args->buf,
                 &args->u.getsockname.addrlen);
             break;
         }

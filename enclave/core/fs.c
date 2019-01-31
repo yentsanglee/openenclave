@@ -81,7 +81,8 @@ static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
                     ret = _mount_table[i].fs;
                 }
             }
-            else if (oe_strncmp(mpath, path, len) == 0 &&
+            else if (
+                oe_strncmp(mpath, path, len) == 0 &&
                 (path[len] == '/' || path[len] == '\0'))
             {
                 if (len > match_len)
@@ -156,7 +157,6 @@ int oe_get_thread_default_device(void)
 done:
     return ret;
 }
-
 
 int oe_mount(int device_id, const char* path, uint32_t flags)
 {
@@ -270,7 +270,7 @@ int oe_unmount(int device_id, const char* path)
 
         oe_free(_mount_table[index].path);
         fs = _mount_table[index].fs;
-        _mount_table[index] = _mount_table[_mount_table_size-1];
+        _mount_table[index] = _mount_table[_mount_table_size - 1];
         _mount_table_size--;
 
         fs->ops.fs->base.release(fs);
@@ -647,7 +647,7 @@ done:
     return ret;
 }
 
-int oe_access(const char *pathname, int mode)
+int oe_access(const char* pathname, int mode)
 {
     int ret = -1;
     struct oe_stat buf;
@@ -742,7 +742,7 @@ int oe_truncate_dev(int device_id, const char* path, oe_off_t length)
     return ret;
 }
 
-int oe_access_dev(int device_id, const char *pathname, int mode)
+int oe_access_dev(int device_id, const char* pathname, int mode)
 {
     oe_set_thread_default_device(device_id);
     int ret = oe_access(pathname, mode);

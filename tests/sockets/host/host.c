@@ -44,22 +44,23 @@ void* host_server_thread(void* arg)
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     serv_addr.sin_port = htons(1492);
-char *addr = (char *)&serv_addr.sin_addr.s_addr;
-printf("addr[0] = %0x\n", addr[0]);
-printf("addr[1] = %0x\n", addr[1]);
-printf("addr[2] = %0x\n", addr[2]);
-printf("addr[3] = %0x\n", addr[3]);
+    char* addr = (char*)&serv_addr.sin_addr.s_addr;
+    printf("addr[0] = %0x\n", addr[0]);
+    printf("addr[1] = %0x\n", addr[1]);
+    printf("addr[2] = %0x\n", addr[2]);
+    printf("addr[3] = %0x\n", addr[3]);
 
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 
     listen(listenfd, 10);
 
-    while(1)
+    while (1)
     {
         printf("accepting\n");
         connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
         printf("accepted fd = %d\n", connfd);
-        if (connfd >= 0) {
+        if (connfd >= 0)
+        {
             write(connfd, TESTDATA, strlen(TESTDATA));
             printf("write test data\n");
             close(connfd);
@@ -112,7 +113,7 @@ char* host_client()
 
 int main(int argc, const char* argv[])
 {
-    //static char TESTDATA[] = "This is TEST DATA\n";
+    // static char TESTDATA[] = "This is TEST DATA\n";
     oe_result_t result;
     // oe_enclave_t* server_enclave = NULL;
     oe_enclave_t* client_enclave = NULL;
@@ -161,11 +162,10 @@ int main(int argc, const char* argv[])
 
     test_data_len = 1024;
     OE_TEST(
-        ecall_run_client(client_enclave, &ret, test_data_rtn, &test_data_len ) ==
+        ecall_run_client(client_enclave, &ret, test_data_rtn, &test_data_len) ==
         OE_OK);
 
     printf("host received: %s\n", test_data_rtn);
-
 
     pthread_join(server_thread_id, NULL);
 

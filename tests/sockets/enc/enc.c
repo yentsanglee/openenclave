@@ -5,10 +5,10 @@
 
 // enclave.h must come before socket.h
 #include <openenclave/internal/device.h>
-#include <openenclave/internal/sockaddr.h>
-#include <openenclave/internal/netinet/in.h>
-#include <openenclave/internal/socket.h>
 #include <openenclave/internal/host_socket.h>
+#include <openenclave/internal/netinet/in.h>
+#include <openenclave/internal/sockaddr.h>
+#include <openenclave/internal/socket.h>
 
 #include <socket_test_t.h>
 #include <stdio.h>
@@ -17,15 +17,15 @@
 int ecall_device_init()
 {
     (void)oe_allocate_devid(OE_DEVICE_ID_HOST_SOCKET);
-    (void)oe_set_devid_device(OE_DEVICE_ID_HOST_SOCKET,  oe_socket_get_hostsock());
+    (void)oe_set_devid_device(
+        OE_DEVICE_ID_HOST_SOCKET, oe_socket_get_hostsock());
     return 0;
 }
-
 
 /* This client connects to an echo server, sends a text message,
  * and outputs the text reply.
  */
-int ecall_run_client(char* recv_buff, ssize_t *recv_buff_len)
+int ecall_run_client(char* recv_buff, ssize_t* recv_buff_len)
 {
     oe_sockfd_t sockfd = 0;
     ssize_t n = 0;
@@ -47,15 +47,17 @@ int ecall_run_client(char* recv_buff, ssize_t *recv_buff_len)
     printf("Connecting...\n");
     int retries = 0;
     static const int max_retries = 4;
-    while(oe_connect(sockfd, (struct oe_sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    while (oe_connect(
+               sockfd, (struct oe_sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
     {
         if (retries++ > max_retries)
         {
-        printf("\n Error : Connect Failed \n");
-        oe_close(sockfd);
-        return OE_FAILURE;
+            printf("\n Error : Connect Failed \n");
+            oe_close(sockfd);
+            return OE_FAILURE;
         }
-        else {
+        else
+        {
             printf("Connect Failed. Retrying \n");
         }
     }

@@ -65,13 +65,13 @@ ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt);
 
 ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt);
 
-int oe_access(const char *pathname, int mode);
+int oe_access(const char* pathname, int mode);
 
 oe_device_t* oe_opendir_dev(int device_id, const char* pathname);
 
-struct oe_dirent *oe_readdir(oe_device_t *dirp);
+struct oe_dirent* oe_readdir(oe_device_t* dirp);
 
-int oe_closedir(oe_device_t *dirp);
+int oe_closedir(oe_device_t* dirp);
 
 int oe_unlink_dev(int device_id, const char* pathname);
 
@@ -87,7 +87,7 @@ int oe_stat_dev(int device_id, const char* pathname, struct oe_stat* buf);
 
 int oe_truncate_dev(int device_id, const char* path, oe_off_t length);
 
-int oe_access_dev(int device_id, const char *pathname, int mode);
+int oe_access_dev(int device_id, const char* pathname, int mode);
 
 OE_EXTERNC_END
 

@@ -216,7 +216,7 @@ static oe_device_t* _sgxfs_open(
     }
 
     /* Convert the flags to an fopen-mode string. */
-    switch((flags & 0x00000003))
+    switch ((flags & 0x00000003))
     {
         case OE_O_RDONLY:
         {
@@ -425,10 +425,7 @@ done:
     return ret;
 }
 
-static int _sgxfs_ioctl(
-    oe_device_t* file,
-    unsigned long request,
-    oe_va_list ap)
+static int _sgxfs_ioctl(oe_device_t* file, unsigned long request, oe_va_list ap)
 {
     /* Unsupported */
     oe_errno = OE_ENOTTY;

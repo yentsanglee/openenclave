@@ -37,7 +37,8 @@ void (*oe_handle_hostfs_ocall_callback)(void* args);
 /* This callback is installed by the host by calling oe_fs_install_sgxfs(). */
 void (*oe_handle_sgxfs_ocall_callback)(void* args);
 
-/* This callback is installed by the host by calling oe_socket_install_hostsock(). */
+/* This callback is installed by the host by calling
+ * oe_socket_install_hostsock(). */
 void (*oe_handle_hostsock_ocall_callback)(void* args);
 
 /*
@@ -543,7 +544,6 @@ static oe_result_t _handle_ocall(
 
             break;
         }
-
 
         default:
         {

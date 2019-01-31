@@ -40,7 +40,6 @@ typedef struct oe_sockaddr_storage
     char __ss_pad2[_SS_PAD2SIZE];
 } oe_sockaddr_storage;
 
-
 typedef uint16_t oe_sa_family_t;
 typedef struct oe_sockaddr
 {

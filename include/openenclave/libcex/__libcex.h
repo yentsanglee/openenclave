@@ -5,7 +5,9 @@
 #define _LIBCEX_LIBCEX_H
 
 #ifdef __cplusplus
-#define LIBCEX_EXTERN_C_BEGIN extern "C" {
+#define LIBCEX_EXTERN_C_BEGIN \
+    extern "C"                \
+    {
 #define LIBCEX_EXTERN_C_END }
 #else
 #define LIBCEX_EXTERN_C_BEGIN

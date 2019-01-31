@@ -2,10 +2,11 @@
 // Licensed under the MIT License.
 
 #include <errno.h>
-#include <stdio.h>
-#include <openenclave/internal/stdioex.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/stdioex.h>
+#include <stdio.h>
 
+#if 0
 OE_FILE *oe_fopen_dev(int device_id, const char *path, const char *mode)
 {
     oe_set_thread_default_device(device_id);
@@ -64,3 +65,4 @@ int oe_fclose(OE_FILE* stream)
 {
     return fclose((FILE*)stream);
 }
+#endif

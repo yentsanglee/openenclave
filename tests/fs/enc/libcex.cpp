@@ -5,14 +5,13 @@
 #define _FILE_DEFINED
 #define OE_SECURE_POSIX_FILE_API
 #include <openenclave/enclave.h>
-#include <openenclave/iot/stdio.h>
+#include <openenclave/libcex/stdio.h>
 #include <openenclave/internal/tests.h>
 #include <openenclave/internal/enclavelibc.h>
 // clang-format on
 
-void test_iot(const char* tmp_dir)
+void test_libcex(const char* tmp_dir)
 {
-#if 0
     char path[128];
     static const char ALPHABET[] = "abcdefghijklmnopqrstuvwxyz";
 
@@ -42,7 +41,6 @@ void test_iot(const char* tmp_dir)
 
         OE_TEST(fclose(stream) == 0);
     }
-#endif
 
     (void)tmp_dir;
 }

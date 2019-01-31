@@ -67,12 +67,11 @@ add_library(oelibc STATIC
     arc4random.c
     atexit.c
     dladdr.c
-    iotstdio.c
+    libcex_stdio.c
     libunwind_stubs.c
     link.c
     locale.c
     malloc.c
-    stdioex.c
     pthread.c
     stdlib.c
     strerror.c

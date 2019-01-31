@@ -1,21 +1,20 @@
 /* Copyright (c) Microsoft Corporation. All rights reserved. */
 /* Licensed under the MIT License. */
 
-#ifndef _STDIOV2_H
-#define _STDIOV2_H
+#ifndef _LIBCEX_STDIO_H
+#define _LIBCEX_STDIO_H
 
-#include <stdint.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include "__libcex.h"
 
 #ifdef OE_USE_OPTEE
-# define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_HARDWARE
+#define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_HARDWARE
 #else
-# define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_ENCRYPTION
+#define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_ENCRYPTION
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+LIBCEX_EXTERN_C_BEGIN
 
 /*
 **==============================================================================
@@ -28,94 +27,165 @@ extern "C" {
 typedef enum
 {
     OE_FILE_INSECURE = 0,
-    OE_FILE_SECURE_HARDWARE = 1,     /** Inaccessible from normal world. */
+    OE_FILE_SECURE_HARDWARE = 1, /** Inaccessible from normal world. */
     OE_FILE_SECURE_ENCRYPTION = 2,
 } oe_file_security_t;
 
 typedef struct oe_file OE_FILE;
 
-typedef struct _oe_device OE_DIR;
+typedef struct oe_dir OE_DIR;
 
-int oe_fclose(OE_FILE* stream);
+LIBCEX_INLINE int oe_feof(OE_FILE* stream)
+{
+    extern int __libcex_oe_feof(OE_FILE * stream);
+    return __libcex_oe_feof(stream);
+}
 
-int oe_feof(OE_FILE* stream);
+LIBCEX_INLINE int oe_ferror(OE_FILE* stream)
+{
+    extern int __libcex_oe_ferror(OE_FILE * stream);
+    return __libcex_oe_ferror(stream);
+}
 
-int oe_ferror(OE_FILE *stream);
+LIBCEX_INLINE int oe_fflush(OE_FILE* stream)
+{
+    extern int __libcex_oe_fflush(OE_FILE * stream);
+    return __libcex_oe_fflush(stream);
+}
 
-int oe_fflush(OE_FILE *stream);
+LIBCEX_INLINE char* oe_fgets(char* s, int size, OE_FILE* stream)
+{
+    extern char* __libcex_oe_fgets(char* s, int size, OE_FILE* stream);
+    return __libcex_oe_fgets(s, size, stream);
+}
 
-char *oe_fgets(char *s, int size, OE_FILE *stream);
+LIBCEX_INLINE int oe_fputs(const char* s, OE_FILE* stream)
+{
+    extern int __libcex_oe_fputs(const char* s, OE_FILE* stream);
+    return __libcex_oe_fputs(s, stream);
+}
 
-int oe_fputs(const char *s, OE_FILE *stream);
+LIBCEX_INLINE size_t
+oe_fread(void* ptr, size_t size, size_t nmemb, OE_FILE* stream)
+{
+    extern size_t __libcex_oe_fread(
+        void* ptr, size_t size, size_t nmemb, OE_FILE* stream);
+    return __libcex_oe_fread(ptr, size, nmemb, stream);
+}
 
-size_t oe_fread(void *ptr, size_t size, size_t nmemb, OE_FILE *stream);
+LIBCEX_INLINE int oe_fseek(OE_FILE* stream, long offset, int whence)
+{
+    extern int __libcex_oe_fseek(OE_FILE * stream, long offset, int whence);
+    return __libcex_oe_fseek(stream, offset, whence);
+}
 
-int oe_fseek(OE_FILE *stream, long offset, int whence);
+LIBCEX_INLINE long oe_ftell(OE_FILE* stream)
+{
+    extern long __libcex_oe_ftell(OE_FILE * stream);
+    return __libcex_oe_ftell(stream);
+}
 
-int64_t oe_ftell(OE_FILE *stream);
-
-size_t oe_fwrite(const void *ptr, size_t size, size_t nmemb, OE_FILE *stream);
-
-OE_FILE *oe_fopen(
+LIBCEX_INLINE OE_FILE* oe_fopen(
     oe_file_security_t security,
-    const char *path,
-    const char *mode);
+    const char* path,
+    const char* mode)
+{
+    extern OE_FILE* __libcex_oe_fopen(
+        oe_file_security_t security, const char* path, const char* mode);
+    return __libcex_oe_fopen(security, path, mode);
+}
 
-static inline OE_FILE *oe_fopen_OE_FILE_INSECURE(
-    const char* path, const char* mode)
+LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_INSECURE(
+    const char* path,
+    const char* mode)
 {
     return oe_fopen(OE_FILE_INSECURE, path, mode);
 }
 
-static inline OE_FILE *oe_fopen_OE_FILE_SECURE_HARDWARE(
-    const char* path, const char* mode)
+LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_HARDWARE(
+    const char* path,
+    const char* mode)
 {
     return oe_fopen(OE_FILE_SECURE_HARDWARE, path, mode);
 }
 
-static inline OE_FILE *oe_fopen_OE_FILE_SECURE_ENCRYPTION(
-    const char* path, const char* mode)
+LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_ENCRYPTION(
+    const char* path,
+    const char* mode)
 {
     return oe_fopen(OE_FILE_SECURE_ENCRYPTION, path, mode);
 }
 
-int oe_remove(oe_file_security_t security, const char *pathname);
+LIBCEX_INLINE size_t
+oe_fwrite(const void* ptr, size_t size, size_t nmemb, OE_FILE* stream)
+{
+    size_t __libcex_oe_fwrite(
+        const void* ptr, size_t size, size_t nmemb, OE_FILE* stream);
+    return __libcex_oe_fwrite(ptr, size, nmemb, stream);
+}
 
-static inline int oe_remove_OE_FILE_INSECURE(const char *pathname)
+LIBCEX_INLINE int oe_remove(oe_file_security_t security, const char* pathname)
+{
+    extern int __libcex_oe_remove(
+        oe_file_security_t security, const char* pathname);
+
+    return __libcex_oe_remove(security, pathname);
+}
+
+LIBCEX_INLINE int oe_remove_OE_FILE_INSECURE(const char* pathname)
 {
     return oe_remove(OE_FILE_INSECURE, pathname);
 }
 
-static inline int oe_remove_OE_FILE_SECURE_HARDWARE(const char *pathname)
+LIBCEX_INLINE int oe_remove_OE_FILE_SECURE_HARDWARE(const char* pathname)
 {
     return oe_remove(OE_FILE_SECURE_HARDWARE, pathname);
 }
 
-static inline int oe_remove_OE_FILE_SECURE_ENCRYPTION(const char *pathname)
+LIBCEX_INLINE int oe_remove_OE_FILE_SECURE_ENCRYPTION(const char* pathname)
 {
     return oe_remove(OE_FILE_SECURE_ENCRYPTION, pathname);
 }
 
-OE_DIR *oe_opendir_ex(oe_file_security_t security, const char *name);
-
-static inline OE_DIR *oe_opendir_FILE_INSECURE(const char *name)
+LIBCEX_INLINE OE_DIR* oe_opendir(oe_file_security_t security, const char* name)
 {
-    return oe_opendir_ex(OE_FILE_INSECURE, name);
+    extern OE_DIR* __libcex_oe_opendir(
+        oe_file_security_t security, const char* name);
+    return __libcex_oe_opendir(security, name);
 }
 
-static inline OE_DIR *oe_opendir_FILE_SECURE_HARDWARE(const char *name)
+LIBCEX_INLINE OE_DIR* oe_opendir_FILE_INSECURE(const char* name)
 {
-    return oe_opendir_ex(OE_FILE_SECURE_HARDWARE, name);
+    return oe_opendir(OE_FILE_INSECURE, name);
 }
 
-static inline OE_DIR *oe_opendir_FILE_SECURE_ENCRYPTION(const char *name)
+LIBCEX_INLINE OE_DIR* oe_opendir_FILE_SECURE_HARDWARE(const char* name)
 {
-    return oe_opendir_ex(OE_FILE_SECURE_ENCRYPTION, name);
+    return oe_opendir(OE_FILE_SECURE_HARDWARE, name);
 }
 
-int oe_closedir(OE_DIR *dirp);
+LIBCEX_INLINE OE_DIR* oe_opendir_FILE_SECURE_ENCRYPTION(const char* name)
+{
+    return oe_opendir(OE_FILE_SECURE_ENCRYPTION, name);
+}
 
-struct oe_dirent *oe_readdir(OE_DIR *dirp);
+LIBCEX_INLINE int oe_fclose(OE_FILE* stream)
+{
+    extern int __libcex_oe_fclose(OE_FILE * stream);
+    return __libcex_oe_fclose(stream);
+}
+
+LIBCEX_INLINE int oe_closedir(OE_DIR* dirp)
+{
+    extern int __libcex_oe_closedir(OE_DIR * dirp);
+    return __libcex_oe_closedir(dirp);
+}
+
+LIBCEX_INLINE struct oe_dirent* oe_readdir(OE_DIR* dirp)
+{
+    extern struct oe_dirent* __libcex_oe_readdir(OE_DIR * dirp);
+    return __libcex_oe_readdir(dirp);
+}
 
 /*
 **==============================================================================
@@ -125,11 +195,7 @@ struct oe_dirent *oe_readdir(OE_DIR *dirp);
 **==============================================================================
 */
 
-#ifndef OE_NO_POSIX_FILE_API
-
-typedef OE_FILE FILE;
-
-static inline OE_FILE *fopen(const char *path, const char *mode)
+LIBCEX_INLINE OE_FILE* __fopen(const char* path, const char* mode)
 {
 #ifdef OE_SECURE_POSIX_FILE_API
     return oe_fopen(OE_FILE_SECURE_BEST_EFFORT, path, mode);
@@ -138,7 +204,7 @@ static inline OE_FILE *fopen(const char *path, const char *mode)
 #endif
 }
 
-static inline int remove(const char *pathname)
+LIBCEX_INLINE int __remove(const char* pathname)
 {
 #ifdef OE_SECURE_POSIX_FILE_API
     return oe_remove(OE_FILE_SECURE_BEST_EFFORT, pathname);
@@ -147,73 +213,22 @@ static inline int remove(const char *pathname)
 #endif
 }
 
-static inline int fclose(OE_FILE *stream)
-{
-    return oe_fclose(stream);
-}
-
-static inline int feof(OE_FILE *stream)
-{
-    return oe_feof(stream);
-}
-
-static inline int ferror(OE_FILE *stream)
-{
-    return oe_ferror(stream);
-}
-
-static inline int fflush(OE_FILE *stream)
-{
-    return oe_fflush(stream);
-}
-
-static inline size_t fread(
-    void *ptr, size_t size, size_t nmemb, OE_FILE *stream)
-{
-    return oe_fread(ptr, size, nmemb, stream);
-}
-
-static inline size_t fwrite(
-    const void *ptr, size_t size, size_t nmemb, OE_FILE *stream)
-{
-    return oe_fwrite(ptr, size, nmemb, stream);
-}
-
-static inline int fseek(OE_FILE *stream, long offset, int whence)
-{
-    return oe_fseek(stream, offset, whence);
-}
-
-static inline long ftell(OE_FILE *stream)
-{
-    return oe_ftell(stream);
-}
-
-static inline long fputs(const char* s, OE_FILE *stream)
-{
-    return oe_fputs(s, stream);
-}
-
-static inline char *fgets(char *s, int size, OE_FILE *stream)
-{
-    return oe_fgets(s, size, stream);
-}
-
-int fprintf(FILE *stream, const char *format, ...);
-
-int vfprintf(FILE* stream, const char* format, va_list ap);
-
-int vprintf(const char* format, va_list ap);
-
-int printf(const char* format, ...);
-
-extern FILE *const stdin;
-extern FILE *const stdout;
-extern FILE *const stderr;
-
-#define stdin  (stdin)
-#define stdout (stdout)
-#define stderr (stderr)
+#ifndef OE_NO_POSIX_FILE_API
+/* Map POSIX API names to the OE equivalents. */
+#define fopen __fopen
+#define remove __remove
+#define fclose oe_fclose
+#define feof oe_feof
+#define ferror oe_ferror
+#define fflush oe_fflush
+#define fread oe_fread
+#define fseek oe_fseek
+#define ftell oe_ftell
+#define fwrite oe_fwrite
+#define fputs oe_fputs
+#define fgets oe_fgets
+#define FILE OE_FILE
+#endif /* OE_NO_POSIX_FILE_API */
 
 #if !defined(OE_USE_OPTEE) && !defined(SEEK_SET)
 #define SEEK_SET TEE_DATA_SEEK_SET
@@ -223,8 +238,6 @@ extern FILE *const stderr;
 #define SEEK_END TEE_DATA_SEEK_END
 #endif
 
-#endif /* OE_NO_POSIX_FILE_API */
-
 /*
 **==============================================================================
 **
@@ -233,15 +246,13 @@ extern FILE *const stderr;
 **==============================================================================
 */
 
-#define ENOENT     2
-#define ENOMEM    12
-#define EACCES    13
-#define EEXIST    17
-#define EINVAL    22
-#define ERANGE    34
+#define ENOENT 2
+#define ENOMEM 12
+#define EACCES 13
+#define EEXIST 17
+#define EINVAL 22
+#define ERANGE 34
 
-#ifdef __cplusplus
-}
-#endif
+LIBCEX_EXTERN_C_END
 
-#endif /* _STDIOV2_H */
+#endif /* _LIBCEX_STDIO_H */

@@ -3,9 +3,9 @@
 
 #include <dirent.h>
 #include <errno.h>
+#include <openenclave/internal/fs.h>
 #include <stdio.h>
 #include <string.h>
-#include <openenclave/internal/fs.h>
 
 DIR* opendir(const char* name)
 {
@@ -24,8 +24,8 @@ struct dirent* readdir(DIR* dirp)
     /* Verify that 'struct dirent' and 'struct oe_dirent' are identical. */
     typedef struct dirent X;
     typedef struct oe_dirent Y;
-    struct dirent *x = NULL;
-    struct oe_dirent *y = NULL;
+    struct dirent* x = NULL;
+    struct oe_dirent* y = NULL;
     OE_STATIC_ASSERT(sizeof(x->d_ino) == sizeof(y->d_ino));
     OE_STATIC_ASSERT(sizeof(x->d_off) == sizeof(y->d_off));
     OE_STATIC_ASSERT(sizeof(x->d_reclen) == sizeof(y->d_reclen));

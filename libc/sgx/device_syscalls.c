@@ -1,14 +1,14 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <sys/syscall.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <errno.h>
-#include <sys/stat.h>
-#include <stdio.h>
-#include <openenclave/internal/fs.h>
+#include <fcntl.h>
 #include <openenclave/internal/device.h>
+#include <openenclave/internal/fs.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 int oe_handle_device_syscall(
     long num,
@@ -63,7 +63,7 @@ int oe_handle_device_syscall(
             const char* pathname = (const char*)arg1;
             oe_mode_t mode = (oe_mode_t)arg2;
 
-            *ret_out = oe_open(pathname, O_CREAT|O_WRONLY|O_TRUNC, mode);
+            *ret_out = oe_open(pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
             *errno_out = oe_errno;
 
             if (*errno_out == OE_ENOENT)

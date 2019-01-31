@@ -228,7 +228,7 @@ static void test_rename_file(FILE_SYSTEM& fs, const char* tmp_dir)
     printf("--- %s()\n", __FUNCTION__);
 
     mkpath(oldname, tmp_dir, "alphabet.linked"),
-    mkpath(newname, tmp_dir, "alphabet.renamed");
+        mkpath(newname, tmp_dir, "alphabet.renamed");
 
     OE_TEST(fs.rename(oldname, newname) == 0);
     OE_TEST(fs.stat(oldname, &buf) != 0);
@@ -367,18 +367,11 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         OE_TEST(oe_clear_thread_default_device() == 0);
     }
 
-    /* Test thread stream I/O hostfs functions. */
+    /* Test libcex I/O. */
     {
-        printf("=== testing stream I/O hostfs functions:\n");
-
-        thread_stream_file_system fs(OE_DEVICE_ID_HOSTFS);
-        test_all(fs, tmp_dir);
-    }
-
-    /* Test IOT scenario. */
-    {
-        extern void test_iot(const char* tmp_dir);
-        test_iot(tmp_dir);
+        printf("=== testing libcex:\n");
+        extern void test_libcex(const char* tmp_dir);
+        test_libcex(tmp_dir);
     }
 }
 

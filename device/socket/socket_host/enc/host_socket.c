@@ -142,7 +142,6 @@ done:
     return ret;
 }
 
-
 static oe_device_t* _hostsock_socket(
     oe_device_t* sock_,
     int domain,
@@ -996,8 +995,6 @@ static uint64_t _hostsock_readystate(oe_device_t* sock_)
     sock_t* sock = _cast_sock(sock_);
     return sock->ready_mask;
 }
-
-
 
 static oe_sock_ops_t _ops = {
     .base.clone = _hostsock_clone,
