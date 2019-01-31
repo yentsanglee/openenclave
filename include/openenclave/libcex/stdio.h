@@ -5,7 +5,7 @@
 #define _LIBCEX_STDIO_H
 
 #include <stdarg.h>
-#include <stdio.h>
+#include <../libc/stdio.h>
 #include "__libcex.h"
 
 #ifdef OE_USE_OPTEE

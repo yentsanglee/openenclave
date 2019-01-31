@@ -5,10 +5,16 @@
 #define _FILE_DEFINED
 #define OE_SECURE_POSIX_FILE_API
 #include <openenclave/enclave.h>
-#include <openenclave/libcex/stdio.h>
+//#include <openenclave/libcex/stdio.h>
+#include <stdio.h>
 #include <openenclave/internal/tests.h>
 #include <openenclave/internal/enclavelibc.h>
 // clang-format on
+
+/* Be sure stdio.h was included from the libcex directory. */
+#ifndef _LIBCEX_STDIO_H
+#error "please put the libcex directory on the path"
+#endif
 
 void test_libcex(const char* tmp_dir)
 {
@@ -41,6 +47,4 @@ void test_libcex(const char* tmp_dir)
 
         OE_TEST(fclose(stream) == 0);
     }
-
-    (void)tmp_dir;
 }
