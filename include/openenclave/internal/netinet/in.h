@@ -17,11 +17,11 @@ struct oe_in_addr
 typedef uint16_t oe_in_port_t;
 
 /* Address to accept any incoming messages.  */
-#define OE_INADDR_ANY ((in_addr_t)0x00000000)
+#define OE_INADDR_ANY ((oe_in_addr_t)0x00000000)
 /* Address to send to all hosts.  */
-#define OE_INADDR_BROADCAST ((in_addr_t)0xffffffff)
+#define OE_INADDR_BROADCAST ((oe_in_addr_t)0xffffffff)
 /* Address indicating an error return.  */
-#define OE_INADDR_NONE ((in_addr_t)0xffffffff)
+#define OE_INADDR_NONE ((oe_in_addr_t)0xffffffff)
 
 /* Address to loopback in software to local host.  */
 #ifndef OE_INADDR_LOOPBACK
