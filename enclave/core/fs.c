@@ -337,12 +337,25 @@ done:
 
 int oe_open_dev(int devid, const char* pathname, int flags, oe_mode_t mode)
 {
-    int ret;
+    int ret = -1;
 
-    oe_set_thread_default_device(devid);
-    ret = oe_open(pathname, flags, mode);
-    oe_clear_thread_default_device();
+    if (oe_set_thread_default_device(devid) != 0)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
 
+    if (oe_open(pathname, flags, mode) != 0)
+    {
+        goto done;
+    }
+
+    if (oe_clear_thread_default_device() != 0)
+        goto done;
+
+    ret = 0;
+
+done:
     return ret;
 }
 
