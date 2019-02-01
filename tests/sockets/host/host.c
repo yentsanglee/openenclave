@@ -233,7 +233,6 @@ int main(int argc, const char* argv[])
 
     pthread_join(server_thread_id, NULL);
 
-
     printf("=== passed all tests (socket_test)\n");
 
     return 0;

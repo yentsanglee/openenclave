@@ -6,6 +6,7 @@
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/errno.h>
+#include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 
 static size_t _device_table_len = 0;
@@ -378,23 +379,41 @@ ssize_t oe_read(int fd, void* buf, size_t count)
 }
 
 ssize_t oe_write(int fd, const void* buf, size_t count)
-
 {
-    oe_device_t* pdevice = oe_get_fd_device(fd);
-    if (!pdevice)
+    ssize_t ret = -1;
+
+    if (fd == OE_STDOUT_FILENO || fd == OE_STDERR_FILENO)
     {
-        // Log error here
-        return -1; // erno is already set
+        if (oe_host_write(fd - 1, (const char*)buf, count) != 0)
+        {
+            oe_errno = OE_EIO;
+            goto done;
+        }
+
+        ret = (ssize_t)count;
+    }
+    else
+    {
+        oe_device_t* device;
+
+        if (!(device = oe_get_fd_device(fd)))
+        {
+            oe_errno = OE_EBADF;
+            goto done;
+        }
+
+        if (device->ops.base->write == NULL)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        // The action routine sets errno
+        ret = (*device->ops.base->write)(device, buf, count);
     }
 
-    if (pdevice->ops.base->write == NULL)
-    {
-        oe_errno = OE_EINVAL;
-        return -1;
-    }
-
-    // The action routine sets errno
-    return (*pdevice->ops.base->write)(pdevice, buf, count);
+done:
+    return ret;
 }
 
 int oe_close(int fd)
