@@ -36,7 +36,6 @@ typedef struct _parse_data
 "    include \"%s\"\n"                 \
 "    include \"%s\"\n\n"               \
 "    trusted {\n"                      \
-"        public void init_%s();\n"     \
 "    };\n\n"                           \
 "    untrusted {\n"
     
@@ -124,22 +123,23 @@ void gen_enclave(CXCursor c, FILE* file, vector<bool> extra_params)
 
     fprintf(
         file,
-        INDENT OCALL_FUNC "(&retval, ",
+        INDENT OCALL_FUNC "(&retval",
         func_name_str);
 
     for (int i = 0; i < num_args; i++)
     {
         if (extra_params[i])
-            fprintf(file, "*%c, ", vars[i]);
+            fprintf(file, ", *%c", vars[i]);
 
-        fprintf(file, "%c", vars[i]);
-        if (i != num_args - 1)
-            fprintf(file, ", ");
+        fprintf(file, ", %c", vars[i]);
     }
 
     fprintf(file, ");\n");
     fprintf(file, INDENT "errno = retval.error;\n");
-    fprintf(file, INDENT "return retval.ret;\n");
+
+    // Skip for void return type
+    if (clang_getResultType(func_type).kind != CXType_Void)
+        fprintf(file, INDENT "return retval.ret;\n");
 
     // Finish the function implementation.
     fprintf(file, "}\n\n");
@@ -224,7 +224,14 @@ void gen_host(CXCursor c, FILE* file, vector<bool> extra_params)
 
     // Execute the function and put the return code + errno in the struct.
     fprintf(file, INDENT OCALL_RESULT " result;\n", func_name_str);
-    fprintf(file, INDENT "result.ret = %s(", func_name_str);
+    
+    
+    // Skip result.ret = for void return type
+    if (clang_getResultType(func_type).kind != CXType_Void)
+        fprintf(file, INDENT "result.ret = %s(", func_name_str);
+    else
+        fprintf(file, INDENT "%s(", func_name_str);
+
     for (int i = 0; i < num_args; i++)
     {
         fprintf(file, "%c", vars[i]);
@@ -456,7 +463,7 @@ int gen_files(CXCursor cursor, parse_data* data)
     fprintf(data->host, "#include <%s>\n", data->header_name);
     fprintf(data->host, "#include <errno.h>\n");
     fprintf(data->host, "#include \"%s\"\n\n", data->types_name);
-    fprintf(data->edl, EDL_PREAMBLE, data->header_name, data->types_name, data->prefix);
+    fprintf(data->edl, EDL_PREAMBLE, data->header_name, data->types_name);
     fprintf(data->types, "#ifndef __EDL_TYPES_%s__\n", data->prefix);
     fprintf(data->types, "#define __EDL_TYPES_%s__\n\n", data->prefix); 
     fprintf(data->types, "#include <%s>\n\n", data->header_name);
