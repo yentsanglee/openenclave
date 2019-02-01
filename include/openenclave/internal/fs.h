@@ -29,7 +29,7 @@ int oe_register_hostfs_device(void);
 int oe_register_sgxfs_device(void);
 
 /* Set the default device for this thread (used in lieu of the mount table). */
-int oe_set_thread_default_device(int device_id);
+int oe_set_thread_default_device(int devid);
 
 /* Clear the default device for this thread. */
 int oe_clear_thread_default_device(void);
@@ -37,11 +37,13 @@ int oe_clear_thread_default_device(void);
 /* Get the default device for this thread. */
 int oe_get_thread_default_device(void);
 
-int oe_mount(int device_id, const char* path, uint32_t flags);
+int oe_mount(int devid, const char* path, uint32_t flags);
 
-int oe_unmount(int device_id, const char* path);
+int oe_unmount(int devid, const char* path);
 
 int oe_open(const char* pathname, int flags, oe_mode_t mode);
+
+int oe_open_dev(int devid, const char* pathname, int flags, oe_mode_t mode);
 
 oe_off_t oe_lseek(int fd, oe_off_t offset, int whence);
 
@@ -71,27 +73,27 @@ ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt);
 
 int oe_access(const char* pathname, int mode);
 
-oe_device_t* oe_opendir_dev(int device_id, const char* pathname);
+oe_device_t* oe_opendir_dev(int devid, const char* pathname);
 
 struct oe_dirent* oe_readdir(oe_device_t* dirp);
 
 int oe_closedir(oe_device_t* dirp);
 
-int oe_unlink_dev(int device_id, const char* pathname);
+int oe_unlink_dev(int devid, const char* pathname);
 
-int oe_link_dev(int device_id, const char* oldpath, const char* newpath);
+int oe_link_dev(int devid, const char* oldpath, const char* newpath);
 
-int oe_rename_dev(int device_id, const char* oldpath, const char* newpath);
+int oe_rename_dev(int devid, const char* oldpath, const char* newpath);
 
-int oe_mkdir_dev(int device_id, const char* pathname, oe_mode_t mode);
+int oe_mkdir_dev(int devid, const char* pathname, oe_mode_t mode);
 
-int oe_rmdir_dev(int device_id, const char* pathname);
+int oe_rmdir_dev(int devid, const char* pathname);
 
-int oe_stat_dev(int device_id, const char* pathname, struct oe_stat* buf);
+int oe_stat_dev(int devid, const char* pathname, struct oe_stat* buf);
 
-int oe_truncate_dev(int device_id, const char* path, oe_off_t length);
+int oe_truncate_dev(int devid, const char* path, oe_off_t length);
 
-int oe_access_dev(int device_id, const char* pathname, int mode);
+int oe_access_dev(int devid, const char* pathname, int mode);
 
 OE_EXTERNC_END
 

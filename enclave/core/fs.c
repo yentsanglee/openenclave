@@ -44,11 +44,11 @@ static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
 
     /* First check whether a device id is set for this thread. */
     {
-        int device_id;
+        int devid;
 
-        if ((device_id = oe_get_thread_default_device()) != 0)
+        if ((devid = oe_get_thread_default_device()) != 0)
         {
-            oe_device_t* device = oe_get_devid_device(device_id);
+            oe_device_t* device = oe_get_devid_device(devid);
 
             if (!device || device->type != OE_DEVICETYPE_FILESYSTEM)
                 goto done;
@@ -110,17 +110,17 @@ static void _create_device_id_key()
         oe_abort();
 }
 
-int oe_set_thread_default_device(int device_id)
+int oe_set_thread_default_device(int devid)
 {
     int ret = -1;
 
-    if (device_id <= 0)
+    if (devid <= 0)
         goto done;
 
     if (oe_once(&_device_id_once, _create_device_id_key) != 0)
         goto done;
 
-    if (oe_thread_setspecific(_device_id_key, (void*)(uint64_t)device_id) != 0)
+    if (oe_thread_setspecific(_device_id_key, (void*)(uint64_t)devid) != 0)
         goto done;
 
     ret = 0;
@@ -158,10 +158,10 @@ done:
     return ret;
 }
 
-int oe_mount(int device_id, const char* path, uint32_t flags)
+int oe_mount(int devid, const char* path, uint32_t flags)
 {
     int ret = -1;
-    oe_device_t* device = oe_get_devid_device(device_id);
+    oe_device_t* device = oe_get_devid_device(devid);
     oe_device_t* new_device = NULL;
 
     OE_UNUSED(flags);
@@ -233,11 +233,11 @@ done:
     return ret;
 }
 
-int oe_unmount(int device_id, const char* path)
+int oe_unmount(int devid, const char* path)
 {
     int ret = -1;
     size_t index = (size_t)-1;
-    oe_device_t* device = oe_get_devid_device(device_id);
+    oe_device_t* device = oe_get_devid_device(devid);
 
     oe_spin_lock(&_lock);
 
@@ -331,6 +331,17 @@ done:
 
     if (fd != -1)
         oe_release_fd(fd);
+
+    return ret;
+}
+
+int oe_open_dev(int devid, const char* pathname, int flags, oe_mode_t mode)
+{
+    int ret;
+
+    oe_set_thread_default_device(devid);
+    ret = oe_open(pathname, flags, mode);
+    oe_clear_thread_default_device();
 
     return ret;
 }
@@ -670,81 +681,81 @@ done:
     return ret;
 }
 
-oe_device_t* oe_opendir_dev(int device_id, const char* pathname)
+oe_device_t* oe_opendir_dev(int devid, const char* pathname)
 {
-    oe_set_thread_default_device(device_id);
+    oe_set_thread_default_device(devid);
     oe_device_t* ret = oe_opendir(pathname);
     oe_clear_thread_default_device();
 
     return ret;
 }
 
-int oe_unlink_dev(int device_id, const char* pathname)
+int oe_unlink_dev(int devid, const char* pathname)
 {
-    oe_set_thread_default_device(device_id);
+    oe_set_thread_default_device(devid);
     int ret = oe_unlink(pathname);
     oe_clear_thread_default_device();
 
     return ret;
 }
 
-int oe_link_dev(int device_id, const char* oldpath, const char* newpath)
+int oe_link_dev(int devid, const char* oldpath, const char* newpath)
 {
-    oe_set_thread_default_device(device_id);
+    oe_set_thread_default_device(devid);
     int ret = oe_link(oldpath, newpath);
     oe_clear_thread_default_device();
 
     return ret;
 }
 
-int oe_rename_dev(int device_id, const char* oldpath, const char* newpath)
+int oe_rename_dev(int devid, const char* oldpath, const char* newpath)
 {
-    oe_set_thread_default_device(device_id);
+    oe_set_thread_default_device(devid);
     int ret = oe_rename(oldpath, newpath);
     oe_clear_thread_default_device();
 
     return ret;
 }
 
-int oe_mkdir_dev(int device_id, const char* pathname, oe_mode_t mode)
+int oe_mkdir_dev(int devid, const char* pathname, oe_mode_t mode)
 {
-    oe_set_thread_default_device(device_id);
+    oe_set_thread_default_device(devid);
     int ret = oe_mkdir(pathname, mode);
     oe_clear_thread_default_device();
 
     return ret;
 }
 
-int oe_rmdir_dev(int device_id, const char* pathname)
+int oe_rmdir_dev(int devid, const char* pathname)
 {
-    oe_set_thread_default_device(device_id);
+    oe_set_thread_default_device(devid);
     int ret = oe_rmdir(pathname);
     oe_clear_thread_default_device();
 
     return ret;
 }
 
-int oe_stat_dev(int device_id, const char* pathname, struct oe_stat* buf)
+int oe_stat_dev(int devid, const char* pathname, struct oe_stat* buf)
 {
-    oe_set_thread_default_device(device_id);
+    oe_set_thread_default_device(devid);
     int ret = oe_stat(pathname, (struct oe_stat*)buf);
     oe_clear_thread_default_device();
 
     return ret;
 }
 
-int oe_truncate_dev(int device_id, const char* path, oe_off_t length)
+int oe_truncate_dev(int devid, const char* path, oe_off_t length)
 {
-    oe_set_thread_default_device(device_id);
+    oe_set_thread_default_device(devid);
     int ret = oe_truncate(path, length);
     oe_clear_thread_default_device();
 
     return ret;
 }
 
-int oe_access_dev(int device_id, const char* pathname, int mode)
+int oe_access_dev(int devid, const char* pathname, int mode)
 {
-    oe_set_thread_default_device(device_id);
+    oe_set_thread_default_device(devid);
     int ret = oe_access(pathname, mode);
     oe_clear_thread_default_device();
 

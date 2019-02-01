@@ -5,6 +5,8 @@
 #ifndef __OE_EPOLL_OPS_H__
 #define __OE_EPOLL_OPS_H__
 
+#include <openenclave/internal/device_ops.h>
+
 #ifdef cplusplus
 extern "C"
 {
