@@ -8,6 +8,10 @@
 
 OE_EXTERNC_BEGIN
 
+#define OE_STDIN_FILENO  0
+#define OE_STDOUT_FILENO 1
+#define OE_STDERR_FILENO 2
+
 /* The host calls this to install the host file system (HOSTFS). */
 void oe_fs_install_hostfs(void);
 
