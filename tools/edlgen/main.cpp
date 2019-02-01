@@ -89,7 +89,24 @@ void gen_enclave(CXCursor c, FILE* file, vector<bool> extra_params)
         CXString arg_type =
             clang_getTypeSpelling(clang_getArgType(func_type, i));
 
-        fprintf(file, "%s %c", clang_getCString(arg_type), vars[i]);
+        // print arrays differently since it's int[] x -> int x[]
+        if (clang_getArgType(func_type, i).kind == CXType_IncompleteArray)
+        {
+            CXString arg_type2 = clang_getTypeSpelling(clang_getElementType(clang_getArgType(func_type, i)));
+            fprintf(file, "%s %c[]", clang_getCString(arg_type2), vars[i]);
+            clang_disposeString(arg_type2);
+        }
+        else if (clang_getArgType(func_type, i).kind == CXType_ConstantArray)
+        {
+            CXString arg_type2 = clang_getTypeSpelling(clang_getElementType(clang_getArgType(func_type, i)));
+            fprintf(file, "%s %c[%lld]", clang_getCString(arg_type2), vars[i], clang_getNumElements(clang_getArgType(func_type, i)));
+            clang_disposeString(arg_type2);
+        }
+        else
+        {
+            fprintf(file, "%s %c", clang_getCString(arg_type), vars[i]);
+        }
+
         if (i != num_args - 1)
             fprintf(file, ", ");
 
@@ -121,7 +138,7 @@ void gen_enclave(CXCursor c, FILE* file, vector<bool> extra_params)
     }
 
     fprintf(file, ");\n");
-    fprintf(file, INDENT "errno = retval.errno;\n");
+    fprintf(file, INDENT "errno = retval.error;\n");
     fprintf(file, INDENT "return retval.ret;\n");
 
     // Finish the function implementation.
@@ -181,8 +198,25 @@ void gen_host(CXCursor c, FILE* file, vector<bool> extra_params)
             fprintf(file, "%s %c_, ", clang_getCString(arg_type2), vars[i]);
             clang_disposeString(arg_type2);
         }
+    
+        // print arrays differently since it's int[] x -> int x[]
+        if (clang_getArgType(func_type, i).kind == CXType_IncompleteArray)
+        {
+            CXString arg_type2 = clang_getTypeSpelling(clang_getElementType(clang_getArgType(func_type, i)));
+            fprintf(file, "%s %c[]", clang_getCString(arg_type2), vars[i]);
+            clang_disposeString(arg_type2);
+        }
+        else if (clang_getArgType(func_type, i).kind == CXType_ConstantArray)
+        {
+            CXString arg_type2 = clang_getTypeSpelling(clang_getElementType(clang_getArgType(func_type, i)));
+            fprintf(file, "%s %c[%lld]", clang_getCString(arg_type2), vars[i], clang_getNumElements(clang_getArgType(func_type, i)));
+            clang_disposeString(arg_type2);
+        }
+        else
+        {
+            fprintf(file, "%s %c", arg_type.c_str(), vars[i]);
+        }
 
-        fprintf(file, "%s %c", arg_type.c_str(), vars[i]);
         if (i != num_args - 1)
             fprintf(file, ", ");
     }
@@ -198,7 +232,7 @@ void gen_host(CXCursor c, FILE* file, vector<bool> extra_params)
             fprintf(file, ", ");
     }
     fprintf(file, ");\n");
-    fprintf(file, INDENT "result.errno = errno;\n");
+    fprintf(file, INDENT "result.error = errno;\n");
     fprintf(file, INDENT "return result;\n");
 
     // Finish the implementation.
@@ -373,8 +407,12 @@ void gen_types(CXCursor c, FILE* file)
 
     fprintf(file, "typedef struct _" OCALL_RESULT "\n", clang_getCString(name));
     fprintf(file, "{\n");
-    fprintf(file, INDENT "%s ret;\n", clang_getCString(ret));
-    fprintf(file, INDENT "int errno;\n");
+    
+    // Skip for void return type
+    if (clang_getResultType(type).kind != CXType_Void)
+        fprintf(file, INDENT "%s ret;\n", clang_getCString(ret));
+
+    fprintf(file, INDENT "int error;\n");
     fprintf(file, "} " OCALL_RESULT ";\n\n", clang_getCString(name));
 
     clang_disposeString(ret);
@@ -413,17 +451,22 @@ int gen_files(CXCursor cursor, parse_data* data)
 
     // Print the preamble for each file before we begin parsing
     fprintf(data->enclave, "#include <%s>\n", data->header_name);
+    fprintf(data->enclave, "#include <errno.h>\n");
     fprintf(data->enclave, "#include \"%s\"\n\n", data->types_name);
     fprintf(data->host, "#include <%s>\n", data->header_name);
+    fprintf(data->host, "#include <errno.h>\n");
     fprintf(data->host, "#include \"%s\"\n\n", data->types_name);
     fprintf(data->edl, EDL_PREAMBLE, data->header_name, data->types_name, data->prefix);
-    fprintf(data->types, "#include <%s>\n", data->header_name);
+    fprintf(data->types, "#ifndef __EDL_TYPES_%s__\n", data->prefix);
+    fprintf(data->types, "#define __EDL_TYPES_%s__\n\n", data->prefix); 
+    fprintf(data->types, "#include <%s>\n\n", data->header_name);
 
     // Traverse through the AST to fill out the files
     clang_visitChildren(cursor, gen_functions, data);
 
     // Print the epilogue after we are done parsing. Only need edl for now.
     fprintf(data->edl, EDL_EPILOGUE);
+    fprintf(data->types, "#endif // __EDL_TYPES_%s__\n", data->prefix);
     return 0;
 }
 
