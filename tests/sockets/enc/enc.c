@@ -7,8 +7,8 @@
 // enclave.h must come before socket.h
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/host_socket.h>
-#include <openenclave/internal/netinet/in.h>
 #include <openenclave/internal/sockaddr.h>
+#include <openenclave/internal/netinet/in.h>
 #include <openenclave/internal/socket.h>
 
 #include <socket_test_t.h>
@@ -103,7 +103,7 @@ int ecall_run_server()
 
     serv_addr.sin_family = OE_AF_INET;
     serv_addr.sin_addr.s_addr = oe_htonl(OE_INADDR_LOOPBACK);
-    serv_addr.sin_port = oe_htons(1492);
+    serv_addr.sin_port = oe_htons(1493);
 
     printf("accepting\n");
     oe_bind(listenfd, (struct oe_sockaddr*)&serv_addr, sizeof(serv_addr));

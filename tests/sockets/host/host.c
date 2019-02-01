@@ -89,7 +89,7 @@ void* host_server_thread(void* arg)
     return NULL;
 }
 
-char* host_client()
+char* host_client(in_port_t port)
 
 {
     int sockfd = 0;
@@ -109,7 +109,7 @@ char* host_client()
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    serv_addr.sin_port = htons(1492);
+    serv_addr.sin_port = htons(port);
 
     int retries = 0;
     static const int max_retries = 400;
@@ -161,12 +161,12 @@ char* host_client()
 int main(int argc, const char* argv[])
 {
     static char TESTDATA[] = "This is TEST DATA\n";
-    //  oe_result_t result;
-    //  oe_enclave_t* client_enclave = NULL;
+    oe_result_t result;
+    oe_enclave_t* client_enclave = NULL;
     pthread_t server_thread_id = 0;
-    //  int ret = 0;
-    //  char test_data_rtn[1024] = {0};
-    //  ssize_t test_data_len = 1024;
+    int ret = 0;
+    char test_data_rtn[1024] = {0};
+    ssize_t test_data_len = 1024;
 
     if (argc != 2)
     {
@@ -192,7 +192,6 @@ int main(int argc, const char* argv[])
     sleep(3); // Let the net stack settle
 #endif
 
-#if 0
     // host server to enclave client
     OE_TEST(
         pthread_create(&server_thread_id, NULL, host_server_thread, NULL) == 0);
@@ -217,7 +216,6 @@ int main(int argc, const char* argv[])
 
     pthread_join(server_thread_id, NULL);
     OE_TEST(oe_terminate_enclave(client_enclave) == OE_OK);
-#endif
 
     // enclave server to host client
     sleep(3); // Give the server time to launch
@@ -228,7 +226,7 @@ int main(int argc, const char* argv[])
 
     sleep(3); // Give the server time to launch
 
-    char* test_data = host_client();
+    char* test_data = host_client(1493);
 
     printf("received from enclave server: %s\n", test_data);
     OE_TEST(strcmp(test_data, TESTDATA) == 0);
