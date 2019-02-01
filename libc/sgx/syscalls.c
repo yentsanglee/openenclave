@@ -33,6 +33,14 @@ static const uint64_t _SEC_TO_MSEC = 1000UL;
 static const uint64_t _MSEC_TO_USEC = 1000UL;
 static const uint64_t _MSEC_TO_NSEC = 1000000UL;
 
+typedef int (*ioctl_proc)(
+    int fd,
+    unsigned long request,
+    long arg1,
+    long arg2,
+    long arg3,
+    long arg4);
+
 static int _handle_device_syscall(
     long num,
     long arg1,
@@ -269,7 +277,16 @@ static int _handle_device_syscall(
         }
         case SYS_ioctl:
         {
-            /* Silently ignore. */
+            int fd = (int)arg1;
+            unsigned long request = (unsigned long)arg2;
+            long p1 = arg3;
+            long p2 = arg4;
+            long p3 = arg5;
+            long p4 = arg6;
+
+            *ret_out = ((ioctl_proc)oe_ioctl)(fd, request, p1, p2, p3, p4);
+            *errno_out = oe_errno;
+
             return 0;
         }
         case SYS_fcntl:

@@ -459,30 +459,75 @@ done:
 }
 
 int oe_ioctl(int fd, unsigned long request, ...)
-
 {
-    oe_va_list ap;
-    oe_device_t* pdevice = oe_get_fd_device(fd);
-    int rtn = -1;
+    int ret = -1;
 
-    if (!pdevice)
+    switch (fd)
     {
-        // Log error here
-        return -1; // erno is already set
+        case OE_STDIN_FILENO:
+        case OE_STDERR_FILENO:
+        case OE_STDOUT_FILENO:
+        {
+            static const unsigned long _TIOCGWINSZ = 0x5413;
+
+            if (request == _TIOCGWINSZ)
+            {
+                struct winsize
+                {
+                    unsigned short int ws_row;
+                    unsigned short int ws_col;
+                    unsigned short int ws_xpixel;
+                    unsigned short int ws_ypixel;
+                };
+                oe_va_list ap;
+                struct winsize* p;
+
+                oe_va_start(ap, request);
+                p = oe_va_arg(ap, struct winsize*);
+                oe_va_end(ap);
+
+                if (!p)
+                    goto done;
+
+                p->ws_row = 24;
+                p->ws_col = 80;
+                p->ws_xpixel = 0;
+                p->ws_ypixel = 0;
+
+                ret = 0;
+                goto done;
+            }
+
+            ret = -1;
+            goto done;
+        }
+        default:
+        {
+            oe_va_list ap;
+            oe_device_t* pdevice = oe_get_fd_device(fd);
+
+            if (!pdevice)
+            {
+                // Log error here
+                return -1; // erno is already set
+            }
+
+            if (pdevice->ops.base->ioctl == NULL)
+            {
+                oe_errno = OE_EINVAL;
+                return -1;
+            }
+
+            oe_va_start(ap, request);
+            // The action routine sets errno
+            ret = (*pdevice->ops.base->ioctl)(pdevice, request, ap);
+            oe_va_end(ap);
+            goto done;
+        }
     }
 
-    if (pdevice->ops.base->ioctl == NULL)
-    {
-        oe_errno = OE_EINVAL;
-        return -1;
-    }
-
-    oe_va_start(ap, request);
-    // The action routine sets errno
-    rtn = (*pdevice->ops.base->ioctl)(pdevice, request, ap);
-    oe_va_end(ap);
-
-    return rtn;
+done:
+    return ret;
 }
 
 oe_result_t _handle_oe_device_notification(uint64_t arg)
