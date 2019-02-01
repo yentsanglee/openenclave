@@ -6,6 +6,7 @@
 
 #include <openenclave/bits/result.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/internal/epoll_ops.h>
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/fs_ops.h>
 #include <openenclave/internal/sock_ops.h>
@@ -35,6 +36,12 @@ enum
 
     // This entry describes an enclave to enclave
     OE_DEVICE_ID_ENCLAVE_SOCKET = 7,
+
+    // This entry describes an epoll instance
+    OE_DEVICE_ID_EPOLL = 8,
+
+    // This entry describes an enventfd instance
+    OE_DEVICE_ID_EVENTFD = 9
 };
 
 typedef enum _oe_device_type
@@ -51,6 +58,12 @@ typedef enum _oe_device_type
 
     // This entry describes an enclave to enclave
     OE_DEVICETYPE_SOCKET,
+
+    // This entry describes an epoll device
+    OE_DEVICETYPE_EPOLL,
+
+    // This entry describes an eventfd device
+    OE_DEVICETYPE_EVENTFD
 } oe_device_type_t;
 
 // Ready mask. Tracks the values for epoll
@@ -83,6 +96,7 @@ typedef struct _oe_device
         oe_device_ops_t* base;
         oe_fs_ops_t* fs;
         oe_sock_ops_t* socket;
+        oe_epoll_ops_t* epoll;
     } ops;
 
 } oe_device_t;
