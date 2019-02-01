@@ -4,6 +4,7 @@
 #ifndef __NETINET_IN_H__
 #define __NETINET_IN_H__
 
+#include <openenclave/internal/sockaddr.h>
 OE_EXTERNC_BEGIN
 
 /* Internet address.  */
