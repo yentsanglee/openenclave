@@ -6,10 +6,10 @@
 
 #include <openenclave/bits/result.h>
 #include <openenclave/bits/types.h>
-#include <openenclave/internal/epoll_ops.h>
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/fs_ops.h>
 #include <openenclave/internal/sock_ops.h>
+#include <openenclave/internal/epoll_ops.h>
 
 OE_EXTERNC_BEGIN
 

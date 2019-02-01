@@ -12,6 +12,8 @@ extern "C"
 
     struct oe_epoll_event;
 
+    typedef struct _oe_device oe_device_t;
+
     typedef struct _oe_epoll_ops
     {
         oe_device_ops_t base;
