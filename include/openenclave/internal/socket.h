@@ -1,5 +1,6 @@
 /* Copyright (c) Microsoft Corporation. All rights reserved. */
 /* Licensed under the MIT License. */
+
 #pragma once
 #ifndef __OE_SOCKET_H__
 #define __OE_SOCKET_H__
@@ -17,17 +18,33 @@ extern "C"
     typedef int32_t oe_sockfd_t;
     typedef uint32_t oe_socklen_t;
 
+#define OE_SOL_SOCKET 1
+
+#define OE_SO_DEBUG 1
+#define OE_SO_REUSEADDR 2
+#define OE_SO_TYPE 3
+#define OE_SO_ERROR 4
+#define OE_SO_DONTROUTE 5
+#define OE_SO_BROADCAST 6
+#define OE_SO_SNDBUF 7
+#define OE_SO_RCVBUF 8
+#define OE_SO_SNDBUFFORCE 32
+#define OE_SO_RCVBUFFORCE 33
+#define OE_SO_KEEPALIVE 9
+#define OE_SO_OOBINLINE 10
+#define OE_SO_NO_CHECK 11
+#define OE_SO_PRIORITY 12
+#define OE_SO_LINGER 13
+#define OE_SO_BSDCOMPAT 14
+#define OE_SO_REUSEPORT 15
+
+#if 0
 #define OE_SOCKET_ERROR -1
 #define OE_INVALID_SOCKET (int)(~0)
 #define OE_IPV6_V6ONLY 27
 #define OE_IPPROTO_IPV6 41
 #define OE_IPPROTO_TCP 6
 #define OE_MSG_WAITALL 0x8
-#define OE_SOL_SOCKET 0xffff
-#define OE_SO_SNDBUF 0x1001
-#define OE_SO_RCVBUF 0x1002
-#define OE_SO_KEEPALIVE 0x0008
-#define OE_SO_ERROR 0x1007
 #define OE_TCP_NODELAY 1
 #define OE_TCP_KEEPALIVE 3
 #define OE_SOMAXCONN 0x7fffffff
@@ -52,6 +69,7 @@ extern "C"
 #define OE_NI_DGRAM 0x10
 #define OE_NI_MAXHOST 1025
 #define OE_NI_MAXSERV 32
+#endif
 
 #if defined(OE_MAP_SIX_SOCKET_API)
 /* Map standard socket API names to the OE equivalents. */

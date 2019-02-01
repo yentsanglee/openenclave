@@ -7,8 +7,8 @@
 // enclave.h must come before socket.h
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/host_socket.h>
-#include <openenclave/internal/sockaddr.h>
 #include <openenclave/internal/netinet/in.h>
+#include <openenclave/internal/sockaddr.h>
 #include <openenclave/internal/socket.h>
 
 #include <socket_test_t.h>

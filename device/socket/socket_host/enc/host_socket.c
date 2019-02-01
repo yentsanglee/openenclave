@@ -282,7 +282,7 @@ static int _hostsock_accept(
     oe_errno = 0;
 
     /* Check parameters. */
-    if (!sock || !batch || !addr || !addrlen)
+    if (!sock || !batch || (addr && !addrlen) || (addrlen && !addr))
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -290,7 +290,10 @@ static int _hostsock_accept(
 
     /* Input */
     {
-        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + *addrlen)))
+        size_t allocsize = sizeof(args_t) + 8;
+        if (addrlen)
+            allocsize += *addrlen;
+        if (!(args = oe_host_batch_calloc(batch, allocsize)))
         {
             oe_errno = OE_ENOMEM;
             goto done;
@@ -298,9 +301,17 @@ static int _hostsock_accept(
 
         args->op = OE_HOSTSOCK_OP_ACCEPT;
         args->u.accept.ret = -1;
-        args->u.accept.host_fd = sock->host_fd;
-        args->u.accept.addrlen = *addrlen;
-        oe_memcpy(args->buf, addr, *addrlen);
+        args->u.accept.host_fd =
+            sock->host_fd; // The host_id going in is the listend fd
+        if (addrlen != NULL)
+        {
+            args->u.accept.addrlen = *addrlen;
+            oe_memcpy(args->buf, addr, *addrlen);
+        }
+        else
+        {
+            args->u.accept.addrlen = (oe_socklen_t)-1;
+        }
     }
 
     /* Call */
@@ -311,6 +322,9 @@ static int _hostsock_accept(
             goto done;
         }
 
+        sock->host_fd =
+            args->u.accept.ret; // The host_id going out is the connect fd
+        oe_host_printf("host_d = %ld\n", sock->host_fd);
         if ((ret = args->u.accept.ret) == -1)
         {
             oe_errno = args->err;
@@ -319,6 +333,7 @@ static int _hostsock_accept(
     }
 
     /* Output */
+    if (addrlen)
     {
         *addrlen = args->u.accept.addrlen;
         oe_memcpy(addr, args->buf, *addrlen);
@@ -425,9 +440,6 @@ static int _hostsock_listen(oe_device_t* sock_, int backlog)
             goto done;
         }
     }
-
-    /* Release the sock_ object. */
-    oe_free(sock);
 
     ret = 0;
 
