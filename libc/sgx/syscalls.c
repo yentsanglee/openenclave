@@ -63,27 +63,6 @@ static int _handle_device_syscall(
 
     oe_errno = 0;
 
-    /* Ignore file descriptor operations on stdin, stdout, and stderr. */
-    switch (num)
-    {
-        case SYS_lseek:
-        case SYS_readv:
-        case SYS_read:
-        case SYS_close:
-        {
-            int fd = (int)arg1;
-
-            switch (fd)
-            {
-                case STDIN_FILENO:
-                case STDOUT_FILENO:
-                case STDERR_FILENO:
-                    return -1;
-            }
-            break;
-        }
-    }
-
     /* Handle the software system call. */
     switch (num)
     {
