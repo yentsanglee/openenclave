@@ -530,32 +530,6 @@ done:
     return ret;
 }
 
-oe_result_t _handle_oe_device_notification(uint64_t arg)
-{
-    oe_device_notification_args_t* pargs = (oe_device_notification_args_t*)arg;
-    uint64_t host_fd = pargs->host_fd;
-    uint64_t notification_mask = pargs->notify_mask;
-    int enclave_fd = 0;
-    oe_device_t* pdevice = NULL;
-    int rtn = -1;
-
-    enclave_fd = (int)oe_map_host_fd(host_fd);
-    if (enclave_fd >= 0)
-    {
-        pdevice = oe_get_fd_device(enclave_fd);
-        rtn = (*pdevice->ops.base->notify)(pdevice, notification_mask);
-    }
-
-    if (rtn != -1)
-    {
-        return OE_OK;
-    }
-    else
-    {
-        return OE_FAILURE;
-    }
-}
-
 // This is a very naive implementation of association between hostfd and enclave
 // fd Since it does a linear search of the fd table it could become a
 // performance issue, but that hasn't happened yet and is unlikely to do so

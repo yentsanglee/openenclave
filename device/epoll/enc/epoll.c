@@ -92,7 +92,6 @@ static epoll_dev_t* _cast_epoll(const oe_device_t* device)
 }
 
 static epoll_dev_t _epoll;
-static ssize_t _epoll_read(oe_device_t*, void* buf, size_t count);
 
 static int _epoll_close(oe_device_t*);
 
@@ -159,34 +158,29 @@ done:
     return ret;
 }
 
-static int _epoll_ctl(
+static int _epoll_ctl_add(
     oe_device_t* epoll_,
-    int op,
-    int fd,
+    oe_device_t* pdev,
     struct oe_epoll_event* event)
 {
     int ret = -1;
-    epoll_dev_t* epoll = _cast_epoll(epoll_);
+    epoll_dev_t* epoll  = _cast_epoll(epoll_);
+    oe_device_t* pdevice = oe_get_fd_device(fd);
 
     oe_errno = 0;
-
     /* Check parameters. */
-    if (!epoll_)
+    if (!epoll_ || !pdev )
     {
         oe_errno = OE_EINVAL;
-        goto done;
+        return -1;
     }
 
-    ret = 0;
 
-done:
     return ret;
 }
 
 static int _epoll_wait(
     oe_device_t* epoll_,
-    struct oe_epoll_event* events,
-    int maxevents,
     int timeout)
 {
     int ret = -1;

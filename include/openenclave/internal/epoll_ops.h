@@ -21,18 +21,10 @@ extern "C"
         oe_device_ops_t base;
         oe_device_t* (*create)(int size);
         oe_device_t* (*create1)(int flags);
-        int (*ctl)(
-            oe_device_t* pdevice,
-            int op,
-            int fd,
-            struct oe_epoll_event* event);
-        int (*wait)(
-            oe_device_t* pdevice,
-            struct oe_epoll_event* events,
-            int maxevents,
-            int timeout);
-        //    int (*pwait) (oe_device_t *pdevice, struct oe_epoll_event *events,
-        //    int maxevents, int timeout, const sigset_t *ss);
+        int (*ctl_add)( oe_device_t* pepoll, oe_device_t* pdev, struct oe_epoll_event* event);
+        int (*ctl_del)( oe_device_t* pepoll, oe_device_t* pdev, struct oe_epoll_event* event);
+        int (*ctl_mod)( oe_device_t* pepoll, oe_device_t* pdev, struct oe_epoll_event* event);
+        int (*wait)( oe_device_t* pepoll, int timeout);
     } oe_epoll_ops_t;
 
 #ifdef cplusplus

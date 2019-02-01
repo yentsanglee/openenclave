@@ -144,14 +144,6 @@ int oe_ioctl(int fd, unsigned long request, ...);
 // descriptor index If the host fd is not found, we return -1
 ssize_t oe_map_host_fd(uint64_t host_fd);
 
-typedef struct _oe_device_notification_args
-{
-    uint64_t host_fd;
-    uint64_t notify_mask;
-} oe_device_notification_args_t;
-
-oe_result_t _handle_oe_device_notification(uint64_t args);
-
 int oe_handle_device_syscall(
     long num,
     long arg1,
