@@ -374,7 +374,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         test_libcex(tmp_dir);
     }
 
-    oe_write(1, "abcdefghijklmnopqrstuvwxyz\n", 27);
+    OE_TEST(oe_write(1, "abcdefghijklmnopqrstuvwxyz\n", 27) == 27);
 }
 
 OE_SET_ENCLAVE_SGX(

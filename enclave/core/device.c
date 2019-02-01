@@ -359,23 +359,36 @@ int oe_remove_device(int device_id)
 }
 
 ssize_t oe_read(int fd, void* buf, size_t count)
-
 {
-    oe_device_t* pdevice = oe_get_fd_device(fd);
-    if (!pdevice)
+    ssize_t ret = -1;
+    oe_device_t* device;
+    ssize_t n;
+
+    if (fd == OE_STDIN_FILENO)
     {
-        // Log error here
-        return -1; // erno is already set
+        /* Reads on standard input always return zero bytes in enclaves. */
+        ret = 0;
+    }
+    else
+    {
+        if (!(device = oe_get_fd_device(fd)))
+            goto done;
+
+        if (device->ops.base->read == NULL)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        // The action routine sets errno
+        if ((n = (*device->ops.base->read)(device, buf, count)) < 0)
+            goto done;
+
+        ret = n;
     }
 
-    if (pdevice->ops.base->read == NULL)
-    {
-        oe_errno = OE_EINVAL;
-        return -1;
-    }
-
-    // The action routine sets errno
-    return (*pdevice->ops.base->read)(pdevice, buf, count);
+done:
+    return ret;
 }
 
 ssize_t oe_write(int fd, const void* buf, size_t count)

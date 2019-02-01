@@ -190,7 +190,7 @@ LIBCEX_INLINE struct oe_dirent* oe_readdir(OE_DIR* dirp)
 /*
 **==============================================================================
 **
-** Standrad POSIX definitions:
+** Standard POSIX definitions:
 **
 **==============================================================================
 */

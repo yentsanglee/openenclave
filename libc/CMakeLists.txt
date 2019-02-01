@@ -43,7 +43,6 @@ set (PLATFORM_SRC "")
 
 if (OE_SGX)
     list(APPEND PLATFORM_SRC
-        sgx/device_syscalls.c
         sgx/dirent.c
         sgx/syscalls.c
         sgx/sched_yield.c)
