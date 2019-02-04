@@ -23,6 +23,7 @@ endif()
 
 if (UNIX OR ADD_WINDOWS_ENCLAVE_TESTS OR USE_CLANGW)
     if (OE_SGX)
+        add_subdirectory(array)
         add_subdirectory(abortStatus)
         add_subdirectory(bigmalloc)
         add_subdirectory(backtrace)
