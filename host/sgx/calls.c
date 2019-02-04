@@ -464,10 +464,6 @@ static oe_result_t _handle_ocall(
             HandleFree(arg_in);
             break;
 
-        case OE_OCALL_WRITE:
-            HandlePrint(arg_in);
-            break;
-
         case OE_OCALL_THREAD_WAIT:
             HandleThreadWait(enclave, arg_in);
             break;
