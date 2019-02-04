@@ -17,7 +17,7 @@
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/fs.h>
-#include "../../common/hostbatch.h"
+#include <openenclave/internal/hostbatch.h>
 #include "../common/hostfsargs.h"
 
 /*

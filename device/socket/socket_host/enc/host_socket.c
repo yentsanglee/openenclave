@@ -16,7 +16,7 @@
 #include <openenclave/internal/atexit.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
-#include "../../../fs/common/hostbatch.h"
+#include <openenclave/internal/hostbatch.h>
 #include "../common/hostsockargs.h"
 
 /*

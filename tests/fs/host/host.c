@@ -24,7 +24,6 @@ int main(int argc, const char* argv[])
     const char* src_dir = argv[2];
     const char* tmp_dir = argv[3];
 
-    oe_fs_install_hostfs();
     oe_fs_install_sgxfs();
 
     r = oe_create_fs_enclave(enclave_path, type, flags, NULL, 0, &enclave);

@@ -15,7 +15,7 @@
 #include <pthread.h>
 //#include <openenclave/internal/sgxfs.h>
 #include "../common/sgxfsargs.h"
-#include "../../common/hostbatch.h"
+#include <openenclave/internal/hostbatch.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <string.h>

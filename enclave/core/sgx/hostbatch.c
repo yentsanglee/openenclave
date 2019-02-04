@@ -1,13 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "hostbatch.h"
-#include <assert.h>
 #include <openenclave/enclave.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <openenclave/internal/hostbatch.h>
+#include <openenclave/internal/thread.h>
+#include <openenclave/internal/enclavelibc.h>
 
 #define ALIGNMENT sizeof(uint64_t)
 
@@ -23,7 +20,7 @@ struct _host_block
 struct _thread_data
 {
     thread_data_t* next;
-    pthread_t thread;
+    oe_thread_t thread;
     uint8_t* data;
     size_t offset;
     size_t capacity;
@@ -37,7 +34,7 @@ struct _oe_host_batch
     size_t capacity;
     thread_data_t* tds;
     uint32_t guard1;
-    pthread_spinlock_t lock;
+    oe_spinlock_t lock;
     uint32_t guard2;
 };
 
@@ -46,21 +43,21 @@ static thread_data_t* _new_thread_data(oe_host_batch_t* batch)
     thread_data_t* ret = NULL;
     thread_data_t* td = NULL;
 
-    if (!(td = calloc(1, sizeof(thread_data_t))))
+    if (!(td = oe_calloc(1, sizeof(thread_data_t))))
         goto done;
 
     if (!(td->data = oe_host_calloc(1, batch->capacity)))
         goto done;
 
-    td->thread = pthread_self();
+    td->thread = oe_thread_self();
     td->offset = 0;
     td->capacity = batch->capacity;
 
     /* Add new thread data to the list. */
-    pthread_spin_lock(&batch->lock);
+    oe_spin_lock(&batch->lock);
     td->next = batch->tds;
     batch->tds = td;
-    pthread_spin_unlock(&batch->lock);
+    oe_spin_unlock(&batch->lock);
 
     ret = td;
     td = NULL;
@@ -68,7 +65,7 @@ static thread_data_t* _new_thread_data(oe_host_batch_t* batch)
 done:
 
     if (td)
-        free(td);
+        oe_free(td);
 
     return ret;
 }
@@ -78,18 +75,18 @@ static thread_data_t* _get_thread_data(oe_host_batch_t* batch)
     thread_data_t* td = NULL;
 
     /* Find the thread data for the current thread. */
-    pthread_spin_lock(&batch->lock);
+    oe_spin_lock(&batch->lock);
     {
         for (thread_data_t* p = batch->tds; p; p = p->next)
         {
-            if (pthread_equal(p->thread, pthread_self()))
+            if (oe_thread_equal(p->thread, oe_thread_self()))
             {
                 td = p;
                 break;
             }
         }
     }
-    pthread_spin_unlock(&batch->lock);
+    oe_spin_unlock(&batch->lock);
 
     return td;
 }
@@ -106,7 +103,7 @@ static void _delete_thread_data(thread_data_t* td)
         p = next;
     }
 
-    free(td);
+    oe_free(td);
 }
 
 oe_host_batch_t* oe_host_batch_new(size_t capacity)
@@ -117,13 +114,13 @@ oe_host_batch_t* oe_host_batch_new(size_t capacity)
     if (capacity == 0)
         goto done;
 
-    if (!(batch = calloc(1, sizeof(oe_host_batch_t))))
+    if (!(batch = oe_calloc(1, sizeof(oe_host_batch_t))))
         goto done;
 
     batch->capacity = capacity;
     batch->guard1 = GUARD;
     batch->guard2 = GUARD;
-    pthread_spin_init(&batch->lock, 0);
+    oe_spin_init(&batch->lock);
 
     ret = batch;
     batch = NULL;
@@ -131,7 +128,7 @@ oe_host_batch_t* oe_host_batch_new(size_t capacity)
 done:
 
     if (batch)
-        free(batch);
+        oe_free(batch);
 
     return ret;
 }
@@ -147,7 +144,7 @@ void oe_host_batch_delete(oe_host_batch_t* batch)
             p = next;
         }
 
-        free(batch);
+        oe_free(batch);
     }
 }
 
@@ -200,7 +197,7 @@ void* oe_host_batch_calloc(oe_host_batch_t* batch, size_t size)
     if (!(ptr = oe_host_batch_malloc(batch, size)))
         return NULL;
 
-    return memset(ptr, 0, size);
+    return oe_memset(ptr, 0, size);
 }
 
 char* oe_host_batch_strdup(oe_host_batch_t* batch, const char* str)
@@ -211,12 +208,12 @@ char* oe_host_batch_strdup(oe_host_batch_t* batch, const char* str)
     if (!batch || !str)
         goto done;
 
-    len = strlen(str);
+    len = oe_strlen(str);
 
     if (!(ret = oe_host_batch_calloc(batch, len + 1)))
         goto done;
 
-    memcpy(ret, str, len + 1);
+    oe_memcpy(ret, str, len + 1);
 
 done:
     return ret;

@@ -100,5 +100,4 @@ void (*oe_handle_sgxfs_ocall_callback)(void*);
 void oe_fs_install_sgxfs(void)
 {
     oe_handle_sgxfs_ocall_callback = _handle_sgxfs_ocall;
-    oe_fs_install_hostfs();
 }

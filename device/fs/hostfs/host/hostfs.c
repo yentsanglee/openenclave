@@ -8,10 +8,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "../common/hostfsargs.h"
+#include "hostfs.h"
 
-void (*oe_handle_hostfs_ocall_callback)(void*);
-
-static void _handle_hostfs_ocall(void* args_)
+void oe_handle_hostfs_ocall(void* args_)
 {
     oe_hostfs_args_t* args = (oe_hostfs_args_t*)args_;
 
@@ -156,9 +155,4 @@ static void _handle_hostfs_ocall(void* args_)
             break;
         }
     }
-}
-
-void oe_fs_install_hostfs(void)
-{
-    oe_handle_hostfs_ocall_callback = _handle_hostfs_ocall;
 }
