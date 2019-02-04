@@ -6,8 +6,6 @@
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
 
-#define printf oe_host_printf
-
 int oe_array_initialize(
     oe_array_t* array,
     size_t element_size,
@@ -126,7 +124,7 @@ int oe_array_append(oe_array_t* array, const void* element)
 
     size_t index = array->size++;
 
-    if (!(ptr = oe_array_get_element(array, index)))
+    if (!(ptr = oe_array_get(array, index)))
     {
         array->size--;
         goto done;
@@ -140,7 +138,7 @@ done:
     return ret;
 }
 
-void* oe_array_get_element(oe_array_t* array, size_t index)
+void* oe_array_get(oe_array_t* array, size_t index)
 {
     void* ret = NULL;
 
@@ -153,12 +151,12 @@ done:
     return ret;
 }
 
-int oe_array_set_element(oe_array_t* array, size_t index, const void* element)
+int oe_array_set(oe_array_t* array, size_t index, const void* element)
 {
     int ret = -1;
     void* ptr;
 
-    if (!element || !(ptr = oe_array_get_element(array, index)))
+    if (!element || !(ptr = oe_array_get(array, index)))
         goto done;
 
     oe_memcpy(ptr, element, array->element_size);

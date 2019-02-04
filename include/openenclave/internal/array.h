@@ -52,9 +52,9 @@ int oe_array_reserve(oe_array_t* array, size_t capacity);
 
 int oe_array_append(oe_array_t* array, const void* element);
 
-void* oe_array_get_element(oe_array_t* array, size_t index);
+void* oe_array_get(oe_array_t* array, size_t index);
 
-int oe_array_set_element(oe_array_t* array, size_t index, const void* element);
+int oe_array_set(oe_array_t* array, size_t index, const void* element);
 
 OE_EXTERNC_END
 

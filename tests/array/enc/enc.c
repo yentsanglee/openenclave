@@ -23,7 +23,7 @@ void test_array(void)
         OE_TEST(r == 0);
         OE_TEST(a.size == i + 1);
 
-        void* ptr = oe_array_get_element(&a, i);
+        void* ptr = oe_array_get(&a, i);
         OE_TEST(ptr != NULL);
         OE_TEST(oe_memcmp(ptr, &i, sizeof(i)) == 0);
     }
@@ -33,7 +33,7 @@ void test_array(void)
 
     for (uint64_t i = 0; i < N; i++)
     {
-        void* ptr = oe_array_get_element(&a, i);
+        void* ptr = oe_array_get(&a, i);
         OE_TEST(ptr != NULL);
         OE_TEST(oe_memcmp(ptr, &i, sizeof(i)) == 0);
     }
