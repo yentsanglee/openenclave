@@ -8,6 +8,7 @@ if (OE_SGX)
         sgx/atexit.c
         sgx/backtrace.c
         sgx/calls.c
+        sgx/console.c
         sgx/tracee.c
         sgx/cpuid.c
         sgx/debugmalloc.c

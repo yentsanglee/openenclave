@@ -7,17 +7,19 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
 #include "../common/hostfsargs.h"
+#include <openenclave/internal/fs.h>
 #include "hostfs.h"
 
 void oe_handle_hostfs_ocall(void* args_)
 {
     oe_hostfs_args_t* args = (oe_hostfs_args_t*)args_;
 
-    /* ATTN: handle errno propagation. */
-
     if (!args)
         return;
+
+    errno = 0;
 
     switch (args->op)
     {
@@ -27,8 +29,41 @@ void oe_handle_hostfs_ocall(void* args_)
         }
         case OE_HOSTFS_OP_OPEN:
         {
-            args->u.open.ret = open(
-                args->u.open.pathname, args->u.open.flags, args->u.open.mode);
+            if (strcmp(args->u.open.pathname, "/dev/stdin") == 0)
+            {
+                if ((args->u.open.flags & 0x00000003) != OE_O_RDONLY)
+                {
+                    errno = EINVAL;
+                    break;
+                }
+
+                args->u.open.ret = OE_STDIN_FILENO;
+            }
+            else if (strcmp(args->u.open.pathname, "/dev/stdout") == 0)
+            {
+                if ((args->u.open.flags & 0x00000003) != OE_O_WRONLY)
+                {
+                    errno = EINVAL;
+                    break;
+                }
+
+                args->u.open.ret = OE_STDOUT_FILENO;
+            }
+            else if (strcmp(args->u.open.pathname, "/dev/stderr") == 0)
+            {
+                if ((args->u.open.flags & 0x00000003) != OE_O_WRONLY)
+                {
+                    errno = EINVAL;
+                    break;
+                }
+
+                args->u.open.ret = OE_STDERR_FILENO;
+            }
+            else
+            {
+                args->u.open.ret = open(args->u.open.pathname,
+                    args->u.open.flags, args->u.open.mode);
+            }
             break;
         }
         case OE_HOSTFS_OP_CLOSE:
@@ -155,4 +190,6 @@ void oe_handle_hostfs_ocall(void* args_)
             break;
         }
     }
+
+    args->err = errno;
 }

@@ -374,7 +374,13 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         test_libcex(tmp_dir);
     }
 
-    OE_TEST(oe_write(1, "abcdefghijklmnopqrstuvwxyz\n", 27) == 27);
+    /* Write the standard output and standard error. */
+    {
+        static const char DATA[] = "abcdefghijklmnopqrstuvwxyz\n";
+        static const size_t n = sizeof(DATA) - 1;
+        OE_TEST(oe_write(OE_STDOUT_FILENO, DATA, n) == n);
+        OE_TEST(oe_write(OE_STDERR_FILENO, DATA, n) == n);
+    }
 }
 
 OE_SET_ENCLAVE_SGX(

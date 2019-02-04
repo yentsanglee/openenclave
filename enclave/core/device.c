@@ -8,6 +8,7 @@
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
+#include <openenclave/internal/thread.h>
 
 static size_t _device_table_len = 0;
 static oe_device_t** _device_table = NULL; // Resizable array of device entries
@@ -204,49 +205,90 @@ oe_device_t* oe_device_alloc(
     return pdevice;
 }
 
-int oe_allocate_fd()
+static int _initialize_fd_table()
+{
+    int ret = -1;
 
+    oe_errno = 0;
+
+    if (_fd_table_len == 0)
+    {
+        static oe_spinlock_t lock = OE_SPINLOCK_INITIALIZER;
+
+        oe_spin_lock(&lock);
+        {
+            if (_fd_table_len == 0)
+            {
+                static const size_t INITIAL_SIZE = 16;
+                oe_device_t** data;
+                size_t size = sizeof(_fd_table[0]) * INITIAL_SIZE;
+
+                if (!(data = oe_calloc(1, size)))
+                {
+                    oe_errno = OE_ENOMEM;
+                    oe_spin_unlock(&lock);
+                    goto done;
+                }
+
+                _fd_table = data;
+                _fd_table_len = INITIAL_SIZE;
+                oe_atexit(_free_fd_table);
+            }
+        }
+        oe_spin_unlock(&lock);
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int oe_allocate_fd()
 {
     // We could increase the size bump to some other number for performance.
     static const size_t SIZE_BUMP = 5;
     static const size_t MIN_FD = 3;
+    int ret = -1;
+    size_t index;
 
-    size_t fd = 0;
+    if (_fd_table_len == 0 && _initialize_fd_table() != 0)
+        goto done;
 
-    if (_fd_table_len == 0)
+    /* Search for a free slot in the file descriptor table. */
+    for (index = MIN_FD; index < _fd_table_len; index++)
     {
-        _fd_table_len = SIZE_BUMP;
-        _fd_table = oe_calloc(1, sizeof(_fd_table[0]) * _fd_table_len);
-        oe_atexit(_free_fd_table);
-
-        // Setup stdin, out and error here.
-
-        return MIN_FD; // Leave room for stdin, stdout, and stderr
-    }
-
-    for (fd = MIN_FD; fd < _fd_table_len; fd++)
-    {
-        if (_fd_table[fd] == NULL)
-        {
+        if (_fd_table[index] == NULL)
             break;
-        }
     }
 
-    if (fd >= _fd_table_len)
+    /* If a free slot not found, expand size of the file descriptor table. */
+    if (index == _fd_table_len)
     {
-        _fd_table_len = (size_t)fd + SIZE_BUMP;
-        _fd_table = (oe_device_t**)oe_realloc(
-            _fd_table, sizeof(_fd_table[0]) * _fd_table_len);
-        _fd_table[fd] = NULL;
+        const size_t size = sizeof(_fd_table[0]) * (_fd_table_len + SIZE_BUMP);
+        oe_device_t** data;
+
+        if (!(data = (oe_device_t**)oe_realloc(_fd_table, size)))
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+
+        _fd_table = data;
+        _fd_table_len = (size_t)index + SIZE_BUMP;
+        oe_memset(&_fd_table[index], 0, sizeof(_fd_table[0]) * SIZE_BUMP);
     }
 
-    if (_fd_table[fd] != NULL)
+    if (_fd_table[index] != NULL)
     {
         oe_errno = OE_EADDRINUSE;
-        return -1;
+        goto done;
     }
 
-    return (int)fd;
+    ret = (int)index;
+
+done:
+    return ret;
 }
 
 void oe_release_fd(int fd)
@@ -261,6 +303,9 @@ void oe_release_fd(int fd)
 oe_device_t* oe_set_fd_device(int fd, oe_device_t* device)
 {
     oe_device_t* ret = NULL;
+
+    if (_fd_table_len == 0 && _initialize_fd_table() != 0)
+        goto done;
 
     if (fd < 0 || (size_t)fd >= _fd_table_len)
     {
@@ -364,28 +409,20 @@ ssize_t oe_read(int fd, void* buf, size_t count)
     oe_device_t* device;
     ssize_t n;
 
-    if (fd == OE_STDIN_FILENO)
+    if (!(device = oe_get_fd_device(fd)))
+        goto done;
+
+    if (device->ops.base->read == NULL)
     {
-        /* Reads on standard input always return zero bytes in enclaves. */
-        ret = 0;
+        oe_errno = OE_EINVAL;
+        goto done;
     }
-    else
-    {
-        if (!(device = oe_get_fd_device(fd)))
-            goto done;
 
-        if (device->ops.base->read == NULL)
-        {
-            oe_errno = OE_EINVAL;
-            goto done;
-        }
+    // The action routine sets errno
+    if ((n = (*device->ops.base->read)(device, buf, count)) < 0)
+        goto done;
 
-        // The action routine sets errno
-        if ((n = (*device->ops.base->read)(device, buf, count)) < 0)
-            goto done;
-
-        ret = n;
-    }
+    ret = n;
 
 done:
     return ret;
@@ -394,36 +431,22 @@ done:
 ssize_t oe_write(int fd, const void* buf, size_t count)
 {
     ssize_t ret = -1;
+    oe_device_t* device;
 
-    if (fd == OE_STDOUT_FILENO || fd == OE_STDERR_FILENO)
+    if (!(device = oe_get_fd_device(fd)))
     {
-        if (oe_host_write(fd - 1, (const char*)buf, count) != 0)
-        {
-            oe_errno = OE_EIO;
-            goto done;
-        }
-
-        ret = (ssize_t)count;
+        oe_errno = OE_EBADF;
+        goto done;
     }
-    else
+
+    if (device->ops.base->write == NULL)
     {
-        oe_device_t* device;
-
-        if (!(device = oe_get_fd_device(fd)))
-        {
-            oe_errno = OE_EBADF;
-            goto done;
-        }
-
-        if (device->ops.base->write == NULL)
-        {
-            oe_errno = OE_EINVAL;
-            goto done;
-        }
-
-        // The action routine sets errno
-        ret = (*device->ops.base->write)(device, buf, count);
+        oe_errno = OE_EINVAL;
+        goto done;
     }
+
+    // The action routine sets errno
+    ret = (*device->ops.base->write)(device, buf, count);
 
 done:
     return ret;

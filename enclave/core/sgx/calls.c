@@ -19,6 +19,8 @@
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/trace.h>
 #include <openenclave/internal/utils.h>
+#include <openenclave/internal/print.h>
+#include <openenclave/internal/fs.h>
 #include "../../sgx/report.h"
 #include "asmdefs.h"
 #include "cpuid.h"
@@ -170,6 +172,13 @@ static oe_result_t _handle_init_enclave(uint64_t arg_in)
                     OE_RAISE(OE_INVALID_PARAMETER);
 
                 oe_enclave = safe_args.enclave;
+            }
+
+            /* Initialize the console devices: stdin, stdout, stderr. */
+            if (oe_initialize_console_devices() != 0)
+            {
+                result = OE_FAILURE;
+                goto done;
             }
 
             /* Call all enclave state initialization functions */
