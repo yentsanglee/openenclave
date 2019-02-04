@@ -92,12 +92,12 @@ add_library(oehost STATIC
   ../common/datetime.c
   ../common/kdf.c
   ../common/safecrt.c
-  ../device/fs/hostfs/host/hostfs.c
   dupenv.c
   error.c
   files.c
   fopen.c
   hexdump.c
+  hostfs.c
   memalign.c
   ocalls.c
   result.c

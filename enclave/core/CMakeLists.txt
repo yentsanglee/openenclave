@@ -5,8 +5,6 @@ set(PLATFORM_SRC "")
 
 if (OE_SGX)
     list(APPEND PLATFORM_SRC
-        ../../device/fs/hostfs/enclave/hostfs.c
-        sgx/hostbatch.c
         sgx/atexit.c
         sgx/backtrace.c
         sgx/calls.c
@@ -17,7 +15,9 @@ if (OE_SGX)
         sgx/errno.c
         sgx/exception.c
         sgx/globals.c
+        sgx/hostbatch.c
         sgx/hostcalls.c
+        sgx/hostfs.c
         sgx/init.c
         sgx/jump.c
         sgx/keys.c
