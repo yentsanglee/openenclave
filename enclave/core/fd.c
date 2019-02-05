@@ -14,7 +14,6 @@
 typedef struct _entry
 {
     oe_device_t* device;
-    bool assigned;
 }
 entry_t;
 
@@ -62,7 +61,7 @@ static int _init_table()
     return 0;
 }
 
-int oe_allocate_fd()
+int oe_assign_fd_device(oe_device_t* device)
 {
     int ret = -1;
     size_t index;
@@ -77,7 +76,7 @@ int oe_allocate_fd()
     /* Search for a free slot in the file descriptor table. */
     for (index = OE_STDERR_FILENO + 1; index < _table_size(); index++)
     {
-        if (!_table()[index].assigned)
+        if (!_table()[index].device)
             break;
     }
 
@@ -91,7 +90,7 @@ int oe_allocate_fd()
         }
     }
 
-    _table()[index].assigned = true;
+    _table()[index].device = device;
     ret = (int)index;
 
 done:
@@ -109,7 +108,6 @@ void oe_release_fd(int fd)
     if (fd >= 0 && (size_t)fd < _table_size())
     {
         _table()[fd].device = NULL;
-        _table()[fd].assigned = false;
     }
 
     oe_spin_unlock(&_lock);
@@ -139,7 +137,6 @@ oe_device_t* oe_set_fd_device(int fd, oe_device_t* device)
     }
 
     _table()[fd].device = device; // We don't clone
-    _table()[fd].assigned = true;
 
     ret = device;
 
@@ -162,12 +159,6 @@ oe_device_t* oe_get_fd_device(int fd)
     if (fd < 0 || fd >= (int)_table_size())
     {
         oe_errno = OE_EINVAL;
-        goto done;
-    }
-
-    if (!_table()[fd].assigned)
-    {
-        oe_errno = OE_EBADF;
         goto done;
     }
 

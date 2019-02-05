@@ -26,18 +26,12 @@ oe_sockfd_t oe_socket(int domain, int type, int protocol)
     if ((psock = (*pdevice->ops.socket->socket)(
              pdevice, domain, type, protocol)) == NULL)
     {
-        oe_release_fd(sd);
         return -1;
     }
-    sd = oe_allocate_fd();
-    if (sd < 0)
+    sd = oe_assign_fd_device(psock);
+    if (sd == -1)
     {
-        // Log error here
-        return -1; // errno is already set
-    }
-    psock = oe_set_fd_device(sd, psock);
-    if (!psock)
-    {
+        // ATTN: release psock here.
         // Log error here
         return -1; // erno is already set
     }
@@ -80,10 +74,9 @@ int oe_accept(
     oe_socklen_t* addrlen)
 
 {
-    oe_sockfd_t newfd = -1;
-    newfd = oe_allocate_fd();
     oe_device_t* psock = oe_get_fd_device(sockfd);
     oe_device_t* pnewsock = NULL;
+    int newfd = -1;
     if (!psock)
     {
         // Log error here
@@ -102,10 +95,15 @@ int oe_accept(
     if ((*pnewsock->ops.socket->accept)(pnewsock, addr, addrlen) < 0)
     {
         oe_free(pnewsock);
-        oe_release_fd(newfd);
         return -1;
     }
-    pnewsock = oe_set_fd_device(newfd, pnewsock);
+
+    newfd = oe_assign_fd_device(pnewsock);
+    if (newfd == -1)
+    {
+        /* ATTN: check value of newfd here. */
+    }
+
     return newfd;
 }
 

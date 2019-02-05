@@ -24,15 +24,10 @@ int oe_epoll_create(int size)
     {
         return -1;
     }
-    ed = oe_allocate_fd();
-    if (ed < 0)
+    ed = oe_assign_fd_device(pepoll);
+    if (ed == -1)
     {
-        // Log error here
-        return -1; // errno is already set
-    }
-    pepoll = oe_set_fd_device(ed, pepoll);
-    if (!pepoll)
-    {
+        // ATTN: release pepoll here.
         // Log error here
         return -1; // erno is already set
     }
@@ -51,15 +46,10 @@ int oe_epoll_create1(int flags)
     {
         return -1;
     }
-    ed = oe_allocate_fd();
-    if (ed < 0)
+    ed = oe_assign_fd_device(pepoll);
+    if (ed == -1)
     {
-        // Log error here
-        return -1; // errno is already set
-    }
-    pepoll = oe_set_fd_device(ed, pepoll);
-    if (!pepoll)
-    {
+        // ATTN: release pepoll here.
         // Log error here
         return -1; // erno is already set
     }

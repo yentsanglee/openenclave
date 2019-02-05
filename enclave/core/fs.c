@@ -287,7 +287,7 @@ done:
 int oe_open(const char* pathname, int flags, oe_mode_t mode)
 {
     int ret = -1;
-    int fd = -1;
+    int fd;
     oe_device_t* fs;
     oe_device_t* file;
     char filepath[OE_PATH_MAX] = {0};
@@ -304,33 +304,22 @@ int oe_open(const char* pathname, int flags, oe_mode_t mode)
         goto done;
     }
 
-    if ((fd = oe_allocate_fd()) < 0)
-    {
-        // oe_errno set by function.
-        goto done;
-    }
-
     if (!(file = (*fs->ops.fs->open)(fs, filepath, flags, mode)))
     {
         // oe_errno set by function.
         goto done;
     }
 
-    if (!oe_set_fd_device(fd, file))
+    if ((fd = oe_assign_fd_device(file)) == -1)
     {
+        /* ATTN: release file. */
         // oe_errno set by function.
         goto done;
     }
 
     ret = fd;
-    fd = -1;
 
 done:
-
-    /* ATTN: release file. */
-
-    if (fd != -1)
-        oe_release_fd(fd);
 
     return ret;
 }
