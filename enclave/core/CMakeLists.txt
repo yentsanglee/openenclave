@@ -30,6 +30,7 @@ if (OE_SGX)
         sgx/properties.c
         sgx/report.c
         sgx/sbrk.c
+        sgx/sched_yield.c
         sgx/spinlock.c
         sgx/td.c
         sgx/thread.c
@@ -58,6 +59,7 @@ elseif(OE_TRUSTZONE)
         optee/bounds.c
         optee/host.c
         optee/printf.c
+        optee/sched_yield.c
         optee/start.c)
 endif()
 
@@ -72,6 +74,7 @@ add_library(oecore STATIC
     printf.c
     pthread.c
     result.c
+    stdio.c
     strerror.c
     string.c
     strtoul.c
@@ -93,9 +96,8 @@ if (CMAKE_C_COMPILER_ID MATCHES GNU)
 endif()
 
 if (OE_SGX)
-    # This directory contains dummy C headers needed by dlmalloc:
+    # This directory contains enclave core libc headers:
     target_include_directories(oecore PRIVATE
-        sgx/dlmalloc
         ${PROJECT_SOURCE_DIR}/include/openenclave/elibc)
 
     # Unfortunately dlmalloc uses GNU extension that allows arithmetic

@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include <openenclave/bits/safecrt.h>
+#include <openenclave/elibc/stdio.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/fault.h>
@@ -10,6 +11,18 @@
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/thread.h>
 #include "debugmalloc.h"
+
+#if !defined(OE_NEED_STDC_NAMES)
+#define OE_NEED_STDC_NAMES
+#define __UNDEF_OE_NEED_STDC_NAMES
+#endif
+#include <openenclave/elibc/bits/stdfile.h>
+#include <openenclave/elibc/errno.h>
+#include <openenclave/elibc/sched.h>
+#if defined(__UNDEF_OE_NEED_STDC_NAMES)
+#undef OE_NEED_STDC_NAMES
+#undef __UNDEF_OE_NEED_STDC_NAMES
+#endif
 
 #define HAVE_MMAP 0
 #define LACKS_UNISTD_H
@@ -26,8 +39,6 @@
 #define ptrdiff_t ptrdiff_t
 #define sbrk oe_sbrk
 #define fprintf _dlmalloc_stats_fprintf
-
-typedef struct _FILE FILE;
 
 static int _dlmalloc_stats_fprintf(FILE* stream, const char* format, ...);
 
