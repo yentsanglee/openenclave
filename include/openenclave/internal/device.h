@@ -10,6 +10,7 @@
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/fs_ops.h>
 #include <openenclave/internal/sock_ops.h>
+#include <openenclave/internal/fd.h>
 
 OE_EXTERNC_BEGIN
 
@@ -79,7 +80,9 @@ static const uint64_t OE_READY_WRBAND = 0x00000200;
 static const uint64_t OE_READY_MSG = 0x00000400;
 static const uint64_t OE_READY_RDHUP = 0x00002000;
 
-typedef struct _oe_device
+typedef struct _oe_device oe_device_t;
+
+struct _oe_device
 {
     /* Type of this device: OE_DEVICE_ID_FILE or OE_DEVICE_ID_SOCKET. */
     oe_device_type_t type;
@@ -99,7 +102,7 @@ typedef struct _oe_device
         oe_epoll_ops_t* epoll;
     } ops;
 
-} oe_device_t;
+};
 
 int oe_allocate_devid(int devid);
 void oe_release_devid(int devid);
@@ -111,10 +114,6 @@ oe_device_t* oe_clone_device(oe_device_t* pdevice);
 int oe_device_init(); // Overridable function to set up device structures. Shoud
                       // be ommited when new interface is complete.
 
-int oe_allocate_fd();
-
-void oe_release_fd(int fd);
-
 oe_device_t* oe_device_alloc(
     int device_id,
     const char* device_name,
@@ -123,10 +122,6 @@ oe_device_t* oe_device_alloc(
 int oe_device_addref(int device_id);
 
 int oe_device_release(int device_id);
-
-oe_device_t* oe_set_fd_device(int device_id, oe_device_t* pdevice);
-
-oe_device_t* oe_get_fd_device(int fd);
 
 int oe_remove_device();
 
@@ -137,10 +132,6 @@ ssize_t oe_write(int fd, const void* buf, size_t count);
 int oe_close(int fd);
 
 int oe_ioctl(int fd, unsigned long request, ...);
-
-// Take a host fd from hostfs or host_sock and return the enclave file
-// descriptor index If the host fd is not found, we return -1
-ssize_t oe_map_host_fd(uint64_t host_fd);
 
 int oe_handle_device_syscall(
     long num,

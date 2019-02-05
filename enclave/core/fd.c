@@ -3,7 +3,7 @@
 
 #include <openenclave/enclave.h>
 #include <openenclave/internal/atexit.h>
-#include <openenclave/internal/device.h>
+#include <openenclave/internal/fd.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/thread.h>
