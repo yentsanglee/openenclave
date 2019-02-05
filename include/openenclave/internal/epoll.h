@@ -4,6 +4,8 @@
 
 #ifndef __OE_EPOLL_H__
 #define __OE_EPOLL_H__
+#pragma once
+#include <openenclave/internal/device.h>
 
 enum OE_EPOLL_EVENTS
 {
@@ -25,9 +27,13 @@ enum OE_EPOLL_EVENTS
 };
 
 
-struct oe_device_notification_args {
+struct oe_device_notifications {
     uint64_t enclave_fd; // On the host side we set this into the event data
     uint32_t event_mask;  // oe_epoll_event.event
+};
+struct oe_device_notification_args {
+    uint64_t num_notifications;
+    // struct oe_device_notifications events[];
 };
 
 oe_result_t _handle_oe_device_notification(uint64_t args);
@@ -35,9 +41,9 @@ oe_result_t _handle_oe_device_notification(uint64_t args);
 /* internal signalling */
 void oe_signal_device_notification(oe_device_t * pdevice, uint32_t event_mask);
 
-void oe_broadcast_device_notification();
+void oe_broadcast_device_notification(void);
 int  oe_wait_device_notification(int timeout);
-void oe_clear_device_notification();
+void oe_clear_device_notification(void);
 
 #define OE_EPOLL_CTL_ADD 1 /* Add a file descriptor to the interface.  */
 #define OE_EPOLL_CTL_DEL 2 /* Remove a file descriptor from the interface.  */

@@ -284,6 +284,7 @@ oe_result_t oe_mutex_unlock(oe_mutex_t* mutex);
  */
 oe_result_t oe_mutex_destroy(oe_mutex_t* mutex);
 
+
 /**
  * Condition variable representation
  */

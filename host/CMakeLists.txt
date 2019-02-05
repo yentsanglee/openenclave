@@ -15,6 +15,7 @@ if (UNIX)
     crypto/openssl/key.c
     crypto/openssl/random.c
     crypto/openssl/rsa.c
+    linux/hostepoll.c
     linux/hostthread.c
     linux/time.c
     linux/windows.c)
@@ -23,6 +24,7 @@ elseif (WIN32)
     ../3rdparty/mbedtls/mbedtls/library/bignum.c
     crypto/bcrypt/hmac.c
     crypto/bcrypt/rsa.c
+    windows/hostepoll.c
     windows/hostthread.c
     windows/time.c)
 else()

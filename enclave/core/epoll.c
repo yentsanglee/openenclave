@@ -159,38 +159,52 @@ int oe_epoll_pwait(
 
 static oe_cond_t poll_notification = OE_COND_INITIALIZER;
 
+
+//
+// We accept a list of notifications so we don't get large number
+// of handle notification calls in rapid succesion. This could raise needless synchronisaion issues.
+// Instead, we send the list and notify the list, the push the doorbell
 oe_result_t _handle_oe_device_notification(uint64_t arg)
 {
     oe_result_t result = OE_FAILURE;
     struct oe_device_notification_args* pargs = (struct oe_device_notification_args*)arg;
     struct oe_device_notification_args local;
     oe_device_t *pdevice = NULL;
+    uint64_t num_notifications ;
+    uint64_t i = 0;
+    struct oe_device_notifications *pnotifications = NULL;
 
     if (pargs == NULL)
     {
         result = OE_INVALID_PARAMETER;
         goto done;
     }
-
-    if (!oe_is_outside_enclave((void*)pargs, sizeof(struct oe_device_notification_args)))
+    num_notifications = pargs->num_notifications;
+    if (!oe_is_outside_enclave((void*)pargs, sizeof(struct oe_device_notification_args)+(sizeof(struct oe_device_notifications)*num_notifications)))
     {
         result = OE_INVALID_PARAMETER;
         goto done;
     }
 
     /* Copy structure into enclave memory */
-    oe_secure_memcpy(&local, pargs, sizeof(struct oe_device_notification_args));
+    oe_secure_memcpy(&local, pargs, sizeof(struct oe_device_notification_args)+(sizeof(struct oe_device_notifications)*num_notifications));
+    pnotifications = (struct oe_device_notifications *)((&local)+1);
 
-    /* translate the host_fd to enclve fd */
-    pdevice = oe_get_fd_device((int)local.enclave_fd);
-    if (pdevice == NULL)
+    for (i = 0; i < num_notifications; i++ )
     {
-        result = OE_INVALID_PARAMETER;
-        goto done;
+        /* the enclave fd was sent down to the host when we did the ctl_add. The epoll event structure allows tagging the
+           wait event with an arbitrary int64 */
+        pdevice = oe_get_fd_device((int)pnotifications[1].enclave_fd);
+        if (pdevice != NULL)
+        {
+            /* set the event mask in the pdevice */
+            (*pdevice->ops.base->notify)(pdevice, (uint64_t)pnotifications[i].event_mask);
+        }
+        else
+        {
+             // Log the issue
+        }
     }
-
-    /* set the event mask in the pdevice */
-    (*pdevice->ops.base->notify)(pdevice, (uint64_t)local.event_mask);
 
     /* push the doorbell */
     oe_broadcast_device_notification();

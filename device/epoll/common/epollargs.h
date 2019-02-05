@@ -29,37 +29,41 @@ typedef struct _oe_epoll_args
         struct
         {
             int64_t ret; // returns host_fd for the epoll
-            int32_t size;
             int32_t flags;
+            // the size argument is obsolete and not used
         } create;
         struct
         {
-            int64_t ret; // returns host_fd for the epoll
-            int64_t host_fd;
+            int64_t ret; // returns numfds returned or -1
+            int64_t epoll_fd;
+            int64_t maxevents;
             int64_t timeout;
+            // event array  returned in buf
         } wait;
         struct
         {
             int64_t ret;
+            int64_t epoll_fd;
             int64_t host_fd;
             int32_t event_mask;
             int32_t enclave_fd;
+            int32_t handle_type;  // We need this for windows. A file handle != socket handle in win32 and its awkward to figure it out.
         } add;
         struct
         {
             int64_t ret;
-            int64_t host_fd;  // host fd for the epoll
-            int32_t list_index;  // Index into the expected list
-            int32_t event_mask;
-            int32_t enclave_fd;
+            int64_t epoll_fd;  // host_fd of the epoll
+            int64_t host_fd;  // host fd for the waitable
+            int32_t enclave_fd; // The enclave fd may used in windows to order auxilliary epoll data, such as hEvents from WSASocketEvent
         } del;
         struct
         {
             int64_t ret;
-            int64_t host_fd; // host fd of the epoll
-            int32_t list_index;  // Index into the expected list
+            int64_t epoll_fd;
+            int64_t host_fd;
             int32_t event_mask;
             int32_t enclave_fd;
+            int32_t handle_type;  // We need this for windows. A file handle != socket handle in win32 and its awkward to figure it out.
         } mod;
         struct
         {
