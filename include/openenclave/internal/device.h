@@ -128,8 +128,6 @@ oe_device_t* oe_set_fd_device(int device_id, oe_device_t* pdevice);
 
 oe_device_t* oe_get_fd_device(int fd);
 
-int oe_clone_fd(int fd);
-
 int oe_remove_device();
 
 ssize_t oe_read(int fd, void* buf, size_t count);
