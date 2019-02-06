@@ -9,32 +9,27 @@
 
 OE_EXTERNC_BEGIN
 
-// Well known  device ids
-enum
-{
-    OE_DEVICE_ID_NONE = 0,
+/* This file defines the known device ids. */
 
-    // This entry describes a file in the hosts's file system
-    OE_DEVICE_ID_HOSTFS = 1,
+#define OE_DEVICE_ID_NONE ((int)0)
 
-    // The Intel SGX protected file system.
-    OE_DEVICE_ID_SGXFS = 2,
+#define OE_DEVICE_ID_HOSTFS ((int)1)
 
-    // This entry describes a file in the secure hardward file system.
-    OE_DEVICE_ID_SHWFS = 3,
+#define OE_DEVICE_ID_SGXFS ((int)2)
 
-    // This entry describes an internet socket
-    OE_DEVICE_ID_HOST_SOCKET = 4,
+#define OE_DEVICE_ID_SHWFS ((int)3)
 
-    // This entry describes an enclave to enclave
-    OE_DEVICE_ID_ENCLAVE_SOCKET = 5,
+/* A host internet socket. */
+#define OE_DEVICE_ID_HOST_SOCKET ((int)4)
 
-    // This entry describes an epoll instance
-    OE_DEVICE_ID_EPOLL = 6,
+/* An enclave-to-enclave socket. */
+#define OE_DEVICE_ID_ENCLAVE_SOCKET ((int)5)
 
-    // This entry describes an enventfd instance
-    OE_DEVICE_ID_EVENTFD = 7
-};
+/* An epoll device. */
+#define OE_DEVICE_ID_EPOLL ((int)6)
+
+/* An event file descriptor. */
+#define OE_DEVICE_ID_EVENTFD ((int)7)
 
 OE_EXTERNC_END
 
