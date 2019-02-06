@@ -300,6 +300,39 @@ void test_all(FILE_SYSTEM& fs, const char* tmp_dir)
     cleanup(fs, tmp_dir);
 }
 
+void test_fprintf_fscanf(const char* tmp_dir)
+{
+    char path[OE_PAGE_SIZE];
+    device_registrant registrant(OE_DEVICE_ID_INSECURE_FS);
+
+    printf("--- %s()\n", __FUNCTION__);
+
+    mkpath(path, tmp_dir, "fprintf");
+
+    /* Write "5 five" to the file. */
+    {
+        FILE* stream;
+        OE_TEST((stream = fopen(path, "w")));
+        int n = fprintf(stream, "%d %s", 5, "five");
+        OE_TEST(n == 6);
+        OE_TEST(fclose(stream) == 0);
+    }
+
+    /* Read back the file. */
+    {
+        FILE* stream;
+        int num;
+        char str[16];
+
+        OE_TEST((stream = fopen(path, "r")));
+        int n = fscanf(stream, "%d %s", &num, str);
+        OE_TEST(n == 2);
+        OE_TEST(num = 5);
+        OE_TEST(strcmp(str, "five") == 0);
+        OE_TEST(fclose(stream) == 0);
+    }
+}
+
 void test_fs(const char* src_dir, const char* tmp_dir)
 {
     (void)src_dir;
@@ -397,37 +430,8 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         OE_TEST(oe_write(OE_STDERR_FILENO, DATA, n) == n);
     }
 
-    /* Test fprintf()/fscanf() */
-    {
-        char path[OE_PAGE_SIZE];
-        device_registrant registrant(OE_DEVICE_ID_INSECURE_FS);
-
-        mkpath(path, tmp_dir, "fprintf");
-
-        /* Write "5 five" to the file. */
-        {
-            FILE* stream;
-            OE_TEST((stream = fopen(path, "w")));
-            int n = fprintf(stream, "%d %s", 5, "five");
-            OE_TEST(n == 6);
-            OE_TEST(fclose(stream) == 0);
-            printf("%s\n", path);
-        }
-
-        /* Read back the file. */
-        {
-            FILE* stream;
-            int num;
-            char str[16];
-
-            OE_TEST((stream = fopen(path, "r")));
-            int n = fscanf(stream, "%d %s", &num, str);
-            OE_TEST(n == 2);
-            OE_TEST(num = 5);
-            OE_TEST(strcmp(str, "five") == 0);
-            OE_TEST(fclose(stream) == 0);
-        }
-    }
+    /* Test fprintf and fscanf. */
+    test_fprintf_fscanf(tmp_dir);
 }
 
 OE_SET_ENCLAVE_SGX(
