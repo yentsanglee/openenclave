@@ -124,6 +124,49 @@ static dir_t* _cast_dir(const oe_device_t* device)
     return dir;
 }
 
+static int _hostfs_mount(
+    oe_device_t* dev,
+    const char* source,
+    const char* target,
+    uint32_t flags)
+{
+    int ret = -1;
+    fs_t* fs = _cast_fs(dev);
+
+    OE_UNUSED(source);
+    OE_UNUSED(flags);
+
+    if (!fs || !target)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int _hostfs_unmount(
+    oe_device_t* dev,
+    const char* target)
+{
+    int ret = -1;
+    fs_t* fs = _cast_fs(dev);
+
+    if (!fs || !target)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 static ssize_t _hostfs_read(oe_device_t*, void* buf, size_t count);
 
 static int _hostfs_close(oe_device_t*);
@@ -1049,6 +1092,8 @@ static oe_fs_ops_t _ops = {
     .base.release = _hostfs_release,
     .base.shutdown = _hostfs_shutdown,
     .base.ioctl = _hostfs_ioctl,
+    .mount = _hostfs_mount,
+    .unmount = _hostfs_unmount,
     .open = _hostfs_open,
     .base.read = _hostfs_read,
     .base.write = _hostfs_write,

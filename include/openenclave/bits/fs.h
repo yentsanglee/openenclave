@@ -156,9 +156,9 @@ typedef struct _oe_iovec
     size_t iov_len;
 } oe_iovec_t;
 
-int oe_mount(int devid, const char* path, uint32_t flags);
+int oe_mount(int devid, const char* source, const char* target, uint32_t flags);
 
-int oe_unmount(int devid, const char* path);
+int oe_unmount(int devid, const char* target);
 
 int oe_open(const char* pathname, int flags, mode_t mode);
 

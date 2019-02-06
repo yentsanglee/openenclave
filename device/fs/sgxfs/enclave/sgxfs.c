@@ -122,6 +122,49 @@ done:
     return ret;
 }
 
+static int _sgxfs_mount(
+    oe_device_t* dev,
+    const char* source,
+    const char* target,
+    uint32_t flags)
+{
+    int ret = -1;
+    fs_t* fs = _cast_fs(dev);
+
+    OE_UNUSED(source);
+    OE_UNUSED(flags);
+
+    if (!fs || !target)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int _sgxfs_unmount(
+    oe_device_t* dev,
+    const char* target)
+{
+    int ret = -1;
+    fs_t* fs = _cast_fs(dev);
+
+    if (!fs || !target)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 static int _sgxfs_clone(oe_device_t* device, oe_device_t** new_device)
 {
     int ret = -1;
@@ -825,6 +868,8 @@ static oe_fs_ops_t _ops = {
     .base.release = _sgxfs_release,
     .base.shutdown = _sgxfs_shutdown,
     .base.ioctl = _sgxfs_ioctl,
+    .mount = _sgxfs_mount,
+    .unmount = _sgxfs_unmount,
     .open = _sgxfs_open,
     .base.read = _sgxfs_read,
     .base.write = _sgxfs_write,

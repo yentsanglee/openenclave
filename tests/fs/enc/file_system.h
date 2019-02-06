@@ -217,7 +217,7 @@ class oe_fd_hostfs_file_system : public oe_fd_file_system
     oe_fd_hostfs_file_system()
     {
         oe_register_hostfs_device();
-        OE_TEST(oe_mount(OE_DEVICE_ID_INSECURE_FS, "/", 0) == 0);
+        OE_TEST(oe_mount(OE_DEVICE_ID_INSECURE_FS, NULL, "/", 0) == 0);
     }
 
     ~oe_fd_hostfs_file_system()
@@ -232,7 +232,7 @@ class oe_fd_sgxfs_file_system : public oe_fd_file_system
     oe_fd_sgxfs_file_system()
     {
         oe_register_sgxfs_device();
-        OE_TEST(oe_mount(OE_DEVICE_ID_ENCRYPTED_FS, "/", 0) == 0);
+        OE_TEST(oe_mount(OE_DEVICE_ID_ENCRYPTED_FS, NULL, "/", 0) == 0);
     }
 
     ~oe_fd_sgxfs_file_system()
@@ -337,7 +337,7 @@ class fd_hostfs_file_system : public fd_file_system
     fd_hostfs_file_system()
     {
         oe_register_hostfs_device();
-        OE_TEST(oe_mount(OE_DEVICE_ID_INSECURE_FS, "/", 0) == 0);
+        OE_TEST(oe_mount(OE_DEVICE_ID_INSECURE_FS, NULL, "/", 0) == 0);
     }
 
     ~fd_hostfs_file_system()
@@ -352,7 +352,7 @@ class fd_sgxfs_file_system : public fd_file_system
     fd_sgxfs_file_system()
     {
         oe_register_sgxfs_device();
-        OE_TEST(oe_mount(OE_DEVICE_ID_ENCRYPTED_FS, "/", 0) == 0);
+        OE_TEST(oe_mount(OE_DEVICE_ID_ENCRYPTED_FS, NULL, "/", 0) == 0);
     }
 
     ~fd_sgxfs_file_system()
@@ -563,7 +563,7 @@ class stream_hostfs_file_system : public stream_file_system
     stream_hostfs_file_system()
     {
         oe_register_hostfs_device();
-        OE_TEST(oe_mount(OE_DEVICE_ID_ENCRYPTED_FS, "/", 0) == 0);
+        OE_TEST(oe_mount(OE_DEVICE_ID_ENCRYPTED_FS, NULL, "/", 0) == 0);
     }
 
     ~stream_hostfs_file_system()
@@ -578,7 +578,7 @@ class stream_sgxfs_file_system : public stream_file_system
     stream_sgxfs_file_system()
     {
         oe_register_sgxfs_device();
-        OE_TEST(oe_mount(OE_DEVICE_ID_ENCRYPTED_FS, "/", 0) == 0);
+        OE_TEST(oe_mount(OE_DEVICE_ID_ENCRYPTED_FS, NULL, "/", 0) == 0);
     }
 
     ~stream_sgxfs_file_system()

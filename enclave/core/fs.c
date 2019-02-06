@@ -158,7 +158,7 @@ done:
     return ret;
 }
 
-int oe_mount(int devid, const char* path, uint32_t flags)
+int oe_mount(int devid, const char* source, const char* target, uint32_t flags)
 {
     int ret = -1;
     oe_device_t* device = oe_get_devid_device(devid);
@@ -168,7 +168,7 @@ int oe_mount(int devid, const char* path, uint32_t flags)
 
     oe_spin_lock(&_lock);
 
-    if (!device || device->type != OE_DEVICETYPE_FILESYSTEM || !path)
+    if (!device || device->type != OE_DEVICETYPE_FILESYSTEM || !target)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -191,7 +191,7 @@ int oe_mount(int devid, const char* path, uint32_t flags)
     /* Reject duplicate mount paths. */
     for (size_t i = 0; i < _mount_table_size; i++)
     {
-        if (oe_strcmp(_mount_table[i].path, path) == 0)
+        if (oe_strcmp(_mount_table[i].path, target) == 0)
         {
             oe_errno = OE_EEXIST;
             goto done;
@@ -208,17 +208,24 @@ int oe_mount(int devid, const char* path, uint32_t flags)
     /* Assign and initialize new mount point. */
     {
         size_t index = _mount_table_size;
-        size_t path_len = oe_strlen(path);
+        size_t target_len = oe_strlen(target);
 
-        if (!(_mount_table[index].path = oe_malloc(path_len + 1)))
+        if (!(_mount_table[index].path = oe_malloc(target_len + 1)))
         {
             oe_errno = OE_ENOMEM;
             goto done;
         }
 
-        oe_memcpy(_mount_table[index].path, path, path_len + 1);
+        oe_memcpy(_mount_table[index].path, target, target_len + 1);
         _mount_table[index].fs = new_device;
         _mount_table_size++;
+    }
+
+    /* Notify the device that it has been mounted. */
+    if (new_device->ops.fs->mount(new_device, source, target, flags) != 0)
+    {
+        oe_free(_mount_table[--_mount_table_size].path);
+        goto done;
     }
 
     new_device = NULL;
@@ -233,7 +240,7 @@ done:
     return ret;
 }
 
-int oe_unmount(int devid, const char* path)
+int oe_unmount(int devid, const char* target)
 {
     int ret = -1;
     size_t index = (size_t)-1;
@@ -241,7 +248,7 @@ int oe_unmount(int devid, const char* path)
 
     oe_spin_lock(&_lock);
 
-    if (!device || device->type != OE_DEVICETYPE_FILESYSTEM || !path)
+    if (!device || device->type != OE_DEVICETYPE_FILESYSTEM || !target)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -250,7 +257,7 @@ int oe_unmount(int devid, const char* path)
     /* Find and remove this device. */
     for (size_t i = 0; i < _mount_table_size; i++)
     {
-        if (oe_strcmp(_mount_table[i].path, path) == 0)
+        if (oe_strcmp(_mount_table[i].path, target) == 0)
         {
             index = i;
             break;
@@ -272,6 +279,9 @@ int oe_unmount(int devid, const char* path)
         fs = _mount_table[index].fs;
         _mount_table[index] = _mount_table[_mount_table_size - 1];
         _mount_table_size--;
+
+        if (fs->ops.fs->unmount(fs, target) != 0)
+            goto done;
 
         fs->ops.fs->base.release(fs);
     }
