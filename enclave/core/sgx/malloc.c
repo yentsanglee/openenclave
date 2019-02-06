@@ -3,8 +3,8 @@
 
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/elibc/stdio.h>
+#include <openenclave/elibc/string.h>
 #include <openenclave/enclave.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/fault.h>
 #include <openenclave/internal/globals.h>
 #include <openenclave/internal/malloc.h>
@@ -12,6 +12,7 @@
 #include <openenclave/internal/thread.h>
 #include "debugmalloc.h"
 
+/* The use of dlmalloc/malloc.c below requires stdc names from these headers */
 #if !defined(OE_NEED_STDC_NAMES)
 #define OE_NEED_STDC_NAMES
 #define __UNDEF_OE_NEED_STDC_NAMES
