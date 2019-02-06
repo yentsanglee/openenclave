@@ -129,7 +129,7 @@ static oe_device_t* _hostfs_open(
     oe_device_t* fs_,
     const char* pathname,
     int flags,
-    oe_mode_t mode)
+    mode_t mode)
 {
     oe_device_t* ret = NULL;
     fs_t* fs = _cast_fs(fs_);
@@ -317,9 +317,9 @@ done:
     return ret;
 }
 
-static oe_off_t _hostfs_lseek(oe_device_t* file_, oe_off_t offset, int whence)
+static off_t _hostfs_lseek(oe_device_t* file_, off_t offset, int whence)
 {
-    oe_off_t ret = -1;
+    off_t ret = -1;
     file_t* file = _cast_file(file_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
@@ -825,7 +825,7 @@ done:
     return ret;
 }
 
-static int _hostfs_truncate(oe_device_t* fs_, const char* path, oe_off_t length)
+static int _hostfs_truncate(oe_device_t* fs_, const char* path, off_t length)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(fs_);
@@ -875,7 +875,7 @@ done:
     return ret;
 }
 
-static int _hostfs_mkdir(oe_device_t* fs_, const char* pathname, oe_mode_t mode)
+static int _hostfs_mkdir(oe_device_t* fs_, const char* pathname, mode_t mode)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(fs_);

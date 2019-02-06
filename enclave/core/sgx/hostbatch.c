@@ -2,9 +2,9 @@
 // Licensed under the MIT License.
 
 #include <openenclave/enclave.h>
+#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/hostbatch.h>
 #include <openenclave/internal/thread.h>
-#include <openenclave/internal/enclavelibc.h>
 
 #define ALIGNMENT sizeof(uint64_t)
 

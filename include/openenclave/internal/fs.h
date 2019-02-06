@@ -1,16 +1,13 @@
 // Copyright (c) Microsoft Corporation. All rights reserved._ops
 // Licensed under the MIT License.
 
-#ifndef _OE_FS_H
-#define _OE_FS_H
+#ifndef _OE_INTERNAL_FS_H
+#define _OE_INTERNAL_FS_H
 
+#include <openenclave/bits/fs.h>
 #include <openenclave/internal/device.h>
 
 OE_EXTERNC_BEGIN
-
-#define OE_STDIN_FILENO 0
-#define OE_STDOUT_FILENO 1
-#define OE_STDERR_FILENO 2
 
 /* The enclave calls this to get an instance of host file system (HOSTFS). */
 oe_device_t* oe_fs_get_hostfs(void);
@@ -37,64 +34,6 @@ int oe_clear_thread_default_device(void);
 /* Get the default device for this thread. */
 int oe_get_thread_default_device(void);
 
-int oe_mount(int devid, const char* path, uint32_t flags);
-
-int oe_unmount(int devid, const char* path);
-
-int oe_open(const char* pathname, int flags, oe_mode_t mode);
-
-int oe_open_dev(int devid, const char* pathname, int flags, oe_mode_t mode);
-
-oe_off_t oe_lseek(int fd, oe_off_t offset, int whence);
-
-oe_device_t* oe_opendir(const char* pathname);
-
-struct oe_dirent* oe_readdir(oe_device_t* dir);
-
-int oe_closedir(oe_device_t* dir);
-
-int oe_unlink(const char* pathname);
-
-int oe_link(const char* oldpath, const char* newpath);
-
-int oe_rename(const char* oldpath, const char* newpath);
-
-int oe_mkdir(const char* pathname, oe_mode_t mode);
-
-int oe_rmdir(const char* pathname);
-
-int oe_stat(const char* pathname, struct oe_stat* buf);
-
-int oe_truncate(const char* path, oe_off_t length);
-
-ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt);
-
-ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt);
-
-int oe_access(const char* pathname, int mode);
-
-oe_device_t* oe_opendir_dev(int devid, const char* pathname);
-
-struct oe_dirent* oe_readdir(oe_device_t* dirp);
-
-int oe_closedir(oe_device_t* dirp);
-
-int oe_unlink_dev(int devid, const char* pathname);
-
-int oe_link_dev(int devid, const char* oldpath, const char* newpath);
-
-int oe_rename_dev(int devid, const char* oldpath, const char* newpath);
-
-int oe_mkdir_dev(int devid, const char* pathname, oe_mode_t mode);
-
-int oe_rmdir_dev(int devid, const char* pathname);
-
-int oe_stat_dev(int devid, const char* pathname, struct oe_stat* buf);
-
-int oe_truncate_dev(int devid, const char* path, oe_off_t length);
-
-int oe_access_dev(int devid, const char* pathname, int mode);
-
 OE_EXTERNC_END
 
-#endif // _OE_FS_H
+#endif // _OE_INTERNAL_FS_H

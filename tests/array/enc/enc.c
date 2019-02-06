@@ -3,9 +3,9 @@
 
 #include <openenclave/enclave.h>
 #include <openenclave/internal/array.h>
-#include <openenclave/internal/tests.h>
-#include <openenclave/internal/print.h>
 #include <openenclave/internal/enclavelibc.h>
+#include <openenclave/internal/print.h>
+#include <openenclave/internal/tests.h>
 #include "array_t.h"
 
 void test_array(void)

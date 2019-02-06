@@ -26,7 +26,7 @@ class fs_file_system
     {
     }
 
-    file_handle open(const char* pathname, int flags, oe_mode_t mode)
+    file_handle open(const char* pathname, int flags, mode_t mode)
     {
         return (file_handle)_fs->ops.fs->open(_fs, pathname, flags, mode);
     }
@@ -41,7 +41,7 @@ class fs_file_system
         return file->ops.fs->base.read(file, buf, count);
     }
 
-    oe_off_t lseek(file_handle file, oe_off_t offset, int whence)
+    off_t lseek(file_handle file, off_t offset, int whence)
     {
         return _fs->ops.fs->lseek(file, offset, whence);
     }
@@ -81,7 +81,7 @@ class fs_file_system
         return _fs->ops.fs->rename(_fs, oldpath, newpath);
     }
 
-    int mkdir(const char* pathname, oe_mode_t mode)
+    int mkdir(const char* pathname, mode_t mode)
     {
         return _fs->ops.fs->mkdir(_fs, pathname, mode);
     }
@@ -96,7 +96,7 @@ class fs_file_system
         return _fs->ops.fs->stat(_fs, pathname, buf);
     }
 
-    int truncate(const char* path, oe_off_t length)
+    int truncate(const char* path, off_t length)
     {
         return _fs->ops.fs->truncate(_fs, path, length);
     }
@@ -125,7 +125,7 @@ class oe_fd_file_system
 {
   public:
     typedef int file_handle;
-    typedef oe_device_t* dir_handle;
+    typedef OE_DIR* dir_handle;
     typedef struct oe_stat stat_type;
     typedef struct oe_dirent dirent_type;
 
@@ -133,7 +133,7 @@ class oe_fd_file_system
     {
     }
 
-    file_handle open(const char* pathname, int flags, oe_mode_t mode)
+    file_handle open(const char* pathname, int flags, mode_t mode)
     {
         return (file_handle)oe_open(pathname, flags, mode);
     }
@@ -148,7 +148,7 @@ class oe_fd_file_system
         return oe_read(file, buf, count);
     }
 
-    oe_off_t lseek(file_handle file, oe_off_t offset, int whence)
+    off_t lseek(file_handle file, off_t offset, int whence)
     {
         return oe_lseek(file, offset, whence);
     }
@@ -165,12 +165,12 @@ class oe_fd_file_system
 
     struct oe_dirent* readdir(dir_handle dir)
     {
-        return oe_readdir((oe_device_t*)dir);
+        return oe_readdir(dir);
     }
 
     int closedir(dir_handle dir)
     {
-        return oe_closedir((oe_device_t*)dir);
+        return oe_closedir(dir);
     }
 
     int unlink(const char* pathname)
@@ -188,7 +188,7 @@ class oe_fd_file_system
         return oe_rename(oldpath, newpath);
     }
 
-    int mkdir(const char* pathname, oe_mode_t mode)
+    int mkdir(const char* pathname, mode_t mode)
     {
         return oe_mkdir(pathname, mode);
     }
@@ -203,7 +203,7 @@ class oe_fd_file_system
         return oe_stat(pathname, buf);
     }
 
-    int truncate(const char* path, oe_off_t length)
+    int truncate(const char* path, off_t length)
     {
         return oe_truncate(path, length);
     }

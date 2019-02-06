@@ -65,13 +65,13 @@ int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event)
 
     oe_errno = 0;
     /* Check parameters. */
-    if (!pepoll || !pdevice )
+    if (!pepoll || !pdevice)
     {
         oe_errno = OE_EBADF;
         return -1;
     }
 
-    switch(op)
+    switch (op)
     {
         case OE_EPOLL_CTL_ADD:
         {
@@ -131,7 +131,7 @@ int oe_epoll_wait(
     // search polled device list for host involved  2Do
     if (host_wait)
     {
-        if((*pepoll->ops.epoll->wait)(pepoll, timeout) < 0)
+        if ((*pepoll->ops.epoll->wait)(pepoll, timeout) < 0)
         {
             oe_errno = OE_EINVAL;
             return -1;
@@ -139,9 +139,10 @@ int oe_epoll_wait(
     }
     ret = oe_wait_device_notification(timeout);
 
-    // Search the list for events changed . If OE_EPOLLET is set check against previous. Copy the active
+    // Search the list for events changed . If OE_EPOLLET is set check against
+    // previous. Copy the active
 
-   return 0; // return the number of descriptors that have signalled
+    return 0; // return the number of descriptors that have signalled
 }
 
 #if MAYBE
@@ -159,20 +160,21 @@ int oe_epoll_pwait(
 
 static oe_cond_t poll_notification = OE_COND_INITIALIZER;
 
-
 //
 // We accept a list of notifications so we don't get large number
-// of handle notification calls in rapid succesion. This could raise needless synchronisaion issues.
-// Instead, we send the list and notify the list, the push the doorbell
+// of handle notification calls in rapid succesion. This could raise needless
+// synchronisaion issues. Instead, we send the list and notify the list, the
+// push the doorbell
 oe_result_t _handle_oe_device_notification(uint64_t arg)
 {
     oe_result_t result = OE_FAILURE;
-    struct oe_device_notification_args* pargs = (struct oe_device_notification_args*)arg;
+    struct oe_device_notification_args* pargs =
+        (struct oe_device_notification_args*)arg;
     struct oe_device_notification_args local;
-    oe_device_t *pdevice = NULL;
-    uint64_t num_notifications ;
+    oe_device_t* pdevice = NULL;
+    uint64_t num_notifications;
     uint64_t i = 0;
-    struct oe_device_notifications *pnotifications = NULL;
+    struct oe_device_notifications* pnotifications = NULL;
 
     if (pargs == NULL)
     {
@@ -180,29 +182,38 @@ oe_result_t _handle_oe_device_notification(uint64_t arg)
         goto done;
     }
     num_notifications = pargs->num_notifications;
-    if (!oe_is_outside_enclave((void*)pargs, sizeof(struct oe_device_notification_args)+(sizeof(struct oe_device_notifications)*num_notifications)))
+    if (!oe_is_outside_enclave(
+            (void*)pargs,
+            sizeof(struct oe_device_notification_args) +
+                (sizeof(struct oe_device_notifications) * num_notifications)))
     {
         result = OE_INVALID_PARAMETER;
         goto done;
     }
 
     /* Copy structure into enclave memory */
-    oe_secure_memcpy(&local, pargs, sizeof(struct oe_device_notification_args)+(sizeof(struct oe_device_notifications)*num_notifications));
-    pnotifications = (struct oe_device_notifications *)((&local)+1);
+    oe_secure_memcpy(
+        &local,
+        pargs,
+        sizeof(struct oe_device_notification_args) +
+            (sizeof(struct oe_device_notifications) * num_notifications));
+    pnotifications = (struct oe_device_notifications*)((&local) + 1);
 
-    for (i = 0; i < num_notifications; i++ )
+    for (i = 0; i < num_notifications; i++)
     {
-        /* the enclave fd was sent down to the host when we did the ctl_add. The epoll event structure allows tagging the
+        /* the enclave fd was sent down to the host when we did the ctl_add. The
+           epoll event structure allows tagging the
            wait event with an arbitrary int64 */
         pdevice = oe_get_fd_device((int)pnotifications[1].enclave_fd);
         if (pdevice != NULL)
         {
             /* set the event mask in the pdevice */
-            (*pdevice->ops.base->notify)(pdevice, (uint64_t)pnotifications[i].event_mask);
+            (*pdevice->ops.base->notify)(
+                pdevice, (uint64_t)pnotifications[i].event_mask);
         }
         else
         {
-             // Log the issue
+            // Log the issue
         }
     }
 
@@ -214,24 +225,21 @@ done:
     return result;
 }
 
-void
-oe_signal_device_notification(oe_device_t * pdevice, uint32_t event_mask)
+void oe_signal_device_notification(oe_device_t* pdevice, uint32_t event_mask)
 {
-   (void)pdevice;
-   (void)event_mask;
+    (void)pdevice;
+    (void)event_mask;
 }
 
-void
-oe_broadcast_device_notification()
+void oe_broadcast_device_notification()
 {
 }
 
-int
-oe_wait_device_notification(int timeout)
+int oe_wait_device_notification(int timeout)
 {
-   (void) poll_notification;
-   (void)timeout;
-   return -1;
+    (void)poll_notification;
+    (void)timeout;
+    return -1;
 }
 
 void oe_clear_device_notification()

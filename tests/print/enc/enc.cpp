@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include <openenclave/enclave.h>
-#include <openenclave/internal/print.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/print.h>
 #include <openenclave/internal/tests.h>
 #include <stdio.h>
 #include "print_t.h"

@@ -164,24 +164,21 @@ static int _epoll_ctl_add(
     struct oe_epoll_event* event)
 {
     int ret = -1;
-    epoll_dev_t* epoll  = _cast_epoll(epoll_);
+    epoll_dev_t* epoll = _cast_epoll(epoll_);
     oe_device_t* pdevice = oe_get_fd_device(fd);
 
     oe_errno = 0;
     /* Check parameters. */
-    if (!epoll_ || !pdev )
+    if (!epoll_ || !pdev)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
-
     return ret;
 }
 
-static int _epoll_wait(
-    oe_device_t* epoll_,
-    int timeout)
+static int _epoll_wait(oe_device_t* epoll_, int timeout)
 {
     int ret = -1;
     epoll_dev_t* epoll = _cast_epoll(epoll_);

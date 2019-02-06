@@ -38,7 +38,7 @@ struct dirent* readdir(DIR* dirp)
     OE_STATIC_ASSERT(OE_OFFSETOF(X, d_type) == OE_OFFSETOF(Y, d_type));
     OE_STATIC_ASSERT(OE_OFFSETOF(X, d_name) == OE_OFFSETOF(Y, d_name));
 
-    if (!(entry = (struct dirent*)oe_readdir((oe_device_t*)dirp)))
+    if (!(entry = (struct dirent*)oe_readdir((OE_DIR*)dirp)))
         errno = oe_errno;
 
     return entry;
@@ -48,7 +48,7 @@ int closedir(DIR* dirp)
 {
     int ret;
 
-    if ((ret = oe_closedir((oe_device_t*)dirp)) != 0)
+    if ((ret = oe_closedir((OE_DIR*)dirp)) != 0)
         errno = oe_errno;
 
     return ret;

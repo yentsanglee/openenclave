@@ -69,7 +69,7 @@ static int _handle_device_syscall(
         case SYS_creat:
         {
             const char* pathname = (const char*)arg1;
-            oe_mode_t mode = (oe_mode_t)arg2;
+            mode_t mode = (mode_t)arg2;
 
             *ret_out = oe_open(pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
             *errno_out = oe_errno;

@@ -26,11 +26,11 @@
 #include <openenclave/internal/registers.h>
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/utils.h>
+#include "../device/fs/hostfs/host/hostfs.h"
 #include "../ocalls.h"
 #include "asmdefs.h"
 #include "enclave.h"
 #include "ocalls.h"
-#include "../device/fs/hostfs/host/hostfs.h"
 
 /* This callback is installed by the host by calling oe_fs_install_sgxfs(). */
 void (*oe_handle_sgxfs_ocall_callback)(void* args);

@@ -189,7 +189,7 @@ static oe_device_t* _sgxfs_open(
     oe_device_t* fs_,
     const char* pathname,
     int flags,
-    oe_mode_t mode)
+    mode_t mode)
 {
     oe_device_t* ret = NULL;
     fs_t* fs = _cast_fs(fs_);
@@ -372,9 +372,9 @@ done:
     return ret;
 }
 
-static oe_off_t _sgxfs_lseek(oe_device_t* file_, oe_off_t offset, int whence)
+static off_t _sgxfs_lseek(oe_device_t* file_, off_t offset, int whence)
 {
-    oe_off_t ret = -1;
+    off_t ret = -1;
     file_t* file = _cast_file(file_);
 
     oe_errno = 0;
@@ -520,7 +520,7 @@ static int _sgxfs_stat(
         if ((offset = sgx_ftell(stream)) < 0)
             goto done;
 
-        buf->st_size = (oe_off_t)offset;
+        buf->st_size = (off_t)offset;
     }
 
     ret = 0;
@@ -669,7 +669,7 @@ done:
     return ret;
 }
 
-static int _sgxfs_truncate(oe_device_t* fs_, const char* path, oe_off_t length)
+static int _sgxfs_truncate(oe_device_t* fs_, const char* path, off_t length)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(fs_);
@@ -776,7 +776,7 @@ done:
     return ret;
 }
 
-static int _sgxfs_mkdir(oe_device_t* fs_, const char* pathname, oe_mode_t mode)
+static int _sgxfs_mkdir(oe_device_t* fs_, const char* pathname, mode_t mode)
 {
     int ret = -1;
     oe_device_t* hostfs = oe_fs_get_hostfs();

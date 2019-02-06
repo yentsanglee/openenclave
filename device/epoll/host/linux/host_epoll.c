@@ -14,11 +14,12 @@
 void (*oe_handle_hostepoll_ocall_callback)(void*);
 
 union _oe_ev_data {
-     struct {
-         uint32_t event_fd;
-         uint32_t handle_type;
-     };
-     uint64_t data;
+    struct
+    {
+        uint32_t event_fd;
+        uint32_t handle_type;
+    };
+    uint64_t data;
 };
 
 static void _handle_hostepoll_ocall(void* args_)
@@ -58,43 +59,60 @@ static void _handle_hostepoll_ocall(void* args_)
         case OE_EPOLL_OP_ADD:
         {
             union _oe_ev_data ev_data {
-                                         .enclave_fd = args->u.ctl_add.eclave_fd,
-                                         .handle_type = args->u.ctl_add.handle_type,
-                                      };
+                .enclave_fd = args->u.ctl_add.eclave_fd,
+                .handle_type = args->u.ctl_add.handle_type,
+            };
 
             struct epoll_event ev = {
-                                         .events   = args->u.ctl_add.event_mask,
-                                         .data.u64 = ev_data.u64,
-                                    };
+                .events = args->u.ctl_add.event_mask,
+                .data.u64 = ev_data.u64,
+            };
 
-            args->u.ctl_add.ret = epoll_ctl( (int)args->u.ctl_add.epoll_fd, EPOLL_CTL_ADD, (int)args->u.ctl_add.host_fd, &epoll_event);
+            args->u.ctl_add.ret = epoll_ctl(
+                (int)args->u.ctl_add.epoll_fd,
+                EPOLL_CTL_ADD,
+                (int)args->u.ctl_add.host_fd,
+                &epoll_event);
             break;
         }
         case OE_EPOLL_OP_MOD:
         {
             union _oe_ev_data ev_data {
-                                         .enclave_fd = args->u.ctl_add.eclave_fd,
-                                         .handle_type = args->u.ctl_add.handle_type,
-                                      };
+                .enclave_fd = args->u.ctl_add.eclave_fd,
+                .handle_type = args->u.ctl_add.handle_type,
+            };
 
             struct epoll_event ev = {
-                                         .events   = args->u.ctl_add.event_mask,
-                                         .data.u64 = ev_data.u64,
-                                    };
+                .events = args->u.ctl_add.event_mask,
+                .data.u64 = ev_data.u64,
+            };
 
-            args->u.ctl_mod.ret = epoll_ctl( (int)args->u.ctl_mod.epoll_fd, EPOLL_CTL_MOD, (int)args->u.ctl_mod.host_fd, &epoll_event);
+            args->u.ctl_mod.ret = epoll_ctl(
+                (int)args->u.ctl_mod.epoll_fd,
+                EPOLL_CTL_MOD,
+                (int)args->u.ctl_mod.host_fd,
+                &epoll_event);
             break;
         }
         case OE_EPOLL_OP_DEL:
         {
-            args->u.ctl_del.ret = epoll_ctl( (int)args->u.ctl_del.epoll_fd, EPOLL_CTL_DEL, (int)args->u.ctl_del.host_fd, NULL);
+            args->u.ctl_del.ret = epoll_ctl(
+                (int)args->u.ctl_del.epoll_fd,
+                EPOLL_CTL_DEL,
+                (int)args->u.ctl_del.host_fd,
+                NULL);
 
-            // If in windows, delete auxiliary data, such as WSASocketEvents so as not to leak handles.
+            // If in windows, delete auxiliary data, such as WSASocketEvents so
+            // as not to leak handles.
             break;
         }
         case OE_EPOLL_OP_WAIT:
         {
-            args->u.wait.ret = epoll_wait( (int)args->u.wait.epoll_fd, args->buf, int args->u.wait.maxevents, int args->u.wait.timeout);
+            args->u.wait.ret = epoll_wait(
+                (int)args->u.wait.epoll_fd,
+                args->buf,
+                int args->u.wait.maxevents,
+                int args->u.wait.timeout);
             break;
         }
         case OE_EPOLL_OP_SHUTDOWN_DEVICE:

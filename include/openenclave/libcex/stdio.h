@@ -33,7 +33,7 @@ typedef enum
 
 typedef struct oe_file OE_FILE;
 
-typedef struct oe_dir OE_DIR;
+typedef struct _OE_DIR OE_DIR;
 
 LIBCEX_INLINE int oe_feof(OE_FILE* stream)
 {

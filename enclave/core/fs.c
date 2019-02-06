@@ -284,7 +284,7 @@ done:
     return ret;
 }
 
-int oe_open(const char* pathname, int flags, oe_mode_t mode)
+int oe_open(const char* pathname, int flags, mode_t mode)
 {
     int ret = -1;
     int fd;
@@ -324,7 +324,7 @@ done:
     return ret;
 }
 
-int oe_open_dev(int devid, const char* pathname, int flags, oe_mode_t mode)
+int oe_open_dev(int devid, const char* pathname, int flags, mode_t mode)
 {
     int ret = -1;
 
@@ -348,7 +348,7 @@ done:
     return ret;
 }
 
-oe_device_t* oe_opendir(const char* pathname)
+OE_DIR* oe_opendir(const char* pathname)
 {
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
@@ -371,41 +371,45 @@ oe_device_t* oe_opendir(const char* pathname)
         return NULL;
     }
 
-    return (*fs->ops.fs->opendir)(fs, filepath);
+    return (OE_DIR*)(*fs->ops.fs->opendir)(fs, filepath);
 }
 
-struct oe_dirent* oe_readdir(oe_device_t* dir)
+struct oe_dirent* oe_readdir(OE_DIR* dir)
 {
-    if (dir->type != OE_DEVICETYPE_DIRECTORY)
+    oe_device_t* dev = (oe_device_t*)dir;
+
+    if (dev->type != OE_DEVICETYPE_DIRECTORY)
     {
         oe_errno = OE_EINVAL;
         return NULL;
     }
 
-    if (dir->ops.fs->readdir == NULL)
+    if (dev->ops.fs->readdir == NULL)
     {
         oe_errno = OE_EINVAL;
         return NULL;
     }
 
-    return (*dir->ops.fs->readdir)(dir);
+    return (*dev->ops.fs->readdir)(dev);
 }
 
-int oe_closedir(oe_device_t* dir)
+int oe_closedir(OE_DIR* dir)
 {
-    if (dir->type != OE_DEVICETYPE_DIRECTORY)
+    oe_device_t* dev = (oe_device_t*)dir;
+
+    if (dev->type != OE_DEVICETYPE_DIRECTORY)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
-    if (dir->ops.fs->closedir == NULL)
+    if (dev->ops.fs->closedir == NULL)
     {
         oe_errno = OE_EINVAL;
         return -1;
     }
 
-    return (*dir->ops.fs->closedir)(dir);
+    return (*dev->ops.fs->closedir)(dev);
 }
 
 int oe_rmdir(const char* pathname)
@@ -535,7 +539,7 @@ int oe_rename(const char* oldpath, const char* newpath)
     return (*fs->ops.fs->rename)(fs, filepath, newfilepath);
 }
 
-int oe_truncate(const char* pathname, oe_off_t length)
+int oe_truncate(const char* pathname, off_t length)
 {
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
@@ -555,7 +559,7 @@ int oe_truncate(const char* pathname, oe_off_t length)
     return (*fs->ops.fs->truncate)(fs, filepath, length);
 }
 
-int oe_mkdir(const char* pathname, oe_mode_t mode)
+int oe_mkdir(const char* pathname, mode_t mode)
 {
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
@@ -575,7 +579,7 @@ int oe_mkdir(const char* pathname, oe_mode_t mode)
     return (*fs->ops.fs->mkdir)(fs, filepath, mode);
 }
 
-oe_off_t oe_lseek(int fd, oe_off_t offset, int whence)
+off_t oe_lseek(int fd, off_t offset, int whence)
 {
     oe_device_t* file = oe_get_fd_device(fd);
     if (!file)
@@ -683,10 +687,10 @@ done:
     return ret;
 }
 
-oe_device_t* oe_opendir_dev(int devid, const char* pathname)
+OE_DIR* oe_opendir_dev(int devid, const char* pathname)
 {
     oe_set_thread_default_device(devid);
-    oe_device_t* ret = oe_opendir(pathname);
+    OE_DIR* ret = oe_opendir(pathname);
     oe_clear_thread_default_device();
 
     return ret;
@@ -719,7 +723,7 @@ int oe_rename_dev(int devid, const char* oldpath, const char* newpath)
     return ret;
 }
 
-int oe_mkdir_dev(int devid, const char* pathname, oe_mode_t mode)
+int oe_mkdir_dev(int devid, const char* pathname, mode_t mode)
 {
     oe_set_thread_default_device(devid);
     int ret = oe_mkdir(pathname, mode);
@@ -746,7 +750,7 @@ int oe_stat_dev(int devid, const char* pathname, struct oe_stat* buf)
     return ret;
 }
 
-int oe_truncate_dev(int devid, const char* path, oe_off_t length)
+int oe_truncate_dev(int devid, const char* path, off_t length)
 {
     oe_set_thread_default_device(devid);
     int ret = oe_truncate(path, length);

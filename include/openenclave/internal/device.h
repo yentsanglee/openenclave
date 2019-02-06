@@ -8,9 +8,9 @@
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/epoll_ops.h>
 #include <openenclave/internal/errno.h>
+#include <openenclave/internal/fd.h>
 #include <openenclave/internal/fs_ops.h>
 #include <openenclave/internal/sock_ops.h>
-#include <openenclave/internal/fd.h>
 
 OE_EXTERNC_BEGIN
 
@@ -101,7 +101,6 @@ struct _oe_device
         oe_sock_ops_t* socket;
         oe_epoll_ops_t* epoll;
     } ops;
-
 };
 
 int oe_allocate_devid(int devid);

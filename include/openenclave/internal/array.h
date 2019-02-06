@@ -25,8 +25,7 @@ typedef struct _oe_array
 
     /* The number of array elements by which to grow the allocation. */
     size_t chunk_size;
-}
-oe_array_t;
+} oe_array_t;
 
 // clang-format off
 #define OE_ARRAY_INITIALIZER(ELEMENT_SIZE, CHUNK_SIZE) \

@@ -12,7 +12,7 @@
 #include "fs_t.h"
 
 static const char ALPHABET[] = "abcdefghijklmnopqrstuvwxyz";
-static const oe_mode_t MODE = 0644;
+static const mode_t MODE = 0644;
 
 const char* mkpath(char buf[OE_PATH_MAX], const char* target, const char* path)
 {

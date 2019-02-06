@@ -2,20 +2,19 @@
 // Licensed under the MIT License.
 
 #include <openenclave/enclave.h>
+#include <openenclave/internal/array.h>
 #include <openenclave/internal/atexit.h>
-#include <openenclave/internal/fd.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/errno.h>
-#include <openenclave/internal/thread.h>
-#include <openenclave/internal/array.h>
-#include <openenclave/internal/print.h>
+#include <openenclave/internal/fd.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/print.h>
+#include <openenclave/internal/thread.h>
 
 typedef struct _entry
 {
     oe_device_t* device;
-}
-entry_t;
+} entry_t;
 
 static const size_t ELEMENT_SIZE = sizeof(entry_t);
 static const size_t CHUNK_SIZE = 8;

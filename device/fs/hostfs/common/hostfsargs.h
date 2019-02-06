@@ -38,7 +38,7 @@ typedef struct _oe_hostfs_args
             int ret;
             char pathname[OE_PATH_MAX];
             int flags;
-            oe_mode_t mode;
+            mode_t mode;
         } open;
         struct
         {
@@ -54,9 +54,9 @@ typedef struct _oe_hostfs_args
         } write;
         struct
         {
-            oe_off_t ret;
+            off_t ret;
             int fd;
-            oe_off_t offset;
+            off_t offset;
             int whence;
         } lseek;
         struct
@@ -107,13 +107,13 @@ typedef struct _oe_hostfs_args
         {
             int ret;
             char path[OE_PATH_MAX];
-            oe_off_t length;
+            off_t length;
         } truncate;
         struct
         {
             int ret;
             char pathname[OE_PATH_MAX];
-            oe_mode_t mode;
+            mode_t mode;
         } mkdir;
         struct
         {
