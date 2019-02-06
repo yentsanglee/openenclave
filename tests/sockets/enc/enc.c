@@ -17,9 +17,9 @@
 
 int ecall_device_init()
 {
-    (void)oe_allocate_devid(OE_DEVICE_ID_HOST_SOCKET);
+    (void)oe_allocate_devid(OE_DEVID_HOST_SOCKET);
     (void)oe_set_devid_device(
-        OE_DEVICE_ID_HOST_SOCKET, oe_socket_get_hostsock());
+        OE_DEVID_HOST_SOCKET, oe_socket_get_hostsock());
     return 0;
 }
 

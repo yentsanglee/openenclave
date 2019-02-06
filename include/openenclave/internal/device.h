@@ -54,7 +54,7 @@ typedef struct _oe_device oe_device_t;
 
 struct _oe_device
 {
-    /* Type of this device: OE_DEVICE_ID_FILE or OE_DEVICE_ID_SOCKET. */
+    /* Type of this device: OE_DEVID_FILE or OE_DEVID_SOCKET. */
     oe_device_type_t type;
     int devid; // Index of the device into the device table.
 

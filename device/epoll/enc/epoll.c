@@ -286,7 +286,7 @@ static oe_epoll_ops_t _ops = {
 };
 
 static epoll_dev_t _epoll = {
-    .base.type = OE_DEVICE_ID_EPOLL,
+    .base.type = OE_DEVID_EPOLL,
     .base.size = sizeof(epoll_dev_t),
     .base.ops.epoll = &_ops,
     .magic = EPOLL_MAGIC,

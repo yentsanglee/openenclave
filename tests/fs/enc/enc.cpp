@@ -361,8 +361,8 @@ void test_fs(const char* src_dir, const char* tmp_dir)
 
         oe_register_hostfs_device();
         fd_file_system fs;
-        OE_TEST(oe_set_thread_default_device(OE_DEVICE_ID_HOSTFS) == 0);
-        OE_TEST(oe_get_thread_default_device() == OE_DEVICE_ID_HOSTFS);
+        OE_TEST(oe_set_thread_default_device(OE_DEVID_INSECURE_FILE_SYSTEM) == 0);
+        OE_TEST(oe_get_thread_default_device() == OE_DEVID_INSECURE_FILE_SYSTEM);
         test_all(fs, tmp_dir);
         OE_TEST(oe_clear_thread_default_device() == 0);
     }

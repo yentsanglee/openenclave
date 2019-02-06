@@ -43,30 +43,30 @@ int oe_device_init()
 
     // Opt into file systems
 
-    if (CreateHostFSDevice(OE_DEVICE_ID_HOSTFS) < 0)
+    if (CreateHostFSDevice(OE_DEVID_INSECURE_FILE_SYSTEM) < 0)
     {
         // Log an error and continue
     }
 
-    if (CreateEnclaveLocalFSDevice(OE_DEVICE_ID_SGXFS) < 0)
+    if (CreateEnclaveLocalFSDevice(OE_DEVID_ENCRYPTED_FILE_SYSTEM) < 0)
     {
         // Log an error and continue
     }
 
-    rslt = (*_device_table[OE_DEVICE_ID_SGXFS]->ops.fs->mount)(
-        _device_table[OE_DEVICE_ID_SGXFS], "/", READ_WRITE);
+    rslt = (*_device_table[OE_DEVID_ENCRYPTED_FILE_SYSTEM]->ops.fs->mount)(
+        _device_table[OE_DEVID_ENCRYPTED_FILE_SYSTEM], "/", READ_WRITE);
 
-    rslt = (*_device_table[OE_DEVICE_ID_HOSTFS]->ops.fs->mount)(
-        _device_table[OE_DEVICE_ID_SGXFS], "/host", READ_ONLY);
+    rslt = (*_device_table[OE_DEVID_INSECURE_FILE_SYSTEM]->ops.fs->mount)(
+        _device_table[OE_DEVID_ENCRYPTED_FILE_SYSTEM], "/host", READ_ONLY);
 
     // Opt into the network
 
-    if (CreateHostNetInterface(OE_DEVICE_ID_HOST_SOCKET) < 0)
+    if (CreateHostNetInterface(OE_DEVID_HOST_SOCKET) < 0)
     {
         // Log an error and continue
     }
 
-    if (CreateEnclaveToEnclaveNetInterface(OE_DEVICE_ID_ENCLAVE_SOCKET) < 0)
+    if (CreateEnclaveToEnclaveNetInterface(OE_DEVID_ENCLAVE_SOCKET) < 0)
     {
         // Log an error and continue
     }
