@@ -121,10 +121,37 @@ struct oe_stat
     off_t st_size;
     blksize_t st_blksize;
     blkcnt_t st_blocks;
-    oe_timespec_t st_atim;
-    oe_timespec_t st_mtim;
-    oe_timespec_t st_ctim;
+    struct
+    {
+        time_t tv_sec;
+        suseconds_t tv_nsec;
+    }
+    st_atim;
+    struct
+    {
+        time_t tv_sec;
+        suseconds_t tv_nsec;
+    }
+    st_mtim;
+    struct
+    {
+        time_t tv_sec;
+        suseconds_t tv_nsec;
+    }
+    st_ctim;
 };
+
+#ifndef st_atime
+#define st_atime st_atim.tv_sec
+#endif
+
+#ifndef st_ctime
+#define st_mtime st_mtim.tv_sec
+#endif
+
+#ifndef st_ctime
+#define st_ctime st_ctim.tv_sec
+#endif
 
 typedef struct _oe_iovec
 {
