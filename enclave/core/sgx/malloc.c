@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include <openenclave/bits/safecrt.h>
-#include <openenclave/elibc/stdio.h>
-#include <openenclave/elibc/string.h>
+#include <openenclave/corelibc/stdio.h>
+#include <openenclave/corelibc/string.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/fault.h>
 #include <openenclave/internal/globals.h>
@@ -17,9 +17,9 @@
 #define OE_NEED_STDC_NAMES
 #define __UNDEF_OE_NEED_STDC_NAMES
 #endif
-#include <openenclave/elibc/bits/stdfile.h>
-#include <openenclave/elibc/errno.h>
-#include <openenclave/elibc/sched.h>
+#include <openenclave/corelibc/bits/stdfile.h>
+#include <openenclave/corelibc/errno.h>
+#include <openenclave/corelibc/sched.h>
 #if defined(__UNDEF_OE_NEED_STDC_NAMES)
 #undef OE_NEED_STDC_NAMES
 #undef __UNDEF_OE_NEED_STDC_NAMES
