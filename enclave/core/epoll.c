@@ -19,7 +19,7 @@ int oe_epoll_create(int size)
     oe_device_t* pepoll = NULL;
     oe_device_t* pdevice = NULL;
 
-    pdevice = oe_get_devid_device(OE_DEVID_EPOLL);
+    pdevice = oe_get_devid_device(OE_DEVICE_ID_EPOLL);
     if ((pepoll = (*pdevice->ops.epoll->create)(size)) == NULL)
     {
         return -1;
@@ -41,7 +41,7 @@ int oe_epoll_create1(int flags)
     oe_device_t* pepoll = NULL;
     oe_device_t* pdevice = NULL;
 
-    pdevice = oe_get_devid_device(OE_DEVID_EPOLL);
+    pdevice = oe_get_devid_device(OE_DEVICE_ID_EPOLL);
     if ((pepoll = (*pdevice->ops.epoll->create1)(flags)) == NULL)
     {
         return -1;

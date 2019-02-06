@@ -17,11 +17,11 @@ static oe_file_security_t _to_devid(oe_file_security_t security)
     switch (security)
     {
         case OE_FILE_INSECURE:
-            return OE_DEVID_INSECURE_FILE_SYSTEM;
+            return OE_DEVICE_ID_INSECURE_FS;
         case OE_FILE_SECURE_ENCRYPTION:
-            return OE_DEVID_ENCRYPTED_FILE_SYSTEM;
+            return OE_DEVICE_ID_ENCRYPTED_FS;
         case OE_FILE_SECURE_HARDWARE:
-            return OE_DEVID_SECURE_HARDWARE_FILE_SYSTEM;
+            return OE_DEVICE_ID_SECURE_HARDWARE_FS;
     }
 }
 

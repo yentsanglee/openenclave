@@ -11,25 +11,25 @@ OE_EXTERNC_BEGIN
 
 /* This file defines the known device ids. */
 
-#define OE_DEVID_NONE ((int)0)
+#define OE_DEVICE_ID_NONE ((int)0)
 
-#define OE_DEVID_INSECURE_FILE_SYSTEM ((int)1)
+#define OE_DEVICE_ID_INSECURE_FS ((int)1)
 
-#define OE_DEVID_ENCRYPTED_FILE_SYSTEM ((int)2)
+#define OE_DEVICE_ID_ENCRYPTED_FS ((int)2)
 
-#define OE_DEVID_SECURE_HARDWARE_FILE_SYSTEM ((int)3)
+#define OE_DEVICE_ID_SECURE_HARDWARE_FS ((int)3)
 
 /* A host internet socket. */
-#define OE_DEVID_HOST_SOCKET ((int)4)
+#define OE_DEVICE_ID_HOST_SOCKET ((int)4)
 
 /* An enclave-to-enclave socket. */
-#define OE_DEVID_ENCLAVE_SOCKET ((int)5)
+#define OE_DEVICE_ID_ENCLAVE_SOCKET ((int)5)
 
 /* An epoll device. */
-#define OE_DEVID_EPOLL ((int)6)
+#define OE_DEVICE_ID_EPOLL ((int)6)
 
 /* An event file descriptor. */
-#define OE_DEVID_EVENTFD ((int)7)
+#define OE_DEVICE_ID_EVENTFD ((int)7)
 
 OE_EXTERNC_END
 

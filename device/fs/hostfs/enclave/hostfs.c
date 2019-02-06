@@ -1083,15 +1083,15 @@ int oe_register_hostfs_device(void)
     int ret = -1;
 
     /* Allocate the device id. */
-    if (oe_allocate_devid(OE_DEVID_INSECURE_FILE_SYSTEM) != OE_DEVID_INSECURE_FILE_SYSTEM)
+    if (oe_allocate_devid(OE_DEVICE_ID_INSECURE_FS) != OE_DEVICE_ID_INSECURE_FS)
         goto done;
 
     /* Add the hostfs device to the device table. */
-    if (oe_set_devid_device(OE_DEVID_INSECURE_FILE_SYSTEM, oe_fs_get_hostfs()) != 0)
+    if (oe_set_devid_device(OE_DEVICE_ID_INSECURE_FS, oe_fs_get_hostfs()) != 0)
         goto done;
 
     /* Check that the above operation was successful. */
-    if (oe_get_devid_device(OE_DEVID_INSECURE_FILE_SYSTEM) != oe_fs_get_hostfs())
+    if (oe_get_devid_device(OE_DEVICE_ID_INSECURE_FS) != oe_fs_get_hostfs())
         goto done;
 
     ret = 0;

@@ -125,20 +125,17 @@ struct oe_stat
     {
         time_t tv_sec;
         suseconds_t tv_nsec;
-    }
-    st_atim;
+    } st_atim;
     struct
     {
         time_t tv_sec;
         suseconds_t tv_nsec;
-    }
-    st_mtim;
+    } st_mtim;
     struct
     {
         time_t tv_sec;
         suseconds_t tv_nsec;
-    }
-    st_ctim;
+    } st_ctim;
 };
 
 #ifndef st_atime

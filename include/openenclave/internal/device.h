@@ -4,9 +4,9 @@
 #ifndef _OE_DEVICE_H
 #define _OE_DEVICE_H
 
+#include <openenclave/bits/device.h>
 #include <openenclave/bits/result.h>
 #include <openenclave/bits/types.h>
-#include <openenclave/bits/device.h>
 #include <openenclave/internal/epoll_ops.h>
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/fd.h>
@@ -54,7 +54,7 @@ typedef struct _oe_device oe_device_t;
 
 struct _oe_device
 {
-    /* Type of this device: OE_DEVID_FILE or OE_DEVID_SOCKET. */
+    /* Type of this device: OE_DEVICE_ID_FILE or OE_DEVICE_ID_SOCKET. */
     oe_device_type_t type;
     int devid; // Index of the device into the device table.
 
