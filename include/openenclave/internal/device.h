@@ -6,6 +6,7 @@
 
 #include <openenclave/bits/result.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/bits/device.h>
 #include <openenclave/internal/epoll_ops.h>
 #include <openenclave/internal/errno.h>
 #include <openenclave/internal/fd.h>
@@ -13,37 +14,6 @@
 #include <openenclave/internal/sock_ops.h>
 
 OE_EXTERNC_BEGIN
-
-// Well known  device ids
-enum
-{
-    OE_DEVICE_ID_NONE = 0,
-
-    OE_DEVICE_ID_CONSOLE = 1,
-
-    OE_DEVICE_ID_LOG = 2,
-
-    // This entry describes a file in the hosts's file system
-    OE_DEVICE_ID_HOSTFS = 3,
-
-    // The Intel SGX protected file system.
-    OE_DEVICE_ID_SGXFS = 4,
-
-    // This entry describes a file in the secure hardward file system.
-    OE_DEVICE_ID_SHWFS = 5,
-
-    // This entry describes an internet socket
-    OE_DEVICE_ID_HOST_SOCKET = 6,
-
-    // This entry describes an enclave to enclave
-    OE_DEVICE_ID_ENCLAVE_SOCKET = 7,
-
-    // This entry describes an epoll instance
-    OE_DEVICE_ID_EPOLL = 8,
-
-    // This entry describes an enventfd instance
-    OE_DEVICE_ID_EVENTFD = 9
-};
 
 typedef enum _oe_device_type
 {

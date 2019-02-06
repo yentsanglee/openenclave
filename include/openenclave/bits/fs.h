@@ -165,8 +165,6 @@ int oe_unmount(int devid, const char* path);
 
 int oe_open(const char* pathname, int flags, mode_t mode);
 
-int oe_open_dev(int devid, const char* pathname, int flags, mode_t mode);
-
 off_t oe_lseek(int fd, off_t offset, int whence);
 
 OE_DIR* oe_opendir(const char* pathname);
@@ -194,6 +192,8 @@ ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt);
 ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt);
 
 int oe_access(const char* pathname, int mode);
+
+int oe_open_dev(int devid, const char* pathname, int flags, mode_t mode);
 
 OE_DIR* oe_opendir_dev(int devid, const char* pathname);
 
