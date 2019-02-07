@@ -25,6 +25,6 @@ OE will support three interfaces.
 
 The low-level interface is needed to support legacy applications that depend 
 on that interface (such as **OpenSSL**). No extra effort is needed to support 
-the stream-based interface, since MUSL implements these based on the low-level 
+the stream-based functions, since MUSL implements these based on the low-level 
 I/O functions.
 
