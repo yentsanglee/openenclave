@@ -4,8 +4,6 @@
 #ifndef _OE_EPOLLARGS_H
 #define _OE_EPOLLARGS_H
 
-#include <openenclave/internal/device.h>
-
 OE_EXTERNC_BEGIN
 
 typedef enum _oe_epoll_op
@@ -16,10 +14,18 @@ typedef enum _oe_epoll_op
     OE_EPOLL_OP_DEL,
     OE_EPOLL_OP_MOD,
     OE_EPOLL_OP_WAIT,
-    OE_EPOLL_OP_CANCEL,
     OE_EPOLL_OP_CLOSE,
     OE_EPOLL_OP_SHUTDOWN_DEVICE
 } oe_epoll_op_t;
+
+union _oe_ev_data {
+    struct
+    {
+        uint32_t event_list_idx;
+        uint32_t handle_type;
+    };
+    uint64_t data;
+};
 
 typedef struct _oe_epoll_args
 {
@@ -45,37 +51,25 @@ typedef struct _oe_epoll_args
             int64_t ret;
             int64_t epoll_fd;
             int64_t host_fd;
-            int32_t event_mask;
-            int32_t enclave_fd;
-            int32_t handle_type; // We need this for windows. A file handle !=
-                                 // socket handle in win32 and its awkward to
-                                 // figure it out.
-        } add;
+            uint32_t event_mask;
+            int32_t list_idx;
+            int32_t handle_type;  // We need this for windows. A file handle != socket handle in win32 and its awkward to figure it out.
+        } ctl_add;
         struct
         {
             int64_t ret;
-            int64_t epoll_fd;   // host_fd of the epoll
-            int64_t host_fd;    // host fd for the waitable
-            int32_t enclave_fd; // The enclave fd may used in windows to order
-                                // auxilliary epoll data, such as hEvents from
-                                // WSASocketEvent
-        } del;
+            int64_t epoll_fd;  // host_fd of the epoll
+            int64_t host_fd;  // host fd for the waitable
+        } ctl_del;
         struct
         {
             int64_t ret;
             int64_t epoll_fd;
             int64_t host_fd;
-            int32_t event_mask;
-            int32_t enclave_fd;
-            int32_t handle_type; // We need this for windows. A file handle !=
-                                 // socket handle in win32 and its awkward to
-                                 // figure it out.
-        } mod;
-        struct
-        {
-            int64_t ret;
-            int64_t host_fd;
-        } cancel;
+            uint32_t event_mask;
+            int32_t list_idx;
+            int32_t handle_type;  // We need this for windows. A file handle != socket handle in win32 and its awkward to figure it out.
+        } ctl_mod;
         struct
         {
             int64_t ret;

@@ -4,8 +4,7 @@
 set(LINUX_SGX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/linux-sgx)
 
 add_library(oe_epoll_enc STATIC
-    epoll.c
-    ../../../fs/common/hostbatch.c)
+    epoll.c)
 
 target_include_directories(oe_epoll_enc PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include)

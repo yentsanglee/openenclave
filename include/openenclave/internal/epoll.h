@@ -26,8 +26,10 @@ enum OE_EPOLL_EVENTS
     OE_EPOLLET = 1u << 31
 };
 
-struct oe_device_notifications
-{
+void oe_epoll_install_epoll(void);
+oe_device_t* oe_epoll_get_epoll(void);
+
+struct oe_device_notifications {
     uint64_t enclave_fd; // On the host side we set this into the event data
     uint32_t event_mask; // oe_epoll_event.event
 };
