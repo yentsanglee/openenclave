@@ -5,6 +5,7 @@
 #define _OE_SYS_TIME_H
 
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/bits/common.h>
 
 OE_EXTERNC_BEGIN
 

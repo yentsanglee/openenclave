@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_PTHREAD_DEF_H
 #define _OE_BITS_PTHREAD_DEF_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 /* Note that these types and initializers are separated out from their
  * respective functions because oelibc compiles different conflicting symbols
  * for them. Each of these could be further split out as their own compilation

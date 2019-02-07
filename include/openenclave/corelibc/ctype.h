@@ -6,6 +6,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/bits/common.h>
 
 #define __OE_ISALNUM_BIT (1 << 0)
 #define __OE_ISALPHA_BIT (1 << 1)

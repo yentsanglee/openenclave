@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_MALLOC_H
 #define _OE_BITS_MALLOC_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 OE_INLINE
 void* malloc(size_t size)
 {

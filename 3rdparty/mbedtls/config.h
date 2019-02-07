@@ -146,7 +146,11 @@
  *
  * Enable this layer to allow use of alternative memory allocators.
  */
-//#define MBEDTLS_PLATFORM_MEMORY
+#define MBEDTLS_PLATFORM_MEMORY
+#define MBEDTLS_PLATFORM_MALLOC oe_malloc
+#define MBEDTLS_PLATFORM_FREE oe_free
+#define MBEDTLS_PLATFORM_CALLOC oe_calloc
+#define MBEDTLS_PLATFORM_REALLOC oe_realloc
 
 /**
  * \def MBEDTLS_PLATFORM_NO_STD_FUNCTIONS

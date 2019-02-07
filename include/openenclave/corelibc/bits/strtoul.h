@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_STRTOUL_H
 #define _OE_BITS_STRTOUL_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 OE_INLINE
 unsigned long int strtoul(const char* nptr, char** endptr, int base)
 {

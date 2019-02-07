@@ -4,15 +4,9 @@
 #ifndef _ENCLAVE_KEY_H
 #define _ENCLAVE_KEY_H
 
-#if !defined(OE_NEED_STDC_NAMES)
-#define OE_NEED_STDC_NAMES
-#define __UNDEF_OE_NEED_STDC_NAMES
-#endif
+#define OE_NEED_STDC_DEFINES
 #include <mbedtls/pk.h>
-#if defined(__UNDEF_OE_NEED_STDC_NAMES)
-#undef OE_NEED_STDC_NAMES
-#undef __UNDEF_OE_NEED_STDC_NAMES
-#endif
+#include <openenclave/corelibc/bits/undefs.h>
 
 #include <openenclave/bits/result.h>
 #include <openenclave/bits/types.h>

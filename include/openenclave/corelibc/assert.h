@@ -4,6 +4,8 @@
 #ifndef _OE_ASSERT_H
 #define _OE_ASSERT_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 #if defined(OE_NEED_STDC_NAMES)
 
 #include <openenclave/enclave.h>

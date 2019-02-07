@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_PTHREAD_CREATE_H
 #define _OE_BITS_PTHREAD_CREATE_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 OE_INLINE
 pthread_t pthread_self()
 {

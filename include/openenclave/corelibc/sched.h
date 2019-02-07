@@ -5,6 +5,7 @@
 #define _OE_SCHED_H
 
 #include <openenclave/bits/defs.h>
+#include <openenclave/corelibc/bits/common.h>
 
 OE_EXTERNC_BEGIN
 

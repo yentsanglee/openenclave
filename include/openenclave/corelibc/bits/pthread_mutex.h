@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_PTHREAD_MUTEX_H
 #define _OE_BITS_PTHREAD_MUTEX_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 OE_INLINE
 int pthread_mutexattr_init(pthread_mutexattr_t* attr)
 {

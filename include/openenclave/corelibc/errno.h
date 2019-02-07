@@ -4,6 +4,8 @@
 #ifndef _OE_ERRNO_H
 #define _OE_ERRNO_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 extern int* __oe_errno_location(void);
 
 #define oe_errno *__oe_errno_location()
@@ -146,7 +148,7 @@ extern int* __oe_errno_location(void);
 #define OE_ERFKILL 132
 #define OE_EHWPOISON 133
 
-#if defined(OE_NEED_STDC_NAMES)
+#if defined(OE_NEED_STDC_DEFINES)
 
 #define EPERM OE_EPERM
 #define ENOENT OE_ENOENT
@@ -285,6 +287,6 @@ extern int* __oe_errno_location(void);
 
 #define errno oe_errno
 
-#endif /* defined(OE_NEED_STDC_NAMES) */
+#endif /* defined(OE_NEED_STDC_DEFINES) */
 
 #endif /* _OE_ERRNO_H */

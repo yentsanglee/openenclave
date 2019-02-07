@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_PTHREAD_KEY_H
 #define _OE_BITS_PTHREAD_KEY_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 typedef oe_pthread_key_t pthread_key_t;
 
 OE_INLINE

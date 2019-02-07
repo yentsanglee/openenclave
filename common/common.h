@@ -12,20 +12,11 @@
 
 #ifdef OE_BUILD_ENCLAVE
 
-#include <openenclave/enclave.h>
-
-#if !defined(OE_NEED_STDC_NAMES)
-#define OE_NEED_STDC_NAMES
-#define __UNDEF_OE_NEED_STDC_NAMES
-#endif
 #include <openenclave/corelibc/stdint.h>
 #include <openenclave/corelibc/stdio.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
-#if defined(__UNDEF_OE_NEED_STDC_NAMES)
-#undef OE_NEED_STDC_NAMES
-#undef __UNDEF_OE_NEED_STDC_NAMES
-#endif
+#include <openenclave/enclave.h>
 
 #else
 
@@ -34,6 +25,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+OE_INLINE void* oe_malloc(size_t size)
+{
+    return malloc(size);
+}
+
+OE_INLINE void oe_free(void* ptr)
+{
+    return free(ptr);
+}
+
+OE_INLINE size_t oe_strlen(const char* s)
+{
+    return strlen(s);
+}
 
 #endif
 

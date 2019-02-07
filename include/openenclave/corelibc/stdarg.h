@@ -4,6 +4,8 @@
 #ifndef _OE_STDARG_H
 #define _OE_STDARG_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 #if defined(_MSC_VER)
 
 typedef char* oe_va_list;

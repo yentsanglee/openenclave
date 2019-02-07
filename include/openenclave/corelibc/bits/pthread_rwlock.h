@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_PTHREAD_RWLOCK_H
 #define _OE_BITS_PTHREAD_RWLOCK_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 OE_INLINE
 int pthread_rwlock_init(
     pthread_rwlock_t* rwlock,

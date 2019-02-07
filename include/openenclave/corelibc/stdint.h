@@ -5,6 +5,7 @@
 #define _OE_STDINT_H
 
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/bits/common.h>
 
 #if defined(OE_NEED_STDC_NAMES)
 

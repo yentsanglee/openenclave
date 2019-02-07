@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_PTHREAD_SPIN_H
 #define _OE_BITS_PTHREAD_SPIN_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 OE_INLINE
 int pthread_spin_init(pthread_spinlock_t* spinlock, int pshared)
 {

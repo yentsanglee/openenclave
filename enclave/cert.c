@@ -2,17 +2,11 @@
 // Licensed under the MIT License.
 
 /* Use OE STDC definitions for mbedtls */
-#if !defined(OE_NEED_STDC_NAMES)
-#define OE_NEED_STDC_NAMES
-#define __UNDEF_OE_NEED_STDC_NAMES
-#endif
+#define OE_NEED_STDC_DEFINES
 #include <mbedtls/oid.h>
 #include <mbedtls/platform.h>
 #include <mbedtls/x509_crt.h>
-#if defined(__UNDEF_OE_NEED_STDC_NAMES)
-#undef OE_NEED_STDC_NAMES
-#undef __UNDEF_OE_NEED_STDC_NAMES
-#endif
+#include <openenclave/corelibc/bits/undefs.h>
 
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/corelibc/string.h>

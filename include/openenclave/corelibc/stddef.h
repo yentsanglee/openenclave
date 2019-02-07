@@ -5,5 +5,6 @@
 #define _OE_STDDEF_H
 
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/bits/common.h>
 
 #endif /* _OE_STDDEF_H */

@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_ATEXIT_H
 #define _OE_BITS_ATEXIT_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 OE_INLINE
 int atexit(void (*function)(void))
 {

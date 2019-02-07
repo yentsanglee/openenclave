@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_PTHREAD_ONCE_H
 #define _OE_BITS_PTHREAD_ONCE_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 OE_INLINE
 int pthread_once(pthread_once_t* once, void (*func)(void))
 {

@@ -5,6 +5,7 @@
 #define _OE_PTHREAD_H
 
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/bits/common.h>
 #include <openenclave/corelibc/time.h>
 
 // clang-format off
@@ -152,5 +153,9 @@ void* oe_pthread_getspecific(oe_pthread_key_t key);
 #include "bits/pthread_spin.h"
 
 #endif /* defined(OE_NEED_STDC_NAMES) */
+
+#if defined(OE_NEED_STDC_DEFINES)
+#define pthread_mutex_t oe_pthread_mutex_t
+#endif
 
 #endif /* _OE_PTHREAD_H */

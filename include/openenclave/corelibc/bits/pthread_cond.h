@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_PTHREAD_COND_H
 #define _OE_BITS_PTHREAD_COND_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 OE_INLINE
 int pthread_cond_init(pthread_cond_t* cond, const pthread_condattr_t* attr)
 {

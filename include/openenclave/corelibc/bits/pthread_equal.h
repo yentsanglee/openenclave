@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_PTHREAD_EQUAL_H
 #define _OE_BITS_PTHREAD_EQUAL_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 OE_INLINE
 int pthread_equal(pthread_t thread1, pthread_t thread2)
 {

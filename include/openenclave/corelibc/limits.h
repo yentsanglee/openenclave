@@ -5,8 +5,9 @@
 #define _OE_LIMITS_H
 
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/bits/common.h>
 
-#if defined(OE_NEED_STDC_NAMES)
+#if defined(OE_NEED_STDC_DEFINES)
 
 #define SCHAR_MIN OE_SCHAR_MIN
 #define SCHAR_MAX OE_SCHAR_MAX
@@ -27,6 +28,6 @@
 #define LLONG_MIN OE_LLONG_MIN
 #define ULLONG_MAX OE_ULLONG_MAX
 
-#endif /* defined(OE_NEED_STDC_NAMES) */
+#endif /* defined(OE_DEFINE_STDC_NAMES) */
 
 #endif /* _OE_LIMITS_H */

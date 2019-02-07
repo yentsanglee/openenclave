@@ -4,6 +4,8 @@
 #ifndef _OE_BITS_STDFILE_H
 #define _OE_BITS_STDFILE_H
 
+#include <openenclave/corelibc/bits/common.h>
+
 typedef OE_FILE FILE;
 #define stdin oe_stdin
 #define stdout oe_stdout
