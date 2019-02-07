@@ -23,8 +23,8 @@ OE will support three interfaces.
 - **The low-level I/O interface** (**open()**, **read**(), etc.).
 - **The stream-based file I/O interface** (**fopen()**, **fread**(), etc.).
 
-The latter interface is required to support legacy applications that depend on 
-the low-level functions (such as **OpenSSL**). No extra effort is needed to
-support the stream-based interface, since MUSL implements this based on the
-low-level I/O functions.
+The low-level interface is needed to support legacy applications that depend 
+on that interface (such as **OpenSSL**). No extra effort is needed to support 
+the stream-based interface, since MUSL implements these based on the low-level 
+I/O functions.
 
