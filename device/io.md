@@ -17,7 +17,7 @@ will support the following device types.
 Interfaces:
 -----------
 
-OE will support two interfaces.
+OE will support three interfaces.
 
 - **The IOT interface** (**<stdio.h>** and **<socket.h>**).
 - **The low-level I/O interface** (**open()**, **read**(), etc.).
