@@ -116,6 +116,13 @@ LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_ENCRYPTION(
     return oe_fopen(OE_FILE_SECURE_ENCRYPTION, path, mode);
 }
 
+LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_BEST_EFFORT(
+    const char* path,
+    const char* mode)
+{
+    return oe_fopen(OE_FILE_SECURE_BEST_EFFORT, path, mode);
+}
+
 LIBCEX_INLINE size_t
 oe_fwrite(const void* ptr, size_t size, size_t nmemb, OE_FILE* stream)
 {
@@ -145,6 +152,11 @@ LIBCEX_INLINE int oe_remove_OE_FILE_SECURE_HARDWARE(const char* pathname)
 LIBCEX_INLINE int oe_remove_OE_FILE_SECURE_ENCRYPTION(const char* pathname)
 {
     return oe_remove(OE_FILE_SECURE_ENCRYPTION, pathname);
+}
+
+LIBCEX_INLINE int oe_remove_OE_FILE_SECURE_BEST_EFFORT(const char* pathname)
+{
+    return oe_remove(OE_FILE_SECURE_BEST_EFFORT, pathname);
 }
 
 LIBCEX_INLINE OE_DIR* oe_opendir(oe_file_security_t security, const char* name)
@@ -209,14 +221,21 @@ LIBCEX_INLINE int __inline_oe_remove(const char* pathname)
 #ifdef OE_SECURE_POSIX_FILE_API
     return oe_remove(OE_FILE_SECURE_BEST_EFFORT, pathname);
 #else
-    return oe_remove(OE_FILE_SECURE_BEST_EFFORT, pathname);
+    return oe_remove(OE_FILE_INSECURE, pathname);
 #endif
 }
 
-#ifndef OE_NO_POSIX_FILE_API
 /* Map POSIX API names to the OE equivalents. */
-#define fopen __inline_oe_fopen
-#define remove __inline_oe_remove
+#ifndef OE_NO_POSIX_FILE_API
+
+#ifdef OE_SECURE_POSIX_FILE_API
+#define remove oe_remove_OE_FILE_SECURE_BEST_EFFORT
+#define fopen oe_fopen_OE_FILE_SECURE_BEST_EFFORT
+#else
+#define fopen oe_fopen_OE_FILE_INSECURE
+#define remove oe_remove_OE_FILE_INSECURE
+#endif
+
 #define fclose oe_fclose
 #define feof oe_feof
 #define ferror oe_ferror
@@ -228,6 +247,7 @@ LIBCEX_INLINE int __inline_oe_remove(const char* pathname)
 #define fputs oe_fputs
 #define fgets oe_fgets
 #define FILE OE_FILE
+
 #endif /* OE_NO_POSIX_FILE_API */
 
 #if !defined(OE_USE_OPTEE) && !defined(SEEK_SET)

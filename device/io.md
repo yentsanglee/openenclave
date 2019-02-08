@@ -63,7 +63,7 @@ int open(const char *pathname, int flags, mode_t mode);
 The device-oriented form of this method is defined as follows.
 
 ```
-int oe_open(int devid, const char *pathname, int flags, mode_t mode);
+int oe_device_open(int devid, const char *pathname, int flags, mode_t mode);
 ```
 
 The **devid** parameter is the integer ID of the device that will perform
@@ -133,17 +133,346 @@ interface
 
 | The device-oriented interface |
 | ----------------------------- |
+| oe_device_access()            |
+| oe_device_fopen()             |
+| oe_device_link()              |
+| oe_device_mkdir()             |
 | oe_device_open()              |
 | oe_device_opendir()           |
-| oe_device_unlink()            |
-| oe_device_link()              |
 | oe_device_rename()            |
-| oe_device_mkdir()             |
 | oe_device_rmdir()             |
 | oe_device_stat()              |
 | oe_device_truncate()          |
-| oe_device_access()            |
-| oe_device_fopen()             |
+| oe_device_unlink()            |
 
 2.2 The POSIX interface
 -----------------------
+
+This section discusses the POSIX compatibility interface. Open Enclave provides
+many POSIX to ease porting of legacy applications.
+
+### 2.2.1 Overview
+
+The POSIX interface supports the following groups of functions.
+
+- The stream-oriented file I/O functions (**fopen()**, **fwrite**(), etc.).
+- The fd-oriented file I/O functions (**open()**, **write**(), etc.).
+- The path-oriented file I/O functions (**mkdir()**, **stat**(), etc.).
+- The directory-scanning functions (**opendir()**, **readdir**(), etc.).
+- The socket functions (**socket()**, **connect()**, **send()**, etc.);
+
+The target audience for this interface are those who want to build (or just
+relink) their applications without any code changes.
+
+The POSIX functions are path-oriented, so Open Enclave provides a mechanism
+for associating devices with mount points. For this, Open Enclave supports
+the following functions.
+
+```
+int oe_mount(int devid, const char* source, const char* target, uint32_t flags);
+int oe_unmount(int devid, const char* target);
+```
+
+The following example mounts the **Intel Protected File System** and uses it
+to write a file.
+
+```
+    FILE* stream;
+
+    oe_mount(OE_DEVID_PROTECTED_FILE_SYSTEM, NULL, "/sgxfs", 0);
+    stream = fopen("/sgxfs/hello", "r");
+    fwrite("hello", 1, 5, stream);
+    fclose(stream);
+```
+
+Once mounted, files associated with that device may be manipulated by any of
+the POSIX path-addressed functions (whether stream-oriented and fd-oriented).
+
+Socket I/O can be performed with the usual POSIX calls.
+
+```
+    int sd;
+
+    sd = socket(AF_INET6, SOCK_STREAM, 0);
+    ...
+    connect(sd, &addr, sizeof(addr));
+    ...
+    write(sd, "hello", 5);
+    ...
+    close(sd);
+```
+
+### 2.2.2 The stream-oriented file I/O functions
+
+Open Enclave provides full support for stream-oriented functions. For example:
+
+```
+    FILE* stream;
+
+    stream = fopen("/sgxfs/hello", "r");
+    fwrite("hello", 1, 5, stream);
+    fclose(stream);
+```
+
+Open Enclave does not implement the stream-oriented functions directly. Instead
+it uses the implementation from the C runtime (MUSL). Since C runtimes use the
+fd-oriented functions to implement the stream-oriented functions, it suffices
+to provide an implementation of the former. This allows Open Enclave to
+indirectly provide the full set of stream-oriented functions listed below.
+
+| stream-oriented functions |
+| ------------------------- |
+| clearerr()                |
+| fclose()                  |
+| fdopen()                  |
+| feof()                    |
+| ferror()                  |
+| fflush()                  |
+| fgetc()                   |
+| fgetchar()                |
+| fgetpos()                 |
+| fgets()                   |
+| fgets()                   |
+| fgetwc()                  |
+| fgetws()                  |
+| fileno()                  |
+| fopen()                   |
+| fprintf()                 |
+| fprintf()                 |
+| fputc()                   |
+| fputc()                   |
+| fputs()                   |
+| fread()                   |
+| freopen()                 |
+| fscanf()                  |
+| fseek()                   |
+| fseeko()                  |
+| fsetpos()                 |
+| ftell()                   |
+| ftello()                  |
+| fwrite()                  |
+| getline()                 |
+| putc()                    |
+| rewind()                  |
+| setbuf()                  |
+| setvbuf()                 |
+| ungetc()                  |
+| vfprintf()                |
+| vfscanf()                 |
+
+### 2.2.3 The fd-oriented file I/O functions
+
+Open Enclave provides full support for fd-oriented functions. For example:
+
+```
+    int fd;
+
+    const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
+    const oe_mode_t mode = 0644;
+
+    fd = open("/tmp/hello", flags, mode);
+    ...
+    oe_write(fd, "hello", 5);
+    ...
+    oe_close(fd);
+```
+
+Open Enclave does not implement these functions directly. Instead it uses the
+MUSL implementation of these functions, which invoke **syscall()** with one
+of the following system call numbers.
+
+- **SYS_creat**
+- **SYS_open**
+- **SYS_lseek**
+- **SYS_read**
+- **SYS_readv**
+- **SYS_write**
+- **SYS_writev**
+- **SYS_close**
+- **SYS_stat**
+- **SYS_link**
+- **SYS_unlink**
+- **SYS_rename**
+- **SYS_truncate**
+- **SYS_mkdir**
+- **SYS_rmdir**
+- **SYS_access**
+- **SYS_ioctl**
+- **SYS_fcntl**
+- **SYS_socket**
+- **SYS_accept**
+- **SYS_connect**
+- **SYS_listen**
+- **SYS_shutdown**
+- **SYS_bind**
+- **SYS_getsockname**
+- **SYS_getpeername**
+- **SYS_getsockopt**
+- **SYS_setsockopt**
+- **SYS_select**
+- **SYS_epoll_create**
+- **SYS_epoll_wait**
+- **SYS_epoll_ctl**
+
+Open Enclave overrides the **syscall()** function, and handles the system call
+by forwarding it to the devices framework.
+
+### 2.2.4 The path-oriented file I/O functions
+
+Open Enclave supports the following path-oriented functions by handling the
+associated system call number as described in the previous section.
+
+| path-oriented functions |
+| ----------------------- |
+| stat()                  |
+| mkdir()                 |
+| rmdir()                 |
+| link()                  |
+| unlink()                |
+| remove()                |
+| truncate()              |
+| access()                |
+
+Consider the following example.
+
+```
+    const char path[] = "/tmp/dir";
+    struct stat buf;
+
+    if (stat(path, &buf) && S_ISDIR(buf.st_mode))
+    {
+        rmdir(path);
+    }
+```
+
+
+### 2.2.5 The directory-scanning functions
+
+Open Enclave implements the standard POIX functions for scanning directories.
+These functions are listed in the table below.
+
+| directory-scanning functions |
+| ---------------------------- |
+| opendir()                    |
+| readdir()                    |
+| closedir()                   |
+
+Consider the following example.
+
+```
+    const char path[] = "/tmp/dir";
+    DIR* dir;
+    struct dirent* ent;
+
+    dir = opendir(path);
+
+    while ((ent = readdir(dir)))
+    {
+        printf("filename=%s\n", ent->d_name);
+    }
+
+    closedir(dir);
+```
+
+### 2.2.6 The socket functions
+
+Open Enclave implements most POSIX socket functions. These include:
+
+| socket functions |
+| ---------------- |
+| socket()         |
+| listen()         |
+| connect()        |
+| accept()         |
+| shutdown()       |
+| bind             |
+| getsockname      |
+| getpeername      |
+| getsockopt       |
+| setsockopt       |
+
+- The socket functions (**socket()**, **connect()**, **send()**, etc.);
+
+Consider the following client example.
+
+```
+    int sd;
+    struct sockaddr_in addr;
+    char buf[1024];
+
+    sd = socket(AF_INET, SOCK_STREAM, 0));
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(OE_INADDR_LOOPBACK);
+    addr.sin_port = htons(1492);
+    connect(sd, (struct oe_sockaddr*)&addr, sizeof(addr));
+
+    read(sd, buf, sizeof(buf));
+
+    close(sd);
+```
+
+2.3 The IOT interface
+---------------------
+
+The IOT interface builds on the POSIX interface. It defines two custom header
+files called **<stdio.h>** and **<socket.h>**. These header files include the
+standard headers files with the same names. The IOT interface provides a
+macro-driven interface. These interfaces existed prior to this work, so this
+document does not describe them in detail.
+
+The following example uses the IOT interface to create a secure file. This
+example uses the oe-prefixed functions.
+
+```
+    #define OE_NO_POSIX_FILE_API /* Omit POSIX function macros. */
+    #include <stdio.h> /* include customized IOT <stdio.h>. */
+
+    const char path[] = "/tmp/myfile";
+    OE_FILE* stream;
+    const char secret[] = "my secret";
+
+    stream = oe_fopen(OE_FILE_SECURE_ENCRYPTION, path, "w");
+
+    oe_fwrite(secret, 1, sizeof(secret), stream);
+
+    oe_fclose(stream);
+```
+
+The following example uses macros generated for **fopen()**, **fwrite()**, and
+**fclose()**.
+
+```
+    #define OE_SECURE_POSIX_FILE_API /* Use secure file I/O */
+    #include <stdio.h> /* include customized IOT <stdio.h>. */
+
+    const char path[] = "/tmp/myfile";
+    OE_FILE* stream;
+    const char secret[] = "my secret";
+
+    stream = fopen(path, "w");
+
+    fwrite(secret, 1, sizeof(secret), stream);
+
+    fclose(stream);
+```
+
+This example defines **OE_SECURE_POSIX_FILE_API** before including
+**<stdio.h>**, which forces the macros for the POSIX functions to use
+secure file I/O. The following shows how the macros are expanded when
+**OE_SECURE_POSIX_FILE_API** is defined.
+
+```
+    fopen -> oe_fopen_OE_FILE_SECURE_BEST_EFFORT
+    fwrite -> oe_fwrite
+    fclose -> oe_fclose
+```
+
+When **OE_SECURE_POSIX_FILE_API** is not defined, the same macros are expanded
+as follows.
+
+```
+    fopen -> oe_fopen_OE_FILE_INSECURE
+    fwrite -> oe_fwrite
+    fclose -> oe_fclose
+```
