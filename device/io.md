@@ -476,3 +476,14 @@ as follows.
     fwrite -> oe_fwrite
     fclose -> oe_fclose
 ```
+
+Appendix A - Public headers
+============================
+
+The following are key public header files.
+
+[**<bits/device.h>**](../include/openenclave/bits/device.h)
+
+[**<bits/socket.h>**](../include/openenclave/bits/socket.h)
+
+[**<bits/fs.h>**](../include/openenclave/bits/fs.h)
