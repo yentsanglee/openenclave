@@ -9,6 +9,7 @@
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/epoll_ops.h>
 #include <openenclave/internal/errno.h>
+#include <openenclave/internal/eventfd_ops.h>
 #include <openenclave/internal/fd.h>
 #include <openenclave/internal/fs_ops.h>
 #include <openenclave/internal/sock_ops.h>
@@ -70,6 +71,7 @@ struct _oe_device
         oe_fs_ops_t* fs;
         oe_sock_ops_t* socket;
         oe_epoll_ops_t* epoll;
+        oe_eventfd_ops_t* eventfd;
     } ops;
 };
 

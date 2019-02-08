@@ -20,7 +20,7 @@ int oe_epoll_create(int size)
     oe_device_t* pdevice = NULL;
 
     pdevice = oe_get_devid_device(OE_DEVICE_ID_EPOLL);
-    if ((pepoll = (*pdevice->ops.epoll->create)(size)) == NULL)
+    if ((pepoll = (*pdevice->ops.epoll->create)(pdevice, size)) == NULL)
     {
         return -1;
     }
@@ -42,7 +42,7 @@ int oe_epoll_create1(int flags)
     oe_device_t* pdevice = NULL;
 
     pdevice = oe_get_devid_device(OE_DEVICE_ID_EPOLL);
-    if ((pepoll = (*pdevice->ops.epoll->create1)(flags)) == NULL)
+    if ((pepoll = (*pdevice->ops.epoll->create1)(pdevice, flags)) == NULL)
     {
         return -1;
     }
@@ -80,17 +80,17 @@ int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event)
                 oe_errno = OE_EINVAL;
                 return -1;
             }
-            ret = (*pepoll->ops.epoll->ctl_add)(pepoll, pdevice, event);
+            ret = (*pepoll->ops.epoll->ctl_add)(pepoll, fd, event);
             break;
         }
         case OE_EPOLL_CTL_DEL:
         {
-            ret = (*pepoll->ops.epoll->ctl_del)(pepoll, pdevice, event);
+            ret = (*pepoll->ops.epoll->ctl_del)(pepoll, fd);
             break;
         }
         case OE_EPOLL_CTL_MOD:
         {
-            ret = (*pepoll->ops.epoll->ctl_del)(pepoll, pdevice, event);
+            ret = (*pepoll->ops.epoll->ctl_del)(pepoll, fd);
             break;
         }
         default:
@@ -131,7 +131,8 @@ int oe_epoll_wait(
     // search polled device list for host involved  2Do
     if (host_wait)
     {
-        if ((*pepoll->ops.epoll->wait)(pepoll, timeout) < 0)
+        if ((*pepoll->ops.epoll->wait)(
+                pepoll, events, (size_t)maxevents, timeout) < 0)
         {
             oe_errno = OE_EINVAL;
             return -1;

@@ -5,8 +5,6 @@
 #include <netinet/in.h>
 #include <openenclave/internal/tests.h>
 
-#include "socket_test_u.h"
-
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -17,32 +15,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "socket_test_u.h"
+#include "epoll_test_u.h"
 
 #define SERVER_PORT "12345"
 
-void oe_socket_install_hostsock();
-
-void* enclave_server_thread(void* arg)
-{
-    oe_enclave_t* server_enclave = NULL;
-    int retval = 0;
-    oe_result_t result;
-    const uint32_t flags = oe_get_create_flags();
-
-    oe_socket_install_hostsock();
-    result = oe_create_socket_test_enclave(
-        arg, OE_ENCLAVE_TYPE_SGX, flags, NULL, 0, &server_enclave);
-
-    OE_TEST(result == OE_OK);
-
-    OE_TEST(ecall_device_init(server_enclave, &retval) == OE_OK);
-
-    OE_TEST(ecall_run_server(server_enclave, &retval) == OE_OK);
-    //    OE_TEST(oe_terminate_enclave(server_enclave) == OE_OK);
-    sleep(3);
-    return NULL;
-}
+void oe_socket_install_hostsock(void);
+void oe_epoll_install_hostepoll(void);
 
 void* host_server_thread(void* arg)
 {
@@ -69,6 +47,7 @@ void* host_server_thread(void* arg)
 
     listen(listenfd, 10);
 
+    int n = 0;
     while (1)
     {
         printf("accepting\n");
@@ -79,9 +58,10 @@ void* host_server_thread(void* arg)
             write(connfd, TESTDATA, strlen(TESTDATA));
             printf("write test data\n");
             close(connfd);
-            break;
+            if (n++ > 10)
+                break;
         }
-        sleep(1);
+        sleep(5);
     }
 
     close(listenfd);
@@ -89,78 +69,9 @@ void* host_server_thread(void* arg)
     return NULL;
 }
 
-char* host_client(in_port_t port)
-
-{
-    int sockfd = 0;
-    ssize_t n = 0;
-    static char recvBuff[1024];
-    struct sockaddr_in serv_addr = {0};
-
-    memset(recvBuff, '0', sizeof(recvBuff));
-    if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        printf("\n Error : Could not create socket \n");
-        return NULL;
-    }
-
-    int flags = fcntl(sockfd, F_GETFL, 0);
-    fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    serv_addr.sin_port = htons(port);
-
-    int retries = 0;
-    static const int max_retries = 400;
-    printf("host client:socket fd = %d\n", sockfd);
-    printf("host client:Connecting...\n");
-    while (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        if (retries++ > max_retries)
-        {
-            printf("\n Error : Connect Failed errno = %d\n", errno);
-            close(sockfd);
-            return NULL;
-        }
-        else
-        {
-            printf("Connect Failed. errno = %d Retrying \n", errno);
-            sleep(1);
-        }
-    }
-
-    do
-    {
-        n = read(sockfd, recvBuff, sizeof(recvBuff));
-        if (n > 0)
-        {
-            recvBuff[n] = '\0';
-            printf("finished reading: %ld bytes...\n", n);
-            break;
-        }
-        else
-        {
-            if (errno != EAGAIN)
-            {
-                printf("Read error, errno = %d\n", errno);
-                close(sockfd);
-                return NULL;
-            }
-            else
-            {
-                sleep(1);
-            }
-        }
-    } while (1);
-
-    close(sockfd);
-    return &recvBuff[0];
-}
-
 int main(int argc, const char* argv[])
 {
-    static char TESTDATA[] = "This is TEST DATA\n";
+    //    static char TESTDATA[] = "This is TEST DATA\n";
     oe_result_t result;
     oe_enclave_t* client_enclave = NULL;
     pthread_t server_thread_id = 0;
@@ -199,8 +110,11 @@ int main(int argc, const char* argv[])
     sleep(3); // Give the server time to launch
     const uint32_t flags = oe_get_create_flags();
 
+    // oe_fs_install_hostfs();
     oe_socket_install_hostsock();
-    result = oe_create_socket_test_enclave(
+    oe_epoll_install_hostepoll();
+
+    result = oe_create_epoll_test_enclave(
         argv[1], OE_ENCLAVE_TYPE_SGX, flags, NULL, 0, &client_enclave);
 
     OE_TEST(result == OE_OK);
@@ -208,30 +122,12 @@ int main(int argc, const char* argv[])
     OE_TEST(ecall_device_init(client_enclave, &ret) == OE_OK);
 
     test_data_len = 1024;
-    OE_TEST(
-        ecall_run_client(client_enclave, &ret, test_data_rtn, &test_data_len) ==
-        OE_OK);
+    OE_TEST(ecall_run_client(client_enclave, &ret) == OE_OK);
 
     printf("host received: %s\n", test_data_rtn);
 
     pthread_join(server_thread_id, NULL);
     OE_TEST(oe_terminate_enclave(client_enclave) == OE_OK);
-
-    // enclave server to host client
-    sleep(3); // Give the server time to launch
-    OE_TEST(
-        pthread_create(
-            &server_thread_id, NULL, enclave_server_thread, (void*)argv[1]) ==
-        0);
-
-    sleep(3); // Give the server time to launch
-
-    char* test_data = host_client(1493);
-
-    printf("received from enclave server: %s\n", test_data);
-    OE_TEST(strcmp(test_data, TESTDATA) == 0);
-
-    pthread_join(server_thread_id, NULL);
 
     printf("=== passed all tests (socket_test)\n");
 

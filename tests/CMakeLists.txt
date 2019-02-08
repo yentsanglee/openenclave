@@ -71,6 +71,7 @@ if ( UNIX )
         add_subdirectory(memory)
     endif()
 add_subdirectory(sockets)
+add_subdirectory(polling)
 add_subdirectory(create-rapid)
 endif()
 

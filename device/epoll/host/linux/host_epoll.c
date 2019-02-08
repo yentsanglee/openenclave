@@ -4,29 +4,20 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <openenclave/host.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "../../common/hostepollargs.h"
+#include "../../common/epollargs.h"
 
 void (*oe_handle_hostepoll_ocall_callback)(void*);
 
-union _oe_ev_data {
-    struct
-    {
-        uint32_t event_fd;
-        uint32_t handle_type;
-    };
-    uint64_t data;
-};
 
 static void _handle_hostepoll_ocall(void* args_)
 {
-    oe_hostepoll_args_t* args = (oe_hostepoll_args_t*)args_;
-    epolllen_t* addrlen = NULL;
-    struct epolladdr* paddr = NULL;
+    oe_epoll_args_t* args = (oe_epoll_args_t*)args_;
 
     /* ATTN: handle errno propagation. */
 
@@ -51,47 +42,42 @@ static void _handle_hostepoll_ocall(void* args_)
             args->u.close.ret = close((int)args->u.close.host_fd);
             break;
         }
-        case OE_EPOLL_OP_CANCEL:
-        {
-            args->u.cancel.ret = epoll_cancel((int)args->u.cancel.host_fd);
-            break;
-        }
         case OE_EPOLL_OP_ADD:
         {
-            union _oe_ev_data ev_data {
-                .enclave_fd = args->u.ctl_add.eclave_fd,
-                .handle_type = args->u.ctl_add.handle_type,
+            union _oe_ev_data ev_data = {
+                .event_list_idx = (uint32_t)args->u.ctl_add.list_idx,
+                .handle_type = (uint32_t)args->u.ctl_add.handle_type,
             };
 
             struct epoll_event ev = {
                 .events = args->u.ctl_add.event_mask,
-                .data.u64 = ev_data.u64,
+                .data.u64 = ev_data.data,
             };
 
             args->u.ctl_add.ret = epoll_ctl(
                 (int)args->u.ctl_add.epoll_fd,
                 EPOLL_CTL_ADD,
                 (int)args->u.ctl_add.host_fd,
-                &epoll_event);
+                &ev);
             break;
         }
         case OE_EPOLL_OP_MOD:
         {
-            union _oe_ev_data ev_data {
-                .enclave_fd = args->u.ctl_add.eclave_fd,
-                .handle_type = args->u.ctl_add.handle_type,
+            union _oe_ev_data ev_data = {
+                .event_list_idx = (uint32_t)args->u.ctl_mod.list_idx,
+                .handle_type = (uint32_t)args->u.ctl_mod.handle_type,
             };
 
             struct epoll_event ev = {
-                .events = args->u.ctl_add.event_mask,
-                .data.u64 = ev_data.u64,
+                .events = args->u.ctl_mod.event_mask,
+                .data.u64 = ev_data.data,
             };
 
             args->u.ctl_mod.ret = epoll_ctl(
                 (int)args->u.ctl_mod.epoll_fd,
                 EPOLL_CTL_MOD,
                 (int)args->u.ctl_mod.host_fd,
-                &epoll_event);
+                &ev);
             break;
         }
         case OE_EPOLL_OP_DEL:
@@ -110,9 +96,9 @@ static void _handle_hostepoll_ocall(void* args_)
         {
             args->u.wait.ret = epoll_wait(
                 (int)args->u.wait.epoll_fd,
-                args->buf,
-                int args->u.wait.maxevents,
-                int args->u.wait.timeout);
+                (struct epoll_event*)args->buf,
+                (int)args->u.wait.maxevents,
+                (int)args->u.wait.timeout);
             break;
         }
         case OE_EPOLL_OP_SHUTDOWN_DEVICE:

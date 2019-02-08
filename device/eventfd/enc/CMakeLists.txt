@@ -3,16 +3,16 @@
 
 set(LINUX_SGX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/linux-sgx)
 
-add_library(oe_epoll_enc STATIC
-    epoll.c)
+add_library(oe_eventfd_enc STATIC
+    eventfd.c)
 
-target_include_directories(oe_epoll_enc PRIVATE
+target_include_directories(oe_eventfd_enc PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(oe_epoll_enc PUBLIC oeenclave mbedcrypto oelibc)
+target_link_libraries(oe_eventfd_enc PUBLIC oeenclave mbedcrypto oelibc)
 
-set_property(TARGET oe_epoll_enc PROPERTY
+set_property(TARGET oe_eventfd_enc PROPERTY
     ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
-install(TARGETS oe_epoll_enc
+install(TARGETS oe_eventfd_enc
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)

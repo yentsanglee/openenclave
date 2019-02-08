@@ -84,6 +84,7 @@ typedef struct _file
     struct _oe_device base;
     uint32_t magic;
     int host_fd;
+    uint32_t ready_mask;
 } file_t;
 
 typedef struct _dir
@@ -1087,6 +1088,29 @@ done:
     return ret;
 }
 
+static ssize_t _hostfs_gethostfd(oe_device_t* file_)
+{
+    file_t* f = _cast_file(file_);
+
+    if (f->magic == FILE_MAGIC)
+    {
+        return f->host_fd;
+    }
+
+    return -1;
+}
+
+static uint64_t _hostfs_readystate(oe_device_t* file_)
+{
+    file_t* f = _cast_file(file_);
+
+    if (f->magic == FILE_MAGIC)
+    {
+        return f->ready_mask;
+    }
+    return (uint64_t)-1; // Invalid value
+}
+
 static oe_fs_ops_t _ops = {
     .base.clone = _hostfs_clone,
     .base.release = _hostfs_release,
@@ -1097,6 +1121,8 @@ static oe_fs_ops_t _ops = {
     .open = _hostfs_open,
     .base.read = _hostfs_read,
     .base.write = _hostfs_write,
+    .base.get_host_fd = _hostfs_gethostfd,
+    .base.ready_state = _hostfs_readystate,
     .lseek = _hostfs_lseek,
     .base.close = _hostfs_close,
     .opendir = _hostfs_opendir,

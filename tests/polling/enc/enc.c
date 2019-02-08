@@ -6,6 +6,8 @@
 
 // enclave.h must come before socket.h
 #include <openenclave/internal/device.h>
+#include <openenclave/internal/epoll.h>
+#include <openenclave/internal/fs.h>
 #include <openenclave/internal/host_socket.h>
 #include <openenclave/internal/netinet/in.h>
 #include <openenclave/internal/sockaddr.h>
@@ -28,14 +30,24 @@ int ecall_device_init()
 /* This client connects to an echo server, sends a text message,
  * and outputs the text reply.
  */
-int ecall_run_client(char* recv_buff, ssize_t* recv_buff_len)
+int ecall_run_client(void)
 {
     oe_sockfd_t sockfd = 0;
+    int file_fd = 0;
     ssize_t n = 0;
-    size_t buff_len = (size_t)*recv_buff_len;
+    char recv_buff[1024];
+    size_t buff_len = sizeof(recv_buff);
     struct oe_sockaddr_in serv_addr = {0};
-    struct oe_epoll_event event, events[MAX_EVENTS];
+    static const int MAX_EVENTS = 20;
+    struct oe_epoll_event event = {0};
+    struct oe_epoll_event events[MAX_EVENTS] = {{0}};
     int epoll_fd = oe_epoll_create1(0);
+
+	if(epoll_fd == -1)
+	{
+		printf("Failed to create epoll file descriptor\n");
+		return OE_FAILURE;
+	}
 
     if (epoll_fd == -1)
     {
@@ -73,43 +85,51 @@ int ecall_run_client(char* recv_buff, ssize_t* recv_buff_len)
         }
     }
 
+    const int flags = OE_O_NONBLOCK | OE_O_RDONLY;
+    file_fd = oe_open("/tmp/test", flags, 0);
+
     printf("polling...\n");
-    event.events = EPOLLIN;
-    event.data.fd = 0;
+    event.events = OE_EPOLLIN;
+    event.data.fd = file_fd;
 
-    if (oe_epoll_ctl(epoll_fd, EPOLL_CTL_ADD, 0, &event))
+    if (oe_epoll_ctl(epoll_fd, OE_EPOLL_CTL_ADD, 0, &event))
     {
-        fprintf(stderr, "Failed to add file descriptor to epoll\n");
-        oe_close(epoll_fd);
-        return 1;
-    }
+		fprintf(stderr, "Failed to add file descriptor to epoll\n");
+		oe_close(epoll_fd);
+		return 1;
+	}
 
-    event.events = EPOLLIN;
+    event.events = OE_EPOLLIN;
     event.data.fd = sockfd;
 
-    if (oe_epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sockfd, &event))
+    if (oe_epoll_ctl(epoll_fd, OE_EPOLL_CTL_ADD, sockfd, &event))
     {
-        fprintf(stderr, "Failed to add file descriptor to epoll\n");
-        oe_close(epoll_fd);
-        return 1;
-    }
+		fprintf(stderr, "Failed to add file descriptor to epoll\n");
+		oe_close(epoll_fd);
+		return 1;
+	}
 
     int nfds = 0;
-    while((nfds = oe_epoll_wait(epoll_fd,
-    n = oe_read(sockfd, recv_buff, buff_len);
-    *recv_buff_len = n;
-    if (n > 0)
+    do
     {
-        printf("finished reading: %ld bytes...\n", n);
-    }
-    else
-    {
-        printf("Read error, Fail\n");
-        oe_close(sockfd);
-        return OE_FAILURE;
-    }
+        while ((nfds = oe_epoll_wait(epoll_fd, events, 20, 30000)) < 0)
+        {
+            printf("timeout\n");
+        }
+        printf("input from %d fds\n", nfds);
+
+        for (int i = 0; i < nfds; i++)
+        {
+            n = oe_read(events[i].data.fd, recv_buff, buff_len);
+            recv_buff[n] = 0;
+            printf(
+                "received data %s from fd %d\n", recv_buff, events[i].data.fd);
+        }
+
+    } while (nfds >= 0);
 
     oe_close(sockfd);
+    oe_close(epoll_fd);
     return OE_OK;
 }
 
@@ -182,52 +202,52 @@ int ecall_run_server()
 
 int oe_test_do_epoll()
 {
-    int running = 1, event_count, i;
-    size_t bytes_read;
+	int running = 1, event_count, i;
+    ssize_t bytes_read;
     char read_buffer[READ_SIZE + 1];
-    struct oe_epoll_event event, events[MAX_EVENTS];
-    int epoll_fd = oe_epoll_create1(0);
+	struct oe_epoll_event event, events[MAX_EVENTS];
+	int epoll_fd = oe_epoll_create1(0);
 
-    if (epoll_fd == -1)
-    {
-        fprintf(stderr, "Failed to create epoll file descriptor\n");
-        return 1;
-    }
+	if(epoll_fd == -1)
+	{
+		fprintf(stderr, "Failed to create epoll file descriptor\n");
+		return 1;
+	}
 
-    event.events = EPOLLIN;
+    event.events = OE_EPOLLIN;
     event.data.fd = 0;
 
-    if (oe_epoll_ctl(epoll_fd, EPOLL_CTL_ADD, 0, &event))
+    if (oe_epoll_ctl(epoll_fd, OE_EPOLL_CTL_ADD, 0, &event))
     {
-        fprintf(stderr, "Failed to add file descriptor to epoll\n");
-        oe_close(epoll_fd);
-        return 1;
-    }
+		fprintf(stderr, "Failed to add file descriptor to epoll\n");
+		oe_close(epoll_fd);
+		return 1;
+	}
 
-    while (running)
-    {
-        printf("\nPolling for input...\n");
-        event_count = epoll_wait(epoll_fd, events, MAX_EVENTS, 30000);
+	while(running)
+	{
+		printf("\nPolling for input...\n");
+        event_count = oe_epoll_wait(epoll_fd, events, MAX_EVENTS, 30000);
         printf("%d ready events\n", event_count);
-        for (i = 0; i < event_count; i++)
-        {
-            printf("Reading file descriptor '%d' -- ", events[i].data.fd);
-            bytes_read = oe_read(events[i].data.fd, read_buffer, READ_SIZE);
-            printf("%zd bytes read.\n", bytes_read);
-            read_buffer[bytes_read] = '\0';
-            printf("Read '%s'\n", read_buffer);
+		for(i = 0; i < event_count; i++)
+		{
+			printf("Reading file descriptor '%d' -- ", events[i].data.fd);
+			bytes_read = oe_read(events[i].data.fd, read_buffer, READ_SIZE);
+			printf("%zd bytes read.\n", bytes_read);
+			read_buffer[bytes_read] = '\0';
+			printf("Read '%s'\n", read_buffer);
 
-            if (!strncmp(read_buffer, "stop\n", 5))
-                running = 0;
-        }
-    }
+			if(!strncmp(read_buffer, "stop\n", 5))
+				running = 0;
+		}
+	}
 
-    if (oe_close(epoll_fd))
-    {
-        fprintf(stderr, "Failed to close epoll file descriptor\n");
-        return 1;
-    }
-    return 0;
+	if(oe_close(epoll_fd))
+	{
+		fprintf(stderr, "Failed to close epoll file descriptor\n");
+		return 1;
+	}
+	return 0;
 }
 OE_SET_ENCLAVE_SGX(
     1,    /* ProductID */
