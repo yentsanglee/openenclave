@@ -17,14 +17,22 @@ will support the following device types.
 Interfaces:
 -----------
 
-OE will support three interfaces.
+OE supports three interfaces.
 
+- **The low-level interface** (**open()**, **read**(), etc.).
+- **The stream-based file interface** (**fopen()**, **fread**(), etc.).
 - **The IOT interface** (**<stdio.h>** and **<socket.h>**).
-- **The low-level I/O interface** (**open()**, **read**(), etc.).
-- **The stream-based file I/O interface** (**fopen()**, **fread**(), etc.).
 
-The low-level interface is needed to support legacy applications that depend 
-on that interface (such as **OpenSSL**). No extra effort is needed to support 
-the stream-based functions, since MUSL implements these based on the low-level 
-I/O functions.
+Each interface supports a different use case. For example, both the low-level
+and stream-based interfaces are used by **OpenSSL**. The IOT interface is used
+by IOT team.
+
+The low-level interface:
+------------------------
+
+The stream-based interface:
+---------------------------
+
+The IOT Interface:
+------------------
 
