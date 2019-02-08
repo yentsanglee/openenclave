@@ -78,7 +78,7 @@ struct oe_sockaddr_in
 };
 
 #include <endian.h>
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if __OE_BYTE_ORDER == __OE_BIG_ENDIAN
 __inline uint32_t oe_ntohl(uint32_t __netlong)
 {
     return __netlong;

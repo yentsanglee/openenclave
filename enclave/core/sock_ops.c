@@ -3,9 +3,9 @@
 
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/enclavelibc.h>
-#include <openenclave/internal/socket.h>
+#include <openenclave/bits/socket.h>
 
-oe_sockfd_t oe_socket(int domain, int type, int protocol)
+int oe_socket(int domain, int type, int protocol)
 
 {
     int sd = -1;
@@ -40,7 +40,7 @@ oe_sockfd_t oe_socket(int domain, int type, int protocol)
 }
 
 int oe_connect(
-    oe_sockfd_t sockfd,
+    int sockfd,
     const struct oe_sockaddr* addr,
     oe_socklen_t addrlen)
 
@@ -69,7 +69,7 @@ int oe_connect(
 }
 
 int oe_accept(
-    oe_sockfd_t sockfd,
+    int sockfd,
     struct oe_sockaddr* addr,
     oe_socklen_t* addrlen)
 
@@ -107,7 +107,7 @@ int oe_accept(
     return newfd;
 }
 
-int oe_listen(oe_sockfd_t sockfd, int backlog)
+int oe_listen(int sockfd, int backlog)
 
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);
@@ -128,7 +128,7 @@ int oe_listen(oe_sockfd_t sockfd, int backlog)
     return (*psock->ops.socket->listen)(psock, backlog);
 }
 
-ssize_t oe_recvmsg(oe_sockfd_t sockfd, void* buf, size_t len, int flags)
+ssize_t oe_recvmsg(int sockfd, void* buf, size_t len, int flags)
 
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);
@@ -149,7 +149,7 @@ ssize_t oe_recvmsg(oe_sockfd_t sockfd, void* buf, size_t len, int flags)
     return (*psock->ops.socket->recv)(psock, buf, len, flags);
 }
 
-ssize_t oe_send(oe_sockfd_t sockfd, const void* buf, size_t len, int flags)
+ssize_t oe_send(int sockfd, const void* buf, size_t len, int flags)
 
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);
@@ -170,7 +170,7 @@ ssize_t oe_send(oe_sockfd_t sockfd, const void* buf, size_t len, int flags)
     return (*psock->ops.socket->send)(psock, buf, len, flags);
 }
 
-int oe_shutdown(oe_sockfd_t sockfd, int how)
+int oe_shutdown(int sockfd, int how)
 
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);
@@ -192,7 +192,7 @@ int oe_shutdown(oe_sockfd_t sockfd, int how)
 }
 
 int oe_getsockname(
-    oe_sockfd_t sockfd,
+    int sockfd,
     struct oe_sockaddr* addr,
     oe_socklen_t* addrlen)
 
@@ -216,7 +216,7 @@ int oe_getsockname(
 }
 
 int oe_getsockopt(
-    oe_sockfd_t sockfd,
+    int sockfd,
     int level,
     int optname,
     void* optval,
@@ -243,7 +243,7 @@ int oe_getsockopt(
 }
 
 int oe_setsockopt(
-    oe_sockfd_t sockfd,
+    int sockfd,
     int level,
     int optname,
     const void* optval,
@@ -269,7 +269,7 @@ int oe_setsockopt(
         psock, level, optname, optval, optlen);
 }
 
-int oe_bind(oe_sockfd_t sockfd, const oe_sockaddr* name, oe_socklen_t namelen)
+int oe_bind(int sockfd, const oe_sockaddr* name, oe_socklen_t namelen)
 
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);

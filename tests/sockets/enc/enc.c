@@ -7,9 +7,7 @@
 // enclave.h must come before socket.h
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/host_socket.h>
-#include <openenclave/internal/netinet/in.h>
-#include <openenclave/internal/sockaddr.h>
-#include <openenclave/internal/socket.h>
+#include <openenclave/bits/socket.h>
 
 #include <socket_test_t.h>
 #include <stdio.h>
@@ -28,7 +26,7 @@ int ecall_device_init()
  */
 int ecall_run_client(char* recv_buff, ssize_t* recv_buff_len)
 {
-    oe_sockfd_t sockfd = 0;
+    int sockfd = 0;
     ssize_t n = 0;
     size_t buff_len = (size_t)*recv_buff_len;
     struct oe_sockaddr_in serv_addr = {0};

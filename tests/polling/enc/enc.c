@@ -9,9 +9,8 @@
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/host_socket.h>
-#include <openenclave/internal/netinet/in.h>
-#include <openenclave/internal/sockaddr.h>
-#include <openenclave/internal/socket.h>
+#include <openenclave/bits/in.h>
+#include <openenclave/bits/socket.h>
 
 #include <epoll_test_t.h>
 #include <stdio.h>
@@ -32,7 +31,7 @@ int ecall_device_init()
  */
 int ecall_run_client(void)
 {
-    oe_sockfd_t sockfd = 0;
+    int sockfd = 0;
     int file_fd = 0;
     ssize_t n = 0;
     char recv_buff[1024];
