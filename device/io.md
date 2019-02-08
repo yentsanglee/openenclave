@@ -82,15 +82,13 @@ on the host file system.
 
 ```
     int fd;
+    const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
+    const oe_mode_t mode = 0644;
 
-    fd = oe_device_open(
-        OE_DEVID_HOST_FILE_SYSTEM,
-        "/tmp/myfile",
-        OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY,
-        0644);
-
+    fd = oe_device_open(OE_DEVID_HOST_FILE_SYSTEM, "/tmp/hello", flags, mode);
+    ...
     oe_write(fd, "hello", 5);
-
+    ...
     oe_close(fd);
 ```
 
@@ -99,18 +97,53 @@ The oe-prefixed functions that have POSIX signatures (**oe_write()**,
 The following section discusses the corresponding POSIX functions defined
 by the C runtime.
 
+Similarly, the following shows how to create a socket using the device-oriented
+interface.
+
+```
+    int sd;
+    const int domain = OE_AF_INET6;
+    const int type = OE_SOCK_STREAM;
+    const int protocol = 0;
+
+    sd = oe_device_socket(OE_DEVID_HOST_SOCKETS, domain, type, protocol);
+    ...
+    oe_write(sd, "hello", 5);
+    ...
+    oe_close(sd);
+```
+
 The device interface also provides functions for opening stream-oriented
 files. For example:
 
 ```
     OE_FILE* stream;
 
-    stream = oe_device_fopen(OE_DEVID_HOST_FILE_SYSTEM, "/tmp/myfile", "r");
-
+    stream = oe_device_fopen(OE_DEVID_HOST_FILE_SYSTEM, "/tmp/hello", "r");
     fwrite("hello", 1, 5, stream);
-
     fclose(stream);
 ```
 
 The **fwrite** and **fclose** functions are part of the POSIX interface,
 discussed in the next chapter.
+
+The following is a complete list of functions defined by the device-oriented
+interface
+
+
+| The device-oriented interface |
+| ----------------------------- |
+| oe_device_open()              |
+| oe_device_opendir()           |
+| oe_device_unlink()            |
+| oe_device_link()              |
+| oe_device_rename()            |
+| oe_device_mkdir()             |
+| oe_device_rmdir()             |
+| oe_device_stat()              |
+| oe_device_truncate()          |
+| oe_device_access()            |
+| oe_device_fopen()             |
+
+2.2 The POSIX interface
+-----------------------
