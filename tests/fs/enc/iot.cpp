@@ -9,12 +9,12 @@
 #include <openenclave/internal/enclavelibc.h>
 // clang-format on
 
-/* Be sure stdio.h was included from the libcex directory. */
-#ifndef _LIBCEX_STDIO_H
-#error "please put the libcex directory on the path"
+/* Be sure stdio.h was included from the iot directory. */
+#ifndef _IOT_STDIO_H
+#error "please put the iot directory on the path"
 #endif
 
-void test_libcex(const char* tmp_dir)
+void test_iot(const char* tmp_dir)
 {
     char path[128];
     static const char ALPHABET[] = "abcdefghijklmnopqrstuvwxyz";

@@ -1,12 +1,11 @@
 /* Copyright (c) Microsoft Corporation. All rights reserved. */
 /* Licensed under the MIT License. */
 
-#ifndef _LIBCEX_STDIO_H
-#define _LIBCEX_STDIO_H
+#ifndef _IOT_STDIO_H
+#define _IOT_STDIO_H
 
 #include <../libc/stdio.h>
-#include <stdarg.h>
-#include "__libcex.h"
+#include <openenclave/iot/bits/common.h>
 
 #ifdef OE_USE_OPTEE
 #define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_HARDWARE
@@ -14,7 +13,7 @@
 #define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_ENCRYPTION
 #endif
 
-LIBCEX_EXTERN_C_BEGIN
+IOT_EXTERN_C_BEGIN
 
 /*
 **==============================================================================
@@ -35,168 +34,168 @@ typedef struct _OE_FILE OE_FILE;
 
 typedef struct _OE_DIR OE_DIR;
 
-LIBCEX_INLINE int oe_feof(OE_FILE* stream)
+IOT_INLINE int oe_feof(OE_FILE* stream)
 {
-    extern int libcex_oe_feof(OE_FILE * stream);
-    return libcex_oe_feof(stream);
+    extern int iot_oe_feof(OE_FILE * stream);
+    return iot_oe_feof(stream);
 }
 
-LIBCEX_INLINE int oe_ferror(OE_FILE* stream)
+IOT_INLINE int oe_ferror(OE_FILE* stream)
 {
-    extern int libcex_oe_ferror(OE_FILE * stream);
-    return libcex_oe_ferror(stream);
+    extern int iot_oe_ferror(OE_FILE * stream);
+    return iot_oe_ferror(stream);
 }
 
-LIBCEX_INLINE int oe_fflush(OE_FILE* stream)
+IOT_INLINE int oe_fflush(OE_FILE* stream)
 {
-    extern int libcex_oe_fflush(OE_FILE * stream);
-    return libcex_oe_fflush(stream);
+    extern int iot_oe_fflush(OE_FILE * stream);
+    return iot_oe_fflush(stream);
 }
 
-LIBCEX_INLINE char* oe_fgets(char* s, int size, OE_FILE* stream)
+IOT_INLINE char* oe_fgets(char* s, int size, OE_FILE* stream)
 {
-    extern char* libcex_oe_fgets(char* s, int size, OE_FILE* stream);
-    return libcex_oe_fgets(s, size, stream);
+    extern char* iot_oe_fgets(char* s, int size, OE_FILE* stream);
+    return iot_oe_fgets(s, size, stream);
 }
 
-LIBCEX_INLINE int oe_fputs(const char* s, OE_FILE* stream)
+IOT_INLINE int oe_fputs(const char* s, OE_FILE* stream)
 {
-    extern int libcex_oe_fputs(const char* s, OE_FILE* stream);
-    return libcex_oe_fputs(s, stream);
+    extern int iot_oe_fputs(const char* s, OE_FILE* stream);
+    return iot_oe_fputs(s, stream);
 }
 
-LIBCEX_INLINE size_t
+IOT_INLINE size_t
 oe_fread(void* ptr, size_t size, size_t nmemb, OE_FILE* stream)
 {
-    extern size_t libcex_oe_fread(
+    extern size_t iot_oe_fread(
         void* ptr, size_t size, size_t nmemb, OE_FILE* stream);
-    return libcex_oe_fread(ptr, size, nmemb, stream);
+    return iot_oe_fread(ptr, size, nmemb, stream);
 }
 
-LIBCEX_INLINE int oe_fseek(OE_FILE* stream, long offset, int whence)
+IOT_INLINE int oe_fseek(OE_FILE* stream, long offset, int whence)
 {
-    extern int libcex_oe_fseek(OE_FILE * stream, long offset, int whence);
-    return libcex_oe_fseek(stream, offset, whence);
+    extern int iot_oe_fseek(OE_FILE * stream, long offset, int whence);
+    return iot_oe_fseek(stream, offset, whence);
 }
 
-LIBCEX_INLINE long oe_ftell(OE_FILE* stream)
+IOT_INLINE long oe_ftell(OE_FILE* stream)
 {
-    extern long libcex_oe_ftell(OE_FILE * stream);
-    return libcex_oe_ftell(stream);
+    extern long iot_oe_ftell(OE_FILE * stream);
+    return iot_oe_ftell(stream);
 }
 
-LIBCEX_INLINE OE_FILE* oe_fopen(
+IOT_INLINE OE_FILE* oe_fopen(
     oe_file_security_t security,
     const char* path,
     const char* mode)
 {
-    extern OE_FILE* libcex_oe_fopen(
+    extern OE_FILE* iot_oe_fopen(
         oe_file_security_t security, const char* path, const char* mode);
-    return libcex_oe_fopen(security, path, mode);
+    return iot_oe_fopen(security, path, mode);
 }
 
-LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_INSECURE(
+IOT_INLINE OE_FILE* oe_fopen_OE_FILE_INSECURE(
     const char* path,
     const char* mode)
 {
     return oe_fopen(OE_FILE_INSECURE, path, mode);
 }
 
-LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_HARDWARE(
+IOT_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_HARDWARE(
     const char* path,
     const char* mode)
 {
     return oe_fopen(OE_FILE_SECURE_HARDWARE, path, mode);
 }
 
-LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_ENCRYPTION(
+IOT_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_ENCRYPTION(
     const char* path,
     const char* mode)
 {
     return oe_fopen(OE_FILE_SECURE_ENCRYPTION, path, mode);
 }
 
-LIBCEX_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_BEST_EFFORT(
+IOT_INLINE OE_FILE* oe_fopen_OE_FILE_SECURE_BEST_EFFORT(
     const char* path,
     const char* mode)
 {
     return oe_fopen(OE_FILE_SECURE_BEST_EFFORT, path, mode);
 }
 
-LIBCEX_INLINE size_t
+IOT_INLINE size_t
 oe_fwrite(const void* ptr, size_t size, size_t nmemb, OE_FILE* stream)
 {
-    size_t libcex_oe_fwrite(
+    size_t iot_oe_fwrite(
         const void* ptr, size_t size, size_t nmemb, OE_FILE* stream);
-    return libcex_oe_fwrite(ptr, size, nmemb, stream);
+    return iot_oe_fwrite(ptr, size, nmemb, stream);
 }
 
-LIBCEX_INLINE int oe_remove(oe_file_security_t security, const char* pathname)
+IOT_INLINE int oe_remove(oe_file_security_t security, const char* pathname)
 {
-    extern int libcex_oe_remove(
+    extern int iot_oe_remove(
         oe_file_security_t security, const char* pathname);
 
-    return libcex_oe_remove(security, pathname);
+    return iot_oe_remove(security, pathname);
 }
 
-LIBCEX_INLINE int oe_remove_OE_FILE_INSECURE(const char* pathname)
+IOT_INLINE int oe_remove_OE_FILE_INSECURE(const char* pathname)
 {
     return oe_remove(OE_FILE_INSECURE, pathname);
 }
 
-LIBCEX_INLINE int oe_remove_OE_FILE_SECURE_HARDWARE(const char* pathname)
+IOT_INLINE int oe_remove_OE_FILE_SECURE_HARDWARE(const char* pathname)
 {
     return oe_remove(OE_FILE_SECURE_HARDWARE, pathname);
 }
 
-LIBCEX_INLINE int oe_remove_OE_FILE_SECURE_ENCRYPTION(const char* pathname)
+IOT_INLINE int oe_remove_OE_FILE_SECURE_ENCRYPTION(const char* pathname)
 {
     return oe_remove(OE_FILE_SECURE_ENCRYPTION, pathname);
 }
 
-LIBCEX_INLINE int oe_remove_OE_FILE_SECURE_BEST_EFFORT(const char* pathname)
+IOT_INLINE int oe_remove_OE_FILE_SECURE_BEST_EFFORT(const char* pathname)
 {
     return oe_remove(OE_FILE_SECURE_BEST_EFFORT, pathname);
 }
 
-LIBCEX_INLINE OE_DIR* oe_opendir(oe_file_security_t security, const char* name)
+IOT_INLINE OE_DIR* oe_opendir(oe_file_security_t security, const char* name)
 {
-    extern OE_DIR* libcex_oe_opendir(
+    extern OE_DIR* iot_oe_opendir(
         oe_file_security_t security, const char* name);
-    return libcex_oe_opendir(security, name);
+    return iot_oe_opendir(security, name);
 }
 
-LIBCEX_INLINE OE_DIR* oe_opendir_FILE_INSECURE(const char* name)
+IOT_INLINE OE_DIR* oe_opendir_FILE_INSECURE(const char* name)
 {
     return oe_opendir(OE_FILE_INSECURE, name);
 }
 
-LIBCEX_INLINE OE_DIR* oe_opendir_FILE_SECURE_HARDWARE(const char* name)
+IOT_INLINE OE_DIR* oe_opendir_FILE_SECURE_HARDWARE(const char* name)
 {
     return oe_opendir(OE_FILE_SECURE_HARDWARE, name);
 }
 
-LIBCEX_INLINE OE_DIR* oe_opendir_FILE_SECURE_ENCRYPTION(const char* name)
+IOT_INLINE OE_DIR* oe_opendir_FILE_SECURE_ENCRYPTION(const char* name)
 {
     return oe_opendir(OE_FILE_SECURE_ENCRYPTION, name);
 }
 
-LIBCEX_INLINE int oe_fclose(OE_FILE* stream)
+IOT_INLINE int oe_fclose(OE_FILE* stream)
 {
-    extern int libcex_oe_fclose(OE_FILE * stream);
-    return libcex_oe_fclose(stream);
+    extern int iot_oe_fclose(OE_FILE * stream);
+    return iot_oe_fclose(stream);
 }
 
-LIBCEX_INLINE int oe_closedir(OE_DIR* dirp)
+IOT_INLINE int oe_closedir(OE_DIR* dirp)
 {
-    extern int libcex_oe_closedir(OE_DIR * dirp);
-    return libcex_oe_closedir(dirp);
+    extern int iot_oe_closedir(OE_DIR * dirp);
+    return iot_oe_closedir(dirp);
 }
 
-LIBCEX_INLINE struct oe_dirent* oe_readdir(OE_DIR* dirp)
+IOT_INLINE struct oe_dirent* oe_readdir(OE_DIR* dirp)
 {
-    extern struct oe_dirent* libcex_oe_readdir(OE_DIR * dirp);
-    return libcex_oe_readdir(dirp);
+    extern struct oe_dirent* iot_oe_readdir(OE_DIR * dirp);
+    return iot_oe_readdir(dirp);
 }
 
 /*
@@ -207,7 +206,7 @@ LIBCEX_INLINE struct oe_dirent* oe_readdir(OE_DIR* dirp)
 **==============================================================================
 */
 
-LIBCEX_INLINE OE_FILE* __inline_oe_fopen(const char* path, const char* mode)
+IOT_INLINE OE_FILE* __inline_oe_fopen(const char* path, const char* mode)
 {
 #ifdef OE_SECURE_POSIX_FILE_API
     return oe_fopen(OE_FILE_SECURE_BEST_EFFORT, path, mode);
@@ -216,7 +215,7 @@ LIBCEX_INLINE OE_FILE* __inline_oe_fopen(const char* path, const char* mode)
 #endif
 }
 
-LIBCEX_INLINE int __inline_oe_remove(const char* pathname)
+IOT_INLINE int __inline_oe_remove(const char* pathname)
 {
 #ifdef OE_SECURE_POSIX_FILE_API
     return oe_remove(OE_FILE_SECURE_BEST_EFFORT, pathname);
@@ -273,6 +272,6 @@ LIBCEX_INLINE int __inline_oe_remove(const char* pathname)
 #define EINVAL 22
 #define ERANGE 34
 
-LIBCEX_EXTERN_C_END
+IOT_EXTERN_C_END
 
-#endif /* _LIBCEX_STDIO_H */
+#endif /* _IOT_STDIO_H */

@@ -414,11 +414,11 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         OE_TEST(oe_clear_thread_default_device() == 0);
     }
 
-    /* Test libcex I/O. */
+    /* Test iot I/O. */
     {
-        printf("=== testing libcex:\n");
-        extern void test_libcex(const char* tmp_dir);
-        test_libcex(tmp_dir);
+        printf("=== testing iot:\n");
+        extern void test_iot(const char* tmp_dir);
+        test_iot(tmp_dir);
     }
 
     /* Write the standard output and standard error. */

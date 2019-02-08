@@ -480,10 +480,11 @@ as follows.
 Appendix A - Public headers
 ============================
 
-The following are key public header files.
+The following are key public header files that have been published so far.
 
-[**<bits/device.h>**](../include/openenclave/bits/device.h)
+[**<device.h>**](../include/openenclave/bits/device.h)
 
-[**<bits/socket.h>**](../include/openenclave/bits/socket.h)
+[**<fs.h>**](../include/openenclave/bits/fs.h)
 
-[**<bits/fs.h>**](../include/openenclave/bits/fs.h)
+[**<socket.h>**](../include/openenclave/bits/socket.h)
+
