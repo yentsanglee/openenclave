@@ -71,6 +71,7 @@ add_library(oelibc STATIC
     link.c
     locale.c
     malloc.c
+    oe_device_fopen.c
     pthread.c
     stdlib.c
     strerror.c

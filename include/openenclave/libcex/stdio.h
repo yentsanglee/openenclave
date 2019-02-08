@@ -31,7 +31,7 @@ typedef enum
     OE_FILE_SECURE_ENCRYPTION = 2,
 } oe_file_security_t;
 
-typedef struct oe_file OE_FILE;
+typedef struct _OE_FILE OE_FILE;
 
 typedef struct _OE_DIR OE_DIR;
 

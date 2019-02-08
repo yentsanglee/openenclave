@@ -32,6 +32,7 @@ OE_EXTERNC_BEGIN
 #define OE_DEVICE_ID_EVENTFD ((int)7)
 
 struct oe_stat;
+typedef struct _OE_FILE OE_FILE;
 
 int oe_device_open(int devid, const char* pathname, int flags, mode_t mode);
 
@@ -52,6 +53,8 @@ int oe_device_stat(int devid, const char* pathname, struct oe_stat* buf);
 int oe_device_truncate(int devid, const char* path, off_t length);
 
 int oe_device_access(int devid, const char* pathname, int mode);
+
+OE_FILE* oe_device_fopen(int devid, const char* path, const char* mode);
 
 OE_EXTERNC_END
 

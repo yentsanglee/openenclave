@@ -481,7 +481,7 @@ static int _epoll_ctl_mod(
     struct oe_epoll_event* event)
 {
     int ret = -1;
-    epoll_dev_t* epoll  = _cast_epoll(epoll_);
+    epoll_dev_t* epoll = _cast_epoll(epoll_);
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
     ssize_t host_fd = -1;

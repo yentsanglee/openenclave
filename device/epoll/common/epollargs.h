@@ -53,12 +53,14 @@ typedef struct _oe_epoll_args
             int64_t host_fd;
             uint32_t event_mask;
             int32_t list_idx;
-            int32_t handle_type;  // We need this for windows. A file handle != socket handle in win32 and its awkward to figure it out.
+            int32_t handle_type; // We need this for windows. A file handle !=
+                                 // socket handle in win32 and its awkward to
+                                 // figure it out.
         } ctl_add;
         struct
         {
             int64_t ret;
-            int64_t epoll_fd;  // host_fd of the epoll
+            int64_t epoll_fd; // host_fd of the epoll
             int64_t host_fd;  // host fd for the waitable
         } ctl_del;
         struct
@@ -68,7 +70,9 @@ typedef struct _oe_epoll_args
             int64_t host_fd;
             uint32_t event_mask;
             int32_t list_idx;
-            int32_t handle_type;  // We need this for windows. A file handle != socket handle in win32 and its awkward to figure it out.
+            int32_t handle_type; // We need this for windows. A file handle !=
+                                 // socket handle in win32 and its awkward to
+                                 // figure it out.
         } ctl_mod;
         struct
         {

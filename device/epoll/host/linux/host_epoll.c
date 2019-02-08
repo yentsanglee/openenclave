@@ -14,7 +14,6 @@
 
 void (*oe_handle_hostepoll_ocall_callback)(void*);
 
-
 static void _handle_hostepoll_ocall(void* args_)
 {
     oe_epoll_args_t* args = (oe_epoll_args_t*)args_;

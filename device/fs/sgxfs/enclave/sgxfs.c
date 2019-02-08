@@ -146,9 +146,7 @@ done:
     return ret;
 }
 
-static int _sgxfs_unmount(
-    oe_device_t* dev,
-    const char* target)
+static int _sgxfs_unmount(oe_device_t* dev, const char* target)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(dev);
