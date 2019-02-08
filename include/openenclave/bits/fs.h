@@ -190,29 +190,9 @@ ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt);
 
 int oe_access(const char* pathname, int mode);
 
-int oe_open_dev(int devid, const char* pathname, int flags, mode_t mode);
-
-OE_DIR* oe_opendir_dev(int devid, const char* pathname);
-
 struct oe_dirent* oe_readdir(OE_DIR* dirp);
 
 int oe_closedir(OE_DIR* dirp);
-
-int oe_unlink_dev(int devid, const char* pathname);
-
-int oe_link_dev(int devid, const char* oldpath, const char* newpath);
-
-int oe_rename_dev(int devid, const char* oldpath, const char* newpath);
-
-int oe_mkdir_dev(int devid, const char* pathname, mode_t mode);
-
-int oe_rmdir_dev(int devid, const char* pathname);
-
-int oe_stat_dev(int devid, const char* pathname, struct oe_stat* buf);
-
-int oe_truncate_dev(int devid, const char* path, off_t length);
-
-int oe_access_dev(int devid, const char* pathname, int mode);
 
 OE_EXTERNC_END
 

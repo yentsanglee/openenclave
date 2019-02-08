@@ -31,6 +31,28 @@ OE_EXTERNC_BEGIN
 /* An event file descriptor. */
 #define OE_DEVICE_ID_EVENTFD ((int)7)
 
+struct oe_stat;
+
+int oe_device_open(int devid, const char* pathname, int flags, mode_t mode);
+
+OE_DIR* oe_device_opendir(int devid, const char* pathname);
+
+int oe_device_unlink(int devid, const char* pathname);
+
+int oe_device_link(int devid, const char* oldpath, const char* newpath);
+
+int oe_device_rename(int devid, const char* oldpath, const char* newpath);
+
+int oe_device_mkdir(int devid, const char* pathname, mode_t mode);
+
+int oe_device_rmdir(int devid, const char* pathname);
+
+int oe_device_stat(int devid, const char* pathname, struct oe_stat* buf);
+
+int oe_device_truncate(int devid, const char* path, off_t length);
+
+int oe_device_access(int devid, const char* pathname, int mode);
+
 OE_EXTERNC_END
 
 #endif // _OE_BITS_DEVICE_H

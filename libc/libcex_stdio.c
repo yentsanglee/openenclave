@@ -88,7 +88,7 @@ size_t libcex_oe_fwrite(
 int libcex_oe_remove(oe_file_security_t security, const char* pathname)
 {
     oe_set_thread_default_device(_to_devid(security));
-    int ret = oe_unlink_dev(_to_devid(security), pathname);
+    int ret = oe_device_unlink(_to_devid(security), pathname);
     oe_clear_thread_default_device();
     return ret;
 }
@@ -96,7 +96,7 @@ int libcex_oe_remove(oe_file_security_t security, const char* pathname)
 OE_DIR* libcex_oe_opendir(oe_file_security_t security, const char* name)
 {
     oe_set_thread_default_device(_to_devid(security));
-    OE_DIR* ret = (OE_DIR*)oe_opendir_dev(_to_devid(security), name);
+    OE_DIR* ret = (OE_DIR*)oe_device_opendir(_to_devid(security), name);
     oe_clear_thread_default_device();
     return ret;
 }
