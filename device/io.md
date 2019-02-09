@@ -162,7 +162,7 @@ The POSIX interface supports the following groups of functions.
 - The socket functions (**socket()**, **connect()**, **send()**, etc.);
 
 The target audience for this interface are those who want to build (or just
-relink) their applications without any code changes.
+re-link) their applications without any code changes.
 
 The POSIX functions are path-oriented, so Open Enclave provides a mechanism
 for associating devices with mount points. For this, Open Enclave supports
@@ -501,7 +501,7 @@ int (*release)(
 
 int (*notify)(
     oe_device_t* device,
-    uint64_t notfication_mask);
+    uint64_t notification_mask);
 
 ssize_t (*get_host_fd)(
     oe_device_t* device);
