@@ -477,6 +477,264 @@ as follows.
     fclose -> oe_fclose
 ```
 
+3 Internal Design
+=================
+
+The device framework performs dispatching of operations to devices. Devices
+are implemented as C structures that contain function pointers for each of
+the supported operations listed below.
+
+```
+/*====================*/
+/* Common operations. */
+/*====================*/
+
+int (*clone)(
+    oe_device_t* device,
+    oe_device_t** new_device);
+
+int (*shutdown)(
+    oe_device_t* dev);
+
+int (*release)(
+    oe_device_t* device);
+
+int (*notify)(
+    oe_device_t* device,
+    uint64_t notfication_mask);
+
+ssize_t (*get_host_fd)(
+    oe_device_t* device);
+
+uint64_t (*ready_state)(
+    oe_device_t* device);
+
+ssize_t (*read)(
+    oe_device_t* file,
+    void* buf,
+    size_t count);
+
+ssize_t (*write)(
+    oe_device_t* file,
+    const void* buf,
+    size_t count);
+
+int (*close)(
+    oe_device_t* file);
+
+int (*ioctl)(
+    oe_device_t* file,
+    unsigned long request,
+    oe_va_list ap);
+
+/*=========================*/
+/* File system operations. */
+/*=========================*/
+
+int (*mount)(
+    oe_device_t* dev,
+    const char* source,
+    const char* target,
+    uint32_t flags);
+
+int (*unmount)(
+    oe_device_t* dev,
+    const char* target);
+
+oe_device_t* (*open)(
+    oe_device_t* dev,
+    const char* pathname,
+    int flags,
+    mode_t mode);
+
+off_t (*lseek)(
+    oe_device_t* file,
+    off_t offset,
+    int whence);
+
+oe_device_t* (*opendir)(
+    oe_device_t* dev,
+    const char* path);
+
+struct oe_dirent* (*readdir)(
+    oe_device_t* dir);
+
+int (*closedir)(
+    oe_device_t* dir);
+
+int (*stat)(
+    oe_device_t* dev,
+    const char* pathname,
+    struct oe_stat* buf);
+
+int (*link)(
+    oe_device_t* dev,
+    const char* oldpath,
+    const char* newpath);
+
+int (*unlink)(
+    oe_device_t* dev,
+    const char* pathname);
+
+int (*rename)(
+    oe_device_t* dev,
+    const char* oldpath,
+    const char* newpath);
+
+int (*truncate)(
+    oe_device_t* dev,
+    const char* path,
+    off_t length);
+
+int (*mkdir)(
+    oe_device_t* dev,
+    const char* pathname,
+    mode_t mode);
+
+int (*rmdir)(
+    oe_device_t* dev,
+    const char* pathname);
+
+/*====================*/
+/* Socket operations. */
+/*====================*/
+
+oe_device_t* (*socket)(
+    oe_device_t* dev,
+    int domain,
+    int type,
+    int protocol);
+
+int (*connect)(
+    oe_device_t* dev,
+    const struct oe_sockaddr* addr,
+    oe_socklen_t addrlen);
+
+int (*accept)(
+    oe_device_t* dev,
+    struct oe_sockaddr* addr,
+    oe_socklen_t* addrlen);
+
+int (*bind)(
+    oe_device_t* dev,
+    const struct oe_sockaddr* addr,
+    oe_socklen_t addrlen);
+
+int (*listen)(
+    oe_device_t* dev,
+    int backlog);
+
+ssize_t (*recv)(
+    oe_device_t* dev,
+    void* buf,
+    size_t len,
+    int flags);
+
+ssize_t (*send)(
+    oe_device_t* dev,
+    const void* buf,
+    size_t len,
+    int flags);
+
+int (*shutdown)(
+    oe_device_t* dev,
+    int how);
+
+int (*getsockopt)(
+    oe_device_t* dev,
+    int level,
+    int optname,
+    void* optval,
+    oe_socklen_t* optlen);
+
+int (*setsockopt)(
+    oe_device_t* dev,
+    int level,
+    int optname,
+    const void* optval,
+    oe_socklen_t optlen);
+
+int (*getpeername)(
+    oe_device_t* dev,
+    struct oe_sockaddr* addr,
+    oe_socklen_t* addrlen);
+
+int (*getsockname)(
+    oe_device_t* dev,
+    struct oe_sockaddr* addr,
+    oe_socklen_t* addrlen);
+```
+
+Some of the operations above pertain to files, directories, or individual
+sockets. That is because these objects themselves are represented as devices.
+
+This section discusses device registration and device mapping.
+
+3.1 Device registration
+-----------------------
+
+The devices already discussed are pre-registered. However, the device framework
+is extensible and it is possible to define new device types. To do this, one
+implements a device structure which implements either the file or socket
+operations defined in the previous section. Next one must dynamically assign a
+new **device id** as shown below.
+
+```
+    int devid;
+
+    devid = oe_device_assign_devid();
+```
+
+Finally, the device must be registered as follows.
+
+```
+    oe_device_t* device; /* points to new device. */
+
+    oe_device_register(devid, device);
+```
+
+This registers the new device.
+
+3.2 Device dispatching
+----------------------
+
+Calls to certain functions must be resolved to a device that can handle
+the operation. There are two methods used to resolve requests to devices:
+direct-addressing and path-addressing.
+
+3.2.1 Direct addressing
+-----------------------
+
+Direct addressing involves specifying the device id in the request. The
+following example illustrates this.
+
+```
+    OE_FILE* stream;
+    stream = oe_device_fopen(devid, path, "rb");
+```
+
+The device id is saved in thread-local storage so that when the dispatcher
+handles the operations it will select that device.
+
+3.2.1 Path addressing
+---------------------
+
+Path addressing involves specifying a path. To map paths to devices, the
+mounting must be employed. The following example shows how to mount a path
+and then use the associated device.
+
+```
+    FILE* stream;
+
+    oe_mount(devid, NULL, "/mnt/somedir", 0);
+    stream = fopen("/mnt/somedir/hello", "w");
+    fwrite("hello", 1, 5, stream);
+    fclose(stream);
+```
+
+Different devices may be mounted at different mount points. Requests on a path
+whose suffix is such a mount pointer are delegated to that device.
+
 Appendix A - Public headers
 ============================
 
