@@ -486,5 +486,9 @@ The following are key public header files that have been published so far.
 
 [**<fs.h>**](../include/openenclave/bits/fs.h)
 
+[**<in.h>**](../include/openenclave/bits/in.h)
+
 [**<socket.h>**](../include/openenclave/bits/socket.h)
+
+[**<socketaddr.h>**](../include/openenclave/bits/socketaddr.h)
 
