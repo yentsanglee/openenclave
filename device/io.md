@@ -754,3 +754,34 @@ The following are key public header files that have been published so far.
 
 [**<socketaddr.h>**](../include/openenclave/bits/socketaddr.h)
 
+Appendix B - Error reporting
+============================
+
+The Open Enclave I/O framework adopts the POSIX error numbers scheme. For
+example:
+
+```
+    #include <errno.h>
+    .
+    .
+    .
+    ssize_t n;
+
+    n = send(sd, buf, n);
+
+    if (n == -1)
+    {
+        if (errno == EWOULDBLOCK)
+        {
+            ...
+        }
+    }
+```
+
+Equivalent names are provided for the OE namespace:
+
+```
+    #include <openenclave/corelib/errno.h>
+    oe_errno
+    OE_WOULDBLOCK
+```
