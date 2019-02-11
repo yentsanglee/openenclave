@@ -23,6 +23,7 @@ IOT_EXTERN_C_BEGIN
 typedef struct _IO_FILE FILE;
 typedef struct oe_file OE_FILE;
 typedef struct oe_dir OE_DIR;
+typedef long intptr_t;
 
 IOT_INLINE int __oe_fclose(OE_FILE* stream)
 {
@@ -132,17 +133,17 @@ IOT_INLINE int __oe_remove_OE_FILE_SECURE_ENCRYPTION(const char* pathname)
     return oe_device_unlink(OE_DEVICE_ID_ENCRYPTED_FS, pathname);
 }
 
-IOT_INLINE OE_DIR* oe_opendir_FILE_INSECURE(const char* name)
+IOT_INLINE OE_DIR* __oe_opendir_FILE_INSECURE(const char* name)
 {
     return oe_device_opendir(OE_DEVICE_ID_INSECURE_FS, name);
 }
 
-IOT_INLINE OE_DIR* oe_opendir_SECURE_HARDWARE(const char* name)
+IOT_INLINE OE_DIR* __oe_opendir_SECURE_HARDWARE(const char* name)
 {
     return oe_device_opendir(OE_DEVICE_ID_SECURE_HARDWARE_FS, name);
 }
 
-IOT_INLINE OE_DIR* oe_opendir_SECURE_ENCRYPTION(const char* name)
+IOT_INLINE OE_DIR* __oe_opendir_SECURE_ENCRYPTION(const char* name)
 {
     return oe_device_opendir(OE_DEVICE_ID_ENCRYPTED_FS, name);
 }
@@ -157,21 +158,17 @@ IOT_INLINE OE_DIR* oe_opendir_SECURE_ENCRYPTION(const char* name)
 #define oe_fread __oe_fread
 #define oe_fseek __oe_fseek
 #define oe_ftell __oe_ftell
-#define oe_fvfprintf __oe_fvfprintf
+#define oe_vfprintf __oe_vfprintf
 #define oe_fwrite __oe_fwrite
 #define oe_fopen_OE_FILE_INSECURE __oe_fopen_OE_FILE_INSECURE
-#define oe_fopen_OE_OE_FILE_SECURE_HARDWARE \
-    __oe_fopen_OE_OE_FILE_SECURE_HARDWARE
+#define oe_fopen_OE_FILE_SECURE_HARDWARE __oe_fopen_OE_FILE_SECURE_HARDWARE
 #define oe_fopen_OE_FILE_SECURE_ENCRYPTION __oe_fopen_OE_FILE_SECURE_ENCRYPTION
 #define oe_remove_OE_FILE_INSECURE __oe_remove_OE_FILE_INSECURE
 #define oe_remove_OE_FILE_SECURE_HARDWARE __oe_remove_OE_FILE_SECURE_HARDWARE
-#define oe_remove_OE_FILE_SECURE_ENCRYPTION \
-    __oe_remove_OE_FILE_SECURE_ENCRYPTION
+#define oe_remove_OE_FILE_SECURE_ENCRYPTION __oe_remove_OE_FILE_SECURE_ENCRYPTION
 #define oe_opendir_FILE_INSECURE __oe_opendir_FILE_INSECURE
 #define oe_opendir_SECURE_HARDWARE __oe_opendir_SECURE_HARDWARE
 #define oe_opendir_SECURE_ENCRYPTION __oe_opendir_SECURE_ENCRYPTION
-
-typedef long intptr_t;
 
 IOT_EXTERN_C_END
 
