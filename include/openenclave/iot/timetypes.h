@@ -1,7 +1,7 @@
 /* Copyright (c) Microsoft Corporation. All rights reserved. */
 /* Licensed under the MIT License. */
 #pragma once
-#include <openenclave/bits/types.h>
+#include <stdint.h>
 
 typedef int64_t __time64_t;
 
