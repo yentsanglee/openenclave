@@ -97,8 +97,8 @@ The oe-prefixed functions that have POSIX signatures (**oe_write()**,
 The following section discusses the corresponding POSIX functions defined
 by the C runtime.
 
-Similarly, the following shows how to create a socket using the device-oriented
-interface.
+Similarly, the following shows how to create a non-secure socket using the
+device-oriented interface.
 
 ```
     int sd;
@@ -112,6 +112,10 @@ interface.
     ...
     oe_close(sd);
 ```
+
+The device in this example is determined by the domain (address family)
+parameter, which is OE_AF_INET6 in this case. Passing OE_AF_ENCLAVE, creates
+a secure enclave socket.
 
 The device interface also provides functions for opening stream-oriented
 files. For example:
