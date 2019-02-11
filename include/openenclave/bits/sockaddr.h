@@ -5,8 +5,8 @@
 #define _OE_BITS_SOCKADDR_H
 
 #include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
 #include <openenclave/bits/in.h>
+#include <openenclave/bits/types.h>
 
 OE_EXTERNC_BEGIN
 
@@ -104,9 +104,10 @@ typedef struct oe_sockaddr
 
 typedef unsigned short int oe_sa_family_t;
 
-struct oe_sockaddr_storage {
+struct oe_sockaddr_storage
+{
     oe_sa_family_t ss_family;
-    char __ss_padding[128-sizeof(long)-sizeof(oe_sa_family_t)];
+    char __ss_padding[128 - sizeof(long) - sizeof(oe_sa_family_t)];
     unsigned long __ss_align;
 };
 
@@ -120,7 +121,8 @@ struct oe_sockaddr_storage {
 
 typedef uint16_t oe_in_port_t;
 
-struct oe_sockaddr_in {
+struct oe_sockaddr_in
+{
     oe_sa_family_t sin_family;
     oe_in_port_t sin_port;
     struct oe_in_addr sin_addr;

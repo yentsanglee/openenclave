@@ -10,7 +10,7 @@
 // clang-format on
 
 /* Be sure stdio.h was included from the iot directory. */
-#ifndef _IOT_STDIO_H
+#ifndef OE_FILE_SECURE_BEST_EFFORT
 #error "please put the iot directory on the path"
 #endif
 

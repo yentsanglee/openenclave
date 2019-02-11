@@ -32,7 +32,7 @@ OE_EXTERNC_BEGIN
 #define OE_DEVICE_ID_EVENTFD ((int)7)
 
 struct oe_stat;
-typedef struct _OE_FILE OE_FILE;
+typedef struct oe_file OE_FILE;
 
 int oe_device_open(int devid, const char* pathname, int flags, mode_t mode);
 

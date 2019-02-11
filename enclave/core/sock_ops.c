@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/bits/socket.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/enclavelibc.h>
-#include <openenclave/bits/socket.h>
 
 int oe_socket(int domain, int type, int protocol)
 
@@ -39,10 +39,7 @@ int oe_socket(int domain, int type, int protocol)
     return sd;
 }
 
-int oe_connect(
-    int sockfd,
-    const struct oe_sockaddr* addr,
-    oe_socklen_t addrlen)
+int oe_connect(int sockfd, const struct oe_sockaddr* addr, oe_socklen_t addrlen)
 
 {
     int rtnval = -1;
@@ -68,10 +65,7 @@ int oe_connect(
     return rtnval;
 }
 
-int oe_accept(
-    int sockfd,
-    struct oe_sockaddr* addr,
-    oe_socklen_t* addrlen)
+int oe_accept(int sockfd, struct oe_sockaddr* addr, oe_socklen_t* addrlen)
 
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);
@@ -191,10 +185,7 @@ int oe_shutdown(int sockfd, int how)
     return (*psock->ops.socket->shutdown)(psock, how);
 }
 
-int oe_getsockname(
-    int sockfd,
-    struct oe_sockaddr* addr,
-    oe_socklen_t* addrlen)
+int oe_getsockname(int sockfd, struct oe_sockaddr* addr, oe_socklen_t* addrlen)
 
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);

@@ -5,9 +5,9 @@
 #define _OE_BITS_SOCKET_H
 
 #include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
 #include <openenclave/bits/in.h>
 #include <openenclave/bits/sockaddr.h>
+#include <openenclave/bits/types.h>
 
 OE_EXTERNC_BEGIN
 

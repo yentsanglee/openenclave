@@ -4,13 +4,12 @@
 // clang-format off
 #define OE_NO_POSIX_FILE_API
 #include <openenclave/iot/stdio.h>
-#define oe_opendir __oe_opendir_renamed
-#define oe_readdir __oe_readdir_renamed
-#define oe_closedir __oe_closedir_renamed
-#define oe_remove __oe_remove_renamed
-#include <openenclave/internal/fs.h>
+#include <openenclave/bits/device.h>
 #include <dirent.h>
 // clang-format on
+
+int oe_set_thread_default_device(int devid);
+int oe_clear_thread_default_device();
 
 static oe_file_security_t _to_devid(oe_file_security_t security)
 {

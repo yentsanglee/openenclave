@@ -5,12 +5,12 @@
 #include <openenclave/internal/time.h>
 
 // enclave.h must come before socket.h
+#include <openenclave/bits/in.h>
+#include <openenclave/bits/socket.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/host_socket.h>
-#include <openenclave/bits/in.h>
-#include <openenclave/bits/socket.h>
 
 #include <epoll_test_t.h>
 #include <stdio.h>
