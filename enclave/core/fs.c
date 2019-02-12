@@ -104,6 +104,16 @@ done:
     return ret;
 }
 
+static oe_device_t* _get_fs_device(int devid)
+{
+    oe_device_t* device = oe_get_devid_device(devid);
+
+    if (!device || device->type != OE_DEVICETYPE_FILESYSTEM)
+        return NULL;
+
+    return device;
+}
+
 static void _create_device_id_key()
 {
     if (oe_thread_key_create(&_device_id_key, NULL) != 0)
@@ -294,7 +304,7 @@ done:
     return ret;
 }
 
-int oe_open(const char* pathname, int flags, mode_t mode)
+static int _open(const char* pathname, int flags, mode_t mode)
 {
     int ret = -1;
     int fd;
@@ -322,8 +332,7 @@ int oe_open(const char* pathname, int flags, mode_t mode)
 
     if ((fd = oe_assign_fd_device(file)) == -1)
     {
-        /* ATTN: release file. */
-        // oe_errno set by function.
+        (*fs->ops.fs->base.close)(file);
         goto done;
     }
 
@@ -334,31 +343,40 @@ done:
     return ret;
 }
 
-int oe_device_open(int devid, const char* pathname, int flags, mode_t mode)
+int oe_open(int devid, const char* pathname, int flags, mode_t mode)
 {
     int ret = -1;
 
-    if (oe_set_thread_default_device(devid) != 0)
+    if (devid == 0)
     {
-        oe_errno = OE_EINVAL;
-        goto done;
+        ret = _open(pathname, flags, mode);
     }
-
-    if (oe_open(pathname, flags, mode) != 0)
+    else
     {
-        goto done;
+        oe_device_t* dev;
+        oe_device_t* file;
+
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if (!(file = (*dev->ops.fs->open)(dev, pathname, flags, mode)))
+            goto done;
+
+        if ((ret = oe_assign_fd_device(file)) == -1)
+        {
+            (*dev->ops.fs->base.close)(file);
+            goto done;
+        }
     }
-
-    if (oe_clear_thread_default_device() != 0)
-        goto done;
-
-    ret = 0;
 
 done:
     return ret;
 }
 
-OE_DIR* oe_opendir(const char* pathname)
+static OE_DIR* _opendir(const char* pathname)
 {
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
@@ -422,7 +440,7 @@ int oe_closedir(OE_DIR* dir)
     return (*dev->ops.fs->closedir)(dev);
 }
 
-int oe_rmdir(const char* pathname)
+static int _rmdir(const char* pathname)
 {
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
@@ -441,7 +459,7 @@ int oe_rmdir(const char* pathname)
     return (*fs->ops.fs->rmdir)(fs, filepath);
 }
 
-int oe_stat(const char* pathname, struct oe_stat* buf)
+static int _stat(const char* pathname, struct oe_stat* buf)
 {
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
@@ -461,7 +479,7 @@ int oe_stat(const char* pathname, struct oe_stat* buf)
     return (*fs->ops.fs->stat)(fs, filepath, buf);
 }
 
-int oe_link(const char* oldpath, const char* newpath)
+static int _link(const char* oldpath, const char* newpath)
 {
     oe_device_t* fs = NULL;
     oe_device_t* newfs = NULL;
@@ -495,7 +513,7 @@ int oe_link(const char* oldpath, const char* newpath)
     return (*fs->ops.fs->link)(fs, filepath, newfilepath);
 }
 
-int oe_unlink(const char* pathname)
+static int _unlink(const char* pathname)
 {
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
@@ -515,7 +533,7 @@ int oe_unlink(const char* pathname)
     return (*fs->ops.fs->unlink)(fs, filepath);
 }
 
-int oe_rename(const char* oldpath, const char* newpath)
+static int _rename(const char* oldpath, const char* newpath)
 {
     oe_device_t* fs = NULL;
     oe_device_t* newfs = NULL;
@@ -549,7 +567,7 @@ int oe_rename(const char* oldpath, const char* newpath)
     return (*fs->ops.fs->rename)(fs, filepath, newfilepath);
 }
 
-int oe_truncate(const char* pathname, off_t length)
+static int _truncate(const char* pathname, off_t length)
 {
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
@@ -569,7 +587,7 @@ int oe_truncate(const char* pathname, off_t length)
     return (*fs->ops.fs->truncate)(fs, filepath, length);
 }
 
-int oe_mkdir(const char* pathname, mode_t mode)
+static int _mkdir(const char* pathname, mode_t mode)
 {
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
@@ -674,7 +692,7 @@ done:
     return ret;
 }
 
-int oe_access(const char* pathname, int mode)
+static int _access(const char* pathname, int mode)
 {
     int ret = -1;
     struct oe_stat buf;
@@ -687,7 +705,7 @@ int oe_access(const char* pathname, int mode)
         goto done;
     }
 
-    if (oe_stat(pathname, &buf) != 0)
+    if (_stat(pathname, &buf) != 0)
     {
         oe_errno = OE_ENOENT;
         goto done;
@@ -697,83 +715,240 @@ done:
     return ret;
 }
 
-OE_DIR* oe_device_opendir(int devid, const char* pathname)
+OE_DIR* oe_opendir(int devid, const char* pathname)
 {
-    oe_set_thread_default_device(devid);
-    OE_DIR* ret = oe_opendir(pathname);
-    oe_clear_thread_default_device();
+    OE_DIR* ret = NULL;
 
+    if (devid == 0)
+    {
+        ret = _opendir(pathname);
+    }
+    else
+    {
+        oe_device_t* dev;
+
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        ret = (OE_DIR*)dev->ops.fs->opendir(dev, pathname);
+    }
+
+done:
     return ret;
 }
 
-int oe_device_unlink(int devid, const char* pathname)
+int oe_unlink(int devid, const char* pathname)
 {
-    oe_set_thread_default_device(devid);
-    int ret = oe_unlink(pathname);
-    oe_clear_thread_default_device();
+    int ret = -1;
 
+    if (devid == 0)
+    {
+        ret = _unlink(pathname);
+    }
+    else
+    {
+        oe_device_t* dev;
+
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        ret = dev->ops.fs->unlink(dev, pathname);
+    }
+
+done:
     return ret;
 }
 
-int oe_device_link(int devid, const char* oldpath, const char* newpath)
+int oe_link(int devid, const char* oldpath, const char* newpath)
 {
-    oe_set_thread_default_device(devid);
-    int ret = oe_link(oldpath, newpath);
-    oe_clear_thread_default_device();
+    int ret = -1;
 
+    if (devid == 0)
+    {
+        ret = _link(oldpath, newpath);
+    }
+    else
+    {
+        oe_device_t* dev;
+
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        ret = dev->ops.fs->link(dev, oldpath, newpath);
+    }
+
+done:
     return ret;
 }
 
-int oe_device_rename(int devid, const char* oldpath, const char* newpath)
+int oe_rename(int devid, const char* oldpath, const char* newpath)
 {
-    oe_set_thread_default_device(devid);
-    int ret = oe_rename(oldpath, newpath);
-    oe_clear_thread_default_device();
+    int ret = -1;
 
+    if (devid == 0)
+    {
+        ret = _rename(oldpath, newpath);
+    }
+    else
+    {
+        oe_device_t* dev;
+
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        ret = dev->ops.fs->rename(dev, oldpath, newpath);
+    }
+
+done:
     return ret;
 }
 
-int oe_device_mkdir(int devid, const char* pathname, mode_t mode)
+int oe_mkdir(int devid, const char* pathname, mode_t mode)
 {
-    oe_set_thread_default_device(devid);
-    int ret = oe_mkdir(pathname, mode);
-    oe_clear_thread_default_device();
+    int ret = -1;
 
+    if (devid == 0)
+    {
+        ret = _mkdir(pathname, mode);
+    }
+    else
+    {
+        oe_device_t* dev;
+
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        ret = dev->ops.fs->mkdir(dev, pathname, mode);
+    }
+
+done:
     return ret;
 }
 
-int oe_device_rmdir(int devid, const char* pathname)
+int oe_rmdir(int devid, const char* pathname)
 {
-    oe_set_thread_default_device(devid);
-    int ret = oe_rmdir(pathname);
-    oe_clear_thread_default_device();
+    int ret = -1;
 
+    if (devid == 0)
+    {
+        ret = _rmdir(pathname);
+    }
+    else
+    {
+        oe_device_t* dev;
+
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        ret = dev->ops.fs->rmdir(dev, pathname);
+    }
+
+done:
     return ret;
 }
 
-int oe_device_stat(int devid, const char* pathname, struct oe_stat* buf)
+int oe_stat(int devid, const char* pathname, struct oe_stat* buf)
 {
-    oe_set_thread_default_device(devid);
-    int ret = oe_stat(pathname, (struct oe_stat*)buf);
-    oe_clear_thread_default_device();
+    int ret = -1;
 
+    if (devid == 0)
+    {
+        ret = _stat(pathname, buf);
+    }
+    else
+    {
+        oe_device_t* dev;
+
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        ret = dev->ops.fs->stat(dev, pathname, buf);
+    }
+
+done:
     return ret;
 }
 
-int oe_device_truncate(int devid, const char* path, off_t length)
+int oe_truncate(int devid, const char* path, off_t length)
 {
-    oe_set_thread_default_device(devid);
-    int ret = oe_truncate(path, length);
-    oe_clear_thread_default_device();
+    int ret = -1;
 
+    if (devid == 0)
+    {
+        ret = _truncate(path, length);
+    }
+    else
+    {
+        oe_device_t* dev;
+
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        ret = dev->ops.fs->truncate(dev, path, length);
+    }
+
+done:
     return ret;
 }
 
-int oe_device_access(int devid, const char* pathname, int mode)
+int oe_access(int devid, const char* pathname, int mode)
 {
-    oe_set_thread_default_device(devid);
-    int ret = oe_access(pathname, mode);
-    oe_clear_thread_default_device();
+    int ret = -1;
 
+    if (devid == 0)
+    {
+        ret = _access(pathname, mode);
+    }
+    else
+    {
+        oe_device_t* dev;
+        struct oe_stat buf;
+
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if (!pathname)
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+
+        if (_stat(pathname, &buf) != 0)
+        {
+            oe_errno = OE_ENOENT;
+            goto done;
+        }
+
+        ret = 0;
+    }
+
+done:
     return ret;
 }

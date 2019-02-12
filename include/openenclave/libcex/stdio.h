@@ -13,6 +13,7 @@
 #include <openenclave/bits/device.h>
 #include <openenclave/bits/fs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/libcex/bits/common.h>
 
 OE_EXTERNC_BEGIN
 
@@ -154,24 +155,6 @@ OE_INLINE OE_FILE* oe_fopen_secure(const char* path, const char* mode)
 #define vfprintf oe_vfprintf
 #define vfscanf oe_vfscanf
 #define FILE OE_FILE
-#endif
-
-/*
-**==============================================================================
-**
-** Backwards compatibility with IOT names.
-**
-**==============================================================================
-*/
-
-#define OE_FILE_INSECURE OE_DEVICE_ID_HOSTFS
-#define OE_FILE_SECURE_HARDWARE OE_DEVICE_ID_SHWFS
-#define OE_FILE_SECURE_ENCRYPTION OE_DEVICE_ID_SGXFS
-
-#ifdef OE_USE_OPTEE
-#define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_HARDWARE
-#else
-#define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_ENCRYPTION
 #endif
 
 /* ATTN: porting. Which platform needs these? */

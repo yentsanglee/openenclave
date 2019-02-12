@@ -11,7 +11,7 @@ DIR* opendir(const char* name)
 {
     DIR* dirp;
 
-    if (!(dirp = (DIR*)oe_opendir(name)))
+    if (!(dirp = (DIR*)oe_opendir(0, name)))
         errno = oe_errno;
 
     return dirp;

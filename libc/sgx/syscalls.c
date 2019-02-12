@@ -71,7 +71,7 @@ static int _handle_device_syscall(
             const char* pathname = (const char*)arg1;
             mode_t mode = (mode_t)arg2;
 
-            *ret_out = oe_open(pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
+            *ret_out = oe_open(0, pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
             *errno_out = oe_errno;
 
             if (*errno_out == OE_ENOENT)
@@ -88,7 +88,7 @@ static int _handle_device_syscall(
             int flags = (int)arg2;
             uint32_t mode = (uint32_t)arg3;
 
-            *ret_out = oe_open(pathname, flags, mode);
+            *ret_out = oe_open(0, pathname, flags, mode);
             *errno_out = oe_errno;
 
             if (*errno_out == OE_ENOENT)
@@ -166,7 +166,7 @@ static int _handle_device_syscall(
             struct stat* buf_out = (struct stat*)arg2;
             struct oe_stat buf;
 
-            *ret_out = oe_stat(pathname, &buf);
+            *ret_out = oe_stat(0, pathname, &buf);
             *errno_out = oe_errno;
 
             buf_out->st_dev = buf.st_dev;
@@ -193,7 +193,7 @@ static int _handle_device_syscall(
             const char* oldpath = (const char*)arg1;
             const char* newpath = (const char*)arg2;
 
-            *ret_out = oe_link(oldpath, newpath);
+            *ret_out = oe_link(0, oldpath, newpath);
             *errno_out = oe_errno;
 
             return 0;
@@ -202,7 +202,7 @@ static int _handle_device_syscall(
         {
             const char* pathname = (const char*)arg1;
 
-            *ret_out = oe_unlink(pathname);
+            *ret_out = oe_unlink(0, pathname);
             *errno_out = oe_errno;
 
             return 0;
@@ -212,7 +212,7 @@ static int _handle_device_syscall(
             const char* oldpath = (const char*)arg1;
             const char* newpath = (const char*)arg2;
 
-            *ret_out = oe_rename(oldpath, newpath);
+            *ret_out = oe_rename(0, oldpath, newpath);
             *errno_out = oe_errno;
 
             return 0;
@@ -222,7 +222,7 @@ static int _handle_device_syscall(
             const char* path = (const char*)arg1;
             ssize_t length = (ssize_t)arg2;
 
-            *ret_out = oe_truncate(path, length);
+            *ret_out = oe_truncate(0, path, length);
             *errno_out = oe_errno;
 
             return 0;
@@ -232,7 +232,7 @@ static int _handle_device_syscall(
             const char* pathname = (const char*)arg1;
             uint32_t mode = (uint32_t)arg2;
 
-            *ret_out = oe_mkdir(pathname, mode);
+            *ret_out = oe_mkdir(0, pathname, mode);
             *errno_out = oe_errno;
 
             return 0;
@@ -240,7 +240,7 @@ static int _handle_device_syscall(
         case SYS_rmdir:
         {
             const char* pathname = (const char*)arg1;
-            *ret_out = oe_rmdir(pathname);
+            *ret_out = oe_rmdir(0, pathname);
             *errno_out = oe_errno;
             return 0;
         }
@@ -249,7 +249,7 @@ static int _handle_device_syscall(
             const char* pathname = (const char*)arg1;
             int mode = (int)arg2;
 
-            *ret_out = oe_access(pathname, mode);
+            *ret_out = oe_access(0, pathname, mode);
             *errno_out = oe_errno;
 
             return 0;
