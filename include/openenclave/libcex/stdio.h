@@ -46,7 +46,7 @@ char* oe_fgets(char* s, int size, OE_FILE* stream);
 
 int oe_fileno(OE_FILE* stream);
 
-OE_FILE* oe_fopen(const char* path, const char* mode);
+OE_FILE* oe_fopen(int devid, const char* path, const char* mode);
 
 int oe_fprintf(OE_FILE* stream, const char* format, ...);
 
@@ -96,24 +96,22 @@ int oe_vfscanf(OE_FILE* stream, const char* format, va_list ap);
 **==============================================================================
 */
 
-OE_FILE* oe_fopen_devid(int devid, const char* path, const char* mode);
-
 OE_INLINE OE_FILE* oe_fopen_nonsecure(const char* path, const char* mode)
 {
-    return oe_fopen_devid(OE_DEVICE_ID_HOSTFS, path, mode);
+    return oe_fopen(OE_DEVICE_ID_HOSTFS, path, mode);
 }
 
 OE_INLINE OE_FILE* oe_fopen_secure_encrypted(const char* path, const char* mode)
 {
-    return oe_fopen_devid(OE_DEVICE_ID_SGXFS, path, mode);
+    return oe_fopen(OE_DEVICE_ID_SGXFS, path, mode);
 }
 
 OE_INLINE OE_FILE* oe_fopen_secure_hardware(const char* path, const char* mode)
 {
-    return oe_fopen_devid(OE_DEVICE_ID_SHWFS, path, mode);
+    return oe_fopen(OE_DEVICE_ID_SHWFS, path, mode);
 }
 
-OE_INLINE OE_FILE* oe_fopen_default(const char* path, const char* mode)
+OE_INLINE OE_FILE* oe_fopen_secure(const char* path, const char* mode)
 {
     /* Default to the secure file system for this platform. */
 #ifdef OE_USE_OPTEE
@@ -134,7 +132,7 @@ OE_INLINE OE_FILE* oe_fopen_default(const char* path, const char* mode)
 #define fgetpos oe_fgetpos
 #define fgets oe_fgets
 #define fileno oe_fileno
-#define fopen oe_fopen_default
+#define fopen oe_fopen_secure
 #define fprintf oe_fprintf
 #define fputc oe_fputc
 #define fputs oe_fputs
@@ -157,6 +155,28 @@ OE_INLINE OE_FILE* oe_fopen_default(const char* path, const char* mode)
 #define vfscanf oe_vfscanf
 #define FILE OE_FILE
 #endif
+
+/*
+**==============================================================================
+**
+** Backwards compatibility with IOT names.
+**
+**==============================================================================
+*/
+
+#if !defined(OE_NO_IOT_COMPATIBILITY)
+
+#define OE_FILE_INSECURE OE_DEVICE_ID_HOSTFS
+#define OE_FILE_SECURE_HARDWARE OE_DEVICE_ID_SHWFS
+#define OE_FILE_SECURE_ENCRYPTION OE_DEVICE_ID_SGXFS
+
+#ifdef OE_USE_OPTEE
+#define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_HARDWARE
+#else
+#define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_ENCRYPTION
+#endif
+
+#endif /* !defined(OE_NO_IOT_COMPATIBILITY) */
 
 /* ATTN: porting. Which platform needs these? */
 #if 0

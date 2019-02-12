@@ -56,9 +56,13 @@ int oe_fileno(OE_FILE* stream)
     return fileno((FILE*)stream);
 }
 
-OE_FILE* oe_fopen(const char* path, const char* mode)
+OE_FILE* oe_fopen(int device_id, const char* path, const char* mode)
 {
-    return (OE_FILE*)fopen(path, mode);
+    oe_set_thread_default_device(device_id);
+    FILE* ret = (FILE*)fopen(path, mode);
+    oe_clear_thread_default_device();
+
+    return (OE_FILE*)ret;
 }
 
 int oe_fprintf(OE_FILE* stream, const char* format, ...)
@@ -167,13 +171,4 @@ int oe_vfprintf(OE_FILE* stream, const char* format, va_list ap)
 int oe_vfscanf(OE_FILE* stream, const char* format, va_list ap)
 {
     return vfscanf((FILE*)stream, format, ap);
-}
-
-OE_FILE* oe_fopen_devid(int device_id, const char* path, const char* mode)
-{
-    oe_set_thread_default_device(device_id);
-    OE_FILE* ret = oe_fopen(path, mode);
-    oe_clear_thread_default_device();
-
-    return ret;
 }

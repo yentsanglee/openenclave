@@ -36,7 +36,7 @@ void test_iot(const char* tmp_dir)
 
     /* Read the file containing the alphabet. */
     {
-        FILE* stream = fopen(path, "r");
+        FILE* stream = oe_fopen(OE_FILE_SECURE_ENCRYPTION, path, "r");
         OE_TEST(stream);
         char buf[sizeof(ALPHABET)];
 
