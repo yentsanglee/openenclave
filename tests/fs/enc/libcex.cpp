@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/tests.h>
-//#include <openenclave/libcex/stdio.h>
+#include <openenclave/libcex/stdio.h>
 #include <openenclave/internal/enclavelibc.h>
 // clang-format on
 
@@ -36,7 +36,7 @@ void test_iot(const char* tmp_dir)
 
     /* Read the file containing the alphabet. */
     {
-        FILE* stream = oe_fopen(OE_FILE_SECURE_ENCRYPTION, path, "r");
+        FILE* stream = oe_fopen(OE_FILE_SECURE_BEST_EFFORT, path, "r");
         OE_TEST(stream);
         char buf[sizeof(ALPHABET)];
 

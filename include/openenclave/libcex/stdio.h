@@ -8,7 +8,7 @@
 #define _NO_CRT_STDIO_INLINE
 #endif
 
-#include <../libc/stdio.h>
+#include <stdio.h>
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/device.h>
 #include <openenclave/bits/fs.h>
@@ -164,8 +164,6 @@ OE_INLINE OE_FILE* oe_fopen_secure(const char* path, const char* mode)
 **==============================================================================
 */
 
-#if !defined(OE_NO_IOT_COMPATIBILITY)
-
 #define OE_FILE_INSECURE OE_DEVICE_ID_HOSTFS
 #define OE_FILE_SECURE_HARDWARE OE_DEVICE_ID_SHWFS
 #define OE_FILE_SECURE_ENCRYPTION OE_DEVICE_ID_SGXFS
@@ -175,8 +173,6 @@ OE_INLINE OE_FILE* oe_fopen_secure(const char* path, const char* mode)
 #else
 #define OE_FILE_SECURE_BEST_EFFORT OE_FILE_SECURE_ENCRYPTION
 #endif
-
-#endif /* !defined(OE_NO_IOT_COMPATIBILITY) */
 
 /* ATTN: porting. Which platform needs these? */
 #if 0
