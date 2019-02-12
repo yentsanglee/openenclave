@@ -122,6 +122,31 @@ OE_INLINE OE_FILE* oe_fopen_secure(const char* path, const char* mode)
 #endif
 }
 
+OE_INLINE int oe_remove_nonsecure(const char* pathname)
+{
+    return oe_unlink(OE_DEVICE_ID_HOSTFS, pathname);
+}
+
+OE_INLINE int oe_remove_secure_encrypted(const char* pathname)
+{
+    return oe_unlink(OE_DEVICE_ID_SGXFS, pathname);
+}
+
+OE_INLINE int oe_remove_secure_hardware(const char* pathname)
+{
+    return oe_unlink(OE_DEVICE_ID_SHWFS, pathname);
+}
+
+OE_INLINE int oe_remove_secure(const char* pathname)
+{
+    /* Default to the secure file system for this platform. */
+#ifdef OE_USE_OPTEE
+    return oe_remove_secure_hardware(pathname);
+#else
+    return oe_remove_secure_encrypted(pathname);
+#endif
+}
+
 #ifndef OE_NO_POSIX_FILE_API
 #define clearerr oe_clearerr
 #define fclose oe_fclose
@@ -149,6 +174,7 @@ OE_INLINE OE_FILE* oe_fopen_secure(const char* path, const char* mode)
 #define getc oe_getc
 #define putc oe_putc
 #define rewind oe_rewind
+#define remove oe_remove_secure
 #define setbuf oe_setbuf
 #define setvbuf oe_setvbuf
 #define ungetc oe_ungetc
