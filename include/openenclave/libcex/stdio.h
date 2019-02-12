@@ -116,7 +116,7 @@ OE_INLINE OE_FILE* oe_fopen_secure(const char* path, const char* mode)
 {
     /* Default to the secure file system for this platform. */
 #ifdef OE_USE_OPTEE
-    return oe_fopen_secure_hardware(OE_DEVICE_ID_SGXFS, path, mode);
+    return oe_fopen_secure_hardware(path, mode);
 #else
     return oe_fopen_secure_encrypted(path, mode);
 #endif

@@ -50,11 +50,11 @@ void test_iot(const char* tmp_dir)
     /* Test directory scanning. */
     {
         OE_DIR* dir;
-        OE_TEST((dir = oe_opendir_nonsecure(tmp_dir)) != NULL);
+        OE_TEST((dir = opendir(tmp_dir)) != NULL);
         struct oe_dirent* ent;
         bool found = false;
 
-        while ((ent = oe_readdir(dir)))
+        while ((ent = readdir(dir)))
         {
             if (oe_strcmp(ent->d_name, "test_iot") == 0)
             {
@@ -64,6 +64,6 @@ void test_iot(const char* tmp_dir)
         }
 
         OE_TEST(found);
-        OE_TEST(oe_closedir(dir) == 0);
+        OE_TEST(closedir(dir) == 0);
     }
 }

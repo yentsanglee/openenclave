@@ -45,6 +45,33 @@ OE_INLINE OE_DIR* oe_opendir_nonsecure(const char* pathname)
     return oe_opendir(OE_DEVICE_ID_HOSTFS, pathname);
 }
 
+OE_INLINE OE_DIR* oe_opendir_secure_encrypted(const char* pathname)
+{
+    return oe_opendir(OE_DEVICE_ID_SGXFS, pathname);
+}
+
+OE_INLINE OE_DIR* oe_opendir_secure_hardware(const char* pathname)
+{
+    return oe_opendir(OE_DEVICE_ID_SHWFS, pathname);
+}
+
+OE_INLINE OE_DIR* oe_opendir_secure(const char* pathname)
+{
+    /* Default to the secure file system for this platform. */
+#ifdef OE_USE_OPTEE
+    return oe_opendir_secure_hardware(pathname);
+#else
+    return oe_opendir_secure_encrypted(pathname);
+#endif
+}
+
+#ifndef OE_NO_POSIX_FILE_API
+#define opendir oe_opendir_secure
+#define readdir oe_readdir
+#define closedir oe_closedir
+#define DIR OE_DIR
+#endif
+
 OE_EXTERNC_END
 
 #endif /* _LIBCEX_DIRENT_H */
