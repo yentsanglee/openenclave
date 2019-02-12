@@ -3,10 +3,10 @@
 
 // clang-format off
 #define OE_SECURE_POSIX_FILE_API
-#include <stdio.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/tests.h>
 #include <openenclave/libcex/stdio.h>
+#include <openenclave/libcex/dirent.h>
 #include <openenclave/internal/enclavelibc.h>
 // clang-format on
 
@@ -45,5 +45,25 @@ void test_iot(const char* tmp_dir)
         OE_TEST(oe_memcmp(buf, ALPHABET, sizeof(ALPHABET)) == 0);
 
         OE_TEST(fclose(stream) == 0);
+    }
+
+    /* Test directory scanning. */
+    {
+        OE_DIR* dir;
+        OE_TEST((dir = oe_opendir_nonsecure(tmp_dir)) != NULL);
+        struct oe_dirent* ent;
+        bool found = false;
+
+        while ((ent = oe_readdir(dir)))
+        {
+            if (oe_strcmp(ent->d_name, "test_iot") == 0)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        OE_TEST(found);
+        OE_TEST(oe_closedir(dir) == 0);
     }
 }
