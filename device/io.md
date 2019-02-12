@@ -183,8 +183,14 @@ to write a file.
 ```
     FILE* stream;
 
-    oe_mount(OE_DEVID_PROTECTED_FILE_SYSTEM, NULL, "/sgxfs", 0);
-    stream = fopen("/sgxfs/hello", "r");
+    oe_mount(OE_DEVICE_ID_INSECURE_FS, NULL, "/insecure", 0);
+    oe_mount(OE_DEVID_PROTECTED_FILE_SYSTEM, NULL, "/secure", 0);
+
+    stream = fopen("/secure/file1", "r");
+    fwrite("hello", 1, 5, stream);
+    fclose(stream);
+
+    stream = fopen("/insecure/file2", "r");
     fwrite("hello", 1, 5, stream);
     fclose(stream);
 ```
