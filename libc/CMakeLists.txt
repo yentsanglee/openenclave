@@ -67,10 +67,10 @@ add_library(oelibc STATIC
     atexit.c
     dladdr.c
     libunwind_stubs.c
+    libcex_stdio.c
     link.c
     locale.c
     malloc.c
-    oe_device_fopen.c
     pthread.c
     stdlib.c
     strerror.c

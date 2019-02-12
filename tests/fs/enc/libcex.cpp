@@ -6,12 +6,13 @@
 #include <stdio.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/tests.h>
+//#include <openenclave/libcex/stdio.h>
 #include <openenclave/internal/enclavelibc.h>
 // clang-format on
 
-/* Be sure stdio.h was included from the iot directory. */
-#ifndef OE_FILE_SECURE_BEST_EFFORT
-#error "please put the iot directory on the path"
+/* Be sure stdio.h was included from the libcex directory. */
+#ifndef _LIBCEX_STDIO_H
+#error "please put the <openenclave/libcex> on the path"
 #endif
 
 void test_iot(const char* tmp_dir)

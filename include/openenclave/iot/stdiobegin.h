@@ -101,51 +101,51 @@ IOT_INLINE OE_FILE* __oe_fopen_OE_FILE_INSECURE(
     const char* path,
     const char* mode)
 {
-    return oe_device_fopen(OE_DEVICE_ID_INSECURE_FS, path, mode);
+    return oe_device_fopen(OE_DEVICE_ID_HOSTFS, path, mode);
 }
 
 IOT_INLINE OE_FILE* __oe_fopen_OE_FILE_SECURE_HARDWARE(
     const char* path,
     const char* mode)
 {
-    return oe_device_fopen(OE_DEVICE_ID_SECURE_HARDWARE_FS, path, mode);
+    return oe_device_fopen(OE_DEVICE_ID_SHWFS, path, mode);
 }
 
 IOT_INLINE OE_FILE* __oe_fopen_OE_FILE_SECURE_ENCRYPTION(
     const char* path,
     const char* mode)
 {
-    return oe_device_fopen(OE_DEVICE_ID_ENCRYPTED_FS, path, mode);
+    return oe_device_fopen(OE_DEVICE_ID_SGXFS, path, mode);
 }
 
 IOT_INLINE int __oe_remove_OE_FILE_INSECURE(const char* pathname)
 {
-    return oe_device_unlink(OE_DEVICE_ID_INSECURE_FS, pathname);
+    return oe_device_unlink(OE_DEVICE_ID_HOSTFS, pathname);
 }
 
 IOT_INLINE int __oe_remove_OE_FILE_SECURE_HARDWARE(const char* pathname)
 {
-    return oe_device_unlink(OE_DEVICE_ID_SECURE_HARDWARE_FS, pathname);
+    return oe_device_unlink(OE_DEVICE_ID_SHWFS, pathname);
 }
 
 IOT_INLINE int __oe_remove_OE_FILE_SECURE_ENCRYPTION(const char* pathname)
 {
-    return oe_device_unlink(OE_DEVICE_ID_ENCRYPTED_FS, pathname);
+    return oe_device_unlink(OE_DEVICE_ID_SGXFS, pathname);
 }
 
 IOT_INLINE OE_DIR* __oe_opendir_FILE_INSECURE(const char* name)
 {
-    return oe_device_opendir(OE_DEVICE_ID_INSECURE_FS, name);
+    return oe_device_opendir(OE_DEVICE_ID_HOSTFS, name);
 }
 
 IOT_INLINE OE_DIR* __oe_opendir_SECURE_HARDWARE(const char* name)
 {
-    return oe_device_opendir(OE_DEVICE_ID_SECURE_HARDWARE_FS, name);
+    return oe_device_opendir(OE_DEVICE_ID_SHWFS, name);
 }
 
 IOT_INLINE OE_DIR* __oe_opendir_SECURE_ENCRYPTION(const char* name)
 {
-    return oe_device_opendir(OE_DEVICE_ID_ENCRYPTED_FS, name);
+    return oe_device_opendir(OE_DEVICE_ID_SGXFS, name);
 }
 
 #define oe_fclose __oe_fclose
@@ -165,7 +165,8 @@ IOT_INLINE OE_DIR* __oe_opendir_SECURE_ENCRYPTION(const char* name)
 #define oe_fopen_OE_FILE_SECURE_ENCRYPTION __oe_fopen_OE_FILE_SECURE_ENCRYPTION
 #define oe_remove_OE_FILE_INSECURE __oe_remove_OE_FILE_INSECURE
 #define oe_remove_OE_FILE_SECURE_HARDWARE __oe_remove_OE_FILE_SECURE_HARDWARE
-#define oe_remove_OE_FILE_SECURE_ENCRYPTION __oe_remove_OE_FILE_SECURE_ENCRYPTION
+#define oe_remove_OE_FILE_SECURE_ENCRYPTION \
+    __oe_remove_OE_FILE_SECURE_ENCRYPTION
 #define oe_opendir_FILE_INSECURE __oe_opendir_FILE_INSECURE
 #define oe_opendir_SECURE_HARDWARE __oe_opendir_SECURE_HARDWARE
 #define oe_opendir_SECURE_ENCRYPTION __oe_opendir_SECURE_ENCRYPTION

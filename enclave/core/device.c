@@ -43,21 +43,21 @@ int oe_device_init()
 
     // Opt into file systems
 
-    if (CreateHostFSDevice(OE_DEVICE_ID_INSECURE_FS) < 0)
+    if (CreateHostFSDevice(OE_DEVICE_ID_HOSTFS) < 0)
     {
         // Log an error and continue
     }
 
-    if (CreateEnclaveLocalFSDevice(OE_DEVICE_ID_ENCRYPTED_FS) < 0)
+    if (CreateEnclaveLocalFSDevice(OE_DEVICE_ID_SGXFS) < 0)
     {
         // Log an error and continue
     }
 
-    rslt = (*_device_table[OE_DEVICE_ID_ENCRYPTED_FS]->ops.fs->mount)(
-        _device_table[OE_DEVICE_ID_ENCRYPTED_FS], "/", READ_WRITE);
+    rslt = (*_device_table[OE_DEVICE_ID_SGXFS]->ops.fs->mount)(
+        _device_table[OE_DEVICE_ID_SGXFS], "/", READ_WRITE);
 
-    rslt = (*_device_table[OE_DEVICE_ID_INSECURE_FS]->ops.fs->mount)(
-        _device_table[OE_DEVICE_ID_ENCRYPTED_FS], "/host", READ_ONLY);
+    rslt = (*_device_table[OE_DEVICE_ID_HOSTFS]->ops.fs->mount)(
+        _device_table[OE_DEVICE_ID_SGXFS], "/host", READ_ONLY);
 
     // Opt into the network
 

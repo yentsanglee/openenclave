@@ -302,7 +302,7 @@ void test_all(FILE_SYSTEM& fs, const char* tmp_dir)
 void test_fprintf_fscanf(const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
-    device_registrant registrant(OE_DEVICE_ID_INSECURE_FS);
+    device_registrant registrant(OE_DEVICE_ID_HOSTFS);
 
     printf("--- %s()\n", __FUNCTION__);
 
@@ -408,8 +408,8 @@ void test_fs(const char* src_dir, const char* tmp_dir)
 
         oe_register_hostfs_device();
         fd_file_system fs;
-        OE_TEST(oe_set_thread_default_device(OE_DEVICE_ID_INSECURE_FS) == 0);
-        OE_TEST(oe_get_thread_default_device() == OE_DEVICE_ID_INSECURE_FS);
+        OE_TEST(oe_set_thread_default_device(OE_DEVICE_ID_HOSTFS) == 0);
+        OE_TEST(oe_get_thread_default_device() == OE_DEVICE_ID_HOSTFS);
         test_all(fs, tmp_dir);
         OE_TEST(oe_clear_thread_default_device() == 0);
     }

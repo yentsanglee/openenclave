@@ -51,7 +51,7 @@ typedef int64_t blksize_t;
 typedef int64_t blkcnt_t;
 typedef int64_t time_t;
 typedef int64_t suseconds_t;
-typedef struct oe_dir OE_DIR;
+typedef struct _OE_DIR OE_DIR;
 struct oe_dirent;
 
 /* bool type */

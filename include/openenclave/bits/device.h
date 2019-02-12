@@ -13,11 +13,11 @@ OE_EXTERNC_BEGIN
 
 #define OE_DEVICE_ID_NONE ((int)0)
 
-#define OE_DEVICE_ID_INSECURE_FS ((int)1)
+#define OE_DEVICE_ID_HOSTFS ((int)1)
 
-#define OE_DEVICE_ID_ENCRYPTED_FS ((int)2)
+#define OE_DEVICE_ID_SGXFS ((int)2)
 
-#define OE_DEVICE_ID_SECURE_HARDWARE_FS ((int)3)
+#define OE_DEVICE_ID_SHWFS ((int)3)
 
 /* A host internet socket. */
 #define OE_DEVICE_ID_HOST_SOCKET ((int)4)
@@ -32,7 +32,7 @@ OE_EXTERNC_BEGIN
 #define OE_DEVICE_ID_EVENTFD ((int)7)
 
 struct oe_stat;
-typedef struct oe_file OE_FILE;
+typedef struct _OE_FILE OE_FILE;
 
 int oe_device_open(int devid, const char* pathname, int flags, mode_t mode);
 
@@ -53,8 +53,6 @@ int oe_device_stat(int devid, const char* pathname, struct oe_stat* buf);
 int oe_device_truncate(int devid, const char* path, off_t length);
 
 int oe_device_access(int devid, const char* pathname, int mode);
-
-OE_FILE* oe_device_fopen(int devid, const char* path, const char* mode);
 
 OE_EXTERNC_END
 
