@@ -66,7 +66,7 @@ add_library(oecore STATIC
     device.c
     fs.c
     sock_ops.c
-    resolver_ops.c
+    resolver.c
     epoll.c
     eventfd.c
     result.c
