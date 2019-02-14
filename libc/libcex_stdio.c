@@ -56,9 +56,9 @@ int oe_fileno(OE_FILE* stream)
     return fileno((FILE*)stream);
 }
 
-OE_FILE* oe_fopen(int device_id, const char* path, const char* mode)
+OE_FILE* oe_fopen(oe_devid_t devid, const char* path, const char* mode)
 {
-    oe_set_thread_default_device(device_id);
+    oe_set_thread_default_device(devid);
     FILE* ret = (FILE*)fopen(path, mode);
     oe_clear_thread_default_device();
 

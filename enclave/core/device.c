@@ -9,13 +9,50 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/thread.h>
+#include <openenclave/internal/array.h>
 
-static size_t _device_table_len = 0;
-static oe_device_t** _device_table = NULL; // Resizable array of device entries
+static const size_t ELEMENT_SIZE = sizeof(oe_device_t*);
+static const size_t CHUNK_SIZE = 8;
+static oe_array_t _arr = OE_ARRAY_INITIALIZER(ELEMENT_SIZE, CHUNK_SIZE);
+static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
+static bool _initialized = false;
 
-static void _free_device_table(void)
+OE_INLINE oe_device_t** _table(void)
 {
-    oe_free(_device_table);
+    return (oe_device_t**)_arr.data;
+}
+
+OE_INLINE size_t _table_size(void)
+{
+    return _arr.size;
+}
+
+static void _free_table(void)
+{
+    oe_array_free(&_arr);
+}
+
+static int _init_table()
+{
+    if (_initialized == false)
+    {
+        oe_spin_lock(&_lock);
+        {
+            if (_initialized == false)
+            {
+                if (oe_array_resize(&_arr, CHUNK_SIZE) != 0)
+                {
+                    oe_assert("_init_table()" == NULL);
+                    oe_abort();
+                }
+
+                oe_atexit(_free_table);
+            }
+        }
+        oe_spin_unlock(&_lock);
+    }
+
+    return 0;
 }
 
 // We define the device init for now. Eventually it should be a mandatory part
@@ -53,11 +90,11 @@ int oe_device_init()
         // Log an error and continue
     }
 
-    rslt = (*_device_table[OE_DEVICE_ID_SGXFS]->ops.fs->mount)(
-        _device_table[OE_DEVICE_ID_SGXFS], "/", READ_WRITE);
+    rslt = (*_table()[OE_DEVICE_ID_SGXFS]->ops.fs->mount)(
+        _table()[OE_DEVICE_ID_SGXFS], "/", READ_WRITE);
 
-    rslt = (*_device_table[OE_DEVICE_ID_HOSTFS]->ops.fs->mount)(
-        _device_table[OE_DEVICE_ID_SGXFS], "/host", READ_ONLY);
+    rslt = (*_table()[OE_DEVICE_ID_HOSTFS]->ops.fs->mount)(
+        _table()[OE_DEVICE_ID_SGXFS], "/host", READ_ONLY);
 
     // Opt into the network
 
@@ -93,65 +130,100 @@ int oe_device_init()
 
 #endif
 
-int oe_allocate_devid(int devid)
-
+oe_devid_t oe_allocate_devid(oe_devid_t devid)
 {
-    // We could increase the size bump to some other number for performance.
-    static const int SIZE_BUMP = 5;
+    oe_devid_t ret = OE_DEVICE_ID_NONE;
+    bool locked = false;
 
-    if (_device_table_len == 0)
+    if (!_initialized && _init_table() != 0)
     {
-        _device_table_len = (size_t)devid + SIZE_BUMP;
-        _device_table = (oe_device_t**)oe_malloc(
-            sizeof(_device_table[0]) * _device_table_len);
-        oe_memset(
-            _device_table, 0, sizeof(_device_table[0]) * _device_table_len);
-        oe_atexit(_free_device_table);
-    }
-    else if (devid >= (int)_device_table_len)
-    {
-        _device_table_len = (size_t)devid + SIZE_BUMP;
-        _device_table = (oe_device_t**)oe_realloc(
-            _device_table, sizeof(_device_table[0]) * _device_table_len);
-        _device_table[devid] = NULL;
+        oe_errno = OE_ENOMEM;
+        goto done;
     }
 
-    if (_device_table[devid] != NULL)
+    oe_spin_lock(&_lock);
+    locked = true;
+
+    if ((size_t)devid >= _arr.size)
+    {
+        if (oe_array_resize(&_arr, (size_t)devid + 1) != 0)
+        {
+            oe_errno = OE_ENOMEM;
+            goto done;
+        }
+    }
+
+    if (_table()[devid] != NULL)
     {
         oe_errno = OE_EADDRINUSE;
-        return -1;
+        goto done;
     }
 
-    return devid;
+    ret = devid;
+
+done:
+
+    if (locked)
+        oe_spin_unlock(&_lock);
+
+    return ret;
 }
 
-void oe_release_devid(int devid)
-
-{
-    if (devid < (int)_device_table_len)
-    {
-        oe_free(_device_table[devid]);
-        _device_table[devid] = NULL;
-    }
-}
-
-int oe_set_devid_device(int devid, oe_device_t* pdevice)
+int __oe_release_devid(oe_devid_t devid)
 {
     int ret = -1;
+    bool locked = false;
 
-    if (devid < 0 || (size_t)devid > _device_table_len)
+    if (!_initialized && _init_table() != 0)
+    {
+        oe_errno = OE_ENOMEM;
+        goto done;
+    }
+
+    oe_spin_lock(&_lock);
+    locked = true;
+
+    if ((size_t)devid >= _arr.size)
     {
         oe_errno = OE_EINVAL;
         goto done;
     }
 
-    if (_device_table[devid] != NULL)
+    if (_table()[devid] == NULL)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    _table()[devid] = NULL;
+
+    ret = 0;
+
+done:
+
+    if (locked)
+        oe_spin_unlock(&_lock);
+
+    return ret;
+}
+
+int oe_set_devid_device(oe_devid_t devid, oe_device_t* device)
+{
+    int ret = -1;
+
+    if (devid < 0 || (size_t)devid > _table_size())
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    if (_table()[devid] != NULL)
     {
         oe_errno = OE_EADDRINUSE;
         goto done;
     }
 
-    _device_table[devid] = pdevice; // We don't clone
+    _table()[devid] = device;
 
     ret = 0;
 
@@ -159,24 +231,29 @@ done:
     return ret;
 }
 
-oe_device_t* oe_get_devid_device(int devid)
+oe_device_t* oe_get_devid_device(oe_devid_t devid)
 {
-    if (devid < 0 || (size_t)devid >= _device_table_len)
+    oe_device_t* ret = NULL;
+
+    if (devid < 0 || (size_t)devid >= _table_size())
     {
         oe_errno = OE_EINVAL;
-        return NULL;
+        goto done;
     }
 
-    return _device_table[devid];
+    ret = _table()[devid];
+
+done:
+    return ret;
 }
 
 oe_device_t* oe_device_alloc(
-    int device_id,
+    oe_devid_t devid,
     const char* device_name,
     size_t private_size)
 
 {
-    oe_device_t* pparent_device = oe_get_devid_device(device_id);
+    oe_device_t* pparent_device = oe_get_devid_device(devid);
     oe_device_t* pdevice =
         (oe_device_t*)oe_malloc(pparent_device->size + private_size);
     // We clone the device from the parent device
@@ -197,29 +274,29 @@ oe_device_t* oe_device_alloc(
     return pdevice;
 }
 
-int oe_remove_device(int device_id)
-
+int oe_remove_device(oe_devid_t devid)
 {
-    int rtn = -1;
-    oe_device_t* pdevice = oe_get_devid_device(device_id);
+    int ret = -1;
+    oe_device_t* device;
 
-    if (!pdevice)
+    if (!(device = oe_get_devid_device(devid)))
+        goto done;
+
+    if (device->ops.base->shutdown == NULL)
     {
-        // Log error here
-        return -1; // erno is already set
+        oe_errno = OE_EINVAL;
+        goto done;
     }
 
-    if (pdevice->ops.base->shutdown != NULL)
+    if ((*device->ops.base->shutdown)(device) != 0)
     {
-        // The action routine sets errno
-        rtn = (*pdevice->ops.base->shutdown)(pdevice);
-
-        if (rtn >= 0)
-        {
-            oe_release_devid(device_id);
-        }
+        goto done;
     }
-    return rtn;
+
+    ret = 0;
+
+done:
+    return ret;
 }
 
 ssize_t oe_read(int fd, void* buf, size_t count)

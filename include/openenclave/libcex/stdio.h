@@ -47,7 +47,7 @@ char* oe_fgets(char* s, int size, OE_FILE* stream);
 
 int oe_fileno(OE_FILE* stream);
 
-OE_FILE* oe_fopen(int devid, const char* path, const char* mode);
+OE_FILE* oe_fopen(oe_devid_t devid, const char* path, const char* mode);
 
 int oe_fprintf(OE_FILE* stream, const char* format, ...);
 

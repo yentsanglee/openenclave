@@ -11,25 +11,27 @@ OE_EXTERNC_BEGIN
 
 /* This file defines the known device ids. */
 
-#define OE_DEVICE_ID_NONE ((int)0)
+typedef int64_t oe_devid_t;
 
-#define OE_DEVICE_ID_HOSTFS ((int)1)
+#define OE_DEVICE_ID_NONE ((oe_devid_t)0)
 
-#define OE_DEVICE_ID_SGXFS ((int)2)
+#define OE_DEVICE_ID_HOSTFS ((oe_devid_t)1)
 
-#define OE_DEVICE_ID_SHWFS ((int)3)
+#define OE_DEVICE_ID_SGXFS ((oe_devid_t)2)
+
+#define OE_DEVICE_ID_SHWFS ((oe_devid_t)3)
 
 /* A host internet socket. */
-#define OE_DEVICE_ID_HOST_SOCKET ((int)4)
+#define OE_DEVICE_ID_HOST_SOCKET ((oe_devid_t)4)
 
 /* An enclave-to-enclave socket. */
-#define OE_DEVICE_ID_ENCLAVE_SOCKET ((int)5)
+#define OE_DEVICE_ID_ENCLAVE_SOCKET ((oe_devid_t)5)
 
 /* An epoll device. */
-#define OE_DEVICE_ID_EPOLL ((int)6)
+#define OE_DEVICE_ID_EPOLL ((oe_devid_t)6)
 
 /* An event file descriptor. */
-#define OE_DEVICE_ID_EVENTFD ((int)7)
+#define OE_DEVICE_ID_EVENTFD ((oe_devid_t)7)
 
 struct oe_stat;
 typedef struct _OE_FILE OE_FILE;

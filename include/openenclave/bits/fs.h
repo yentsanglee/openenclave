@@ -6,6 +6,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/bits/device.h>
 
 OE_EXTERNC_BEGIN
 
@@ -159,39 +160,39 @@ typedef struct _oe_iovec
     size_t iov_len;
 } oe_iovec_t;
 
-int oe_mount(int devid, const char* source, const char* target, uint32_t flags);
+int oe_mount(oe_devid_t devid, const char* source, const char* target, uint32_t flags);
 
-int oe_unmount(int devid, const char* target);
+int oe_unmount(oe_devid_t devid, const char* target);
 
-int oe_open(int devid, const char* pathname, int flags, mode_t mode);
+int oe_open(oe_devid_t devid, const char* pathname, int flags, mode_t mode);
 
 off_t oe_lseek(int fd, off_t offset, int whence);
 
-OE_DIR* oe_opendir(int devid, const char* pathname);
+OE_DIR* oe_opendir(oe_devid_t devid, const char* pathname);
 
 struct oe_dirent* oe_readdir(OE_DIR* dir);
 
 int oe_closedir(OE_DIR* dir);
 
-int oe_unlink(int devid, const char* pathname);
+int oe_unlink(oe_devid_t devid, const char* pathname);
 
-int oe_link(int devid, const char* oldpath, const char* newpath);
+int oe_link(oe_devid_t devid, const char* oldpath, const char* newpath);
 
-int oe_rename(int devid, const char* oldpath, const char* newpath);
+int oe_rename(oe_devid_t devid, const char* oldpath, const char* newpath);
 
-int oe_mkdir(int devid, const char* pathname, mode_t mode);
+int oe_mkdir(oe_devid_t devid, const char* pathname, mode_t mode);
 
-int oe_rmdir(int devid, const char* pathname);
+int oe_rmdir(oe_devid_t devid, const char* pathname);
 
-int oe_stat(int devid, const char* pathname, struct oe_stat* buf);
+int oe_stat(oe_devid_t devid, const char* pathname, struct oe_stat* buf);
 
-int oe_truncate(int devid, const char* path, off_t length);
+int oe_truncate(oe_devid_t devid, const char* path, off_t length);
 
 ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt);
 
 ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt);
 
-int oe_access(int devid, const char* pathname, int mode);
+int oe_access(oe_devid_t devid, const char* pathname, int mode);
 
 struct oe_dirent* oe_readdir(OE_DIR* dirp);
 

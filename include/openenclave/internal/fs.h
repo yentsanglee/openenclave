@@ -32,13 +32,13 @@ int oe_register_sgxfs_device(void);
 int oe_initialize_console_devices(void);
 
 /* Set the default device for this thread (used in lieu of the mount table). */
-int oe_set_thread_default_device(int devid);
+int oe_set_thread_default_device(oe_devid_t devid);
 
 /* Clear the default device for this thread. */
 int oe_clear_thread_default_device(void);
 
 /* Get the default device for this thread. */
-int oe_get_thread_default_device(void);
+oe_devid_t oe_get_thread_default_device(void);
 
 OE_EXTERNC_END
 

@@ -25,7 +25,7 @@ const char* mkpath(char buf[OE_PATH_MAX], const char* target, const char* path)
 class device_registrant
 {
   public:
-    device_registrant(int devid)
+    device_registrant(oe_devid_t devid)
     {
         OE_TEST(oe_set_thread_default_device(devid) == 0);
     }
@@ -421,7 +421,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
 
         OE_TEST(oe_mount(OE_DEVICE_ID_HOSTFS, NULL, "/", OE_MOUNT_RDONLY) == 0);
-        OE_TEST(oe_open(0, path, flags, MODE) == -1);
+        OE_TEST(oe_open(OE_DEVICE_ID_NONE, path, flags, MODE) == -1);
         OE_TEST(oe_errno == OE_EPERM);
         OE_TEST(oe_unmount(OE_DEVICE_ID_HOSTFS, "/") == 0);
     }

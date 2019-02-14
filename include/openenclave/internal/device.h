@@ -57,7 +57,7 @@ struct _oe_device
 {
     /* Type of this device: OE_DEVICE_ID_FILE or OE_DEVICE_ID_SOCKET. */
     oe_device_type_t type;
-    int devid; // Index of the device into the device table.
+    oe_devid_t devid; // Index of the device into the device table.
 
     /* sizeof additional data. To get a pointer to the device private data,
      * ptr = (oe_file_device_t)(devptr+1); usually sizeof(oe_file_t) or
@@ -75,24 +75,24 @@ struct _oe_device
     } ops;
 };
 
-int oe_allocate_devid(int devid);
-void oe_release_devid(int devid);
+oe_devid_t oe_allocate_devid(oe_devid_t devid);
+int __oe_release_devid(oe_devid_t devid);
 
-int oe_set_devid_device(int device_id, oe_device_t* pdevice);
-oe_device_t* oe_get_devid_device(int device_id);
+int oe_set_devid_device(oe_devid_t devid, oe_device_t* pdevice);
+oe_device_t* oe_get_devid_device(oe_devid_t devid);
 oe_device_t* oe_clone_device(oe_device_t* pdevice);
 
 int oe_device_init(); // Overridable function to set up device structures. Shoud
                       // be ommited when new interface is complete.
 
 oe_device_t* oe_device_alloc(
-    int device_id,
+    oe_devid_t devid,
     const char* device_name,
     size_t private_size); // Allocate a device of sizeof(struct
 
-int oe_device_addref(int device_id);
+int oe_device_addref(oe_devid_t devid);
 
-int oe_device_release(int device_id);
+int oe_device_release(oe_devid_t devid);
 
 int oe_remove_device();
 
@@ -103,17 +103,6 @@ ssize_t oe_write(int fd, const void* buf, size_t count);
 int oe_close(int fd);
 
 int oe_ioctl(int fd, unsigned long request, ...);
-
-int oe_handle_device_syscall(
-    long num,
-    long arg1,
-    long arg2,
-    long arg3,
-    long arg4,
-    long arg5,
-    long arg6,
-    long* ret_out,
-    int* errno_out);
 
 OE_EXTERNC_END
 

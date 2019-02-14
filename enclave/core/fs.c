@@ -44,7 +44,7 @@ static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
 
     /* First check whether a device id is set for this thread. */
     {
-        int devid;
+        oe_devid_t devid;
 
         if ((devid = oe_get_thread_default_device()) != 0)
         {
@@ -104,7 +104,7 @@ done:
     return ret;
 }
 
-static oe_device_t* _get_fs_device(int devid)
+static oe_device_t* _get_fs_device(oe_devid_t devid)
 {
     oe_device_t* device = oe_get_devid_device(devid);
 
@@ -120,7 +120,7 @@ static void _create_device_id_key()
         oe_abort();
 }
 
-int oe_set_thread_default_device(int devid)
+int oe_set_thread_default_device(oe_devid_t devid)
 {
     int ret = -1;
 
@@ -130,7 +130,7 @@ int oe_set_thread_default_device(int devid)
     if (oe_once(&_device_id_once, _create_device_id_key) != 0)
         goto done;
 
-    if (oe_thread_setspecific(_device_id_key, (void*)(uint64_t)devid) != 0)
+    if (oe_thread_setspecific(_device_id_key, (void*)devid) != 0)
         goto done;
 
     ret = 0;
@@ -155,20 +155,24 @@ done:
     return ret;
 }
 
-int oe_get_thread_default_device(void)
+oe_devid_t oe_get_thread_default_device(void)
 {
-    int ret = -1;
+    oe_devid_t ret = OE_DEVICE_ID_NONE;
+    oe_devid_t devid;
 
     if (oe_once(&_device_id_once, _create_device_id_key) != 0)
         goto done;
 
-    ret = (int)(uint64_t)oe_thread_getspecific(_device_id_key);
+    if (!(devid = (int64_t)oe_thread_getspecific(_device_id_key)))
+        goto done;
+
+    ret = devid;
 
 done:
     return ret;
 }
 
-int oe_mount(int devid, const char* source, const char* target, uint32_t flags)
+int oe_mount(oe_devid_t devid, const char* source, const char* target, uint32_t flags)
 {
     int ret = -1;
     oe_device_t* device = oe_get_devid_device(devid);
@@ -250,7 +254,7 @@ done:
     return ret;
 }
 
-int oe_unmount(int devid, const char* target)
+int oe_unmount(oe_devid_t devid, const char* target)
 {
     int ret = -1;
     size_t index = (size_t)-1;
@@ -343,11 +347,11 @@ done:
     return ret;
 }
 
-int oe_open(int devid, const char* pathname, int flags, mode_t mode)
+int oe_open(oe_devid_t devid, const char* pathname, int flags, mode_t mode)
 {
     int ret = -1;
 
-    if (devid == 0)
+    if (devid == OE_DEVICE_ID_NONE)
     {
         ret = _open(pathname, flags, mode);
     }
@@ -715,11 +719,11 @@ done:
     return ret;
 }
 
-OE_DIR* oe_opendir(int devid, const char* pathname)
+OE_DIR* oe_opendir(oe_devid_t devid, const char* pathname)
 {
     OE_DIR* ret = NULL;
 
-    if (devid == 0)
+    if (devid == OE_DEVICE_ID_NONE)
     {
         ret = _opendir(pathname);
     }
@@ -740,11 +744,11 @@ done:
     return ret;
 }
 
-int oe_unlink(int devid, const char* pathname)
+int oe_unlink(oe_devid_t devid, const char* pathname)
 {
     int ret = -1;
 
-    if (devid == 0)
+    if (devid == OE_DEVICE_ID_NONE)
     {
         ret = _unlink(pathname);
     }
@@ -765,11 +769,11 @@ done:
     return ret;
 }
 
-int oe_link(int devid, const char* oldpath, const char* newpath)
+int oe_link(oe_devid_t devid, const char* oldpath, const char* newpath)
 {
     int ret = -1;
 
-    if (devid == 0)
+    if (devid == OE_DEVICE_ID_NONE)
     {
         ret = _link(oldpath, newpath);
     }
@@ -790,11 +794,11 @@ done:
     return ret;
 }
 
-int oe_rename(int devid, const char* oldpath, const char* newpath)
+int oe_rename(oe_devid_t devid, const char* oldpath, const char* newpath)
 {
     int ret = -1;
 
-    if (devid == 0)
+    if (devid == OE_DEVICE_ID_NONE)
     {
         ret = _rename(oldpath, newpath);
     }
@@ -815,11 +819,11 @@ done:
     return ret;
 }
 
-int oe_mkdir(int devid, const char* pathname, mode_t mode)
+int oe_mkdir(oe_devid_t devid, const char* pathname, mode_t mode)
 {
     int ret = -1;
 
-    if (devid == 0)
+    if (devid == OE_DEVICE_ID_NONE)
     {
         ret = _mkdir(pathname, mode);
     }
@@ -840,11 +844,11 @@ done:
     return ret;
 }
 
-int oe_rmdir(int devid, const char* pathname)
+int oe_rmdir(oe_devid_t devid, const char* pathname)
 {
     int ret = -1;
 
-    if (devid == 0)
+    if (devid == OE_DEVICE_ID_NONE)
     {
         ret = _rmdir(pathname);
     }
@@ -865,11 +869,11 @@ done:
     return ret;
 }
 
-int oe_stat(int devid, const char* pathname, struct oe_stat* buf)
+int oe_stat(oe_devid_t devid, const char* pathname, struct oe_stat* buf)
 {
     int ret = -1;
 
-    if (devid == 0)
+    if (devid == OE_DEVICE_ID_NONE)
     {
         ret = _stat(pathname, buf);
     }
@@ -890,11 +894,11 @@ done:
     return ret;
 }
 
-int oe_truncate(int devid, const char* path, off_t length)
+int oe_truncate(oe_devid_t devid, const char* path, off_t length)
 {
     int ret = -1;
 
-    if (devid == 0)
+    if (devid == OE_DEVICE_ID_NONE)
     {
         ret = _truncate(path, length);
     }
@@ -915,11 +919,11 @@ done:
     return ret;
 }
 
-int oe_access(int devid, const char* pathname, int mode)
+int oe_access(oe_devid_t devid, const char* pathname, int mode)
 {
     int ret = -1;
 
-    if (devid == 0)
+    if (devid == OE_DEVICE_ID_NONE)
     {
         ret = _access(pathname, mode);
     }
