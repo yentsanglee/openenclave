@@ -9,6 +9,7 @@
 
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/fs_ops.h>
+#include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/bits/safemath.h>
 #include <openenclave/internal/calls.h>
@@ -16,7 +17,6 @@
 #include <openenclave/internal/atexit.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
-#include <openenclave/internal/fs.h>
 #include <openenclave/internal/hostbatch.h>
 #include "../common/hostfsargs.h"
 
@@ -77,6 +77,7 @@ typedef struct _fs
 {
     struct _oe_device base;
     uint32_t magic;
+    uint32_t mount_flags;
 } fs_t;
 
 typedef struct _file
@@ -125,6 +126,11 @@ static dir_t* _cast_dir(const oe_device_t* device)
     return dir;
 }
 
+OE_INLINE bool _is_rdonly(const fs_t* fs)
+{
+    return (fs->mount_flags & OE_MOUNT_RDONLY);
+}
+
 static int _hostfs_mount(
     oe_device_t* dev,
     const char* source,
@@ -142,6 +148,8 @@ static int _hostfs_mount(
         oe_errno = OE_EINVAL;
         goto done;
     }
+
+    fs->mount_flags = flags;
 
     ret = 0;
 
@@ -250,6 +258,13 @@ static oe_device_t* _hostfs_open(
     if (!fs || !pathname || !batch)
     {
         oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs) && oe_get_open_access_mode(flags) != OE_O_RDONLY)
+    {
+        oe_errno = OE_EPERM;
         goto done;
     }
 
@@ -782,6 +797,13 @@ static int _hostfs_link(
         goto done;
     }
 
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
+        goto done;
+    }
+
     /* Input */
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
@@ -839,6 +861,13 @@ static int _hostfs_unlink(oe_device_t* fs_, const char* pathname)
         goto done;
     }
 
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
+        goto done;
+    }
+
     /* Input */
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
@@ -889,6 +918,13 @@ static int _hostfs_rename(
     if (!fs || !oldpath || !newpath || !batch)
     {
         oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
         goto done;
     }
 
@@ -949,6 +985,13 @@ static int _hostfs_truncate(oe_device_t* fs_, const char* path, off_t length)
         goto done;
     }
 
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
+        goto done;
+    }
+
     /* Input */
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
@@ -996,6 +1039,13 @@ static int _hostfs_mkdir(oe_device_t* fs_, const char* pathname, mode_t mode)
     if (!fs || !pathname || !batch)
     {
         oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
         goto done;
     }
 
@@ -1047,6 +1097,13 @@ static int _hostfs_rmdir(oe_device_t* fs_, const char* pathname)
     if (!fs || !pathname || !batch)
     {
         oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
         goto done;
     }
 

@@ -19,6 +19,7 @@ typedef struct _fs
 {
     struct _oe_device base;
     uint32_t magic;
+    uint32_t mount_flags;
 } fs_t;
 
 typedef struct _file
@@ -36,6 +37,11 @@ static fs_t* _cast_fs(const oe_device_t* device)
         return NULL;
 
     return fs;
+}
+
+OE_INLINE bool _is_rdonly(const fs_t* fs)
+{
+    return fs->mount_flags & OE_MOUNT_RDONLY;
 }
 
 static char* _strrchr(const char* s, char c)
@@ -139,6 +145,8 @@ static int _sgxfs_mount(
         oe_errno = OE_EINVAL;
         goto done;
     }
+
+    fs->mount_flags = flags;
 
     ret = 0;
 
@@ -246,6 +254,13 @@ static oe_device_t* _sgxfs_open(
     if (!fs || !pathname)
     {
         oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs) && oe_get_open_access_mode(flags) != OE_O_RDONLY)
+    {
+        oe_errno = OE_EPERM;
         goto done;
     }
 
@@ -592,6 +607,13 @@ static int _sgxfs_link(
         goto done;
     }
 
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
+        goto done;
+    }
+
     /* Open the input file. */
     if (!(in = sgx_fopen_auto_key(oldpath, "r")))
     {
@@ -633,12 +655,18 @@ static int _sgxfs_unlink(oe_device_t* fs_, const char* pathname)
 {
     int ret = -1;
     oe_device_t* hostfs = oe_fs_get_hostfs();
+    fs_t* fs = _cast_fs(fs_);
 
-    OE_UNUSED(fs_);
-
-    if (!hostfs)
+    if (!fs || !hostfs)
     {
         oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
         goto done;
     }
 
@@ -664,6 +692,13 @@ static int _sgxfs_rename(
     if (!fs || !hostfs || !oldpath || !newpath)
     {
         oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
         goto done;
     }
 
@@ -727,6 +762,13 @@ static int _sgxfs_truncate(oe_device_t* fs_, const char* path, off_t length)
     if (!fs || !path || length < 0)
     {
         oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
         goto done;
     }
 
@@ -821,12 +863,18 @@ static int _sgxfs_mkdir(oe_device_t* fs_, const char* pathname, mode_t mode)
 {
     int ret = -1;
     oe_device_t* hostfs = oe_fs_get_hostfs();
+    fs_t* fs = _cast_fs(fs_);
 
-    OE_UNUSED(fs_);
-
-    if (!hostfs)
+    if (!fs || !hostfs)
     {
         oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
         goto done;
     }
 
@@ -839,16 +887,22 @@ done:
     return ret;
 }
 
-static int _sgxfs_rmdir(oe_device_t* fs, const char* pathname)
+static int _sgxfs_rmdir(oe_device_t* fs_, const char* pathname)
 {
     int ret = -1;
     oe_device_t* hostfs = oe_fs_get_hostfs();
+    fs_t* fs = _cast_fs(fs_);
 
-    OE_UNUSED(fs);
-
-    if (!hostfs)
+    if (!fs || !hostfs)
     {
         oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Fail if attempting to write to a read-only file system. */
+    if (_is_rdonly(fs))
+    {
+        oe_errno = OE_EPERM;
         goto done;
     }
 

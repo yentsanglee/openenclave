@@ -9,6 +9,12 @@
 
 OE_EXTERNC_BEGIN
 
+/* Get the access mode from the open() flags. */
+OE_INLINE int oe_get_open_access_mode(int flags)
+{
+    return (flags & 000000003);
+}
+
 /* The enclave calls this to get an instance of host file system (HOSTFS). */
 oe_device_t* oe_fs_get_hostfs(void);
 
