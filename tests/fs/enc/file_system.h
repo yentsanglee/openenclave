@@ -135,7 +135,7 @@ class oe_fd_file_system
 
     file_handle open(const char* pathname, int flags, mode_t mode)
     {
-        return (file_handle)oe_open(OE_DEVID_NULL, pathname, flags, mode);
+        return (file_handle)oe_open(0, pathname, flags, mode);
     }
 
     ssize_t write(file_handle file, const void* buf, size_t count)
@@ -160,7 +160,7 @@ class oe_fd_file_system
 
     dir_handle opendir(const char* name)
     {
-        return (dir_handle)oe_opendir(OE_DEVID_NULL, name);
+        return (dir_handle)oe_opendir(0, name);
     }
 
     struct oe_dirent* readdir(dir_handle dir)
@@ -175,37 +175,37 @@ class oe_fd_file_system
 
     int unlink(const char* pathname)
     {
-        return oe_unlink(OE_DEVID_NULL, pathname);
+        return oe_unlink(0, pathname);
     }
 
     int link(const char* oldpath, const char* newpath)
     {
-        return oe_link(OE_DEVID_NULL, oldpath, newpath);
+        return oe_link(0, oldpath, newpath);
     }
 
     int rename(const char* oldpath, const char* newpath)
     {
-        return oe_rename(OE_DEVID_NULL, oldpath, newpath);
+        return oe_rename(0, oldpath, newpath);
     }
 
     int mkdir(const char* pathname, mode_t mode)
     {
-        return oe_mkdir(OE_DEVID_NULL, pathname, mode);
+        return oe_mkdir(0, pathname, mode);
     }
 
     int rmdir(const char* pathname)
     {
-        return oe_rmdir(OE_DEVID_NULL, pathname);
+        return oe_rmdir(0, pathname);
     }
 
     int stat(const char* pathname, struct oe_stat* buf)
     {
-        return oe_stat(OE_DEVID_NULL, pathname, buf);
+        return oe_stat(0, pathname, buf);
     }
 
     int truncate(const char* path, off_t length)
     {
-        return oe_truncate(OE_DEVID_NULL, path, length);
+        return oe_truncate(0, path, length);
     }
 
   private:

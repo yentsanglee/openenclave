@@ -421,7 +421,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
 
         OE_TEST(oe_mount(OE_DEVID_HOSTFS, NULL, "/", OE_MOUNT_RDONLY) == 0);
-        OE_TEST(oe_open(OE_DEVID_NULL, path, flags, MODE) == -1);
+        OE_TEST(oe_open(0, path, flags, MODE) == -1);
         OE_TEST(oe_errno == OE_EPERM);
         OE_TEST(oe_unmount(OE_DEVID_HOSTFS, "/") == 0);
     }
