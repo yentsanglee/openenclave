@@ -144,9 +144,9 @@ oe_devid_t oe_allocate_devid(oe_devid_t devid)
     oe_spin_lock(&_lock);
     locked = true;
 
-    if ((size_t)devid >= _arr.size)
+    if (devid >= _arr.size)
     {
-        if (oe_array_resize(&_arr, (size_t)devid + 1) != 0)
+        if (oe_array_resize(&_arr, devid + 1) != 0)
         {
             oe_errno = OE_ENOMEM;
             goto done;
@@ -183,7 +183,7 @@ int __oe_release_devid(oe_devid_t devid)
     oe_spin_lock(&_lock);
     locked = true;
 
-    if ((size_t)devid >= _arr.size)
+    if (devid >= _arr.size)
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -211,7 +211,7 @@ int oe_set_devid_device(oe_devid_t devid, oe_device_t* device)
 {
     int ret = -1;
 
-    if (devid < 0 || (size_t)devid > _table_size())
+    if (devid > _table_size())
     {
         oe_errno = OE_EINVAL;
         goto done;
@@ -235,7 +235,7 @@ oe_device_t* oe_get_devid_device(oe_devid_t devid)
 {
     oe_device_t* ret = NULL;
 
-    if (devid < 0 || (size_t)devid >= _table_size())
+    if (devid >= _table_size())
     {
         oe_errno = OE_EINVAL;
         goto done;

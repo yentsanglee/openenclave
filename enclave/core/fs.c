@@ -163,7 +163,7 @@ oe_devid_t oe_get_thread_default_device(void)
     if (oe_once(&_device_id_once, _create_device_id_key) != 0)
         goto done;
 
-    if (!(devid = (int64_t)oe_thread_getspecific(_device_id_key)))
+    if (!(devid = (uint64_t)oe_thread_getspecific(_device_id_key)))
         goto done;
 
     ret = devid;

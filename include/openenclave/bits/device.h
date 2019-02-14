@@ -9,29 +9,31 @@
 
 OE_EXTERNC_BEGIN
 
-/* This file defines the known device ids. */
+typedef uint64_t oe_devid_t;
 
-typedef int64_t oe_devid_t;
+/* This is an illegal device identifier. */
+static const oe_devid_t OE_DEVICE_ID_NONE = 0;
 
-#define OE_DEVICE_ID_NONE ((oe_devid_t)0)
+/* The nonsecure host file system. */
+static const oe_devid_t OE_DEVICE_ID_HOSTFS = 1;
 
-#define OE_DEVICE_ID_HOSTFS ((oe_devid_t)1)
+/* The secure Intel SGX protected file system. */
+static const oe_devid_t OE_DEVICE_ID_SGXFS = 2;
 
-#define OE_DEVICE_ID_SGXFS ((oe_devid_t)2)
-
-#define OE_DEVICE_ID_SHWFS ((oe_devid_t)3)
+/* The ARM TrustZone secure hardware file system. */
+static const oe_devid_t OE_DEVICE_ID_SHWFS = 3;
 
 /* A host internet socket. */
-#define OE_DEVICE_ID_HOST_SOCKET ((oe_devid_t)4)
+static const oe_devid_t OE_DEVICE_ID_HOST_SOCKET = 4;
 
 /* An enclave-to-enclave socket. */
-#define OE_DEVICE_ID_ENCLAVE_SOCKET ((oe_devid_t)5)
+static const oe_devid_t OE_DEVICE_ID_ENCLAVE_SOCKET = 5;
 
 /* An epoll device. */
-#define OE_DEVICE_ID_EPOLL ((oe_devid_t)6)
+static const oe_devid_t OE_DEVICE_ID_EPOLL = 6;
 
 /* An event file descriptor. */
-#define OE_DEVICE_ID_EVENTFD ((oe_devid_t)7)
+static const oe_devid_t OE_DEVICE_ID_EVENTFD = 7;
 
 struct oe_stat;
 typedef struct _OE_FILE OE_FILE;
