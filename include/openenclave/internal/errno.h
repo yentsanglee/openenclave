@@ -7,6 +7,8 @@
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
 
+OE_EXTERNC_BEGIN
+
 #define OE_EPERM 1
 #define OE_ENOENT 2
 #define OE_ESRCH 3
@@ -145,5 +147,7 @@
 #define oe_errno *__oe_errno_location()
 
 extern int* __oe_errno_location(void);
+
+OE_EXTERNC_END
 
 #endif /* _OE_ERRNO_H */

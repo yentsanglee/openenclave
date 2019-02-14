@@ -414,6 +414,18 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         OE_TEST(oe_clear_thread_default_device() == 0);
     }
 
+    /* Test writing to a read-only mounted file system. */
+    {
+        char path[OE_PATH_MAX];
+        mkpath(path, tmp_dir, "somefile");
+        const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
+
+        OE_TEST(oe_mount(OE_DEVICE_ID_HOSTFS, NULL, "/", OE_MOUNT_RDONLY) == 0);
+        OE_TEST(oe_open(0, path, flags, MODE) == -1);
+        OE_TEST(oe_errno == OE_EPERM);
+        OE_TEST(oe_unmount(OE_DEVICE_ID_HOSTFS, "/") == 0);
+    }
+
     /* Test iot I/O. */
     {
         printf("=== testing iot:\n");
