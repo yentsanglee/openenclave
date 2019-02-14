@@ -12,7 +12,7 @@ OE_EXTERNC_BEGIN
 typedef uint64_t oe_devid_t;
 
 /* This is an illegal device identifier. */
-static const oe_devid_t OE_DEVID_NONE = 0;
+static const oe_devid_t OE_DEVID_NULL = 0;
 
 /* The nonsecure host file system. */
 static const oe_devid_t OE_DEVID_HOSTFS = 1;
@@ -34,9 +34,6 @@ static const oe_devid_t OE_DEVID_EPOLL = 6;
 
 /* An event file descriptor. */
 static const oe_devid_t OE_DEVID_EVENTFD = 7;
-
-struct oe_stat;
-typedef struct _OE_FILE OE_FILE;
 
 OE_EXTERNC_END
 

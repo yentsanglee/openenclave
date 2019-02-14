@@ -132,7 +132,7 @@ int oe_device_init()
 
 oe_devid_t oe_allocate_devid(oe_devid_t devid)
 {
-    oe_devid_t ret = OE_DEVID_NONE;
+    oe_devid_t ret = OE_DEVID_NULL;
     bool locked = false;
 
     if (!_initialized && _init_table() != 0)
