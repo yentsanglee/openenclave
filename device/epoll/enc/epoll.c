@@ -328,7 +328,7 @@ static oe_device_t* _epoll_create(oe_device_t* epoll_, int size)
 
     /* Output */
     {
-        epoll->base.type = OE_DEVICE_ID_EPOLL;
+        epoll->base.type = OE_DEVID_EPOLL;
         epoll->base.size = sizeof(epoll_dev_t);
         epoll->magic = EPOLL_MAGIC;
         epoll->base.ops.epoll = _epoll.base.ops.epoll;
@@ -385,7 +385,7 @@ static oe_device_t* _epoll_create1(oe_device_t* epoll_, int32_t flags)
 
     /* Output */
     {
-        epoll->base.type = OE_DEVICE_ID_EPOLL;
+        epoll->base.type = OE_DEVID_EPOLL;
         epoll->base.size = sizeof(epoll_dev_t);
         epoll->magic = EPOLL_MAGIC;
         epoll->base.ops.epoll = _epoll.base.ops.epoll;
@@ -796,7 +796,7 @@ static oe_epoll_ops_t _ops = {
 };
 
 static epoll_dev_t _epoll = {
-    .base.type = OE_DEVICE_ID_EPOLL,
+    .base.type = OE_DEVID_EPOLL,
     .base.size = sizeof(epoll_dev_t),
     .base.ops.epoll = &_ops,
     .magic = EPOLL_MAGIC,

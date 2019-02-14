@@ -1209,15 +1209,15 @@ int oe_register_hostfs_device(void)
     int ret = -1;
 
     /* Allocate the device id. */
-    if (oe_allocate_devid(OE_DEVICE_ID_HOSTFS) != OE_DEVICE_ID_HOSTFS)
+    if (oe_allocate_devid(OE_DEVID_HOSTFS) != OE_DEVID_HOSTFS)
         goto done;
 
     /* Add the hostfs device to the device table. */
-    if (oe_set_devid_device(OE_DEVICE_ID_HOSTFS, oe_fs_get_hostfs()) != 0)
+    if (oe_set_devid_device(OE_DEVID_HOSTFS, oe_fs_get_hostfs()) != 0)
         goto done;
 
     /* Check that the above operation was successful. */
-    if (oe_get_devid_device(OE_DEVICE_ID_HOSTFS) != oe_fs_get_hostfs())
+    if (oe_get_devid_device(OE_DEVID_HOSTFS) != oe_fs_get_hostfs())
         goto done;
 
     ret = 0;

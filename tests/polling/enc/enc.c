@@ -18,11 +18,11 @@
 
 int ecall_device_init()
 {
-    (void)oe_allocate_devid(OE_DEVICE_ID_HOST_SOCKET);
+    (void)oe_allocate_devid(OE_DEVID_HOST_SOCKET);
     (void)oe_set_devid_device(
-        OE_DEVICE_ID_HOST_SOCKET, oe_socket_get_hostsock());
-    (void)oe_allocate_devid(OE_DEVICE_ID_EPOLL);
-    (void)oe_set_devid_device(OE_DEVICE_ID_EPOLL, oe_epoll_get_epoll());
+        OE_DEVID_HOST_SOCKET, oe_socket_get_hostsock());
+    (void)oe_allocate_devid(OE_DEVID_EPOLL);
+    (void)oe_set_devid_device(OE_DEVID_EPOLL, oe_epoll_get_epoll());
     return 0;
 }
 

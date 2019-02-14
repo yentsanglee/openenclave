@@ -302,7 +302,7 @@ void test_all(FILE_SYSTEM& fs, const char* tmp_dir)
 void test_fprintf_fscanf(const char* tmp_dir)
 {
     char path[OE_PAGE_SIZE];
-    device_registrant registrant(OE_DEVICE_ID_HOSTFS);
+    device_registrant registrant(OE_DEVID_HOSTFS);
 
     printf("--- %s()\n", __FUNCTION__);
 
@@ -408,8 +408,8 @@ void test_fs(const char* src_dir, const char* tmp_dir)
 
         oe_register_hostfs_device();
         fd_file_system fs;
-        OE_TEST(oe_set_thread_default_device(OE_DEVICE_ID_HOSTFS) == 0);
-        OE_TEST(oe_get_thread_default_device() == OE_DEVICE_ID_HOSTFS);
+        OE_TEST(oe_set_thread_default_device(OE_DEVID_HOSTFS) == 0);
+        OE_TEST(oe_get_thread_default_device() == OE_DEVID_HOSTFS);
         test_all(fs, tmp_dir);
         OE_TEST(oe_clear_thread_default_device() == 0);
     }
@@ -420,10 +420,10 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         mkpath(path, tmp_dir, "somefile");
         const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
 
-        OE_TEST(oe_mount(OE_DEVICE_ID_HOSTFS, NULL, "/", OE_MOUNT_RDONLY) == 0);
-        OE_TEST(oe_open(0, path, flags, MODE) == -1);
+        OE_TEST(oe_mount(OE_DEVID_HOSTFS, NULL, "/", OE_MOUNT_RDONLY) == 0);
+        OE_TEST(oe_open(OE_DEVID_NONE, path, flags, MODE) == -1);
         OE_TEST(oe_errno == OE_EPERM);
-        OE_TEST(oe_unmount(OE_DEVICE_ID_HOSTFS, "/") == 0);
+        OE_TEST(oe_unmount(OE_DEVID_HOSTFS, "/") == 0);
     }
 
     /* Test iot I/O. */

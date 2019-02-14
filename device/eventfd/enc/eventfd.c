@@ -130,7 +130,7 @@ static oe_device_t* _eventfd_eventfd(
     }
     else
     {
-        eventfd->base.type = OE_DEVICE_ID_EVENTFD;
+        eventfd->base.type = OE_DEVID_EVENTFD;
         eventfd->base.size = sizeof(eventfd_dev_t);
         eventfd->magic = EVENTFD_MAGIC;
         eventfd->base.ops.eventfd = _eventfd.base.ops.eventfd;
@@ -322,7 +322,7 @@ static oe_eventfd_ops_t _ops = {
 };
 
 static eventfd_dev_t _eventfd = {
-    .base.type = OE_DEVICE_ID_EVENTFD,
+    .base.type = OE_DEVID_EVENTFD,
     .base.size = sizeof(eventfd_dev_t),
     .base.ops.eventfd = &_ops,
     .magic = EVENTFD_MAGIC,

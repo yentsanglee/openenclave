@@ -19,7 +19,7 @@ int oe_eventfd(unsigned int initval, int flags)
     oe_device_t* peventfd = NULL;
     oe_device_t* pdevice = NULL;
 
-    pdevice = oe_get_devid_device(OE_DEVICE_ID_EVENTFD);
+    pdevice = oe_get_devid_device(OE_DEVID_EVENTFD);
     if ((peventfd = (*pdevice->ops.eventfd->eventfd)(
              pdevice, (uint64_t)initval, flags)) == NULL)
     {

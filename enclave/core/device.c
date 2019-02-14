@@ -80,30 +80,30 @@ int oe_device_init()
 
     // Opt into file systems
 
-    if (CreateHostFSDevice(OE_DEVICE_ID_HOSTFS) < 0)
+    if (CreateHostFSDevice(OE_DEVID_HOSTFS) < 0)
     {
         // Log an error and continue
     }
 
-    if (CreateEnclaveLocalFSDevice(OE_DEVICE_ID_SGXFS) < 0)
+    if (CreateEnclaveLocalFSDevice(OE_DEVID_SGXFS) < 0)
     {
         // Log an error and continue
     }
 
-    rslt = (*_table()[OE_DEVICE_ID_SGXFS]->ops.fs->mount)(
-        _table()[OE_DEVICE_ID_SGXFS], "/", READ_WRITE);
+    rslt = (*_table()[OE_DEVID_SGXFS]->ops.fs->mount)(
+        _table()[OE_DEVID_SGXFS], "/", READ_WRITE);
 
-    rslt = (*_table()[OE_DEVICE_ID_HOSTFS]->ops.fs->mount)(
-        _table()[OE_DEVICE_ID_SGXFS], "/host", READ_ONLY);
+    rslt = (*_table()[OE_DEVID_HOSTFS]->ops.fs->mount)(
+        _table()[OE_DEVID_SGXFS], "/host", READ_ONLY);
 
     // Opt into the network
 
-    if (CreateHostNetInterface(OE_DEVICE_ID_HOST_SOCKET) < 0)
+    if (CreateHostNetInterface(OE_DEVID_HOST_SOCKET) < 0)
     {
         // Log an error and continue
     }
 
-    if (CreateEnclaveToEnclaveNetInterface(OE_DEVICE_ID_ENCLAVE_SOCKET) < 0)
+    if (CreateEnclaveToEnclaveNetInterface(OE_DEVID_ENCLAVE_SOCKET) < 0)
     {
         // Log an error and continue
     }
@@ -132,7 +132,7 @@ int oe_device_init()
 
 oe_devid_t oe_allocate_devid(oe_devid_t devid)
 {
-    oe_devid_t ret = OE_DEVICE_ID_NONE;
+    oe_devid_t ret = OE_DEVID_NONE;
     bool locked = false;
 
     if (!_initialized && _init_table() != 0)

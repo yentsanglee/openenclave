@@ -56,7 +56,7 @@ static const int OE_RESOLVER_HOST = 2;
 
 typedef struct _oe_resolver
 {
-    /* Type of this device: OE_DEVICE_ID_FILE or OE_DEVICE_ID_SOCKET. */
+    /* Type of this device: OE_DEVID_FILE or OE_DEVID_SOCKET. */
     int type;
 
     /* sizeof additional data. To get a pointer to the device private data,

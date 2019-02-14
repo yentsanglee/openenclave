@@ -42,17 +42,17 @@ int oe_closedir(OE_DIR* dir);
 
 OE_INLINE OE_DIR* oe_opendir_nonsecure(const char* pathname)
 {
-    return oe_opendir(OE_DEVICE_ID_HOSTFS, pathname);
+    return oe_opendir(OE_DEVID_HOSTFS, pathname);
 }
 
 OE_INLINE OE_DIR* oe_opendir_secure_encrypted(const char* pathname)
 {
-    return oe_opendir(OE_DEVICE_ID_SGXFS, pathname);
+    return oe_opendir(OE_DEVID_SGXFS, pathname);
 }
 
 OE_INLINE OE_DIR* oe_opendir_secure_hardware(const char* pathname)
 {
-    return oe_opendir(OE_DEVICE_ID_SHWFS, pathname);
+    return oe_opendir(OE_DEVID_SHWFS, pathname);
 }
 
 OE_INLINE OE_DIR* oe_opendir_secure(const char* pathname)

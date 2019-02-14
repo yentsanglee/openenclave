@@ -99,17 +99,17 @@ int oe_vfscanf(OE_FILE* stream, const char* format, va_list ap);
 
 OE_INLINE OE_FILE* oe_fopen_nonsecure(const char* path, const char* mode)
 {
-    return oe_fopen(OE_DEVICE_ID_HOSTFS, path, mode);
+    return oe_fopen(OE_DEVID_HOSTFS, path, mode);
 }
 
 OE_INLINE OE_FILE* oe_fopen_secure_encrypted(const char* path, const char* mode)
 {
-    return oe_fopen(OE_DEVICE_ID_SGXFS, path, mode);
+    return oe_fopen(OE_DEVID_SGXFS, path, mode);
 }
 
 OE_INLINE OE_FILE* oe_fopen_secure_hardware(const char* path, const char* mode)
 {
-    return oe_fopen(OE_DEVICE_ID_SHWFS, path, mode);
+    return oe_fopen(OE_DEVID_SHWFS, path, mode);
 }
 
 OE_INLINE OE_FILE* oe_fopen_secure(const char* path, const char* mode)
@@ -124,17 +124,17 @@ OE_INLINE OE_FILE* oe_fopen_secure(const char* path, const char* mode)
 
 OE_INLINE int oe_remove_nonsecure(const char* pathname)
 {
-    return oe_unlink(OE_DEVICE_ID_HOSTFS, pathname);
+    return oe_unlink(OE_DEVID_HOSTFS, pathname);
 }
 
 OE_INLINE int oe_remove_secure_encrypted(const char* pathname)
 {
-    return oe_unlink(OE_DEVICE_ID_SGXFS, pathname);
+    return oe_unlink(OE_DEVID_SGXFS, pathname);
 }
 
 OE_INLINE int oe_remove_secure_hardware(const char* pathname)
 {
-    return oe_unlink(OE_DEVICE_ID_SHWFS, pathname);
+    return oe_unlink(OE_DEVID_SHWFS, pathname);
 }
 
 OE_INLINE int oe_remove_secure(const char* pathname)
