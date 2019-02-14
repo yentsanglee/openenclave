@@ -5,8 +5,8 @@
 #define _OE_BITS_FS_H
 
 #include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
 #include <openenclave/bits/device.h>
+#include <openenclave/bits/types.h>
 
 OE_EXTERNC_BEGIN
 
@@ -160,7 +160,11 @@ typedef struct _oe_iovec
     size_t iov_len;
 } oe_iovec_t;
 
-int oe_mount(oe_devid_t devid, const char* source, const char* target, uint32_t flags);
+int oe_mount(
+    oe_devid_t devid,
+    const char* source,
+    const char* target,
+    uint32_t flags);
 
 int oe_unmount(oe_devid_t devid, const char* target);
 

@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include <openenclave/enclave.h>
+#include <openenclave/internal/array.h>
 #include <openenclave/internal/atexit.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/enclavelibc.h>
@@ -9,7 +10,6 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/thread.h>
-#include <openenclave/internal/array.h>
 
 static const size_t ELEMENT_SIZE = sizeof(oe_device_t*);
 static const size_t CHUNK_SIZE = 8;

@@ -8,10 +8,10 @@
 #define _NO_CRT_DIRENT_INLINE
 #endif
 
-#include <openenclave/libcex/bits/common.h>
 #include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
 #include <openenclave/bits/fs.h>
+#include <openenclave/bits/types.h>
+#include <openenclave/libcex/bits/common.h>
 
 OE_EXTERNC_BEGIN
 

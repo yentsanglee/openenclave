@@ -172,7 +172,11 @@ done:
     return ret;
 }
 
-int oe_mount(oe_devid_t devid, const char* source, const char* target, uint32_t flags)
+int oe_mount(
+    oe_devid_t devid,
+    const char* source,
+    const char* target,
+    uint32_t flags)
 {
     int ret = -1;
     oe_device_t* device = oe_get_devid_device(devid);

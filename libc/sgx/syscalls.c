@@ -71,7 +71,8 @@ static int _handle_device_syscall(
             const char* pathname = (const char*)arg1;
             mode_t mode = (mode_t)arg2;
 
-            *ret_out = oe_open(OE_DEVID_NULL, pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
+            *ret_out = oe_open(
+                OE_DEVID_NULL, pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
             *errno_out = oe_errno;
 
             if (*errno_out == OE_ENOENT)

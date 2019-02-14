@@ -956,7 +956,7 @@ int oe_register_sgxfs_device(void)
     int ret = -1;
 
     /* Allocate the device id. */
-    if (oe_allocate_devid(OE_DEVID_SGXFS)  != OE_DEVID_SGXFS)
+    if (oe_allocate_devid(OE_DEVID_SGXFS) != OE_DEVID_SGXFS)
         goto done;
 
     /* Add the sgxfs device to the device table. */
