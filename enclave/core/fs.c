@@ -6,6 +6,7 @@
 #include <openenclave/internal/thread.h>
 // clang-format on
 
+#include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/atexit.h>
@@ -22,6 +23,12 @@ typedef struct _mount_point
     uint32_t flags;
 } mount_point_t;
 
+typedef struct _path
+{
+    char buf[OE_PATH_MAX];
+}
+path_t;
+
 static mount_point_t _mount_table[MAX_MOUNT_TABLE_SIZE];
 size_t _mount_table_size = 0;
 static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
@@ -31,16 +38,68 @@ static bool _installed_free_mount_table = false;
 static oe_once_t _device_id_once = OE_ONCE_INIT;
 static oe_thread_key_t _device_id_key = OE_THREADKEY_INITIALIZER;
 
+static char _chroot_path[OE_PATH_MAX] = "/";
+static oe_spinlock_t _chroot_lock = OE_SPINLOCK_INITIALIZER;
+
 static void _free_mount_table(void)
 {
     for (size_t i = 0; i < _mount_table_size; i++)
         oe_free(_mount_table[i].path);
 }
 
+static void _get_chroot_path(path_t* path)
+{
+    oe_spin_lock(&_chroot_lock);
+    oe_strlcpy(path->buf, _chroot_path, sizeof(path_t));
+    oe_spin_unlock(&_chroot_lock);
+}
+
+static int _get_full_path(path_t* full_path, const char* path)
+{
+    int ret = -1;
+    path_t chroot_path;
+    size_t len1;
+    size_t len2;
+
+    if (!full_path || !path || path[0] != '/')
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    _get_chroot_path(&chroot_path);
+
+    if (chroot_path.buf[0] == '/' && chroot_path.buf[1] == '\0')
+        len1 = 0;
+    else
+        len1 = oe_strlen(chroot_path.buf);
+
+    len2 = oe_strlen(path);
+
+    if (len1 + len2 >= OE_PATH_MAX)
+    {
+        oe_errno = OE_ENAMETOOLONG;
+        goto done;
+    }
+
+    full_path->buf[0] = '\0';
+
+    if (len1)
+        oe_strlcat(full_path->buf, chroot_path.buf, sizeof(path_t));
+
+    oe_strlcat(full_path->buf, path, sizeof(path_t));
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
 {
     oe_device_t* ret = NULL;
     size_t match_len = 0;
+    path_t full_path;
 
     /* First check whether a device id is set for this thread. */
     {
@@ -60,6 +119,12 @@ static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
         }
     }
 
+    /* Get the full path including the chroot part. */
+    if (_get_full_path(&full_path, path) != 0)
+    {
+        goto done;
+    }
+
     oe_spin_lock(&_lock);
     {
         /* Find the longest binding point that contains this path. */
@@ -74,7 +139,7 @@ static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
                 {
                     if (suffix)
                     {
-                        oe_strlcpy(suffix, path, OE_PATH_MAX);
+                        oe_strlcpy(suffix, full_path.buf, OE_PATH_MAX);
                     }
 
                     match_len = len;
@@ -82,14 +147,17 @@ static oe_device_t* _fs_lookup(const char* path, char suffix[OE_PATH_MAX])
                 }
             }
             else if (
-                oe_strncmp(mpath, path, len) == 0 &&
-                (path[len] == '/' || path[len] == '\0'))
+                oe_strncmp(mpath, full_path.buf, len) == 0 &&
+                (full_path.buf[len] == '/' || full_path.buf[len] == '\0'))
             {
                 if (len > match_len)
                 {
                     if (suffix)
                     {
-                        oe_strlcpy(suffix, path + len, OE_PATH_MAX);
+                        oe_strlcpy(suffix, full_path.buf + len, OE_PATH_MAX);
+
+                        if (*suffix == '\0')
+                            oe_strlcpy(suffix, "/", OE_PATH_MAX);
                     }
 
                     match_len = len;
@@ -172,6 +240,49 @@ done:
     return ret;
 }
 
+int oe_chroot(const char* path)
+{
+    int ret = -1;
+
+    if (!path)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    if (oe_strlen(path) >= sizeof(_chroot_path))
+    {
+        oe_errno = OE_ENAMETOOLONG;
+        goto done;
+    }
+
+    /* Verify that the path refers to a directory. */
+    {
+        struct oe_stat buf;
+
+        if (oe_stat(0, path, &buf) != 0)
+        {
+            oe_errno = OE_EIO;
+            goto done;
+        }
+
+        if (!OE_S_ISDIR(buf.st_mode))
+        {
+            oe_errno = OE_ENOTDIR;
+            goto done;
+        }
+    }
+
+    oe_spin_lock(&_chroot_lock);
+    oe_strlcpy(_chroot_path, path, sizeof(_chroot_path));
+    oe_spin_unlock(&_chroot_lock);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 int oe_mount(
     oe_devid_t devid,
     const char* source,
@@ -181,16 +292,43 @@ int oe_mount(
     int ret = -1;
     oe_device_t* device = oe_get_devid_device(devid);
     oe_device_t* new_device = NULL;
-
-    OE_UNUSED(flags);
-
-    oe_spin_lock(&_lock);
+    path_t full_target;
+    bool locked = false;
 
     if (!device || device->type != OE_DEVICETYPE_FILESYSTEM || !target)
     {
         oe_errno = OE_EINVAL;
         goto done;
     }
+
+    /* Be sure the full_target directory exists (if not root). */
+    if (oe_strcmp(target, "/") != 0)
+    {
+        struct oe_stat buf;
+
+        if (oe_stat(0, target, &buf) != 0)
+        {
+            oe_errno = OE_EIO;
+            goto done;
+        }
+
+        if (!OE_S_ISDIR(buf.st_mode))
+        {
+            oe_errno = OE_ENOTDIR;
+            goto done;
+        }
+    }
+
+    /* Get the full target including chroot part. */
+    if (_get_full_path(&full_target, target) != 0)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Lock the mount table. */
+    oe_spin_lock(&_lock);
+    locked = true;
 
     /* Install _free_mount_table() if not already installed. */
     if (_installed_free_mount_table == false)
@@ -209,7 +347,7 @@ int oe_mount(
     /* Reject duplicate mount paths. */
     for (size_t i = 0; i < _mount_table_size; i++)
     {
-        if (oe_strcmp(_mount_table[i].path, target) == 0)
+        if (oe_strcmp(_mount_table[i].path, full_target.buf) == 0)
         {
             oe_errno = OE_EEXIST;
             goto done;
@@ -226,21 +364,22 @@ int oe_mount(
     /* Assign and initialize new mount point. */
     {
         size_t index = _mount_table_size;
-        size_t target_len = oe_strlen(target);
+        size_t len = oe_strlen(full_target.buf);
 
-        if (!(_mount_table[index].path = oe_malloc(target_len + 1)))
+        if (!(_mount_table[index].path = oe_malloc(len + 1)))
         {
             oe_errno = OE_ENOMEM;
             goto done;
         }
 
-        oe_memcpy(_mount_table[index].path, target, target_len + 1);
+        oe_memcpy(_mount_table[index].path, full_target.buf, len + 1);
         _mount_table[index].fs = new_device;
         _mount_table_size++;
     }
 
     /* Notify the device that it has been mounted. */
-    if (new_device->ops.fs->mount(new_device, source, target, flags) != 0)
+    if (new_device->ops.fs->mount(
+        new_device, source, full_target.buf, flags) != 0)
     {
         oe_free(_mount_table[--_mount_table_size].path);
         goto done;
@@ -254,7 +393,9 @@ done:
     if (new_device)
         new_device->ops.fs->base.release(new_device);
 
-    oe_spin_unlock(&_lock);
+    if (locked)
+        oe_spin_unlock(&_lock);
+
     return ret;
 }
 
@@ -389,11 +530,15 @@ static OE_DIR* _opendir(const char* pathname)
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
+oe_host_printf("_opendir{%s}\n", pathname);
+
     if (!(fs = _fs_lookup(pathname, filepath)))
     {
         oe_errno = OE_EBADF;
         return NULL;
     }
+
+oe_host_printf("filepath{%s}\n", filepath);
 
     if (fs->type != OE_DEVICETYPE_FILESYSTEM)
     {

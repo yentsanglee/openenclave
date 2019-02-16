@@ -36,6 +36,32 @@ class device_registrant
     }
 };
 
+static void _touch(const char* path)
+{
+    FILE* stream;
+
+    printf("Creating %s\n", path);
+
+    OE_TEST((stream = fopen(path, "w")) != NULL);
+    OE_TEST(fwrite("hello", 1, 5, stream) == 5);
+    OE_TEST(fclose(stream) == 0);
+}
+
+void list(const char* dirname)
+{
+    DIR* dir;
+    struct dirent* ent;
+
+    OE_TEST((dir = opendir(dirname)) != NULL);
+
+    while ((ent = readdir(dir)))
+    {
+        printf("%s\n", ent->d_name);
+    }
+
+    closedir(dir);
+}
+
 template <class FILE_SYSTEM>
 static void cleanup(FILE_SYSTEM& fs, const char* tmp_dir)
 {
@@ -439,6 +465,22 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         static const size_t n = sizeof(DATA) - 1;
         OE_TEST(oe_write(OE_STDOUT_FILENO, DATA, n) == n);
         OE_TEST(oe_write(OE_STDERR_FILENO, DATA, n) == n);
+    }
+
+    /* Test mount. */
+    {
+        char target[OE_PATH_MAX];
+        char path[OE_PATH_MAX];
+        mkpath(target, tmp_dir, "mnt");
+
+        OE_TEST(oe_mount(OE_DEVID_HOSTFS, NULL, "/", 0) == 0);
+        oe_rmdir(0, target);
+        OE_TEST(oe_mkdir(0, target, 0777) == 0);
+        OE_TEST(oe_mount(OE_DEVID_SGXFS, NULL, target, 0) == 0);
+
+        mkpath(path, target, "newfile");
+        _touch(path);
+        //list(target);
     }
 
     /* Test fprintf and fscanf. */
