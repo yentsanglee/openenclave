@@ -129,32 +129,6 @@ struct oe_sockaddr_in
     uint8_t sin_zero[8];
 };
 
-/*
-**==============================================================================
-**
-** OE_AF_INET
-** OE_AF_INET6
-**
-**==============================================================================
-*/
-
-#define OE_AF_INET 2
-#define OE_AF_ENCLAVE 50
-
-#ifdef __linux__
-#define OE_AF_INET6 10
-#else
-/* ATTN: which platform is this for? */
-#define OE_AF_INET6 23
-#endif
-
-/*
-**==============================================================================
-**
-** Supported address families:
-**
-**==============================================================================
-*/
 
 #define OE_SOCK_STREAM 1
 

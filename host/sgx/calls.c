@@ -39,6 +39,9 @@ void (*oe_handle_sgxfs_ocall_callback)(void* args);
  * oe_socket_install_hostsock(). */
 void (*oe_handle_hostsock_ocall_callback)(void* args);
 
+void (*oe_handle_epoll_ocall_callback)(void* args);
+void (*oe_handle_hostresolver_ocall_callback)(void* args);
+
 /*
 **==============================================================================
 **
@@ -527,6 +530,24 @@ static oe_result_t _handle_ocall(
         {
             if (oe_handle_hostsock_ocall_callback)
                 oe_handle_hostsock_ocall_callback((void*)arg_in);
+            else
+                OE_RAISE(OE_NOT_FOUND);
+
+            break;
+        }
+        case OE_OCALL_EPOLL:
+        {
+            if (oe_handle_epoll_ocall_callback)
+                oe_handle_epoll_ocall_callback((void*)arg_in);
+            else
+                OE_RAISE(OE_NOT_FOUND);
+
+            break;
+        }
+        case OE_OCALL_HOSTRESOLVER:
+        {
+            if (oe_handle_hostresolver_ocall_callback)
+                oe_handle_hostresolver_ocall_callback((void*)arg_in);
             else
                 OE_RAISE(OE_NOT_FOUND);
 
