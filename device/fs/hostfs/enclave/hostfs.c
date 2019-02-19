@@ -181,7 +181,7 @@ static int _expand_path(
     ret = 0;
 
 done:
-    return  ret;
+    return ret;
 }
 
 static int _hostfs_mount(
@@ -628,7 +628,6 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
 
         if (_expand_path(fs, name, args->u.opendir.name) != 0)
             goto done;
-
     }
 
     /* Call */
@@ -1213,7 +1212,7 @@ static fs_t _hostfs = {
     .base.ops.fs = &_ops,
     .magic = FS_MAGIC,
     .mount_flags = 0,
-    .mount_source = { '/' },
+    .mount_source = {'/'},
 };
 
 oe_device_t* oe_fs_get_hostfs(void)

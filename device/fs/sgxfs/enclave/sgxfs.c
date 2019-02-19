@@ -120,7 +120,7 @@ static int _expand_path(
     ret = 0;
 
 done:
-    return  ret;
+    return ret;
 }
 
 static int _split_path(
@@ -388,7 +388,6 @@ static oe_device_t* _sgxfs_open(
             goto done;
         }
     }
-
 
     /* Open the protected file. */
     {

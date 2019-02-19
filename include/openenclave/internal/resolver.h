@@ -11,7 +11,6 @@ typedef uint32_t oe_socklen_t;
 
 OE_EXTERNC_BEGIN
 
-
 typedef struct _oe_resolver oe_resolver_t;
 
 typedef struct _oe_resolver_ops

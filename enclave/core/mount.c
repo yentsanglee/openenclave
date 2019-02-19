@@ -188,8 +188,7 @@ int oe_mount(
     }
 
     /* Notify the device that it has been mounted. */
-    if (new_device->ops.fs->mount(
-        new_device, source, target, flags) != 0)
+    if (new_device->ops.fs->mount(new_device, source, target, flags) != 0)
     {
         oe_free(_mount_table[--_mount_table_size].path);
         goto done;

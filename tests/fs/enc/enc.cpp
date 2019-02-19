@@ -7,9 +7,9 @@
 #include <openenclave/internal/fs_ops.h>
 #include <openenclave/internal/tests.h>
 #include <stdio.h>
+#include <string.h>
 #include <set>
 #include <string>
-#include <string.h>
 #include "file_system.h"
 #include "fs_t.h"
 

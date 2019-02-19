@@ -129,7 +129,6 @@ struct oe_sockaddr_in
     uint8_t sin_zero[8];
 };
 
-
 #define OE_SOCK_STREAM 1
 
 OE_EXTERNC_END
