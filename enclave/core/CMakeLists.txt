@@ -65,6 +65,7 @@ add_library(oecore STATIC
     hexdump.c
     device.c
     fs.c
+    mount.c
     sock_ops.c
     resolver.c
     epoll.c

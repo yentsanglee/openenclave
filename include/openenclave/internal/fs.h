@@ -40,6 +40,9 @@ int oe_clear_thread_default_device(void);
 /* Get the default device for this thread. */
 oe_devid_t oe_get_thread_default_device(void);
 
+/* Use mounter to resolve this path to a target path. */
+oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX]);
+
 OE_EXTERNC_END
 
 #endif // _OE_INTERNAL_FS_H
