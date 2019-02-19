@@ -160,8 +160,6 @@ typedef struct _oe_iovec
     size_t iov_len;
 } oe_iovec_t;
 
-int oe_chroot(const char* path);
-
 int oe_mount(
     oe_devid_t devid,
     const char* source,

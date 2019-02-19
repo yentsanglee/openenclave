@@ -7,9 +7,13 @@
 #include <openenclave/internal/fs_ops.h>
 #include <openenclave/internal/tests.h>
 #include <stdio.h>
+#include <set>
+#include <string>
 #include <string.h>
 #include "file_system.h"
 #include "fs_t.h"
+
+using namespace std;
 
 static const char ALPHABET[] = "abcdefghijklmnopqrstuvwxyz";
 static const mode_t MODE = 0644;
@@ -47,7 +51,7 @@ static void _touch(const char* path)
     OE_TEST(fclose(stream) == 0);
 }
 
-void list(const char* dirname)
+void list(const char* dirname, set<string>& names)
 {
     DIR* dir;
     struct dirent* ent;
@@ -56,7 +60,7 @@ void list(const char* dirname)
 
     while ((ent = readdir(dir)))
     {
-        printf("%s\n", ent->d_name);
+        names.insert(ent->d_name);
     }
 
     closedir(dir);
@@ -358,6 +362,33 @@ void test_fprintf_fscanf(const char* tmp_dir)
     }
 }
 
+void _test_mount(const char* tmp_dir)
+{
+    char target[OE_PATH_MAX];
+    char source[OE_PATH_MAX];
+    char path[OE_PATH_MAX];
+
+    mkpath(source, tmp_dir, "source");
+    mkpath(target, tmp_dir, "target");
+
+    OE_TEST(oe_mount(OE_DEVID_HOSTFS, "/", "/", 0) == 0);
+    oe_unlink(0, mkpath(path, source, "newfile"));
+    oe_rmdir(0, source);
+    oe_rmdir(0, target);
+
+    OE_TEST(oe_mkdir(0, source, 0777) == 0);
+    OE_TEST(oe_mkdir(0, target, 0777) == 0);
+    OE_TEST(oe_mount(OE_DEVID_SGXFS, source, target, 0) == 0);
+
+    _touch(mkpath(path, target, "newfile"));
+
+    set<string> names;
+    list(target, names);
+
+    set<string>::const_iterator pos = names.find("newfile");
+    OE_TEST(pos != names.end());
+}
+
 void test_fs(const char* src_dir, const char* tmp_dir)
 {
     (void)src_dir;
@@ -446,7 +477,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         mkpath(path, tmp_dir, "somefile");
         const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
 
-        OE_TEST(oe_mount(OE_DEVID_HOSTFS, NULL, "/", OE_MOUNT_RDONLY) == 0);
+        OE_TEST(oe_mount(OE_DEVID_HOSTFS, "/", "/", OE_MOUNT_RDONLY) == 0);
         OE_TEST(oe_open(0, path, flags, MODE) == -1);
         OE_TEST(oe_errno == OE_EPERM);
         OE_TEST(oe_unmount(OE_DEVID_HOSTFS, "/") == 0);
@@ -467,21 +498,8 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         OE_TEST(oe_write(OE_STDERR_FILENO, DATA, n) == n);
     }
 
-    /* Test mount. */
-    {
-        char target[OE_PATH_MAX];
-        char path[OE_PATH_MAX];
-        mkpath(target, tmp_dir, "mnt");
-
-        OE_TEST(oe_mount(OE_DEVID_HOSTFS, NULL, "/", 0) == 0);
-        oe_rmdir(0, target);
-        OE_TEST(oe_mkdir(0, target, 0777) == 0);
-        OE_TEST(oe_mount(OE_DEVID_SGXFS, NULL, target, 0) == 0);
-
-        mkpath(path, target, "newfile");
-        _touch(path);
-        //list(target);
-    }
+    /* Test mounting. */
+    _test_mount(tmp_dir);
 
     /* Test fprintf and fscanf. */
     test_fprintf_fscanf(tmp_dir);

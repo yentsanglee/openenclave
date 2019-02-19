@@ -78,6 +78,7 @@ typedef struct _fs
     struct _oe_device base;
     uint32_t magic;
     uint32_t mount_flags;
+    char mount_source[OE_PATH_MAX];
 } fs_t;
 
 typedef struct _file
@@ -131,6 +132,58 @@ OE_INLINE bool _is_rdonly(const fs_t* fs)
     return (fs->mount_flags & OE_MOUNT_RDONLY);
 }
 
+OE_INLINE bool _is_root(const char* path)
+{
+    return path[0] == '/' && path[1] == '\0';
+}
+
+/* Expand path to include the mount_source (needed by host side) */
+static int _expand_path(
+    const fs_t* fs,
+    const char* suffix,
+    char path[OE_PATH_MAX])
+{
+    const size_t n = OE_PATH_MAX;
+    int ret = -1;
+
+    if (_is_root(fs->mount_source))
+    {
+        if (oe_strlcpy(path, suffix, OE_PATH_MAX) >= n)
+        {
+            oe_errno = OE_ENAMETOOLONG;
+            goto done;
+        }
+    }
+    else
+    {
+        if (oe_strlcpy(path, fs->mount_source, OE_PATH_MAX) >= n)
+        {
+            oe_errno = OE_ENAMETOOLONG;
+            goto done;
+        }
+
+        if (!_is_root(suffix))
+        {
+            if (oe_strlcat(path, "/", OE_PATH_MAX) >= n)
+            {
+                oe_errno = OE_ENAMETOOLONG;
+                goto done;
+            }
+
+            if (oe_strlcat(path, suffix, OE_PATH_MAX) >= n)
+            {
+                oe_errno = OE_ENAMETOOLONG;
+                goto done;
+            }
+        }
+    }
+
+    ret = 0;
+
+done:
+    return  ret;
+}
+
 static int _hostfs_mount(
     oe_device_t* dev,
     const char* source,
@@ -140,16 +193,14 @@ static int _hostfs_mount(
     int ret = -1;
     fs_t* fs = _cast_fs(dev);
 
-    OE_UNUSED(source);
-    OE_UNUSED(flags);
-
-    if (!fs || !target)
+    if (!fs || !source || !target)
     {
         oe_errno = OE_EINVAL;
         goto done;
     }
 
     fs->mount_flags = flags;
+    oe_strlcpy(fs->mount_source, source, sizeof(fs->mount_source));
 
     ret = 0;
 
@@ -279,12 +330,8 @@ static oe_device_t* _hostfs_open(
         args->op = OE_HOSTFS_OP_OPEN;
         args->u.open.ret = -1;
 
-        if (oe_strlcpy(args->u.open.pathname, pathname, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
+        if (_expand_path(fs, pathname, args->u.open.pathname) != 0)
             goto done;
-        }
 
         args->u.open.flags = flags;
         args->u.open.mode = mode;
@@ -578,7 +625,10 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
 
         args->op = OE_HOSTFS_OP_OPENDIR;
         args->u.opendir.ret = NULL;
-        oe_strlcpy(args->u.opendir.name, name, OE_PATH_MAX);
+
+        if (_expand_path(fs, name, args->u.opendir.name) != 0)
+            goto done;
+
     }
 
     /* Call */
@@ -747,12 +797,8 @@ static int _hostfs_stat(
         args->op = OE_HOSTFS_OP_STAT;
         args->u.stat.ret = -1;
 
-        if (oe_strlcpy(args->u.stat.pathname, pathname, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
+        if (_expand_path(fs, pathname, args->u.stat.pathname) != 0)
             goto done;
-        }
     }
 
     /* Call */
@@ -812,19 +858,11 @@ static int _hostfs_link(
         args->op = OE_HOSTFS_OP_LINK;
         args->u.link.ret = -1;
 
-        if (oe_strlcpy(args->u.link.oldpath, oldpath, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
+        if (_expand_path(fs, oldpath, args->u.link.oldpath) != 0)
             goto done;
-        }
 
-        if (oe_strlcpy(args->u.link.newpath, newpath, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
+        if (_expand_path(fs, newpath, args->u.link.newpath) != 0)
             goto done;
-        }
     }
 
     /* Call */
@@ -876,12 +914,8 @@ static int _hostfs_unlink(oe_device_t* fs_, const char* pathname)
         args->op = OE_HOSTFS_OP_UNLINK;
         args->u.unlink.ret = -1;
 
-        if (oe_strlcpy(args->u.unlink.pathname, pathname, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
+        if (_expand_path(fs, pathname, args->u.unlink.pathname) != 0)
             goto done;
-        }
     }
 
     /* Call */
@@ -936,19 +970,11 @@ static int _hostfs_rename(
         args->op = OE_HOSTFS_OP_RENAME;
         args->u.rename.ret = -1;
 
-        if (oe_strlcpy(args->u.rename.oldpath, oldpath, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
+        if (_expand_path(fs, oldpath, args->u.rename.oldpath) != 0)
             goto done;
-        }
 
-        if (oe_strlcpy(args->u.rename.newpath, newpath, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
+        if (_expand_path(fs, newpath, args->u.rename.newpath) != 0)
             goto done;
-        }
     }
 
     /* Call */
@@ -1001,11 +1027,8 @@ static int _hostfs_truncate(oe_device_t* fs_, const char* path, off_t length)
         args->u.truncate.ret = -1;
         args->u.truncate.length = length;
 
-        if (oe_strlcpy(args->u.truncate.path, path, OE_PATH_MAX) >= OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
+        if (_expand_path(fs, path, args->u.truncate.path) != 0)
             goto done;
-        }
     }
 
     /* Call */
@@ -1058,12 +1081,8 @@ static int _hostfs_mkdir(oe_device_t* fs_, const char* pathname, mode_t mode)
         args->u.mkdir.ret = -1;
         args->u.mkdir.mode = mode;
 
-        if (oe_strlcpy(args->u.mkdir.pathname, pathname, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
+        if (_expand_path(fs, pathname, args->u.mkdir.pathname) != 0)
             goto done;
-        }
     }
 
     /* Call */
@@ -1115,12 +1134,8 @@ static int _hostfs_rmdir(oe_device_t* fs_, const char* pathname)
         args->op = OE_HOSTFS_OP_RMDIR;
         args->u.rmdir.ret = -1;
 
-        if (oe_strlcpy(args->u.rmdir.pathname, pathname, OE_PATH_MAX) >=
-            OE_PATH_MAX)
-        {
-            oe_errno = OE_ENAMETOOLONG;
+        if (_expand_path(fs, pathname, args->u.rmdir.pathname) != 0)
             goto done;
-        }
     }
 
     /* Call */
@@ -1197,6 +1212,8 @@ static fs_t _hostfs = {
     .base.size = sizeof(fs_t),
     .base.ops.fs = &_ops,
     .magic = FS_MAGIC,
+    .mount_flags = 0,
+    .mount_source = { '/' },
 };
 
 oe_device_t* oe_fs_get_hostfs(void)
