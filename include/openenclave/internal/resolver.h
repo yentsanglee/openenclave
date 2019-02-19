@@ -6,36 +6,27 @@
 
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/errno.h>
+typedef uint32_t oe_socklen_t;
+#include <openenclave/internal/netdb.h>
 
 OE_EXTERNC_BEGIN
 
-typedef uint32_t oe_socklen_t;
-typedef struct oe_addrinfo
-{
-    int32_t ai_flags;
-    int32_t ai_family;
-    int32_t ai_socktype;
-    int32_t ai_protocol;
-    size_t ai_addrlen;
-    struct oe_sockaddr* ai_addr;
-    char* ai_canonname;
-    struct oe_addrinfo* ai_next;
-} oe_addrinfo;
 
 typedef struct _oe_resolver oe_resolver_t;
 
 typedef struct _oe_resolver_ops
 {
-    int (*getaddrinfo)(
+    ssize_t (*getaddrinfo_r)(
         oe_resolver_t* dev,
         const char* node,
         const char* service,
         const struct oe_addrinfo* hints,
-        struct oe_addrinfo** res);
+        struct oe_addrinfo* res,
+        ssize_t* buffersize);
 
     void (*freeaddrinfo)(oe_resolver_t* dev, struct oe_addrinfo* res);
 
-    int (*getnameinfo)(
+    ssize_t (*getnameinfo)(
         oe_resolver_t* dev,
         const struct oe_sockaddr* sa,
         oe_socklen_t salen,
@@ -46,6 +37,7 @@ typedef struct _oe_resolver_ops
         int flags);
 
     // 2Do:     gethostbyaddr(3), getservbyname(3), getservbyport(3),
+    int (*shutdown)(oe_resolver_t* dev);
 
 } oe_resolver_ops_t;
 

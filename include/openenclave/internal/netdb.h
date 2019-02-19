@@ -3,6 +3,7 @@
 
 #ifndef __NETDB_H__
 #define __NETDB_H__
+#include <openenclave/bits/socket.h>
 
 OE_EXTERNC_BEGIN
 
@@ -21,7 +22,7 @@ struct oe_hostent* getoe_hostent(void);
 
 struct oe_hostent* gethostbyaddr(
     const void* __addr,
-    __socklen_t __len,
+    oe_socklen_t __len,
     int __type);
 
 struct oe_hostent* gethostbyname(const char* __name);
@@ -160,7 +161,7 @@ struct oe_addrinfo
     int ai_family;               /* Protocol family for socket.  */
     int ai_socktype;             /* Socket type.  */
     int ai_protocol;             /* Protocol for socket.  */
-    socklen_t ai_addrlen;        /* Length of socket address.  */
+    oe_socklen_t ai_addrlen;     /* Length of socket address.  */
     struct oe_sockaddr* ai_addr; /* Socket address for socket.  */
     char* ai_canonname;          /* Canonical name for service location.  */
     struct oe_addrinfo* ai_next; /* Pointer to next in list.  */
@@ -172,46 +173,46 @@ struct oe_addrinfo
 #endif
 
 /* Possible values for `ai_flags' field in `addrinfo' structure.  */
-#define AI_PASSIVE 0x0001     /* Socket address is intended for `bind'.  */
-#define AI_CANONNAME 0x0002   /* Request for canonical name.  */
-#define AI_NUMERICHOST 0x0004 /* Don't use name resolution.  */
-#define AI_V4MAPPED 0x0008    /* IPv4 mapped addresses are acceptable.  */
-#define AI_ALL 0x0010         /* Return IPv4 mapped and IPv6 addresses.  */
-#define AI_ADDRCONFIG                                  \
-    0x0020 /* Use configuration of this host to choose \
-returned address type..  */
-#define AI_IDN                                                         \
-    0x0040                 /* IDN encode input (assuming it is encoded \
-                  in the current locale's character set)               \
-                  before looking it up. */
-#define AI_CANONIDN 0x0080 /* Translate canonical name from IDN format. */
-#define AI_IDN_ALLOW_UNASSIGNED               \
+#define OE_AI_PASSIVE 0x0001     /* Socket address is intended for `bind'.  */
+#define OE_AI_CANONNAME 0x0002   /* Request for canonical name.  */
+#define OE_AI_NUMERICHOST 0x0004 /* Don't use name resolution.  */
+#define OE_AI_V4MAPPED 0x0008    /* IPv4 mapped addresses are acceptable.  */
+#define OE_AI_ALL 0x0010         /* Return IPv4 mapped and IPv6 addresses.  */
+#define OE_AI_ADDRCONFIG                                                       \
+    0x0020 /* Use configuration of this host to choose returned address type.. \
+            */
+#define OE_AI_IDN                                                         \
+    0x0040                    /* IDN encode input (assuming it is encoded \
+               in the current locale's character set)                 \
+               before looking it up. */
+#define OE_AI_CANONIDN 0x0080 /* Translate canonical name from IDN format. */
+#define OE_AI_IDN_ALLOW_UNASSIGNED            \
     0x0100 /* Don't reject unassigned Unicode \
 code points.  */
-#define AI_IDN_USE_STD3_ASCII_RULES                            \
-    0x0200                    /* Validate strings according to \
-         STD3 rules.  */
-#define AI_NUMERICSERV 0x0400 /* Don't use name resolution.  */
+#define OE_AI_IDN_USE_STD3_ASCII_RULES                            \
+    0x0200                       /* Validate strings according to \
+            STD3 rules.  */
+#define OE_AI_NUMERICSERV 0x0400 /* Don't use name resolution.  */
 
 // Error values for `getaddrinfo' function.
-#define EAI_BADFLAGS -1      /* Invalid value for `ai_flags' field.  */
-#define EAI_NONAME -2        /* NAME or SERVICE is unknown.  */
-#define EAI_AGAIN -3         /* Temporary failure in name resolution.  */
-#define EAI_FAIL -4          /* Non-recoverable failure in name res.  */
-#define EAI_FAMILY -6        /* `ai_family' not supported.  */
-#define EAI_SOCKTYPE -7      /* `ai_socktype' not supported.  */
-#define EAI_SERVICE -8       /* SERVICE not supported for `ai_socktype'.  */
-#define EAI_MEMORY -10       /* Memory allocation failure.  */
-#define EAI_SYSTEM -11       /* System error returned in `errno'.  */
-#define EAI_OVERFLOW -12     /* Argument buffer overflow.  */
-#define EAI_NODATA -5        /* No address associated with NAME.  */
-#define EAI_ADDRFAMILY -9    /* Address family for NAME not supported.  */
-#define EAI_INPROGRESS -100  /* Processing request in progress.  */
-#define EAI_CANCELED -101    /* Request canceled.  */
-#define EAI_NOTCANCELED -102 /* Request not canceled.  */
-#define EAI_ALLDONE -103     /* All requests done.  */
-#define EAI_INTR -104        /* Interrupted by a signal.  */
-#define EAI_IDN_ENCODE -105  /* IDN encoding failed.  */
+#define OE_EAI_BADFLAGS -1      /* Invalid value for `ai_flags' field.  */
+#define OE_EAI_NONAME -2        /* NAME or SERVICE is unknown.  */
+#define OE_EAI_AGAIN -3         /* Temporary failure in name resolution.  */
+#define OE_EAI_FAIL -4          /* Non-recoverable failure in name res.  */
+#define OE_EAI_FAMILY -6        /* `ai_family' not supported.  */
+#define OE_EAI_SOCKTYPE -7      /* `ai_socktype' not supported.  */
+#define OE_EAI_SERVICE -8       /* SERVICE not supported for `ai_socktype'.  */
+#define OE_EAI_MEMORY -10       /* Memory allocation failure.  */
+#define OE_EAI_SYSTEM -11       /* System error returned in `errno'.  */
+#define OE_EAI_OVERFLOW -12     /* Argument buffer overflow.  */
+#define OE_EAI_NODATA -5        /* No address associated with NAME.  */
+#define OE_EAI_ADDRFAMILY -9    /* Address family for NAME not supported.  */
+#define OE_EAI_INPROGRESS -100  /* Processing request in progress.  */
+#define OE_EAI_CANCELED -101    /* Request canceled.  */
+#define OE_EAI_NOTCANCELED -102 /* Request not canceled.  */
+#define OE_EAI_ALLDONE -103     /* All requests done.  */
+#define OE_EAI_INTR -104        /* Interrupted by a signal.  */
+#define OE_EAI_IDN_ENCODE -105  /* IDN encoding failed.  */
 
 #define NI_MAXHOST 1025
 #define NI_MAXSERV 32
