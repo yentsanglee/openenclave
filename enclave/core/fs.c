@@ -421,15 +421,11 @@ static OE_DIR* _opendir(const char* pathname)
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-oe_host_printf("_opendir{%s}\n", pathname);
-
     if (!(fs = _fs_lookup(pathname, filepath)))
     {
         oe_errno = OE_EBADF;
         return NULL;
     }
-
-oe_host_printf("filepath{%s}\n", filepath);
 
     if (fs->type != OE_DEVICETYPE_FILESYSTEM)
     {
