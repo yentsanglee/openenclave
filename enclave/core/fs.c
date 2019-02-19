@@ -1,21 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-// clang-format off
-#include <openenclave/enclave.h>
-#include <openenclave/internal/thread.h>
-// clang-format on
-
 #include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
-#include <openenclave/internal/enclavelibc.h>
-#include <openenclave/internal/atexit.h>
-#include <openenclave/internal/print.h>
-
-#define MAX_MOUNT_TABLE_SIZE 64
-
-static oe_once_t _device_id_once = OE_ONCE_INIT;
-static oe_thread_key_t _device_id_key = OE_THREADKEY_INITIALIZER;
 
 static oe_device_t* _get_fs_device(oe_devid_t devid)
 {
@@ -25,64 +12,6 @@ static oe_device_t* _get_fs_device(oe_devid_t devid)
         return NULL;
 
     return device;
-}
-
-static void _create_device_id_key()
-{
-    if (oe_thread_key_create(&_device_id_key, NULL) != 0)
-        oe_abort();
-}
-
-int oe_set_thread_default_device(oe_devid_t devid)
-{
-    int ret = -1;
-
-    if (devid == OE_DEVID_NULL)
-        goto done;
-
-    if (oe_once(&_device_id_once, _create_device_id_key) != 0)
-        goto done;
-
-    if (oe_thread_setspecific(_device_id_key, (void*)devid) != 0)
-        goto done;
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
-int oe_clear_thread_default_device(void)
-{
-    int ret = -1;
-
-    if (oe_once(&_device_id_once, _create_device_id_key) != 0)
-        goto done;
-
-    if (oe_thread_setspecific(_device_id_key, NULL) != 0)
-        goto done;
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
-oe_devid_t oe_get_thread_default_device(void)
-{
-    oe_devid_t ret = OE_DEVID_NULL;
-    oe_devid_t devid;
-
-    if (oe_once(&_device_id_once, _create_device_id_key) != 0)
-        goto done;
-
-    if (!(devid = (uint64_t)oe_thread_getspecific(_device_id_key)))
-        goto done;
-
-    ret = devid;
-
-done:
-    return ret;
 }
 
 static int _open(const char* pathname, int flags, mode_t mode)

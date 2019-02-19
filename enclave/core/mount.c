@@ -6,11 +6,9 @@
 #include <openenclave/internal/thread.h>
 // clang-format on
 
-#include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/atexit.h>
-#include <openenclave/internal/print.h>
 
 #define MAX_MOUNT_TABLE_SIZE 64
 
@@ -42,7 +40,7 @@ oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX])
     {
         oe_devid_t devid;
 
-        if ((devid = oe_get_thread_default_device()) != OE_DEVID_NULL)
+        if ((devid = oe_get_thread_device()) != OE_DEVID_NULL)
         {
             oe_device_t* device = oe_get_devid_device(devid);
 

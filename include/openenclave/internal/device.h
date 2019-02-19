@@ -104,6 +104,15 @@ int oe_close(int fd);
 
 int oe_ioctl(int fd, unsigned long request, ...);
 
+/* Set the default device for this thread (used in lieu of the mount table). */
+int oe_set_thread_device(oe_devid_t devid);
+
+/* Clear the default device for this thread. */
+int oe_clear_thread_device(void);
+
+/* Get the default device for this thread. */
+oe_devid_t oe_get_thread_device(void);
+
 OE_EXTERNC_END
 
 #endif // _OE_DEVICE_H

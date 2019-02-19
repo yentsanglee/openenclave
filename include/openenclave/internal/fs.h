@@ -31,15 +31,6 @@ int oe_register_sgxfs_device(void);
 /* Initialize the stdin, stdout, and stderr devices. */
 int oe_initialize_console_devices(void);
 
-/* Set the default device for this thread (used in lieu of the mount table). */
-int oe_set_thread_default_device(oe_devid_t devid);
-
-/* Clear the default device for this thread. */
-int oe_clear_thread_default_device(void);
-
-/* Get the default device for this thread. */
-oe_devid_t oe_get_thread_default_device(void);
-
 /* Use mounter to resolve this path to a target path. */
 oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX]);
 
