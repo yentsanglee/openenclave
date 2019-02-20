@@ -20,6 +20,7 @@ typedef enum _oe_hostfs_op
     OE_HOSTFS_OP_READDIR,
     OE_HOSTFS_OP_CLOSEDIR,
     OE_HOSTFS_OP_STAT,
+    OE_HOSTFS_OP_ACCESS,
     OE_HOSTFS_OP_LINK,
     OE_HOSTFS_OP_UNLINK,
     OE_HOSTFS_OP_RENAME,
@@ -86,6 +87,13 @@ typedef struct _oe_hostfs_args
             char pathname[OE_PATH_MAX];
             struct oe_stat buf;
         } stat;
+        struct
+        {
+            int ret;
+            char pathname[OE_PATH_MAX];
+            int mode;
+        }
+        access;
         struct
         {
             int ret;

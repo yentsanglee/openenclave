@@ -671,6 +671,38 @@ done:
     return ret;
 }
 
+static int _sgxfs_access(oe_device_t* fs_, const char *pathname, int mode)
+{
+    int ret = -1;
+    fs_t* fs = _cast_fs(fs_);
+    oe_device_t* hostfs = oe_fs_get_hostfs();
+
+    OE_UNUSED(fs_);
+
+    if (!fs || !hostfs)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
+    /* Delegate the request to HOSTFS. */
+    {
+        char full_path[OE_PATH_MAX];
+
+        if (_expand_path(fs, pathname, full_path) != 0)
+            goto done;
+
+        if ((ret = hostfs->ops.fs->access(hostfs, full_path, mode)) != 0)
+            goto done;
+    }
+
+    ret = 0;
+
+done:
+
+    return ret;
+}
+
 static int _sgxfs_link(
     oe_device_t* fs_,
     const char* oldpath,
@@ -1086,6 +1118,7 @@ static oe_fs_ops_t _ops = {
     .readdir = _sgxfs_readdir,
     .closedir = _sgxfs_closedir,
     .stat = _sgxfs_stat,
+    .access = _sgxfs_access,
     .link = _sgxfs_link,
     .unlink = _sgxfs_unlink,
     .rename = _sgxfs_rename,

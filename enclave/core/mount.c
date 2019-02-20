@@ -36,6 +36,12 @@ oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX])
     oe_device_t* ret = NULL;
     size_t match_len = 0;
 
+    if (!path || !suffix)
+    {
+        oe_errno = OE_EINVAL;
+        goto done;
+    }
+
     /* First check whether a device id is set for this thread. */
     {
         oe_devid_t devid;
@@ -45,7 +51,10 @@ oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX])
             oe_device_t* device = oe_get_devid_device(devid);
 
             if (!device || device->type != OE_DEVICETYPE_FILESYSTEM)
+            {
+                oe_errno = OE_EINVAL;
                 goto done;
+            }
 
             /* Use this device. */
             oe_strlcpy(suffix, path, OE_PATH_MAX);
@@ -96,6 +105,9 @@ oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX])
         }
     }
     oe_spin_unlock(&_lock);
+
+    if (!ret)
+        oe_errno = OE_ENOENT;
 
 done:
     return ret;

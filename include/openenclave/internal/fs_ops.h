@@ -40,6 +40,8 @@ struct _oe_fs_ops
 
     int (*stat)(oe_device_t* fs, const char* pathname, struct oe_stat* buf);
 
+    int (*access)(oe_device_t* fs, const char *pathname, int mode);
+
     int (*link)(oe_device_t* fs, const char* oldpath, const char* newpath);
 
     int (*unlink)(oe_device_t* fs, const char* pathname);

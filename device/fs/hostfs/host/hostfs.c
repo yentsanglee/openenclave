@@ -158,6 +158,12 @@ void oe_handle_hostfs_ocall(void* args_)
             }
             break;
         }
+        case OE_HOSTFS_OP_ACCESS:
+        {
+            args->u.access.ret = access(args->u.access.pathname,
+                args->u.access.mode);
+            break;
+        }
         case OE_HOSTFS_OP_UNLINK:
         {
             args->u.unlink.ret = unlink(args->u.unlink.pathname);

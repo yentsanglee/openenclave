@@ -825,6 +825,57 @@ done:
     return ret;
 }
 
+static int _hostfs_access(oe_device_t* fs_, const char *pathname, int mode)
+{
+    int ret = -1;
+    fs_t* fs = _cast_fs(fs_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    /* Check parameters */
+    {
+        const uint32_t MASK = (OE_R_OK | OE_W_OK | OE_X_OK);
+
+        if (!fs || !pathname || ((uint32_t)mode & ~MASK))
+        {
+            oe_errno = OE_EINVAL;
+            goto done;
+        }
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->op = OE_HOSTFS_OP_ACCESS;
+        args->u.access.ret = -1;
+        args->u.access.mode = mode;
+
+        if (_expand_path(fs, pathname, args->u.access.pathname) != 0)
+            goto done;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+
+        if ((ret = args->u.stat.ret) != 0)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
 static int _hostfs_link(
     oe_device_t* fs_,
     const char* oldpath,
@@ -1198,6 +1249,7 @@ static oe_fs_ops_t _ops = {
     .readdir = _hostfs_readdir,
     .closedir = _hostfs_closedir,
     .stat = _hostfs_stat,
+    .access = _hostfs_access,
     .link = _hostfs_link,
     .unlink = _hostfs_unlink,
     .rename = _hostfs_rename,
