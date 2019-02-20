@@ -401,7 +401,7 @@ class stream_file_system
                     }
                     else
                     {
-                        errno = OE_EINVAL;
+                        errno = EINVAL;
                         goto done;
                     }
                 }
@@ -425,7 +425,7 @@ class stream_file_system
                     }
                     else
                     {
-                        errno = OE_EINVAL;
+                        errno = EINVAL;
                         goto done;
                     }
                 }
@@ -437,7 +437,7 @@ class stream_file_system
             }
             default:
             {
-                errno = OE_EINVAL;
+                errno = EINVAL;
                 goto done;
             }
         }

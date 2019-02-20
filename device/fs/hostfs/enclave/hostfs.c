@@ -150,7 +150,7 @@ static int _expand_path(
     {
         if (oe_strlcpy(path, suffix, OE_PATH_MAX) >= n)
         {
-            oe_errno = OE_ENAMETOOLONG;
+            oe_errno = ENAMETOOLONG;
             goto done;
         }
     }
@@ -158,7 +158,7 @@ static int _expand_path(
     {
         if (oe_strlcpy(path, fs->mount_source, OE_PATH_MAX) >= n)
         {
-            oe_errno = OE_ENAMETOOLONG;
+            oe_errno = ENAMETOOLONG;
             goto done;
         }
 
@@ -166,13 +166,13 @@ static int _expand_path(
         {
             if (oe_strlcat(path, "/", OE_PATH_MAX) >= n)
             {
-                oe_errno = OE_ENAMETOOLONG;
+                oe_errno = ENAMETOOLONG;
                 goto done;
             }
 
             if (oe_strlcat(path, suffix, OE_PATH_MAX) >= n)
             {
-                oe_errno = OE_ENAMETOOLONG;
+                oe_errno = ENAMETOOLONG;
                 goto done;
             }
         }
@@ -195,7 +195,7 @@ static int _hostfs_mount(
 
     if (!fs || !source || !target)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -215,7 +215,7 @@ static int _hostfs_unmount(oe_device_t* dev, const char* target)
 
     if (!fs || !target)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -237,13 +237,13 @@ static int _hostfs_clone(oe_device_t* device, oe_device_t** new_device)
 
     if (!fs || !new_device)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (!(new_fs = oe_calloc(1, sizeof(fs_t))))
     {
-        oe_errno = OE_ENOMEM;
+        oe_errno = ENOMEM;
         goto done;
     }
 
@@ -263,7 +263,7 @@ static int _hostfs_release(oe_device_t* device)
 
     if (!fs)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -281,7 +281,7 @@ static int _hostfs_shutdown(oe_device_t* device)
 
     if (!fs)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -308,14 +308,14 @@ static oe_device_t* _hostfs_open(
     /* Check parameters */
     if (!fs || !pathname || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs) && oe_get_open_access_mode(flags) != OE_O_RDONLY)
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -323,7 +323,7 @@ static oe_device_t* _hostfs_open(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -341,7 +341,7 @@ static oe_device_t* _hostfs_open(
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -356,7 +356,7 @@ static oe_device_t* _hostfs_open(
     {
         if (!(file = oe_calloc(1, sizeof(file_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -392,7 +392,7 @@ static ssize_t _hostfs_read(oe_device_t* file_, void* buf, size_t count)
     /* Check parameters. */
     if (!file || !batch || (count && !buf))
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -400,7 +400,7 @@ static ssize_t _hostfs_read(oe_device_t* file_, void* buf, size_t count)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + count)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -414,7 +414,7 @@ static ssize_t _hostfs_read(oe_device_t* file_, void* buf, size_t count)
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -446,7 +446,7 @@ static ssize_t _hostfs_write(oe_device_t* file_, const void* buf, size_t count)
     /* Check parameters. */
     if (!file || !batch || (count && !buf))
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -454,7 +454,7 @@ static ssize_t _hostfs_write(oe_device_t* file_, const void* buf, size_t count)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + count)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -469,7 +469,7 @@ static ssize_t _hostfs_write(oe_device_t* file_, const void* buf, size_t count)
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -496,7 +496,7 @@ static off_t _hostfs_lseek(oe_device_t* file_, off_t offset, int whence)
     /* Check parameters. */
     if (!file || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -504,7 +504,7 @@ static off_t _hostfs_lseek(oe_device_t* file_, off_t offset, int whence)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -519,7 +519,7 @@ static off_t _hostfs_lseek(oe_device_t* file_, off_t offset, int whence)
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -546,7 +546,7 @@ static int _hostfs_close(oe_device_t* file_)
     /* Check parameters. */
     if (!file || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -554,7 +554,7 @@ static int _hostfs_close(oe_device_t* file_)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -567,7 +567,7 @@ static int _hostfs_close(oe_device_t* file_)
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -593,7 +593,7 @@ static int _hostfs_ioctl(
     oe_va_list ap)
 {
     /* Unsupported */
-    oe_errno = OE_ENOTTY;
+    oe_errno = ENOTTY;
     (void)file;
     (void)request;
     (void)ap;
@@ -611,7 +611,7 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
     /* Check parameters */
     if (!fs || !name || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -619,7 +619,7 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -634,7 +634,7 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
     {
         if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -649,7 +649,7 @@ static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)
     {
         if (!(dir = oe_calloc(1, sizeof(dir_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -684,7 +684,7 @@ static struct oe_dirent* _hostfs_readdir(oe_device_t* dir_)
     /* Check parameters */
     if (!dir || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -735,7 +735,7 @@ static int _hostfs_closedir(oe_device_t* dir_)
     /* Check parameters */
     if (!dir || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -784,7 +784,7 @@ static int _hostfs_stat(
     /* Check parameters */
     if (!fs || !pathname || !buf || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -838,7 +838,7 @@ static int _hostfs_access(oe_device_t* fs_, const char* pathname, int mode)
 
         if (!fs || !pathname || ((uint32_t)mode & ~MASK))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
     }
@@ -889,14 +889,14 @@ static int _hostfs_link(
     /* Check parameters */
     if (!fs || !oldpath || !newpath || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -945,14 +945,14 @@ static int _hostfs_unlink(oe_device_t* fs_, const char* pathname)
     /* Check parameters */
     if (!fs || !pathname || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -1001,14 +1001,14 @@ static int _hostfs_rename(
     /* Check parameters */
     if (!fs || !oldpath || !newpath || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -1057,14 +1057,14 @@ static int _hostfs_truncate(oe_device_t* fs_, const char* path, off_t length)
     /* Check parameters */
     if (!fs || !path || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -1111,14 +1111,14 @@ static int _hostfs_mkdir(oe_device_t* fs_, const char* pathname, mode_t mode)
     /* Check parameters */
     if (!fs || !pathname || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -1165,14 +1165,14 @@ static int _hostfs_rmdir(oe_device_t* fs_, const char* pathname)
     /* Check parameters */
     if (!fs || !pathname || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 

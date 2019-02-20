@@ -5,7 +5,7 @@
 #define _OE_RESOLVER_H
 
 #include <openenclave/bits/types.h>
-#include <openenclave/internal/errno.h>
+#include <openenclave/corelibc/errno.h>
 typedef uint32_t oe_socklen_t;
 #include <openenclave/internal/netdb.h>
 

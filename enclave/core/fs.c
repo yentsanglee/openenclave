@@ -60,7 +60,7 @@ int oe_open(oe_devid_t devid, const char* pathname, int flags, mode_t mode)
 
         if (!(dev = _get_fs_device(devid)))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -89,13 +89,13 @@ static OE_DIR* _opendir(const char* pathname)
 
     if (fs->type != OE_DEVICETYPE_FILESYSTEM)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (fs->ops.fs->opendir == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -112,13 +112,13 @@ struct oe_dirent* oe_readdir(OE_DIR* dir)
 
     if (dev->type != OE_DEVICETYPE_DIRECTORY)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (dev->ops.fs->readdir == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -135,13 +135,13 @@ int oe_closedir(OE_DIR* dir)
 
     if (dev->type != OE_DEVICETYPE_DIRECTORY)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (dev->ops.fs->closedir == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -162,7 +162,7 @@ static int _rmdir(const char* pathname)
 
     if (fs->ops.fs->rmdir == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -183,7 +183,7 @@ static int _stat(const char* pathname, struct oe_stat* buf)
 
     if (fs->ops.fs->stat == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -209,13 +209,13 @@ static int _link(const char* oldpath, const char* newpath)
 
     if (fs != newfs)
     {
-        oe_errno = OE_EXDEV;
+        oe_errno = EXDEV;
         goto done;
     }
 
     if (fs->ops.fs->link == NULL)
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -236,7 +236,7 @@ static int _unlink(const char* pathname)
 
     if (fs->ops.fs->unlink == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -262,13 +262,13 @@ static int _rename(const char* oldpath, const char* newpath)
 
     if (fs != newfs)
     {
-        oe_errno = OE_EXDEV;
+        oe_errno = EXDEV;
         goto done;
     }
 
     if (fs->ops.fs->rename == NULL)
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -289,7 +289,7 @@ static int _truncate(const char* pathname, off_t length)
 
     if (fs->ops.fs->truncate == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -310,7 +310,7 @@ static int _mkdir(const char* pathname, mode_t mode)
 
     if (fs->ops.fs->mkdir == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -327,13 +327,13 @@ off_t oe_lseek(int fd, off_t offset, int whence)
 
     if (!(file = oe_get_fd_device(fd)))
     {
-        oe_errno = OE_EBADF;
+        oe_errno = EBADF;
         goto done;
     }
 
     if (file->ops.fs->lseek == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -350,7 +350,7 @@ ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt)
 
     if (fd < 0 || !iov)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -383,7 +383,7 @@ ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt)
 
     if (fd < 0 || !iov)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -396,7 +396,7 @@ ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt)
 
         if ((size_t)n != p->iov_len)
         {
-            oe_errno = OE_EIO;
+            oe_errno = EIO;
             goto done;
         }
 
@@ -420,7 +420,7 @@ static int _access(const char* pathname, int mode)
 
     if (fs->ops.fs->access == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -444,7 +444,7 @@ OE_DIR* oe_opendir(oe_devid_t devid, const char* pathname)
 
         if (!(dev = _get_fs_device(devid)))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -469,7 +469,7 @@ int oe_unlink(oe_devid_t devid, const char* pathname)
 
         if (!(dev = _get_fs_device(devid)))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -494,7 +494,7 @@ int oe_link(oe_devid_t devid, const char* oldpath, const char* newpath)
 
         if (!(dev = _get_fs_device(devid)))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -519,7 +519,7 @@ int oe_rename(oe_devid_t devid, const char* oldpath, const char* newpath)
 
         if (!(dev = _get_fs_device(devid)))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -544,7 +544,7 @@ int oe_mkdir(oe_devid_t devid, const char* pathname, mode_t mode)
 
         if (!(dev = _get_fs_device(devid)))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -569,7 +569,7 @@ int oe_rmdir(oe_devid_t devid, const char* pathname)
 
         if (!(dev = _get_fs_device(devid)))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -594,7 +594,7 @@ int oe_stat(oe_devid_t devid, const char* pathname, struct oe_stat* buf)
 
         if (!(dev = _get_fs_device(devid)))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -619,7 +619,7 @@ int oe_truncate(oe_devid_t devid, const char* path, off_t length)
 
         if (!(dev = _get_fs_device(devid)))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -645,19 +645,19 @@ int oe_access(oe_devid_t devid, const char* pathname, int mode)
 
         if (!(dev = _get_fs_device(devid)))
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
         if (!pathname)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
         if (_stat(pathname, &buf) != 0)
         {
-            oe_errno = OE_ENOENT;
+            oe_errno = ENOENT;
             goto done;
         }
 

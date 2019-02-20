@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include <openenclave/bits/socket.h>
-#include <openenclave/internal/device.h>
 #include <openenclave/corelibc/stdlib.h>
+#include <openenclave/internal/device.h>
 
 int oe_socket(int domain, int type, int protocol)
 
@@ -52,7 +52,7 @@ int oe_connect(int sockfd, const struct oe_sockaddr* addr, oe_socklen_t addrlen)
 
     if (psock->ops.socket->connect == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -79,7 +79,7 @@ int oe_accept(int sockfd, struct oe_sockaddr* addr, oe_socklen_t* addrlen)
 
     if (psock->ops.socket->accept == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -114,7 +114,7 @@ int oe_listen(int sockfd, int backlog)
 
     if (psock->ops.socket->listen == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -135,7 +135,7 @@ ssize_t oe_recvmsg(int sockfd, void* buf, size_t len, int flags)
 
     if (psock->ops.socket->recv == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -156,7 +156,7 @@ ssize_t oe_send(int sockfd, const void* buf, size_t len, int flags)
 
     if (psock->ops.socket->send == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -177,7 +177,7 @@ int oe_shutdown(int sockfd, int how)
 
     if (psock->ops.socket->shutdown == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -198,7 +198,7 @@ int oe_getsockname(int sockfd, struct oe_sockaddr* addr, oe_socklen_t* addrlen)
 
     if (psock->ops.socket->getsockname == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -224,7 +224,7 @@ int oe_getsockopt(
 
     if (psock->ops.socket->getsockopt == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -251,7 +251,7 @@ int oe_setsockopt(
 
     if (psock->ops.socket->setsockopt == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -273,7 +273,7 @@ int oe_bind(int sockfd, const oe_sockaddr* name, oe_socklen_t namelen)
 
     if (psock->ops.socket->bind == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 

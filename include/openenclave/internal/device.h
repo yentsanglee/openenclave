@@ -7,8 +7,8 @@
 #include <openenclave/bits/device.h>
 #include <openenclave/bits/result.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/errno.h>
 #include <openenclave/internal/epoll_ops.h>
-#include <openenclave/internal/errno.h>
 #include <openenclave/internal/eventfd_ops.h>
 #include <openenclave/internal/fd.h>
 #include <openenclave/internal/fs_ops.h>

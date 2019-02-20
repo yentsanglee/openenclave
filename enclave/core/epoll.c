@@ -65,7 +65,7 @@ int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event)
     /* Check parameters. */
     if (!pepoll || !pdevice)
     {
-        oe_errno = OE_EBADF;
+        oe_errno = EBADF;
         return -1;
     }
 
@@ -75,7 +75,7 @@ int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event)
         {
             if (pepoll->ops.epoll->ctl_add == NULL)
             {
-                oe_errno = OE_EINVAL;
+                oe_errno = EINVAL;
                 return -1;
             }
             ret = (*pepoll->ops.epoll->ctl_add)(pepoll, fd, event);
@@ -93,7 +93,7 @@ int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event)
         }
         default:
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             return -1;
         }
     }
@@ -121,7 +121,7 @@ int oe_epoll_wait(
 
     if (pepoll->ops.epoll->wait == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -132,7 +132,7 @@ int oe_epoll_wait(
         if ((*pepoll->ops.epoll->wait)(
                 pepoll, events, (size_t)maxevents, timeout) < 0)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             return -1;
         }
     }

@@ -1,14 +1,14 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/corelibc/errno.h>
+#include <openenclave/corelibc/stdlib.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/array.h>
 #include <openenclave/internal/device.h>
-#include <openenclave/internal/errno.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/thread.h>
-#include <openenclave/corelibc/stdlib.h>
 
 static const size_t ELEMENT_SIZE = sizeof(oe_device_t*);
 static const size_t CHUNK_SIZE = 8;
@@ -64,7 +64,7 @@ oe_devid_t oe_allocate_devid(oe_devid_t devid)
 
     if (!_initialized && _init_table() != 0)
     {
-        oe_errno = OE_ENOMEM;
+        oe_errno = ENOMEM;
         goto done;
     }
 
@@ -75,14 +75,14 @@ oe_devid_t oe_allocate_devid(oe_devid_t devid)
     {
         if (oe_array_resize(&_arr, devid + 1) != 0)
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
     }
 
     if (_table()[devid] != NULL)
     {
-        oe_errno = OE_EADDRINUSE;
+        oe_errno = EADDRINUSE;
         goto done;
     }
 
@@ -103,7 +103,7 @@ int oe_release_devid(oe_devid_t devid)
 
     if (!_initialized && _init_table() != 0)
     {
-        oe_errno = OE_ENOMEM;
+        oe_errno = ENOMEM;
         goto done;
     }
 
@@ -112,13 +112,13 @@ int oe_release_devid(oe_devid_t devid)
 
     if (devid >= _arr.size)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (_table()[devid] == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -140,13 +140,13 @@ int oe_set_devid_device(oe_devid_t devid, oe_device_t* device)
 
     if (devid > _table_size())
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (_table()[devid] != NULL)
     {
-        oe_errno = OE_EADDRINUSE;
+        oe_errno = EADDRINUSE;
         goto done;
     }
 
@@ -164,7 +164,7 @@ oe_device_t* oe_get_devid_device(oe_devid_t devid)
 
     if (devid >= _table_size())
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -184,7 +184,7 @@ int oe_remove_device(oe_devid_t devid)
 
     if (device->ops.base->shutdown == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -210,7 +210,7 @@ ssize_t oe_read(int fd, void* buf, size_t count)
 
     if (device->ops.base->read == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -231,13 +231,13 @@ ssize_t oe_write(int fd, const void* buf, size_t count)
 
     if (!(device = oe_get_fd_device(fd)))
     {
-        oe_errno = OE_EBADF;
+        oe_errno = EBADF;
         goto done;
     }
 
     if (device->ops.base->write == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -260,7 +260,7 @@ int oe_close(int fd)
 
     if (device->ops.base->close == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -333,7 +333,7 @@ int oe_ioctl(int fd, unsigned long request, ...)
 
             if (pdevice->ops.base->ioctl == NULL)
             {
-                oe_errno = OE_EINVAL;
+                oe_errno = EINVAL;
                 return -1;
             }
 

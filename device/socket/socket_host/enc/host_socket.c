@@ -105,13 +105,13 @@ static int _hostsock_clone(oe_device_t* device, oe_device_t** new_device)
 
     if (!sock || !new_device)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (!(new_sock = oe_calloc(1, sizeof(sock_t))))
     {
-        oe_errno = OE_ENOMEM;
+        oe_errno = ENOMEM;
         goto done;
     }
 
@@ -131,7 +131,7 @@ static int _hostsock_release(oe_device_t* device)
 
     if (!sock)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -157,7 +157,7 @@ static oe_device_t* _hostsock_socket(
 
     if (!batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -167,7 +167,7 @@ static oe_device_t* _hostsock_socket(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -183,7 +183,7 @@ static oe_device_t* _hostsock_socket(
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -231,7 +231,7 @@ static int _hostsock_connect(
     /* Check parameters. */
     if (!sock || !batch || !addr)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -239,7 +239,7 @@ static int _hostsock_connect(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + addrlen)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -254,7 +254,7 @@ static int _hostsock_connect(
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -284,7 +284,7 @@ static int _hostsock_accept(
     /* Check parameters. */
     if (!sock || !batch || (addr && !addrlen) || (addrlen && !addr))
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -295,7 +295,7 @@ static int _hostsock_accept(
             allocsize += *addrlen;
         if (!(args = oe_host_batch_calloc(batch, allocsize)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -318,7 +318,7 @@ static int _hostsock_accept(
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -358,7 +358,7 @@ static int _hostsock_bind(
     /* Check parameters. */
     if (!sock || !batch || !addr || !addrlen)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -366,7 +366,7 @@ static int _hostsock_bind(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + addrlen)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -381,7 +381,7 @@ static int _hostsock_bind(
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -408,7 +408,7 @@ static int _hostsock_listen(oe_device_t* sock_, int backlog)
     /* Check parameters. */
     if (!sock_ || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -416,7 +416,7 @@ static int _hostsock_listen(oe_device_t* sock_, int backlog)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -430,7 +430,7 @@ static int _hostsock_listen(oe_device_t* sock_, int backlog)
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -463,7 +463,7 @@ static ssize_t _hostsock_recv(
     /* Check parameters. */
     if (!sock || !batch || (count && !buf))
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -471,7 +471,7 @@ static ssize_t _hostsock_recv(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + count)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -486,7 +486,7 @@ static ssize_t _hostsock_recv(
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -522,7 +522,7 @@ static ssize_t _hostsock_send(
     /* Check parameters. */
     if (!sock || !batch || (count && !buf))
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -530,7 +530,7 @@ static ssize_t _hostsock_send(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + count)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -546,7 +546,7 @@ static ssize_t _hostsock_send(
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -573,7 +573,7 @@ static int _hostsock_close(oe_device_t* sock_)
     /* Check parameters. */
     if (!sock_ || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -581,7 +581,7 @@ static int _hostsock_close(oe_device_t* sock_)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -594,7 +594,7 @@ static int _hostsock_close(oe_device_t* sock_)
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -631,7 +631,7 @@ static int _hostsock_getsockopt(
     /* Check parameters. */
     if (!sock || !batch || !optval || !optlen)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -639,7 +639,7 @@ static int _hostsock_getsockopt(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + *optlen)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -655,7 +655,7 @@ static int _hostsock_getsockopt(
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -693,7 +693,7 @@ static int _hostsock_setsockopt(
     /* Check parameters. */
     if (!sock || !batch || !optval || !optlen)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -701,7 +701,7 @@ static int _hostsock_setsockopt(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + optlen)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -718,7 +718,7 @@ static int _hostsock_setsockopt(
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -739,7 +739,7 @@ static int _hostsock_ioctl(
     oe_va_list ap)
 {
     /* Unsupported */
-    oe_errno = OE_ENOTTY;
+    oe_errno = ENOTTY;
     (void)sock_;
     (void)request;
     (void)ap;
@@ -761,7 +761,7 @@ static int _hostsock_getpeername(
     /* Check parameters. */
     if (!sock || !batch || !addr || !addrlen)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -769,7 +769,7 @@ static int _hostsock_getpeername(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + *addrlen)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -784,7 +784,7 @@ static int _hostsock_getpeername(
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -820,7 +820,7 @@ static int _hostsock_getsockname(
     /* Check parameters. */
     if (!sock || !batch || !addr || !addrlen)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -828,7 +828,7 @@ static int _hostsock_getsockname(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + *addrlen)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -843,7 +843,7 @@ static int _hostsock_getsockname(
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -889,7 +889,7 @@ static int _hostsock_socket_shutdown(oe_device_t* sock_, int how)
     /* Check parameters. */
     if (!sock_ || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -897,7 +897,7 @@ static int _hostsock_socket_shutdown(oe_device_t* sock_, int how)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -911,7 +911,7 @@ static int _hostsock_socket_shutdown(oe_device_t* sock_, int how)
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -943,7 +943,7 @@ static int _hostsock_shutdown_device(oe_device_t* sock_)
     /* Check parameters. */
     if (!sock_ || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -951,7 +951,7 @@ static int _hostsock_shutdown_device(oe_device_t* sock_)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -964,7 +964,7 @@ static int _hostsock_shutdown_device(oe_device_t* sock_)
     {
         if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 

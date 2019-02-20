@@ -6,8 +6,8 @@
 
 #include <openenclave/bits/fs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/errno.h>
 #include <openenclave/internal/device_ops.h>
-#include <openenclave/internal/errno.h>
 
 OE_EXTERNC_BEGIN
 

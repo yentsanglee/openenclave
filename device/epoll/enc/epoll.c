@@ -244,13 +244,13 @@ static int _epoll_clone(oe_device_t* device, oe_device_t** new_device)
 
     if (!epoll || !new_device)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (!(new_epoll = oe_calloc(1, sizeof(epoll_dev_t))))
     {
-        oe_errno = OE_ENOMEM;
+        oe_errno = ENOMEM;
         goto done;
     }
 
@@ -270,7 +270,7 @@ static int _epoll_release(oe_device_t* device)
 
     if (!epoll)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -292,7 +292,7 @@ static oe_device_t* _epoll_create(oe_device_t* epoll_, int size)
     oe_errno = 0;
     if (!batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -302,7 +302,7 @@ static oe_device_t* _epoll_create(oe_device_t* epoll_, int size)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -315,7 +315,7 @@ static oe_device_t* _epoll_create(oe_device_t* epoll_, int size)
     {
         if (oe_ocall(OE_OCALL_EPOLL, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -349,7 +349,7 @@ static oe_device_t* _epoll_create1(oe_device_t* epoll_, int32_t flags)
     oe_errno = 0;
     if (!batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -359,7 +359,7 @@ static oe_device_t* _epoll_create1(oe_device_t* epoll_, int32_t flags)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -372,7 +372,7 @@ static oe_device_t* _epoll_create1(oe_device_t* epoll_, int32_t flags)
     {
         if (oe_ocall(OE_OCALL_EPOLL, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -411,7 +411,7 @@ static int _epoll_ctl_add(
     /* Check parameters. */
     if (!epoll_ || !pdev || !event)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -435,7 +435,7 @@ static int _epoll_ctl_add(
 
     if (add_event_data(epoll, &ev_data, &list_idx) == NULL)
     {
-        oe_errno = OE_ENOMEM;
+        oe_errno = ENOMEM;
         goto done;
     }
 
@@ -443,7 +443,7 @@ static int _epoll_ctl_add(
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -460,7 +460,7 @@ static int _epoll_ctl_add(
     {
         if (oe_ocall(OE_OCALL_EPOLL, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -490,7 +490,7 @@ static int _epoll_ctl_mod(
     /* Check parameters. */
     if (!epoll_ || !pdev || !event)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -513,14 +513,14 @@ static int _epoll_ctl_mod(
 
     if (modify_event_data(epoll, &ev_data) == NULL)
     {
-        oe_errno = OE_ENOMEM;
+        oe_errno = ENOMEM;
         goto done;
     }
     /* Input */
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -537,7 +537,7 @@ static int _epoll_ctl_mod(
     {
         if (oe_ocall(OE_OCALL_EPOLL, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -564,7 +564,7 @@ static int _epoll_ctl_del(oe_device_t* epoll_, int enclave_fd)
     /* Check parameters. */
     if (!epoll_ || !pdev)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -582,7 +582,7 @@ static int _epoll_ctl_del(oe_device_t* epoll_, int enclave_fd)
 
     if (delete_event_data(epoll, enclave_fd) == NULL)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -590,7 +590,7 @@ static int _epoll_ctl_del(oe_device_t* epoll_, int enclave_fd)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -604,7 +604,7 @@ static int _epoll_ctl_del(oe_device_t* epoll_, int enclave_fd)
     {
         if (oe_ocall(OE_OCALL_EPOLL, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -634,7 +634,7 @@ static int _epoll_wait(
     /* Check parameters. */
     if (!epoll_ || !events)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         return -1;
     }
 
@@ -656,7 +656,7 @@ static int _epoll_wait(
             (maxevents < 0) ? 0 : sizeof(struct oe_epoll_event) * maxevents;
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + eventsize)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -671,7 +671,7 @@ static int _epoll_wait(
     {
         if (oe_ocall(OE_OCALL_EPOLL, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -712,7 +712,7 @@ static int _epoll_close(oe_device_t* epoll_)
     /* Check parameters. */
     if (!epoll_)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -739,7 +739,7 @@ static int _epoll_shutdown_device(oe_device_t* epoll_)
     /* Check parameters. */
     if (!epoll_)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 

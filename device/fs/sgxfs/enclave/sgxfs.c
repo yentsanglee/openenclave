@@ -89,7 +89,7 @@ static int _expand_path(
     {
         if (oe_strlcpy(path, suffix, OE_PATH_MAX) >= n)
         {
-            oe_errno = OE_ENAMETOOLONG;
+            oe_errno = ENAMETOOLONG;
             goto done;
         }
     }
@@ -97,7 +97,7 @@ static int _expand_path(
     {
         if (oe_strlcpy(path, fs->mount_source, OE_PATH_MAX) >= n)
         {
-            oe_errno = OE_ENAMETOOLONG;
+            oe_errno = ENAMETOOLONG;
             goto done;
         }
 
@@ -105,13 +105,13 @@ static int _expand_path(
         {
             if (oe_strlcat(path, "/", OE_PATH_MAX) >= n)
             {
-                oe_errno = OE_ENAMETOOLONG;
+                oe_errno = ENAMETOOLONG;
                 goto done;
             }
 
             if (oe_strlcat(path, suffix, OE_PATH_MAX) >= n)
             {
-                oe_errno = OE_ENAMETOOLONG;
+                oe_errno = ENAMETOOLONG;
                 goto done;
             }
         }
@@ -196,7 +196,7 @@ static int _sgxfs_mount(
 
     if (!fs || !source || !target)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -216,7 +216,7 @@ static int _sgxfs_unmount(oe_device_t* dev, const char* target)
 
     if (!fs || !target)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -234,13 +234,13 @@ static int _sgxfs_clone(oe_device_t* device, oe_device_t** new_device)
 
     if (!fs || !new_device)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (!(new_fs = oe_calloc(1, sizeof(fs_t))))
     {
-        oe_errno = OE_ENOMEM;
+        oe_errno = ENOMEM;
         goto done;
     }
 
@@ -260,7 +260,7 @@ static int _sgxfs_release(oe_device_t* device)
 
     if (!fs)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -279,7 +279,7 @@ static int _sgxfs_shutdown(oe_device_t* device)
 
     if (!fs)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -308,21 +308,21 @@ static oe_device_t* _sgxfs_open(
     /* Check parameters */
     if (!fs || !pathname)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs) && oe_get_open_access_mode(flags) != OE_O_RDONLY)
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
     /* Nonblocking I/O is unsupported. */
     if ((flags & OE_O_NONBLOCK))
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -348,7 +348,7 @@ static oe_device_t* _sgxfs_open(
                 }
                 else
                 {
-                    oe_errno = OE_EINVAL;
+                    oe_errno = EINVAL;
                     goto done;
                 }
             }
@@ -372,7 +372,7 @@ static oe_device_t* _sgxfs_open(
                 }
                 else
                 {
-                    oe_errno = OE_EINVAL;
+                    oe_errno = EINVAL;
                     goto done;
                 }
             }
@@ -384,7 +384,7 @@ static oe_device_t* _sgxfs_open(
         }
         default:
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
     }
@@ -407,7 +407,7 @@ static oe_device_t* _sgxfs_open(
     {
         if (!(file = oe_calloc(1, sizeof(file_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -446,7 +446,7 @@ static ssize_t _sgxfs_read(oe_device_t* file_, void* buf, size_t count)
 
     if (!file || (count && !buf))
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -474,7 +474,7 @@ static ssize_t _sgxfs_write(oe_device_t* file_, const void* buf, size_t count)
 
     if (!file || (count && !buf))
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -499,7 +499,7 @@ static off_t _sgxfs_lseek(oe_device_t* file_, off_t offset, int whence)
 
     if (!file)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -524,13 +524,13 @@ static int _sgxfs_close(oe_device_t* file_)
 
     if (!file)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (sgx_fclose(file->stream) != 0)
     {
-        oe_errno = OE_EBADF;
+        oe_errno = EBADF;
         goto done;
     }
 
@@ -546,7 +546,7 @@ done:
 static int _sgxfs_ioctl(oe_device_t* file, unsigned long request, oe_va_list ap)
 {
     /* Unsupported */
-    oe_errno = OE_ENOTTY;
+    oe_errno = ENOTTY;
     (void)file;
     (void)request;
     (void)ap;
@@ -561,7 +561,7 @@ static oe_device_t* _sgxfs_opendir(oe_device_t* fs_, const char* name)
 
     if (!fs || !hostfs)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -585,7 +585,7 @@ static struct oe_dirent* _sgxfs_readdir(oe_device_t* dir)
 
     if (!dir)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -601,7 +601,7 @@ static int _sgxfs_closedir(oe_device_t* dir)
 
     if (!dir)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -625,7 +625,7 @@ static int _sgxfs_stat(
 
     if (!fs || !hostfs)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -681,7 +681,7 @@ static int _sgxfs_access(oe_device_t* fs_, const char* pathname, int mode)
 
     if (!fs || !hostfs)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -717,14 +717,14 @@ static int _sgxfs_link(
 
     if (!fs || !oldpath || !newpath)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -787,14 +787,14 @@ static int _sgxfs_unlink(oe_device_t* fs_, const char* pathname)
 
     if (!fs || !hostfs)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -827,14 +827,14 @@ static int _sgxfs_rename(
 
     if (!fs || !hostfs || !oldpath || !newpath)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -918,14 +918,14 @@ static int _sgxfs_truncate(oe_device_t* fs_, const char* path, off_t length)
 
     if (!fs || !path || length < 0)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -935,31 +935,31 @@ static int _sgxfs_truncate(oe_device_t* fs_, const char* path, off_t length)
 
         if (_split_path(path, dirname, basename) != 0)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
         if (oe_strlcpy(tmp_file, dirname, n) >= n)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
         if (oe_strlcat(tmp_file, "/.", n) >= n)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
         if (oe_strlcat(tmp_file, basename, n) >= n)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
         if (oe_strlcat(tmp_file, ".sgxfs.truncate", n) >= n)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
     }
@@ -1038,14 +1038,14 @@ static int _sgxfs_mkdir(oe_device_t* fs_, const char* pathname, mode_t mode)
 
     if (!fs || !hostfs)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 
@@ -1074,14 +1074,14 @@ static int _sgxfs_rmdir(oe_device_t* fs_, const char* pathname)
 
     if (!fs || !hostfs)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     /* Fail if attempting to write to a read-only file system. */
     if (_is_rdonly(fs))
     {
-        oe_errno = OE_EPERM;
+        oe_errno = EPERM;
         goto done;
     }
 

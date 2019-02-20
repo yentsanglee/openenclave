@@ -6,8 +6,8 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
-#include <openenclave/internal/types.h>
 #include <openenclave/corelibc/stdarg.h>
+#include <openenclave/internal/types.h>
 
 OE_EXTERNC_BEGIN
 

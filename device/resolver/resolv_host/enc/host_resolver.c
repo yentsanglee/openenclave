@@ -138,13 +138,13 @@ static ssize_t _hostresolv_getaddrinfo_r(
 
     if (!batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (!node && !service)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -153,7 +153,7 @@ static ssize_t _hostresolv_getaddrinfo_r(
 
     if (!(nodelen > 0) && !(servicelen > 0))
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -165,7 +165,7 @@ static ssize_t _hostresolv_getaddrinfo_r(
                   sizeof(args_t) + sizeof(struct oe_addrinfo) +
                       (size_t)nodelen + (size_t)servicelen + 2)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -221,7 +221,7 @@ static ssize_t _hostresolv_getaddrinfo_r(
     {
         if (oe_ocall(OE_OCALL_HOSTRESOLVER, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -320,7 +320,7 @@ static int _hostresolv_shutdown(oe_resolver_t* resolv_)
     /* Check parameters. */
     if (!resolv_ || !batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -328,7 +328,7 @@ static int _hostresolv_shutdown(oe_resolver_t* resolv_)
     {
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
@@ -340,7 +340,7 @@ static int _hostresolv_shutdown(oe_resolver_t* resolv_)
     {
         if (oe_ocall(OE_OCALL_HOSTRESOLVER, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 

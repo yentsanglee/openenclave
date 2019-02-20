@@ -74,7 +74,7 @@ static int _handle_device_syscall(
                 OE_DEVID_NULL, pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
             *errno_out = oe_errno;
 
-            if (*errno_out == OE_ENOENT)
+            if (*errno_out == ENOENT)
             {
                 /* Not handled. Let caller dispatch this syscall. */
                 return -1;
@@ -91,7 +91,7 @@ static int _handle_device_syscall(
             *ret_out = oe_open(OE_DEVID_NULL, pathname, flags, mode);
             *errno_out = oe_errno;
 
-            if (*errno_out == OE_ENOENT)
+            if (*errno_out == ENOENT)
                 return -1;
 
             return 0;

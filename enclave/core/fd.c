@@ -1,14 +1,14 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/corelibc/errno.h>
+#include <openenclave/corelibc/stdlib.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/array.h>
-#include <openenclave/internal/errno.h>
 #include <openenclave/internal/fd.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/thread.h>
-#include <openenclave/corelibc/stdlib.h>
 
 typedef struct _entry
 {
@@ -83,7 +83,7 @@ int oe_assign_fd_device(oe_device_t* device)
     {
         if (oe_array_resize(&_arr, _table_size() + CHUNK_SIZE) != 0)
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
     }
@@ -124,13 +124,13 @@ oe_device_t* oe_set_fd_device(int fd, oe_device_t* device)
 
     if (fd < 0 || (size_t)fd >= _table_size())
     {
-        oe_errno = OE_EBADF;
+        oe_errno = EBADF;
         goto done;
     }
 
     if (_table()[fd].device != NULL)
     {
-        oe_errno = OE_EADDRINUSE;
+        oe_errno = EADDRINUSE;
         goto done;
     }
 
@@ -156,13 +156,13 @@ oe_device_t* oe_get_fd_device(int fd)
 
     if (fd < 0 || fd >= (int)_table_size())
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (_table()[fd].device == NULL)
     {
-        oe_errno = OE_EBADF;
+        oe_errno = EBADF;
         goto done;
     }
 
