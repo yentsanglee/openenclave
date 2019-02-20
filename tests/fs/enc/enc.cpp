@@ -390,13 +390,18 @@ void _test_mount(const char* tmp_dir)
     OE_TEST(oe_mkdir(0, target, 0777) == 0);
     OE_TEST(oe_mount(OE_DEVID_SGXFS, source, target, 0) == 0);
 
-    _touch(mkpath(path, target, "newfile"));
+    _touch(mkpath(path, target, "file1"));
+    _touch(mkpath(path, target, "file2"));
+    OE_TEST(oe_mkdir(0, mkpath(path, target, "dir1"), 0777) == 0);
+    _touch(mkpath(path, target, "dir1/file3"));
 
-    set<string> names;
-    list(target, names);
-
-    set<string>::const_iterator pos = names.find("newfile");
-    OE_TEST(pos != names.end());
+    {
+        set<string> names;
+        list(target, names);
+        OE_TEST(names.find("file1") != names.end());
+        OE_TEST(names.find("file2") != names.end());
+        OE_TEST(names.find("nofile") == names.end());
+    }
 
     mkpath(pack_cpio, tmp_dir, "pack.cpio");
     mkpath(unpack_dir, tmp_dir, "unpack.dir");
@@ -406,6 +411,7 @@ void _test_mount(const char* tmp_dir)
     OE_TEST(oe_cpio_unpack(pack_cpio, unpack_dir) == 0);
 
     OE_TEST(oe_cmp(target, unpack_dir) == 0);
+    OE_TEST(oe_cmp(source, unpack_dir) == 0);
 }
 
 void test_fs(const char* src_dir, const char* tmp_dir)
