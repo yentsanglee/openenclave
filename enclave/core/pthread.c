@@ -243,11 +243,8 @@ int oe_pthread_cond_timedwait(
     oe_pthread_mutex_t* mutex,
     const struct oe_timespec* ts)
 {
-    OE_UNUSED(cond);
-    OE_UNUSED(mutex);
-    OE_UNUSED(ts);
-    oe_assert("oe_pthread_cond_timedwait(): panic" == NULL);
-    return -1;
+	OE_UNUSED(ts);
+	return _to_errno(oe_cond_wait((oe_cond_t*)cond, (oe_mutex_t*)mutex));
 }
 
 int oe_pthread_cond_signal(oe_pthread_cond_t* cond)
