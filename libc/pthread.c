@@ -291,23 +291,17 @@ int pthread_cond_wait(pthread_cond_t* cond, pthread_mutex_t* mutex)
     return _to_errno(oe_cond_wait((oe_cond_t*)cond, (oe_mutex_t*)mutex));
 }
 
-
 int pthread_cond_timedwait(
     pthread_cond_t* cond,
     pthread_mutex_t* mutex,
     const struct timespec* ts)
 {
-    if(!_pthread_hooks || !_pthread_hooks->cond_timedwait)
-    {
-        oe_assert("pthread_cond_timedwait(): panic" == NULL);
-        return -1;
-    }
-
-    return _pthread_hooks->cond_timedwait(cond, mutex, ts);
-
+    OE_UNUSED(cond);
+    OE_UNUSED(mutex);
+    OE_UNUSED(ts);
+    assert("pthread_cond_timedwait(): panic" == NULL);
+    return -1;
 }
-
-
 
 int pthread_cond_signal(pthread_cond_t* cond)
 {

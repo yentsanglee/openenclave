@@ -273,13 +273,13 @@ static oe_result_t _oe_load_elf_image(
         {
             if (image->tdata_rva != ph->p_vaddr)
             {
-                /*OE_TRACE_ERROR(
+                OE_TRACE_ERROR(
                     "loadelf: .tdata rva mismatch. Section value = %lx, "
                     "Program "
                     "header value = 0x%lx\n",
                     image->tdata_rva,
-                    ph->p_vaddr);*/
-                //OE_RAISE(OE_FAILURE);
+                    ph->p_vaddr);
+                OE_RAISE(OE_FAILURE);
             }
             if (image->tdata_size != ph->p_filesz)
             {
