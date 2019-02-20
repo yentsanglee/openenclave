@@ -14,11 +14,11 @@
 #include <openenclave/bits/safemath.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/thread.h>
-#include <openenclave/internal/atexit.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/hostbatch.h>
 #include "../common/hostresolvargs.h"
+#include <openenclave/corelibc/stdlib.h>
+#include <openenclave/corelibc/string.h>
 
 // The host resolver is not actually a device in the file descriptor sense.
 
