@@ -92,8 +92,7 @@ typedef struct _oe_hostfs_args
             int ret;
             char pathname[OE_PATH_MAX];
             int mode;
-        }
-        access;
+        } access;
         struct
         {
             int ret;

@@ -825,7 +825,7 @@ done:
     return ret;
 }
 
-static int _hostfs_access(oe_device_t* fs_, const char *pathname, int mode)
+static int _hostfs_access(oe_device_t* fs_, const char* pathname, int mode)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(fs_);

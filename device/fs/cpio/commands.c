@@ -4,7 +4,6 @@
 #define _GNU_SOURCE
 #include "commands.h"
 #include <dirent.h>
-#include <dirent.h>
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>

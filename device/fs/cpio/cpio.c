@@ -9,9 +9,7 @@
 #include "cpio.h"
 #include <assert.h>
 #include <dirent.h>
-#include <dirent.h>
 #include <fcntl.h>
-#include <limits.h>
 #include <limits.h>
 #include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
