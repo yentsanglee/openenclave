@@ -21,10 +21,6 @@ typedef struct _oe_pthread_hooks
     int (*join)(pthread_t thread, void** retval);
 
     int (*detach)(pthread_t thread);
-
-    int(*cond_timedwait)(pthread_cond_t * cond,
-       pthread_mutex_t * mutex,
-       const struct timespec * abstime);
 } oe_pthread_hooks_t;
 
 void oe_register_pthread_hooks(oe_pthread_hooks_t* pthread_hooks);

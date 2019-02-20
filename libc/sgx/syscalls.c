@@ -136,7 +136,7 @@ _syscall_writev(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 
 static long _syscall_clock_gettime(long n, long x1, long x2)
 {
-    //clockid_t clk_id = (clockid_t)x1;
+    clockid_t clk_id = (clockid_t)x1;
     struct timespec* tp = (struct timespec*)x2;
     int ret = -1;
     uint64_t msec;
@@ -146,12 +146,12 @@ static long _syscall_clock_gettime(long n, long x1, long x2)
     if (!tp)
         goto done;
 
-    /*if (clk_id != CLOCK_REALTIME)
-
+    if (clk_id != CLOCK_REALTIME)
     {
+        /* Only supporting CLOCK_REALTIME */
         oe_assert("clock_gettime(): panic" == NULL);
         goto done;
-    }*/
+    }
 
     if ((msec = oe_get_time()) == (uint64_t)-1)
         goto done;
