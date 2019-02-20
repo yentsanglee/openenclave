@@ -76,7 +76,7 @@ struct _oe_device
 };
 
 oe_devid_t oe_allocate_devid(oe_devid_t devid);
-int __oe_release_devid(oe_devid_t devid);
+int oe_release_devid(oe_devid_t devid);
 
 int oe_set_devid_device(oe_devid_t devid, oe_device_t* pdevice);
 oe_device_t* oe_get_devid_device(oe_devid_t devid);
@@ -84,11 +84,6 @@ oe_device_t* oe_clone_device(oe_device_t* pdevice);
 
 int oe_device_init(); // Overridable function to set up device structures. Shoud
                       // be ommited when new interface is complete.
-
-oe_device_t* oe_device_alloc(
-    oe_devid_t devid,
-    const char* device_name,
-    size_t private_size); // Allocate a device of sizeof(struct
 
 int oe_device_addref(oe_devid_t devid);
 

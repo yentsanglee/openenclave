@@ -58,80 +58,6 @@ static int _init_table()
     return 0;
 }
 
-// We define the device init for now. Eventually it should be a mandatory part
-// of the enclave
-//#define DEFAULT_DEVICE_INIT
-#if defined(DEFAULT_DEVICE_INIT)
-
-extern int CreateHostFSDevice(oe_device_type_t device_id);
-extern int CreateEnclaveLocalFSDevice(oe_device_type_t device_id);
-
-extern int CreateHostNetInterface(oe_device_type_t device_id);
-extern int CreateEnclaveToEnclaveNetInterface(oe_device_type_t device_id);
-
-extern int CreateHostResolver();
-extern int CreateEnclaveLocalDNSResolver();
-extern int CreateEnclaveLocalResolver();
-
-#define READ_WRITE 1
-#define READ_ONLY 2
-
-int oe_device_init()
-{
-    int rslt = -1;
-
-    // Opt into file systems
-
-    if (CreateHostFSDevice(OE_DEVID_HOSTFS) < 0)
-    {
-        // Log an error and continue
-    }
-
-    if (CreateEnclaveLocalFSDevice(OE_DEVID_SGXFS) < 0)
-    {
-        // Log an error and continue
-    }
-
-    rslt = (*_table()[OE_DEVID_SGXFS]->ops.fs->mount)(
-        _table()[OE_DEVID_SGXFS], "/", READ_WRITE);
-
-    rslt = (*_table()[OE_DEVID_HOSTFS]->ops.fs->mount)(
-        _table()[OE_DEVID_SGXFS], "/host", READ_ONLY);
-
-    // Opt into the network
-
-    if (CreateHostNetInterface(OE_DEVID_HOST_SOCKET) < 0)
-    {
-        // Log an error and continue
-    }
-
-    if (CreateEnclaveToEnclaveNetInterface(OE_DEVID_ENCLAVE_SOCKET) < 0)
-    {
-        // Log an error and continue
-    }
-
-    // Opt into resolvers
-
-    if (CreateHostResolver() < 0)
-    {
-        // Log an error and continue
-    }
-
-    if (CreateEnclaveLocalDNSResolver() < 0)
-    {
-        // Log an error and continue
-    }
-
-    if (CreateEnclaveLocalResolver() < 0)
-    {
-        // Log an error and continue
-    }
-
-    return rslt;
-}
-
-#endif
-
 oe_devid_t oe_allocate_devid(oe_devid_t devid)
 {
     oe_devid_t ret = OE_DEVID_NULL;
@@ -171,7 +97,7 @@ done:
     return ret;
 }
 
-int __oe_release_devid(oe_devid_t devid)
+int oe_release_devid(oe_devid_t devid)
 {
     int ret = -1;
     bool locked = false;
@@ -247,32 +173,6 @@ oe_device_t* oe_get_devid_device(oe_devid_t devid)
 
 done:
     return ret;
-}
-
-oe_device_t* oe_device_alloc(
-    oe_devid_t devid,
-    const char* device_name,
-    size_t private_size)
-{
-    oe_device_t* pparent_device = oe_get_devid_device(devid);
-    oe_device_t* pdevice =
-        (oe_device_t*)oe_malloc(pparent_device->size + private_size);
-    // We clone the device from the parent device
-    oe_memcpy(pdevice, pparent_device, pparent_device->size + private_size);
-    pdevice->size = pparent_device->size + private_size;
-    pdevice->devicename = device_name; // We do not clone the name
-
-#if 0
-    if (pdevice->ops.base->init != NULL)
-    {
-        if ((*pdevice->ops.base->init)(pdevice) < 0)
-        {
-            return NULL;
-        }
-    }
-#endif
-
-    return pdevice;
 }
 
 int oe_remove_device(oe_devid_t devid)
