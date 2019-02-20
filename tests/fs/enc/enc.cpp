@@ -7,6 +7,7 @@
 #include <openenclave/internal/fs_ops.h>
 #include <openenclave/internal/tests.h>
 #include "../../../device/fs/cpio/cpio.h"
+#include "../../../device/fs/cpio/commands.h"
 #include <stdio.h>
 #include <string.h>
 #include <set>
@@ -403,11 +404,18 @@ void _test_mount(const char* tmp_dir)
     OE_TEST(oe_cpio_pack(target, pack_cpio) == 0);
 
     OE_TEST(oe_cpio_unpack(pack_cpio, unpack_dir) == 0);
+
+    OE_TEST(oe_cmp(target, unpack_dir) == 0);
 }
 
 void test_fs(const char* src_dir, const char* tmp_dir)
 {
     (void)src_dir;
+
+    {
+        hostfs_file_system fs;
+        fs.mkdir(tmp_dir, 0777);
+    }
 
     printf("=== running all tests\n");
     printf("--- src_dir=%s\n", src_dir);

@@ -7,8 +7,12 @@ if (BUILD_ENCLAVES)
     add_subdirectory(enc)
 endif()
 
-add_enclave_test(tests/fs
+set(TMP_DIR "${CMAKE_BINARY_DIR}/tests/fs/tmp")
+
+add_test(tests/fs1 /bin/rm -rf "${TMP_DIR}")
+
+add_enclave_test(tests/fs2
     fs_host
     fs_enc
     "${PROJECT_SOURCE_DIR}"
-    "${CMAKE_BINARY_DIR}/tests/fs")
+    "${TMP_DIR}")
