@@ -5,7 +5,7 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 
-static oe_device_t* _get_fs_device(oe_devid_t devid)
+static oe_device_t* _get_fs_device(uint64_t devid)
 {
     oe_device_t* ret = NULL;
     oe_device_t* device = oe_get_devid_device(devid);
@@ -45,7 +45,7 @@ done:
     return ret;
 }
 
-int oe_open(oe_devid_t devid, const char* pathname, int flags, mode_t mode)
+int oe_open(uint64_t devid, const char* pathname, int flags, mode_t mode)
 {
     int ret = -1;
 
@@ -343,7 +343,7 @@ done:
     return ret;
 }
 
-ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt)
+ssize_t oe_readv(int fd, const struct oe_iovec* iov, int iovcnt)
 {
     ssize_t ret = -1;
     ssize_t nread = 0;
@@ -356,7 +356,7 @@ ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt)
 
     for (int i = 0; i < iovcnt; i++)
     {
-        const oe_iovec_t* p = &iov[i];
+        const struct oe_iovec* p = &iov[i];
         ssize_t n;
 
         n = oe_read(fd, p->iov_base, p->iov_len);
@@ -376,7 +376,7 @@ done:
     return ret;
 }
 
-ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt)
+ssize_t oe_writev(int fd, const struct oe_iovec* iov, int iovcnt)
 {
     ssize_t ret = -1;
     ssize_t nwritten = 0;
@@ -389,7 +389,7 @@ ssize_t oe_writev(int fd, const oe_iovec_t* iov, int iovcnt)
 
     for (int i = 0; i < iovcnt; i++)
     {
-        const oe_iovec_t* p = &iov[i];
+        const struct oe_iovec* p = &iov[i];
         ssize_t n;
 
         n = oe_write(fd, p->iov_base, p->iov_len);
@@ -430,7 +430,7 @@ done:
     return ret;
 }
 
-OE_DIR* oe_opendir(oe_devid_t devid, const char* pathname)
+OE_DIR* oe_opendir(uint64_t devid, const char* pathname)
 {
     OE_DIR* ret = NULL;
 
@@ -455,7 +455,7 @@ done:
     return ret;
 }
 
-int oe_unlink(oe_devid_t devid, const char* pathname)
+int oe_unlink(uint64_t devid, const char* pathname)
 {
     int ret = -1;
 
@@ -480,7 +480,7 @@ done:
     return ret;
 }
 
-int oe_link(oe_devid_t devid, const char* oldpath, const char* newpath)
+int oe_link(uint64_t devid, const char* oldpath, const char* newpath)
 {
     int ret = -1;
 
@@ -505,7 +505,7 @@ done:
     return ret;
 }
 
-int oe_rename(oe_devid_t devid, const char* oldpath, const char* newpath)
+int oe_rename(uint64_t devid, const char* oldpath, const char* newpath)
 {
     int ret = -1;
 
@@ -530,7 +530,7 @@ done:
     return ret;
 }
 
-int oe_mkdir(oe_devid_t devid, const char* pathname, mode_t mode)
+int oe_mkdir(uint64_t devid, const char* pathname, mode_t mode)
 {
     int ret = -1;
 
@@ -555,7 +555,7 @@ done:
     return ret;
 }
 
-int oe_rmdir(oe_devid_t devid, const char* pathname)
+int oe_rmdir(uint64_t devid, const char* pathname)
 {
     int ret = -1;
 
@@ -580,7 +580,7 @@ done:
     return ret;
 }
 
-int oe_stat(oe_devid_t devid, const char* pathname, struct oe_stat* buf)
+int oe_stat(uint64_t devid, const char* pathname, struct oe_stat* buf)
 {
     int ret = -1;
 
@@ -605,7 +605,7 @@ done:
     return ret;
 }
 
-int oe_truncate(oe_devid_t devid, const char* path, off_t length)
+int oe_truncate(uint64_t devid, const char* path, off_t length)
 {
     int ret = -1;
 
@@ -630,7 +630,7 @@ done:
     return ret;
 }
 
-int oe_access(oe_devid_t devid, const char* pathname, int mode)
+int oe_access(uint64_t devid, const char* pathname, int mode)
 {
     int ret = -1;
 

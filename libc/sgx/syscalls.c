@@ -110,7 +110,7 @@ static int _handle_device_syscall(
         case SYS_readv:
         {
             int fd = (int)arg1;
-            const oe_iovec_t* iov = (const oe_iovec_t*)arg2;
+            const struct oe_iovec* iov = (const struct oe_iovec*)arg2;
             int iovcnt = (int)arg3;
 
             *ret_out = oe_readv(fd, iov, iovcnt);
@@ -121,7 +121,7 @@ static int _handle_device_syscall(
         case SYS_writev:
         {
             int fd = (int)arg1;
-            const oe_iovec_t* iov = (const oe_iovec_t*)arg2;
+            const struct oe_iovec* iov = (const struct oe_iovec*)arg2;
             int iovcnt = (int)arg3;
 
             *ret_out = oe_writev(fd, iov, iovcnt);

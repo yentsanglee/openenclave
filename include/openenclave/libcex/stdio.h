@@ -25,7 +25,7 @@ OE_EXTERNC_BEGIN
 **==============================================================================
 */
 
-typedef struct _OE_FILE OE_FILE;
+typedef struct _OE_IO_FILE OE_FILE;
 
 void oe_clearerr(OE_FILE* stream);
 
@@ -47,7 +47,7 @@ char* oe_fgets(char* s, int size, OE_FILE* stream);
 
 int oe_fileno(OE_FILE* stream);
 
-OE_FILE* oe_fopen(oe_devid_t devid, const char* path, const char* mode);
+OE_FILE* oe_fopen(uint64_t devid, const char* path, const char* mode);
 
 int oe_fprintf(OE_FILE* stream, const char* format, ...);
 

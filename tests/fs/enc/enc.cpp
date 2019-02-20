@@ -31,7 +31,7 @@ const char* mkpath(char buf[OE_PATH_MAX], const char* target, const char* path)
 class device_registrant
 {
   public:
-    device_registrant(oe_devid_t devid)
+    device_registrant(uint64_t devid)
     {
         OE_TEST(oe_set_thread_device(devid) == 0);
     }

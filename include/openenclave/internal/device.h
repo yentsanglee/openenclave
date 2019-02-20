@@ -57,7 +57,7 @@ struct _oe_device
 {
     /* Type of this device: OE_DEVID_FILE or OE_DEVID_SOCKET. */
     oe_device_type_t type;
-    oe_devid_t devid; // Index of the device into the device table.
+    uint64_t devid; // Index of the device into the device table.
 
     /* sizeof additional data. To get a pointer to the device private data,
      * ptr = (oe_file_device_t)(devptr+1); usually sizeof(oe_file_t) or
@@ -75,19 +75,19 @@ struct _oe_device
     } ops;
 };
 
-oe_devid_t oe_allocate_devid(oe_devid_t devid);
-int oe_release_devid(oe_devid_t devid);
+uint64_t oe_allocate_devid(uint64_t devid);
+int oe_release_devid(uint64_t devid);
 
-int oe_set_devid_device(oe_devid_t devid, oe_device_t* pdevice);
-oe_device_t* oe_get_devid_device(oe_devid_t devid);
+int oe_set_devid_device(uint64_t devid, oe_device_t* pdevice);
+oe_device_t* oe_get_devid_device(uint64_t devid);
 oe_device_t* oe_clone_device(oe_device_t* pdevice);
 
 int oe_device_init(); // Overridable function to set up device structures. Shoud
                       // be ommited when new interface is complete.
 
-int oe_device_addref(oe_devid_t devid);
+int oe_device_addref(uint64_t devid);
 
-int oe_device_release(oe_devid_t devid);
+int oe_device_release(uint64_t devid);
 
 int oe_remove_device();
 
@@ -100,13 +100,13 @@ int oe_close(int fd);
 int oe_ioctl(int fd, unsigned long request, ...);
 
 /* Set the default device for this thread (used in lieu of the mount table). */
-int oe_set_thread_device(oe_devid_t devid);
+int oe_set_thread_device(uint64_t devid);
 
 /* Clear the default device for this thread. */
 int oe_clear_thread_device(void);
 
 /* Get the default device for this thread. */
-oe_devid_t oe_get_thread_device(void);
+uint64_t oe_get_thread_device(void);
 
 OE_EXTERNC_END
 

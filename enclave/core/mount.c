@@ -44,7 +44,7 @@ oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX])
 
     /* First check whether a device id is set for this thread. */
     {
-        oe_devid_t devid;
+        uint64_t devid;
 
         if ((devid = oe_get_thread_device()) != OE_DEVID_NULL)
         {
@@ -114,7 +114,7 @@ done:
 }
 
 int oe_mount(
-    oe_devid_t devid,
+    uint64_t devid,
     const char* source,
     const char* target,
     uint32_t flags)
@@ -220,7 +220,7 @@ done:
     return ret;
 }
 
-int oe_unmount(oe_devid_t devid, const char* target)
+int oe_unmount(uint64_t devid, const char* target)
 {
     int ret = -1;
     size_t index = (size_t)-1;

@@ -57,9 +57,9 @@ static int _init_table()
     return 0;
 }
 
-oe_devid_t oe_allocate_devid(oe_devid_t devid)
+uint64_t oe_allocate_devid(uint64_t devid)
 {
-    oe_devid_t ret = OE_DEVID_NULL;
+    uint64_t ret = OE_DEVID_NULL;
     bool locked = false;
 
     if (!_initialized && _init_table() != 0)
@@ -96,7 +96,7 @@ done:
     return ret;
 }
 
-int oe_release_devid(oe_devid_t devid)
+int oe_release_devid(uint64_t devid)
 {
     int ret = -1;
     bool locked = false;
@@ -134,7 +134,7 @@ done:
     return ret;
 }
 
-int oe_set_devid_device(oe_devid_t devid, oe_device_t* device)
+int oe_set_devid_device(uint64_t devid, oe_device_t* device)
 {
     int ret = -1;
 
@@ -158,7 +158,7 @@ done:
     return ret;
 }
 
-oe_device_t* oe_get_devid_device(oe_devid_t devid)
+oe_device_t* oe_get_devid_device(uint64_t devid)
 {
     oe_device_t* ret = NULL;
 
@@ -174,7 +174,7 @@ done:
     return ret;
 }
 
-int oe_remove_device(oe_devid_t devid)
+int oe_remove_device(uint64_t devid)
 {
     int ret = -1;
     oe_device_t* device;
@@ -355,7 +355,7 @@ static void _create_device_id_key()
         oe_abort();
 }
 
-int oe_set_thread_device(oe_devid_t devid)
+int oe_set_thread_device(uint64_t devid)
 {
     int ret = -1;
 
@@ -390,10 +390,10 @@ done:
     return ret;
 }
 
-oe_devid_t oe_get_thread_device(void)
+uint64_t oe_get_thread_device(void)
 {
-    oe_devid_t ret = OE_DEVID_NULL;
-    oe_devid_t devid;
+    uint64_t ret = OE_DEVID_NULL;
+    uint64_t devid;
 
     if (oe_once(&_device_id_once, _create_device_id_key) != 0)
         goto done;
