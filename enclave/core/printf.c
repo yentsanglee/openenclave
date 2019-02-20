@@ -669,7 +669,7 @@ int oe_vprintf(const char* fmt, oe_va_list ap_)
 
         if ((size_t)n < sizeof(buf))
         {
-            oe_write(OE_STDOUT_FILENO, p, (size_t)-1);
+            oe_write(OE_STDOUT_FILENO, p, oe_strlen(p));
             goto done;
         }
     }
@@ -689,7 +689,7 @@ int oe_vprintf(const char* fmt, oe_va_list ap_)
         if (n < 0)
             goto done;
 
-        oe_write(OE_STDOUT_FILENO, p, (size_t)-1);
+        oe_write(OE_STDOUT_FILENO, p, oe_strlen(p));
     }
 
 done:
