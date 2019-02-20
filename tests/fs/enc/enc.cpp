@@ -6,6 +6,7 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/fs_ops.h>
 #include <openenclave/internal/tests.h>
+#include "../../../device/fs/cpio/cpio.h"
 #include <stdio.h>
 #include <string.h>
 #include <set>
@@ -362,11 +363,19 @@ void test_fprintf_fscanf(const char* tmp_dir)
     }
 }
 
+void _create_cpio_archive(const char* dirname, const char* archive)
+{
+    printf("DIRNAME{%s}\n", dirname);
+    printf("ARCHIVE{%s}\n", archive);
+}
+
 void _test_mount(const char* tmp_dir)
 {
     char target[OE_PATH_MAX];
     char source[OE_PATH_MAX];
     char path[OE_PATH_MAX];
+    char pack_cpio[OE_PATH_MAX];
+    char unpack_dir[OE_PATH_MAX];
 
     mkpath(source, tmp_dir, "source");
     mkpath(target, tmp_dir, "target");
@@ -387,6 +396,13 @@ void _test_mount(const char* tmp_dir)
 
     set<string>::const_iterator pos = names.find("newfile");
     OE_TEST(pos != names.end());
+
+    mkpath(pack_cpio, tmp_dir, "pack.cpio");
+    mkpath(unpack_dir, tmp_dir, "unpack.dir");
+
+    OE_TEST(oe_cpio_pack(target, pack_cpio) == 0);
+
+    OE_TEST(oe_cpio_unpack(pack_cpio, unpack_dir) == 0);
 }
 
 void test_fs(const char* src_dir, const char* tmp_dir)

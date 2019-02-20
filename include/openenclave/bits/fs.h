@@ -98,6 +98,12 @@ OE_EXTERNC_BEGIN
 /* Mount flags. */
 #define OE_MOUNT_RDONLY 1
 
+/* oe_access() flags. */
+#define OE_F_OK 0
+#define OE_R_OK 4
+#define OE_W_OK 2
+#define OE_X_OK 1
+
 struct oe_dirent
 {
     uint64_t d_ino;

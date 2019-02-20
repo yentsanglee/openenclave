@@ -137,16 +137,13 @@ int oe_cmp(const char* path1, const char* path2)
         if (n1 != n2)
             GOTO(done);
 
-        if (n1 <= 0)
-            break;
-
         if (memcmp(buf1, buf2, n1) != 0)
             GOTO(done);
 
         size += n1;
     }
 
-    if (size != (size_t)st1.st_size)
+    if (size != st1.st_size)
     {
         GOTO(done);
     }

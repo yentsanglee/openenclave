@@ -3,6 +3,7 @@
 
 #include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/print.h>
 
 static oe_device_t* _get_fs_device(oe_devid_t devid)
 {
@@ -406,6 +407,9 @@ static int _access(const char* pathname, int mode)
 {
     int ret = -1;
     struct oe_stat buf;
+    const mode_t read = OE_S_IRUSR | OE_S_IRGRP | OE_S_IROTH;
+    const mode_t write = OE_S_IWUSR | OE_S_IWGRP | OE_S_IWOTH;
+    const mode_t execute = OE_S_IXUSR | OE_S_IXGRP | OE_S_IXOTH;
 
     OE_UNUSED(mode);
 
@@ -420,6 +424,35 @@ static int _access(const char* pathname, int mode)
         oe_errno = OE_ENOENT;
         goto done;
     }
+
+    if (mode == OE_F_OK)
+    {
+        ret = 0;
+        goto done;
+    }
+
+    /* Check if anyone has the given access (since no UID supported). */
+    {
+        if ((mode & OE_R_OK) && !(buf.st_mode & read))
+        {
+            oe_errno = OE_EPERM;
+            goto done;
+        }
+
+        if ((mode & OE_W_OK) && !(buf.st_mode & write))
+        {
+            oe_errno = OE_EPERM;
+            goto done;
+        }
+
+        if ((mode & OE_X_OK) && !(buf.st_mode & execute))
+        {
+            oe_errno = OE_EPERM;
+            goto done;
+        }
+    }
+
+    ret = 0;
 
 done:
     return ret;

@@ -5,6 +5,7 @@
 #define _GNU_SOURCE
 #endif
 
+#define TRACE
 #include "cpio.h"
 #include <assert.h>
 #include <dirent.h>
@@ -50,8 +51,8 @@ struct _oe_cpio
     FILE* stream;
     cpio_header_t header;
     size_t entry_size;
-    long eof_offset;
-    long offset;
+    off_t eof_offset;
+    off_t offset;
     bool write;
 };
 
@@ -220,15 +221,13 @@ static ssize_t _get_namesize(const cpio_header_t* header)
 static int _skip_padding(FILE* stream)
 {
     int ret = -1;
-    long pos;
-    long new_pos;
+    int64_t pos;
+    int64_t new_pos;
 
     if ((pos = ftell(stream)) < 0)
         GOTO(done);
 
-    new_pos = oe_round_to_multiple(pos, 4);
-
-    oe_round_to_multiple(pos, 4);
+    new_pos = oe_round_to_multiple_int64_t(pos, 4);
 
     if (new_pos != pos && fseek(stream, new_pos, SEEK_SET) != 0)
         GOTO(done);
@@ -242,15 +241,15 @@ done:
 static int _write_padding(FILE* stream, size_t n)
 {
     int ret = -1;
-    long pos;
-    long new_pos;
+    int64_t pos;
+    int64_t new_pos;
 
     if ((pos = ftell(stream)) < 0)
         GOTO(done);
 
-    new_pos = oe_round_to_multiple(pos, n);
+    new_pos = oe_round_to_multiple_int64_t(pos, (int64_t)n);
 
-    for (size_t i = pos; i < new_pos; i++)
+    for (int64_t i = pos; i < new_pos; i++)
     {
         if (fputc('\0', stream) == EOF)
             GOTO(done);
@@ -345,7 +344,7 @@ int oe_cpio_read_entry(oe_cpio_t* cpio, oe_cpio_entry_t* entry_out)
     cpio_header_t header;
     oe_cpio_entry_t entry;
     ssize_t r;
-    long file_offset;
+    int64_t file_offset;
     size_t namesize;
 
     if (entry_out)
@@ -355,7 +354,7 @@ int oe_cpio_read_entry(oe_cpio_t* cpio, oe_cpio_entry_t* entry_out)
         GOTO(done);
 
     /* Set the position to the next entry. */
-    if (fseek(cpio->stream, cpio->offset, SEEK_SET) != 0)
+    if (fseeko(cpio->stream, cpio->offset, SEEK_SET) != 0)
         GOTO(done);
 
     if (fread(&header, 1, sizeof(header), cpio->stream) != sizeof(header))
@@ -400,7 +399,7 @@ int oe_cpio_read_entry(oe_cpio_t* cpio, oe_cpio_entry_t* entry_out)
     file_offset = ftell(cpio->stream);
 
     /* Skip over the file data. */
-    if (fseek(cpio->stream, entry.size, SEEK_CUR) != 0)
+    if (fseeko(cpio->stream, (off_t)entry.size, SEEK_CUR) != 0)
         GOTO(done);
 
     /* Save the file offset. */
@@ -436,8 +435,8 @@ ssize_t oe_cpio_read_data(oe_cpio_t* cpio, void* data, size_t size)
 {
     ssize_t ret = -1;
     size_t rem;
-    ssize_t n;
-    long offset;
+    size_t n;
+    int64_t offset;
 
     if (!cpio || !cpio->stream || !data)
         GOTO(done);
@@ -447,7 +446,7 @@ ssize_t oe_cpio_read_data(oe_cpio_t* cpio, void* data, size_t size)
     if (offset > cpio->eof_offset)
         GOTO(done);
 
-    rem = cpio->eof_offset - offset;
+    rem = (size_t)(cpio->eof_offset - offset);
 
     if (size > rem)
         size = rem;
@@ -455,7 +454,7 @@ ssize_t oe_cpio_read_data(oe_cpio_t* cpio, void* data, size_t size)
     if ((n = fread(data, 1, size, cpio->stream)) != size)
         GOTO(done);
 
-    ret = n;
+    ret = (ssize_t)n;
 
 done:
     return ret;
@@ -585,9 +584,9 @@ int oe_cpio_unpack(const char* source, const char* target)
 
             while ((n = oe_cpio_read_data(cpio, data, sizeof(data))) > 0)
             {
-                ssize_t r;
+                size_t r;
 
-                if ((r = fwrite(data, 1, (size_t)n, os)) != n)
+                if ((r = fwrite(data, 1, (size_t)n, os)) != (size_t)n)
                     GOTO(done);
             }
 
@@ -614,7 +613,7 @@ static int _append_file(oe_cpio_t* cpio, const char* path, const char* name)
     int ret = -1;
     struct stat st;
     FILE* is = NULL;
-    ssize_t n;
+    size_t n;
 
     if (!cpio || !path)
         GOTO(done);
@@ -632,7 +631,7 @@ static int _append_file(oe_cpio_t* cpio, const char* path, const char* name)
         if (S_ISDIR(st.st_mode))
             st.st_size = 0;
         else
-            ent.size = st.st_size;
+            ent.size = (size_t)st.st_size;
 
         ent.mode = st.st_mode;
 
@@ -680,8 +679,7 @@ static int _pack(oe_cpio_t* cpio, const char* dirname, const char* root)
 {
     int ret = -1;
     DIR* dir = NULL;
-    struct dirent ent;
-    struct dirent* result = NULL;
+    struct dirent* ent;
     char path[CPIO_PATH_MAX];
     oe_strarr_t dirs = OE_STRARR_INITIALIZER;
 
@@ -703,9 +701,9 @@ static int _pack(oe_cpio_t* cpio, const char* dirname, const char* root)
     }
 
     /* Find all children of this directory. */
-    while (readdir_r(dir, &ent, &result) == 0 && result)
+    while ((ent = readdir(dir)))
     {
-        if (strcmp(ent.d_name, ".") == 0 || strcmp(ent.d_name, "..") == 0)
+        if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
             continue;
 
         *path = '\0';
@@ -716,10 +714,10 @@ static int _pack(oe_cpio_t* cpio, const char* dirname, const char* root)
             strlcat(path, "/", sizeof(path));
         }
 
-        strlcat(path, ent.d_name, sizeof(path));
+        strlcat(path, ent->d_name, sizeof(path));
 
         /* Append to dirs[] array */
-        if (ent.d_type & DT_DIR)
+        if (ent->d_type & DT_DIR)
         {
             if (oe_strarr_append(&dirs, path) != 0)
                 GOTO(done);

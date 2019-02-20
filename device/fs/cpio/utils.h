@@ -9,14 +9,14 @@
 
 OE_EXTERNC_BEGIN
 
-OE_INLINE size_t oe_round_to_multiple_size_t(size_t x, size_t m)
+OE_INLINE size_t oe_round_to_multiple(size_t x, size_t m)
 {
     return (size_t)((x + (m - 1)) / m * m);
 }
 
-OE_INLINE long oe_round_to_multiple_long(long x, long m)
+OE_INLINE int64_t oe_round_to_multiple_int64_t(int64_t x, int64_t m)
 {
-    return (long)((x + (m - 1)) / m * m);
+    return (int64_t)((x + (m - 1)) / m * m);
 }
 
 OE_INLINE bool oe_is_pow_of_2(size_t n)
