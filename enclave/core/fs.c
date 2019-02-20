@@ -7,12 +7,16 @@
 
 static oe_device_t* _get_fs_device(oe_devid_t devid)
 {
+    oe_device_t* ret = NULL;
     oe_device_t* device = oe_get_devid_device(devid);
 
     if (!device || device->type != OE_DEVICETYPE_FILESYSTEM)
-        return NULL;
+        goto done;
 
-    return device;
+    ret = device;
+
+done:
+    return ret;
 }
 
 static int _open(const char* pathname, int flags, mode_t mode)
@@ -23,20 +27,11 @@ static int _open(const char* pathname, int flags, mode_t mode)
     oe_device_t* file;
     char filepath[OE_PATH_MAX] = {0};
 
-    if (!pathname)
-    {
-        oe_errno = OE_EINVAL;
-        goto done;
-    }
-
     if (!(fs = oe_mount_resolve(pathname, filepath)))
         goto done;
 
     if (!(file = (*fs->ops.fs->open)(fs, filepath, flags, mode)))
-    {
-        // oe_errno set by function.
         goto done;
-    }
 
     if ((fd = oe_assign_fd_device(file)) == -1)
     {
@@ -47,7 +42,6 @@ static int _open(const char* pathname, int flags, mode_t mode)
     ret = fd;
 
 done:
-
     return ret;
 }
 
@@ -86,223 +80,267 @@ done:
 
 static OE_DIR* _opendir(const char* pathname)
 {
-    oe_device_t* fs = NULL;
+    OE_DIR* ret = NULL;
+    oe_device_t* fs;
     char filepath[OE_PATH_MAX] = {0};
 
     if (!(fs = oe_mount_resolve(pathname, filepath)))
-        return NULL;
+        goto done;
 
     if (fs->type != OE_DEVICETYPE_FILESYSTEM)
     {
         oe_errno = OE_EINVAL;
-        return NULL;
+        goto done;
     }
 
     if (fs->ops.fs->opendir == NULL)
     {
         oe_errno = OE_EINVAL;
-        return NULL;
+        goto done;
     }
 
-    return (OE_DIR*)(*fs->ops.fs->opendir)(fs, filepath);
+    ret = (OE_DIR*)(*fs->ops.fs->opendir)(fs, filepath);
+
+done:
+    return ret;
 }
 
 struct oe_dirent* oe_readdir(OE_DIR* dir)
 {
+    struct oe_dirent* ret = NULL;
     oe_device_t* dev = (oe_device_t*)dir;
 
     if (dev->type != OE_DEVICETYPE_DIRECTORY)
     {
         oe_errno = OE_EINVAL;
-        return NULL;
+        goto done;
     }
 
     if (dev->ops.fs->readdir == NULL)
     {
         oe_errno = OE_EINVAL;
-        return NULL;
+        goto done;
     }
 
-    return (*dev->ops.fs->readdir)(dev);
+    ret = (*dev->ops.fs->readdir)(dev);
+
+done:
+    return ret;
 }
 
 int oe_closedir(OE_DIR* dir)
 {
+    int ret = -1;
     oe_device_t* dev = (oe_device_t*)dir;
 
     if (dev->type != OE_DEVICETYPE_DIRECTORY)
     {
         oe_errno = OE_EINVAL;
-        return -1;
+        goto done;
     }
 
     if (dev->ops.fs->closedir == NULL)
     {
         oe_errno = OE_EINVAL;
-        return -1;
+        goto done;
     }
 
-    return (*dev->ops.fs->closedir)(dev);
+    ret = (*dev->ops.fs->closedir)(dev);
+
+done:
+    return ret;
 }
 
 static int _rmdir(const char* pathname)
 {
-    oe_device_t* fs = NULL;
+    int ret = -1;
+    oe_device_t* fs;
     char filepath[OE_PATH_MAX] = {0};
 
     if (!(fs = oe_mount_resolve(pathname, filepath)))
-        return -1;
+        goto done;
 
     if (fs->ops.fs->rmdir == NULL)
     {
         oe_errno = OE_EINVAL;
-        return -1;
+        goto done;
     }
 
-    return (*fs->ops.fs->rmdir)(fs, filepath);
+    ret = (*fs->ops.fs->rmdir)(fs, filepath);
+
+done:
+    return ret;
 }
 
 static int _stat(const char* pathname, struct oe_stat* buf)
 {
-    oe_device_t* fs = NULL;
+    int ret = -1;
+    oe_device_t* fs;
     char filepath[OE_PATH_MAX] = {0};
 
     if (!(fs = oe_mount_resolve(pathname, filepath)))
-        return -1;
+        goto done;
 
     if (fs->ops.fs->stat == NULL)
     {
         oe_errno = OE_EINVAL;
-        return -1;
+        goto done;
     }
 
-    return (*fs->ops.fs->stat)(fs, filepath, buf);
+    ret = (*fs->ops.fs->stat)(fs, filepath, buf);
+
+done:
+    return ret;
 }
 
 static int _link(const char* oldpath, const char* newpath)
 {
-    oe_device_t* fs = NULL;
-    oe_device_t* newfs = NULL;
+    int ret = -1;
+    oe_device_t* fs;
+    oe_device_t* newfs;
     char filepath[OE_PATH_MAX] = {0};
     char newfilepath[OE_PATH_MAX] = {0};
 
     if (!(fs = oe_mount_resolve(oldpath, filepath)))
-        return -1;
+        goto done;
 
     if (!(newfs = oe_mount_resolve(newpath, newfilepath)))
-        return -1;
+        goto done;
 
     if (fs != newfs)
     {
         oe_errno = OE_EXDEV;
-        return -1;
+        goto done;
     }
 
     if (fs->ops.fs->link == NULL)
     {
         oe_errno = OE_EPERM;
-        return -1;
+        goto done;
     }
 
-    return (*fs->ops.fs->link)(fs, filepath, newfilepath);
+    ret = (*fs->ops.fs->link)(fs, filepath, newfilepath);
+
+done:
+    return ret;
 }
 
 static int _unlink(const char* pathname)
 {
-    oe_device_t* fs = NULL;
+    int ret = -1;
+    oe_device_t* fs;
     char filepath[OE_PATH_MAX] = {0};
 
     if (!(fs = oe_mount_resolve(pathname, filepath)))
-        return -1;
+        goto done;
 
     if (fs->ops.fs->unlink == NULL)
     {
         oe_errno = OE_EINVAL;
-        return -1;
+        goto done;
     }
 
-    return (*fs->ops.fs->unlink)(fs, filepath);
+    ret = (*fs->ops.fs->unlink)(fs, filepath);
+
+done:
+    return ret;
 }
 
 static int _rename(const char* oldpath, const char* newpath)
 {
-    oe_device_t* fs = NULL;
-    oe_device_t* newfs = NULL;
-    char filepath[OE_PATH_MAX] = {0};
-    char newfilepath[OE_PATH_MAX] = {0};
+    int ret = -1;
+    oe_device_t* fs;
+    oe_device_t* newfs;
+    char filepath[OE_PATH_MAX];
+    char newfilepath[OE_PATH_MAX];
 
     if (!(fs = oe_mount_resolve(oldpath, filepath)))
-        return -1;
+        goto done;
 
     if (!(newfs = oe_mount_resolve(newpath, newfilepath)))
-        return -1;
+        goto done;
 
     if (fs != newfs)
     {
         oe_errno = OE_EXDEV;
-        return -1;
+        goto done;
     }
 
     if (fs->ops.fs->rename == NULL)
     {
         oe_errno = OE_EPERM;
-        return -1;
+        goto done;
     }
 
-    return (*fs->ops.fs->rename)(fs, filepath, newfilepath);
+    ret = (*fs->ops.fs->rename)(fs, filepath, newfilepath);
+
+done:
+    return ret;
 }
 
 static int _truncate(const char* pathname, off_t length)
 {
+    int ret = -1;
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
     if (!(fs = oe_mount_resolve(pathname, filepath)))
-        return -1;
+        goto done;
 
     if (fs->ops.fs->truncate == NULL)
     {
         oe_errno = OE_EINVAL;
-        return -1;
+        goto done;
     }
 
-    return (*fs->ops.fs->truncate)(fs, filepath, length);
+    ret = (*fs->ops.fs->truncate)(fs, filepath, length);
+
+done:
+    return ret;
 }
 
 static int _mkdir(const char* pathname, mode_t mode)
 {
-    oe_device_t* fs = NULL;
+    int ret = -1;
+    oe_device_t* fs;
     char filepath[OE_PATH_MAX] = {0};
 
     if (!(fs = oe_mount_resolve(pathname, filepath)))
-        return -1;
+        goto done;
 
     if (fs->ops.fs->mkdir == NULL)
     {
         oe_errno = OE_EINVAL;
-        return -1;
+        goto done;
     }
 
-    return (*fs->ops.fs->mkdir)(fs, filepath, mode);
+    ret = (*fs->ops.fs->mkdir)(fs, filepath, mode);
+
+done:
+    return ret;
 }
 
 off_t oe_lseek(int fd, off_t offset, int whence)
 {
-    oe_device_t* file = oe_get_fd_device(fd);
-    if (!file)
+    off_t ret = -1;
+    oe_device_t* file;
+
+    if (!(file = oe_get_fd_device(fd)))
     {
-        // Log error here
         oe_errno = OE_EBADF;
-        return -1;
+        goto done;
     }
 
     if (file->ops.fs->lseek == NULL)
     {
         oe_errno = OE_EINVAL;
-        return -1;
+        goto done;
     }
 
-    return (*file->ops.fs->lseek)(file, offset, whence);
+    ret = (*file->ops.fs->lseek)(file, offset, whence);
+
+done:
+    return ret;
 }
 
 ssize_t oe_readv(int fd, const oe_iovec_t* iov, int iovcnt)
@@ -373,19 +411,23 @@ done:
 
 static int _access(const char* pathname, int mode)
 {
+    int ret = -1;
     oe_device_t* fs = NULL;
     char suffix[OE_PATH_MAX];
 
     if (!(fs = oe_mount_resolve(pathname, suffix)))
-        return -1;
+        goto done;
 
     if (fs->ops.fs->access == NULL)
     {
         oe_errno = OE_EINVAL;
-        return -1;
+        goto done;
     }
 
-    return (*fs->ops.fs->access)(fs, suffix, mode);
+    ret = (*fs->ops.fs->access)(fs, suffix, mode);
+
+done:
+    return ret;
 }
 
 OE_DIR* oe_opendir(oe_devid_t devid, const char* pathname)
