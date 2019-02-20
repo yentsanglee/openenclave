@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/resolver.h>
+#include <openenclave/corelibc/stdlib.h>
 
 static size_t _resolver_table_len = 3;
 static oe_resolver_t* _resolver_table[3] = {0}; // At most 3

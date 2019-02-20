@@ -3,14 +3,14 @@
 
 # create a binary for each testcase listed in ../tests.supported
 
-
-include(${CMAKE_CURRENT_LIST_DIR}/../../../cmake/get_testcase_name.cmake)
+oeedl_file(../libcxx.edl enclave gen)
 
 # helper lib to contain file needed by some tests
 add_library(libcxxtest-support
     enc.cpp
     fuzzing.cpp
     memory_resource.cpp
+    ${gen}
     )
 
 target_compile_options(libcxxtest-support PRIVATE
@@ -23,17 +23,22 @@ target_compile_options(libcxxtest-support PRIVATE
 
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     target_compile_options(libcxxtest-support PRIVATE
-      -Wno-error=maybe-uninitialized
-      -Wno-error=unused-but-set-variable
-      )
+        -Wno-error=maybe-uninitialized
+        -Wno-error=unused-but-set-variable
+        )
 endif ()
 
 target_link_libraries(libcxxtest-support PRIVATE oelibcxx oeenclave)
 target_link_libraries(libcxxtest-support INTERFACE -Wl,--undefined=Test)
 
+target_include_directories(libcxxtest-support PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}
+        )
+
 # helper function to create enclave binary
 function(add_libcxx_test_enc NAME CXXFILE)
-    add_enclave(TARGET libcxxtest-${NAME}_enc CXX SOURCES main.cpp)
+    add_enclave(TARGET libcxxtest-${NAME}_enc CXX SOURCES
+        main.cpp ${gen})
 
     target_include_directories(libcxxtest-${NAME}_enc PRIVATE
         ..

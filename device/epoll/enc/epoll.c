@@ -13,10 +13,10 @@
 #include <openenclave/bits/safemath.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/thread.h>
-#include <openenclave/internal/atexit.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/hostbatch.h>
+#include <openenclave/corelibc/stdlib.h>
+#include <openenclave/corelibc/string.h>
 #include "../common/epollargs.h"
 
 /*
@@ -254,7 +254,7 @@ static int _epoll_clone(oe_device_t* device, oe_device_t** new_device)
         goto done;
     }
 
-    oe_memcpy(new_epoll, epoll, sizeof(epoll_dev_t));
+    memcpy(new_epoll, epoll, sizeof(epoll_dev_t));
 
     *new_device = &new_epoll->base;
     ret = 0;

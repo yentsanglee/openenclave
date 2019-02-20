@@ -9,7 +9,6 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/device.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/syscall.h>
@@ -332,10 +331,10 @@ static long _syscall_gettimeofday(long n, long x1, long x2)
     OE_UNUSED(n);
 
     if (tv)
-        oe_memset(tv, 0, sizeof(struct timeval));
+        memset(tv, 0, sizeof(struct timeval));
 
     if (tz)
-        oe_memset(tz, 0, sizeof(struct timezone));
+        memset(tz, 0, sizeof(struct timezone));
 
     if (!tv)
         goto done;
@@ -362,7 +361,7 @@ static long _syscall_nanosleep(long n, long x1, long x2)
     OE_UNUSED(n);
 
     if (rem)
-        oe_memset(rem, 0, sizeof(*rem));
+        memset(rem, 0, sizeof(*rem));
 
     if (!req)
         goto done;

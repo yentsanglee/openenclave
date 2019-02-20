@@ -2,9 +2,10 @@
 // Licensed under the MIT License.
 
 #include <openenclave/enclave.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/hostbatch.h>
 #include <openenclave/internal/thread.h>
+#include <openenclave/corelibc/stdlib.h>
+#include <openenclave/corelibc/string.h>
 
 #define ALIGNMENT sizeof(uint64_t)
 
@@ -197,7 +198,7 @@ void* oe_host_batch_calloc(oe_host_batch_t* batch, size_t size)
     if (!(ptr = oe_host_batch_malloc(batch, size)))
         return NULL;
 
-    return oe_memset(ptr, 0, size);
+    return memset(ptr, 0, size);
 }
 
 char* oe_host_batch_strdup(oe_host_batch_t* batch, const char* str)
@@ -213,7 +214,7 @@ char* oe_host_batch_strdup(oe_host_batch_t* batch, const char* str)
     if (!(ret = oe_host_batch_calloc(batch, len + 1)))
         goto done;
 
-    oe_memcpy(ret, str, len + 1);
+    memcpy(ret, str, len + 1);
 
 done:
     return ret;

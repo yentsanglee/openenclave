@@ -3,9 +3,9 @@
 
 #include <openenclave/enclave.h>
 #include <openenclave/internal/array.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/tests.h>
+#include <openenclave/corelibc/string.h>
 #include "array_t.h"
 
 void test_array(void)
@@ -25,7 +25,7 @@ void test_array(void)
 
         void* ptr = oe_array_get(&a, i);
         OE_TEST(ptr != NULL);
-        OE_TEST(oe_memcmp(ptr, &i, sizeof(i)) == 0);
+        OE_TEST(memcmp(ptr, &i, sizeof(i)) == 0);
     }
 
     OE_TEST(a.size == N);
@@ -35,7 +35,7 @@ void test_array(void)
     {
         void* ptr = oe_array_get(&a, i);
         OE_TEST(ptr != NULL);
-        OE_TEST(oe_memcmp(ptr, &i, sizeof(i)) == 0);
+        OE_TEST(memcmp(ptr, &i, sizeof(i)) == 0);
     }
 
     oe_array_free(&a);

@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 set(PLATFORM_SRC "")
+set(MUSL_SRC_DIR ${PROJECT_SOURCE_DIR}/3rdparty/musl/musl/src)
 
 if (OE_SGX)
     list(APPEND PLATFORM_SRC
@@ -9,7 +10,6 @@ if (OE_SGX)
         sgx/backtrace.c
         sgx/calls.c
         sgx/console.c
-        sgx/tracee.c
         sgx/cpuid.c
         sgx/debugmalloc.c
         sgx/entropy.c
@@ -28,12 +28,16 @@ if (OE_SGX)
         sgx/properties.c
         sgx/report.c
         sgx/sbrk.c
+        sgx/sched_yield.c
         sgx/spinlock.c
         sgx/td.c
         sgx/thread.c
+        sgx/tracee.c
         sgx/enter.S
         sgx/exit.S
-        sgx/getkey.S)
+        sgx/getkey.S
+        sgx/longjmp.S
+        sgx/setjmp.S)
 
     # OS specific sources for SGX.
     if (UNIX OR USE_CLANGW)
@@ -54,27 +58,50 @@ elseif(OE_TRUSTZONE)
         optee/bounds.c
         optee/host.c
         optee/printf.c
+        optee/sched_yield.c
         optee/start.c)
 endif()
 
 add_library(oecore STATIC
     ../../common/safecrt.c
+    ${MUSL_SRC_DIR}/prng/rand.c
+    ${MUSL_SRC_DIR}/string/memcmp.c
+    ${MUSL_SRC_DIR}/string/memcpy.c
+    ${MUSL_SRC_DIR}/string/memmove.c
+    ${MUSL_SRC_DIR}/string/memset.c
+    __secs_to_tm.c
+    __stack_chk_fail.c
     array.c
     assert.c
-    fd.c
-    hexdump.c
+    ctype.c
     device.c
-    fs.c
-    mount.c
-    socket.c
-    resolver.c
     epoll.c
     eventfd.c
+    fd.c
+    fs.c
+    gmtime.c
+    hexdump.c
+    intstr.c
+    mount.c
+    printf.c
+    pthread.c
+    resolver.c
     result.c
-    snprintf.c
+    socket.c
+    stdio.c
+    strerror.c
     string.c
+    strtoul.c
     time.c
     ${PLATFORM_SRC})
+
+# Suppress type conversion warnings introduced by 3rdparty code
+set_source_files_properties(${MUSL_SRC_DIR}/prng/rand.c ROPERTIES
+    COMPILE_FLAGS -Wno-conversion)
+set_source_files_properties(${MUSL_SRC_DIR}/string/memset.c PROPERTIES
+    COMPILE_FLAGS -Wno-conversion)
+set_source_files_properties(__secs_to_tm.c PROPERTIES
+    COMPILE_FLAGS -Wno-conversion)
 
 maybe_build_using_clangw(oecore)
 
@@ -84,10 +111,11 @@ if (CMAKE_C_COMPILER_ID MATCHES GNU)
     target_compile_options(oecore PRIVATE -Wjump-misses-init)
 endif()
 
-if (OE_SGX)
-    # This directory contains dummy C headers needed by dlmalloc:
-    target_include_directories(oecore PRIVATE sgx/dlmalloc)
+# This directory contains enclave core libc headers:
+target_include_directories(oecore PRIVATE
+    ${PROJECT_SOURCE_DIR}/include/openenclave/corelibc)
 
+if (OE_SGX)
     # Unfortunately dlmalloc uses GNU extension that allows arithmetic
     # null pointers.
     set_source_files_properties(sgx/malloc.c

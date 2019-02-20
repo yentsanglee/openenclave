@@ -3,7 +3,7 @@
 
 #include <openenclave/bits/socket.h>
 #include <openenclave/internal/device.h>
-#include <openenclave/internal/enclavelibc.h>
+#include <openenclave/corelibc/stdlib.h>
 
 int oe_socket(int domain, int type, int protocol)
 

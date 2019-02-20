@@ -1,9 +1,6 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-# add a test-case for each file listed in tests.supported
-include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/get_testcase_name.cmake)
-
 # read tests.supported, sanitize the cpp-file, and create the test-case
 file(STRINGS "tests.supported" alltests)
 
@@ -17,10 +14,9 @@ if (NOT "${build_type}" STREQUAL "DEBUG")
 	set(is_nondebug_build TRUE)
 endif()
 foreach(testcase ${alltests})
-	string(FIND "${testcase}" "selftest" found_selftest)
-	if(${found_selftest} GREATER 0 )
-		get_testcase_name(${testcase} name "../../3rdparty/mbedtls/mbedtls/programs/test/")
-		add_enclave_test(tests/mbed/${name} libmbedtest_host libmbedtest-${name}_enc)
+	string(COMPARE EQUAL "${testcase}" "selftest" found_selftest)
+	if(found_selftest)
+		add_enclave_test(tests/mbed/selftest libmbedtest_host mbedtest_selftest)
 	else()
 		if(${is_nondebug_build})
 			string(FIND "${testcase}" "debug" found_debug)
@@ -28,6 +24,6 @@ foreach(testcase ${alltests})
 				continue()
 			endif()
 		endif()
-	add_enclave_test(tests/mbed/${testcase} libmbedtest_host libmbedtest_suite_${testcase})
+		add_enclave_test(tests/mbed/${testcase} libmbedtest_host mbedtest_suite_${testcase})
 	endif()
 endforeach(testcase)

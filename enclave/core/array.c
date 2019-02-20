@@ -3,8 +3,9 @@
 
 #include <openenclave/enclave.h>
 #include <openenclave/internal/array.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
+#include <openenclave/corelibc/string.h>
+#include <openenclave/corelibc/stdlib.h>
 
 int oe_array_initialize(
     oe_array_t* array,
@@ -16,7 +17,7 @@ int oe_array_initialize(
     if (!array || !element_size || !chunk_size)
         goto done;
 
-    oe_memset(array, 0, sizeof(oe_array_t));
+    memset(array, 0, sizeof(oe_array_t));
     array->element_size = element_size;
     array->chunk_size = chunk_size;
 
@@ -31,7 +32,7 @@ void oe_array_free(oe_array_t* array)
     if (array)
     {
         oe_free(array->data);
-        oe_memset(array->data, 0, sizeof(oe_array_t));
+        memset(array->data, 0, sizeof(oe_array_t));
     }
 }
 
@@ -100,7 +101,7 @@ int oe_array_resize(oe_array_t* array, size_t new_size)
     {
         void* ptr = array->data + (array->size * array->element_size);
         size_t memset_size = (new_size - array->size) * array->element_size;
-        oe_memset(ptr, 0, memset_size);
+        memset(ptr, 0, memset_size);
     }
 
     array->size = new_size;
@@ -130,7 +131,7 @@ int oe_array_append(oe_array_t* array, const void* element)
         goto done;
     }
 
-    oe_memcpy(ptr, element, array->element_size);
+    memcpy(ptr, element, array->element_size);
 
     ret = 0;
 
@@ -159,7 +160,7 @@ int oe_array_set(oe_array_t* array, size_t index, const void* element)
     if (!element || !(ptr = oe_array_get(array, index)))
         goto done;
 
-    oe_memcpy(ptr, element, array->element_size);
+    memcpy(ptr, element, array->element_size);
 
     ret = 0;
 

@@ -8,8 +8,6 @@
 
 #include <openenclave/internal/utils.h>
 #include <openenclave/internal/fs.h>
-#include <openenclave/internal/enclavelibc.h>
-#include <openenclave/internal/atexit.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/eventfd.h>
 

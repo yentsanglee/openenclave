@@ -14,11 +14,11 @@
 #include <openenclave/bits/safemath.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/thread.h>
-#include <openenclave/internal/atexit.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/hostbatch.h>
 #include "../common/hostfsargs.h"
+#include <openenclave/corelibc/stdlib.h>
+#include <openenclave/corelibc/string.h>
 
 /*
 **==============================================================================
@@ -247,7 +247,7 @@ static int _hostfs_clone(oe_device_t* device, oe_device_t** new_device)
         goto done;
     }
 
-    oe_memcpy(new_fs, fs, sizeof(fs_t));
+    memcpy(new_fs, fs, sizeof(fs_t));
 
     *new_device = &new_fs->base;
     ret = 0;
@@ -427,7 +427,7 @@ static ssize_t _hostfs_read(oe_device_t* file_, void* buf, size_t count)
 
     /* Output */
     {
-        oe_memcpy(buf, args->buf, count);
+        memcpy(buf, args->buf, count);
     }
 
 done:
@@ -462,7 +462,7 @@ static ssize_t _hostfs_write(oe_device_t* file_, const void* buf, size_t count)
         args->u.write.ret = -1;
         args->u.write.fd = file->host_fd;
         args->u.write.count = count;
-        oe_memcpy(args->buf, buf, count);
+        memcpy(args->buf, buf, count);
     }
 
     /* Call */

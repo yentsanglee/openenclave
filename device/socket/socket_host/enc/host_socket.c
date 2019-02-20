@@ -13,10 +13,10 @@
 #include <openenclave/bits/safemath.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/thread.h>
-#include <openenclave/internal/atexit.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/hostbatch.h>
+#include <openenclave/corelibc/stdlib.h>
+#include <openenclave/corelibc/string.h>
 #include "../common/hostsockargs.h"
 
 /*
@@ -115,7 +115,7 @@ static int _hostsock_clone(oe_device_t* device, oe_device_t** new_device)
         goto done;
     }
 
-    oe_memcpy(new_sock, sock, sizeof(sock_t));
+    memcpy(new_sock, sock, sizeof(sock_t));
 
     *new_device = &new_sock->base;
     ret = 0;
@@ -247,7 +247,7 @@ static int _hostsock_connect(
         args->u.connect.ret = -1;
         args->u.connect.host_fd = sock->host_fd;
         args->u.connect.addrlen = addrlen;
-        oe_memcpy(args->buf, addr, addrlen);
+        memcpy(args->buf, addr, addrlen);
     }
 
     /* Call */
@@ -306,7 +306,7 @@ static int _hostsock_accept(
         if (addrlen != NULL)
         {
             args->u.accept.addrlen = *addrlen;
-            oe_memcpy(args->buf, addr, *addrlen);
+            memcpy(args->buf, addr, *addrlen);
         }
         else
         {
@@ -336,7 +336,7 @@ static int _hostsock_accept(
     if (addrlen)
     {
         *addrlen = args->u.accept.addrlen;
-        oe_memcpy(addr, args->buf, *addrlen);
+        memcpy(addr, args->buf, *addrlen);
     }
 
 done:
@@ -374,7 +374,7 @@ static int _hostsock_bind(
         args->u.bind.ret = -1;
         args->u.bind.host_fd = sock->host_fd;
         args->u.bind.addrlen = addrlen;
-        oe_memcpy(args->buf, addr, addrlen);
+        memcpy(args->buf, addr, addrlen);
     }
 
     /* Call */
@@ -499,7 +499,7 @@ static ssize_t _hostsock_recv(
 
     /* Output */
     {
-        oe_memcpy(buf, args->buf, count);
+        memcpy(buf, args->buf, count);
     }
 
 done:
@@ -539,7 +539,7 @@ static ssize_t _hostsock_send(
         args->u.send.host_fd = sock->host_fd;
         args->u.send.count = count;
         args->u.send.flags = flags;
-        oe_memcpy(args->buf, buf, count);
+        memcpy(args->buf, buf, count);
     }
 
     /* Call */
@@ -669,7 +669,7 @@ static int _hostsock_getsockopt(
     /* Output */
     {
         *optlen = args->u.getsockopt.optlen;
-        oe_memcpy(optval, args->buf, *optlen);
+        memcpy(optval, args->buf, *optlen);
     }
 
 done:
@@ -711,7 +711,7 @@ static int _hostsock_setsockopt(
         args->u.setsockopt.level = level;
         args->u.setsockopt.optname = optname;
         args->u.setsockopt.optlen = optlen;
-        oe_memcpy(args->buf, optval, optlen);
+        memcpy(args->buf, optval, optlen);
     }
 
     /* Call */
@@ -777,7 +777,7 @@ static int _hostsock_getpeername(
         args->u.getpeername.ret = -1;
         args->u.getpeername.host_fd = sock->host_fd;
         args->u.getpeername.addrlen = *addrlen;
-        oe_memcpy(args->buf, addr, *addrlen);
+        memcpy(args->buf, addr, *addrlen);
     }
 
     /* Call */
@@ -798,7 +798,7 @@ static int _hostsock_getpeername(
     /* Output */
     {
         *addrlen = args->u.getpeername.addrlen;
-        oe_memcpy(addr, args->buf, *addrlen);
+        memcpy(addr, args->buf, *addrlen);
     }
 
 done:
@@ -836,7 +836,7 @@ static int _hostsock_getsockname(
         args->u.getsockname.ret = -1;
         args->u.getsockname.host_fd = sock->host_fd;
         args->u.getsockname.addrlen = *addrlen;
-        oe_memcpy(args->buf, addr, *addrlen);
+        memcpy(args->buf, addr, *addrlen);
     }
 
     /* Call */
@@ -857,7 +857,7 @@ static int _hostsock_getsockname(
     /* Output */
     {
         *addrlen = args->u.getsockname.addrlen;
-        oe_memcpy(addr, args->buf, *addrlen);
+        memcpy(addr, args->buf, *addrlen);
     }
 
 done:

@@ -8,9 +8,9 @@
 /* ATTN: use elibc within SGX code. */
 #include <errno.h>
 #include <openenclave/internal/fs.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/print.h>
-#include <openenclave/internal/enclavelibc.h>
+#include <openenclave/corelibc/string.h>
+#include <openenclave/corelibc/stdlib.h>
 
 #define FS_MAGIC 0x4a335f60
 #define FILE_MAGIC 0x8d7e422f
@@ -244,7 +244,7 @@ static int _sgxfs_clone(oe_device_t* device, oe_device_t** new_device)
         goto done;
     }
 
-    oe_memcpy(new_fs, fs, sizeof(fs_t));
+    memcpy(new_fs, fs, sizeof(fs_t));
 
     *new_device = &new_fs->base;
     ret = 0;
@@ -264,7 +264,7 @@ static int _sgxfs_release(oe_device_t* device)
         goto done;
     }
 
-    oe_memset(fs, 0xDD, sizeof(fs_t));
+    memset(fs, 0xDD, sizeof(fs_t));
     oe_free(fs);
     ret = 0;
 
@@ -426,7 +426,7 @@ done:
 
     if (file)
     {
-        oe_memset(file, 0xDD, sizeof(file_t));
+        memset(file, 0xDD, sizeof(file_t));
         oe_free(file);
     }
 
@@ -534,7 +534,7 @@ static int _sgxfs_close(oe_device_t* file_)
         goto done;
     }
 
-    oe_memset(file, 0xDD, sizeof(file_t));
+    memset(file, 0xDD, sizeof(file_t));
     oe_free(file);
 
     ret = 0;

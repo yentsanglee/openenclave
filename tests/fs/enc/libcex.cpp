@@ -7,7 +7,7 @@
 #include <openenclave/internal/tests.h>
 #include <openenclave/libcex/stdio.h>
 #include <openenclave/libcex/dirent.h>
-#include <openenclave/internal/enclavelibc.h>
+#include <openenclave/corelibc/string.h>
 // clang-format on
 
 /* Be sure stdio.h was included from the libcex directory. */
@@ -42,7 +42,7 @@ void test_iot(const char* tmp_dir)
 
         size_t n = fread(buf, 1, sizeof(ALPHABET), stream);
         OE_TEST(n == sizeof(ALPHABET));
-        OE_TEST(oe_memcmp(buf, ALPHABET, sizeof(ALPHABET)) == 0);
+        OE_TEST(memcmp(buf, ALPHABET, sizeof(ALPHABET)) == 0);
 
         OE_TEST(fclose(stream) == 0);
     }

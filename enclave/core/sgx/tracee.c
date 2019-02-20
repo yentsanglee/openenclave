@@ -1,15 +1,19 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
+
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/bits/safemath.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/stdarg.h>
+#include <openenclave/corelibc/stdio.h>
+#include <openenclave/corelibc/string.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
-#include <openenclave/internal/enclavelibc.h>
 #include <openenclave/internal/report.h>
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/trace.h>
 #include <openenclave/internal/utils.h>
+#include "report.h"
 
 static log_level_t _active_log_level = OE_LOG_LEVEL_ERROR;
 static char _enclave_filename[MAX_FILENAME_LEN];
@@ -35,12 +39,7 @@ const char* get_filename_from_path(const char* path, size_t path_len)
 bool is_enclave_debug_allowed()
 {
     bool ret = false;
-#ifdef OE_USE_LIBSGX
-
-#if defined(__linux__)
-    oe_result_t result = 0;
     td_t* td = oe_get_td();
-    uint8_t* report_buffer = NULL;
 
     if (td->simulate)
     {
@@ -49,34 +48,15 @@ bool is_enclave_debug_allowed()
     }
     else
     {
-        uint64_t report_buffer_size = OE_MAX_REPORT_SIZE;
-        const sgx_report_t* sgx_report = NULL;
-        oe_report_header_t* header = NULL;
-
         // get a report on the enclave itself for enclave identity information
-        report_buffer_size = OE_MAX_REPORT_SIZE;
-        result = oe_get_report(
-            0, NULL, 0, NULL, 0, &report_buffer, &report_buffer_size);
+        sgx_report_t sgx_report;
+        oe_result_t result = sgx_create_report(NULL, 0, NULL, 0, &sgx_report);
         if (result != OE_OK)
             goto done;
 
-        header = (oe_report_header_t*)report_buffer;
-        sgx_report = (const sgx_report_t*)header->report;
-        ret = (sgx_report->body.attributes.flags & SGX_FLAGS_DEBUG) != 0;
+        ret = (sgx_report.body.attributes.flags & SGX_FLAGS_DEBUG) != 0;
     }
 done:
-    if (report_buffer)
-        oe_free_report(report_buffer);
-#elif defined(_WIN32)
-    // WIN32 support is still under development.
-    // We will have to come back to handle this case
-    ret = true;
-#endif
-
-#else
-// When adding support for non-SGX solutions, we need to find a way to correctly
-// identify whether an enclave is debug-allowed.
-#endif
     return ret;
 }
 
@@ -126,7 +106,7 @@ oe_result_t _handle_oelog_init(uint64_t arg)
     }
     else
     {
-        oe_memset(_enclave_filename, 0, sizeof(_enclave_filename));
+        memset(_enclave_filename, 0, sizeof(_enclave_filename));
     }
 
     _debug_allowed_enclave = is_enclave_debug_allowed();

@@ -7,8 +7,8 @@
 // clang-format on
 
 #include <openenclave/internal/fs.h>
-#include <openenclave/internal/enclavelibc.h>
-#include <openenclave/internal/atexit.h>
+#include <openenclave/corelibc/stdlib.h>
+#include <openenclave/corelibc/string.h>
 
 #define MAX_MOUNT_TABLE_SIZE 64
 
@@ -194,7 +194,7 @@ int oe_mount(
             goto done;
         }
 
-        oe_memcpy(_mount_table[index].path, target, len + 1);
+        memcpy(_mount_table[index].path, target, len + 1);
         _mount_table[index].fs = new_device;
         _mount_table_size++;
     }
