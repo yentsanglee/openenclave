@@ -4,6 +4,7 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/time.h>
 
+#include <openenclave/corelibc/arpa/inet.h>
 #include <openenclave/corelibc/netinet/in.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/host_resolver.h>
@@ -35,9 +36,10 @@ int ecall_getnameinfo(char* buffer, size_t bufflen)
     char host[256] = {0};
     char serv[256] = {0};
 
-    struct oe_sockaddr_in addr = {.sin_family = OE_AF_INET,
-                                  .sin_port = 22,
-                                  .sin_addr.s_addr = OE_INADDR_LOOPBACK};
+    struct oe_sockaddr_in addr = {
+        .sin_family = OE_AF_INET,
+        .sin_port = 22,
+        .sin_addr.s_addr = oe_htonl(OE_INADDR_LOOPBACK)};
 
     int rslt = oe_getnameinfo(
         (const struct oe_sockaddr*)&addr,
@@ -55,6 +57,7 @@ int ecall_getnameinfo(char* buffer, size_t bufflen)
     }
     else
     {
+        memcpy(buffer, host, strnlen(host, 255));
         printf("getnameinfo passed\n");
         return OE_OK; // status;
     }

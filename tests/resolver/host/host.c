@@ -58,6 +58,8 @@ int main(int argc, const char* argv[])
     {
         uint8_t* addr =
             (uint8_t*)&((struct sockaddr_in*)paddrinfo->ai_addr)->sin_addr;
+        OE_TEST(
+            addr[0] == 0x7f && addr[1] == 0 && addr[2] == 0 && addr[3] == 1);
         printf(
             "host received: paddrinfo->ai_addr: %02x %02x %02x %02x\n",
             addr[0],
@@ -70,6 +72,7 @@ int main(int argc, const char* argv[])
         ecall_getnameinfo(client_enclave, &ret, host, sizeof(host)) == OE_OK);
 
     {
+        OE_TEST(strcmp(host, "localhost") == 0);
         printf("host received: host = %s\n", host);
     }
 

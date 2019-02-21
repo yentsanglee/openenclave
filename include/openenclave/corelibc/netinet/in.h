@@ -28,6 +28,8 @@ OE_EXTERNC_BEGIN
 #define OE_IN6ADDR_LOOPBACK_INIT { { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 } } }
 // clang-format on
 
+typedef uint32_t in_addr_t;
+
 struct oe_in_addr
 {
     in_addr_t s_addr;
