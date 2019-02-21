@@ -104,15 +104,103 @@ static ssize_t _hostresolv_getnameinfo(
     socklen_t servlen,
     int flags)
 {
+    ssize_t ret = OE_EAI_FAIL;
+    args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
     (void)dev;
-    (void)sa;
-    (void)salen;
-    (void)host;
-    (void)hostlen;
-    (void)serv;
-    (void)servlen;
-    (void)flags;
-    return OE_EAI_FAIL;
+
+    oe_errno = 0;
+
+    if (!batch)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    if (!host && !serv)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    if (!(hostlen > 0) && !(servlen > 0))
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        // With a buffer big enough for a single addrinfo
+
+        size_t required = (size_t)salen + (size_t)hostlen + (size_t)servlen;
+        if ((hostlen + servlen + 2) > salen)
+        {
+            required = hostlen + servlen + 2;
+        }
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + required)))
+        {
+            oe_errno = ENOMEM;
+            goto done;
+        }
+
+        //    int64_t ret;
+        //    socklen_t addrlen; // in
+        //    // struct oe_sockaddr *addr;  data in buf
+        //    socklen_t hostlen;
+        // Hostname returned in buf
+        // socklen_t servlen;
+        // Service name returned in buf+hostlen after hostname
+        //  int32_t flags;
+
+        args->op = OE_HOSTRESOLV_OP_GETNAMEINFO;
+        args->u.getnameinfo.ret = -1;
+        args->u.getnameinfo.addrlen = (int32_t)salen;
+        args->u.getnameinfo.hostlen = (int32_t)hostlen;
+        args->u.getnameinfo.flags = (int32_t)flags;
+        memcpy(args->buf, sa, (size_t)salen);
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTRESOLVER, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = EINVAL;
+            goto done;
+        }
+
+        if (args->u.getnameinfo.ret < 0)
+        {
+            // If the error is OE_EAI_OVERFLOW. If not, we need to walk the
+            // structure to see how much space it needs
+
+            oe_errno = args->err;
+            ret = args->u.getaddrinfo.ret;
+            goto done;
+        }
+        ret = args->u.getaddrinfo.ret;
+    }
+    /* Output */
+    {
+        uint8_t* bufptr = args->buf;
+        // We always pass at least a zero length node and service.
+        if (hostlen > 0)
+        {
+            hostlen = (socklen_t)oe_strnlen((const char*)bufptr, hostlen - 1);
+            memcpy(host, bufptr, (size_t)hostlen);
+            bufptr[hostlen] = '\0';
+            bufptr += hostlen + 1;
+        }
+
+        if (servlen > 0)
+        {
+            servlen = (socklen_t)oe_strnlen((const char*)bufptr, servlen - 1);
+            memcpy(serv, bufptr, (size_t)servlen);
+            bufptr[servlen] = '\0';
+        }
+    }
+done:
+    return ret;
 }
 
 //
@@ -128,10 +216,9 @@ static ssize_t _hostresolv_getaddrinfo_r(
     struct oe_addrinfo* res,
     ssize_t* required_size)
 {
-    ssize_t ret = -1;
+    ssize_t ret = OE_EAI_FAIL;
     args_t* args = NULL;
     oe_host_batch_t* batch = _get_host_batch();
-    size_t buffer_required = 0;
 
     oe_errno = 0;
     (void)resolv;
@@ -148,8 +235,8 @@ static ssize_t _hostresolv_getaddrinfo_r(
         goto done;
     }
 
-    size_t nodelen = oe_strlen(node);
-    size_t servicelen = oe_strlen(node);
+    size_t nodelen = (node) ? oe_strlen(node) : 0;
+    size_t servicelen = (service) ? oe_strlen(service) : 0;
 
     if (!(nodelen > 0) && !(servicelen > 0))
     {
@@ -160,61 +247,60 @@ static ssize_t _hostresolv_getaddrinfo_r(
     /* Input */
     {
         // With a buffer big enough for a single addrinfo
+
         if (!(args = oe_host_batch_calloc(
-                  batch,
-                  sizeof(args_t) + sizeof(struct oe_addrinfo) +
-                      (size_t)nodelen + (size_t)servicelen + 2)))
+                  batch, sizeof(args_t) + (size_t)*required_size)))
         {
             oe_errno = ENOMEM;
             goto done;
         }
 
         args->op = OE_HOSTRESOLV_OP_GETADDRINFO;
-        args->u.getaddrinfosize.ret = -1;
+        args->u.getaddrinfo.ret = -1;
 
         // We always pass at least a zero length node and service.
         if (nodelen > 0)
         {
             memcpy(args->buf, node, (size_t)nodelen);
             args->buf[nodelen] = '\0';
-            args->u.getaddrinfosize.nodelen = (int32_t)nodelen;
+            args->u.getaddrinfo.nodelen = (int32_t)nodelen;
         }
         else
         {
             args->buf[0] = '\0';
-            args->u.getaddrinfosize.nodelen = 0;
+            args->u.getaddrinfo.nodelen = 0;
         }
 
         if (servicelen > 0)
         {
             memcpy(args->buf + nodelen + 1, service, (size_t)servicelen);
             args->buf[nodelen + 1 + servicelen] = '\0';
-            args->u.getaddrinfosize.servicelen = (int32_t)servicelen;
+            args->u.getaddrinfo.servicelen = (int32_t)servicelen;
         }
         else
         {
             args->buf[nodelen + 1 + servicelen] = '\0';
-            args->u.getaddrinfosize.servicelen = 0;
+            args->u.getaddrinfo.servicelen = 0;
         }
 
         if (hints)
         {
-            args->u.getaddrinfosize.hint_flags = hints->ai_flags;
-            args->u.getaddrinfosize.hint_family = hints->ai_family;
-            args->u.getaddrinfosize.hint_socktype = hints->ai_socktype;
-            args->u.getaddrinfosize.hint_protocol = hints->ai_protocol;
+            args->u.getaddrinfo.hint_flags = hints->ai_flags;
+            args->u.getaddrinfo.hint_family = hints->ai_family;
+            args->u.getaddrinfo.hint_socktype = hints->ai_socktype;
+            args->u.getaddrinfo.hint_protocol = hints->ai_protocol;
         }
         else
         {
-            args->u.getaddrinfosize.hint_flags =
+            args->u.getaddrinfo.hint_flags =
                 (OE_AI_V4MAPPED | OE_AI_ADDRCONFIG);
-            args->u.getaddrinfosize.hint_family = OE_AF_UNSPEC;
-            args->u.getaddrinfosize.hint_socktype = 0;
-            args->u.getaddrinfosize.hint_protocol = 0;
+            args->u.getaddrinfo.hint_family = OE_AF_UNSPEC;
+            args->u.getaddrinfo.hint_socktype = 0;
+            args->u.getaddrinfo.hint_protocol = 0;
         }
-        args->u.getaddrinfosize.buffer_needed =
-            (int32_t)buffer_required; // pass down the buffer that is available.
-                                      // It is likely enough
+        args->u.getaddrinfo.buffer_len =
+            (int32_t)required_size; // pass down the buffer that is available.
+                                    // It is likely enough
     }
 
     /* Call */
@@ -225,79 +311,94 @@ static ssize_t _hostresolv_getaddrinfo_r(
             goto done;
         }
 
-        if (args->u.getaddrinfosize.ret < 0)
+        if (args->u.getaddrinfo.ret < 0)
         {
             // If the error is OE_EAI_OVERFLOW. If not, we need to walk the
             // structure to see how much space it needs
 
             oe_errno = args->err;
-            ret = args->u.getaddrinfosize.ret;
+            ret = args->u.getaddrinfo.ret;
             goto done;
         }
-        ret = args->u.getaddrinfosize.ret;
+        ret = args->u.getaddrinfo.ret;
     }
 
     /* Output */
     {
-        // did we get a valid result? If this was supposed to be a chain, then
-        // no
+        struct oe_addrinfo* thisinfo = (struct oe_addrinfo*)args->buf;
+        size_t buffer_required = (size_t)0;
 
-        size_t retsize = 0;
-        struct oe_addrinfo* arginfo = (struct oe_addrinfo*)args->buf;
+        // Allocate host memory and copy the chain of addrinfos
+
         do
         {
-            retsize += sizeof(struct oe_addrinfo);
-            if (arginfo->ai_canonname)
+            buffer_required += sizeof(struct oe_addrinfo);
+            if (thisinfo->ai_addr)
             {
-                retsize += oe_strlen(arginfo->ai_canonname);
+                buffer_required += sizeof(struct oe_sockaddr);
             }
-            if (arginfo->ai_addr)
+            if (thisinfo->ai_canonname)
             {
-                retsize += sizeof(struct oe_sockaddr);
+                buffer_required += oe_strlen(thisinfo->ai_canonname) + 1;
             }
 
-            arginfo = arginfo->ai_next;
+            thisinfo = thisinfo->ai_next;
 
-        } while (arginfo != NULL);
+        } while (thisinfo != NULL);
 
-        if (retsize > (size_t)*required_size)
+        if ((ssize_t)buffer_required > *required_size)
         {
-            *required_size = (ssize_t)retsize;
-            ret = OE_EAI_OVERFLOW;
-            goto done;
+            *required_size = (ssize_t)buffer_required;
+            return OE_EAI_OVERFLOW;
         }
-
-        struct oe_addrinfo* retinfo = res;
-        arginfo = (struct oe_addrinfo*)args->buf;
-        uint8_t* bufptr = args->buf; // byte pointer
-        do
+        else
         {
-            memcpy(res, arginfo, sizeof(struct oe_addrinfo));
-            bufptr += sizeof(struct oe_addrinfo);
-
-            if (arginfo->ai_addr)
+            size_t canon_namelen = 0;
+            uint8_t* bufptr = (uint8_t*)res;
+            thisinfo = (struct oe_addrinfo*)args->buf;
+            do
             {
-                retinfo->ai_addr = (struct oe_sockaddr*)(arginfo + 1);
-                memcpy(
-                    retinfo->ai_addr,
-                    arginfo->ai_addr,
-                    sizeof(struct oe_addrinfo));
-                bufptr += sizeof(struct oe_sockaddr);
-            }
-            if (retinfo->ai_canonname)
-            {
-                bufptr += oe_strlen(retinfo->ai_canonname) + 1;
-                memcpy(
-                    retinfo->ai_canonname,
-                    arginfo->ai_canonname,
-                    oe_strlen(retinfo->ai_canonname) + 1);
-            }
+                // Set up the pointers in the destination structure to point
+                // at the buffer after the addrinfo structure.
+                struct oe_addrinfo* buf_info = (struct oe_addrinfo*)bufptr;
+                buf_info->ai_flags = thisinfo->ai_flags;
+                buf_info->ai_family = thisinfo->ai_family;
+                buf_info->ai_socktype = thisinfo->ai_socktype;
+                buf_info->ai_protocol = thisinfo->ai_protocol;
+                buf_info->ai_addrlen = thisinfo->ai_addrlen;
+                buf_info->ai_canonname = NULL;
+                buf_info->ai_addr = NULL;
+                buf_info->ai_next = NULL;
 
-            retinfo->ai_next = (struct oe_addrinfo*)bufptr;
-            retinfo = retinfo->ai_next;
-            arginfo = arginfo->ai_next;
+                bufptr += sizeof(struct oe_addrinfo);
+                if (thisinfo->ai_addr)
+                {
+                    buf_info->ai_addr = (struct oe_sockaddr*)(bufptr);
+                    memcpy(
+                        buf_info->ai_addr,
+                        thisinfo->ai_addr,
+                        buf_info->ai_addrlen);
+                    bufptr += buf_info->ai_addrlen;
+                }
+                if (thisinfo->ai_canonname)
+                {
+                    canon_namelen = oe_strlen(thisinfo->ai_canonname) + 1;
+                    buf_info->ai_canonname = (char*)bufptr;
+                    memcpy(
+                        buf_info->ai_canonname,
+                        thisinfo->ai_canonname,
+                        canon_namelen);
+                    bufptr += canon_namelen;
+                }
 
-        } while (retinfo != NULL);
+                thisinfo = thisinfo->ai_next;
+                if (thisinfo)
+                {
+                    buf_info->ai_next = (struct oe_addrinfo*)bufptr;
+                }
+
+            } while (thisinfo != NULL);
+        }
     }
 
 done:
@@ -369,7 +470,7 @@ static resolv_t _hostresolv = {.base.type = OE_RESOLVER_HOST,
                                .base.ops = &_ops,
                                .magic = RESOLV_MAGIC};
 
-oe_resolver_t* _get_hostresolv(void)
+oe_resolver_t* oe_get_hostresolver(void)
 {
     return &_hostresolv.base;
 }

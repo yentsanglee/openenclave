@@ -81,6 +81,7 @@ if ( UNIX )
     endif()
 add_subdirectory(sockets)
 add_subdirectory(polling)
+add_subdirectory(resolver)
 add_subdirectory(create-rapid)
 endif()
 

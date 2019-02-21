@@ -7,4 +7,4 @@ if (UNIX)
 	add_subdirectory(enc)
 endif()
 
-add_enclave_test(tests/sockets socket_host socket_enc)
+#add_enclave_test(tests/polling epoll_test_host epoll_test_enc)

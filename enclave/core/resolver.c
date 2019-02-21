@@ -20,6 +20,7 @@ int oe_register_resolver(int resolver_priority, oe_resolver_t* presolver)
     return 0;
 }
 
+size_t oe_debug_malloc_check();
 int oe_getaddrinfo(
     const char* node,
     const char* service,
@@ -33,7 +34,7 @@ int oe_getaddrinfo(
         sizeof(struct oe_addrinfo) + sizeof(struct oe_sockaddr) +
         256); // 255+1 for canonname
     struct oe_addrinfo* retinfo =
-        (struct oe_addrinfo*)oe_calloc(0, (size_t)required_size);
+        (struct oe_addrinfo*)oe_calloc(1, (size_t)required_size);
 
     for (resolver_idx = 0; resolver_idx < _resolver_table_len; resolver_idx++)
     {

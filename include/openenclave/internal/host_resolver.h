@@ -13,11 +13,11 @@
 
 #ifndef _OE_HOST_RESOLVER_H__
 #define _OE_HOST_RESOLVER_H__
-
+#include <openenclave/internal/resolver.h>
 OE_EXTERNC_BEGIN
 
-oe_device_t* oe_resolver_get_hostsock();
-void oe_resolver_install_hostsock();
+oe_resolver_t* oe_get_hostresolver();
+void oe_resolver_install_hostresolver();
 
 OE_EXTERNC_END
 
