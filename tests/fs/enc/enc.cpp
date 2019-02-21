@@ -381,14 +381,14 @@ void _test_mount(const char* tmp_dir)
     mkpath(source, tmp_dir, "source");
     mkpath(target, tmp_dir, "target");
 
-    OE_TEST(oe_mount(OE_DEVID_HOSTFS, "/", "/", 0) == 0);
+    OE_TEST(oe_mount("/", "/", "hostfs", 0, NULL) == 0);
     oe_unlink(0, mkpath(path, source, "newfile"));
     oe_rmdir(0, source);
     oe_rmdir(0, target);
 
     OE_TEST(oe_mkdir(0, source, 0777) == 0);
     OE_TEST(oe_mkdir(0, target, 0777) == 0);
-    OE_TEST(oe_mount(OE_DEVID_SGXFS, source, target, 0) == 0);
+    OE_TEST(oe_mount(source, target, "sgxfs", 0, NULL) == 0);
 
     _touch(mkpath(path, target, "file1"));
     _touch(mkpath(path, target, "file2"));
@@ -507,10 +507,10 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         mkpath(path, tmp_dir, "somefile");
         const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
 
-        OE_TEST(oe_mount(OE_DEVID_HOSTFS, "/", "/", OE_MOUNT_RDONLY) == 0);
+        OE_TEST(oe_mount("/", "/", "hostfs", OE_MOUNT_RDONLY, NULL) == 0);
         OE_TEST(oe_open(0, path, flags, MODE) == -1);
         OE_TEST(oe_errno == EPERM);
-        OE_TEST(oe_unmount(OE_DEVID_HOSTFS, "/") == 0);
+        OE_TEST(oe_umount("/") == 0);
     }
 
     /* Test iot I/O. */

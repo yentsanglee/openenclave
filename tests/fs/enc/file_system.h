@@ -217,12 +217,12 @@ class oe_fd_hostfs_file_system : public oe_fd_file_system
     oe_fd_hostfs_file_system()
     {
         oe_register_hostfs_device();
-        OE_TEST(oe_mount(OE_DEVID_HOSTFS, "/", "/", 0) == 0);
+        OE_TEST(oe_mount("/", "/", "hostfs", 0, NULL) == 0);
     }
 
     ~oe_fd_hostfs_file_system()
     {
-        OE_TEST(oe_unmount(OE_DEVID_HOSTFS, "/") == 0);
+        OE_TEST(oe_umount("/") == 0);
     }
 };
 
@@ -232,12 +232,12 @@ class oe_fd_sgxfs_file_system : public oe_fd_file_system
     oe_fd_sgxfs_file_system()
     {
         oe_register_sgxfs_device();
-        OE_TEST(oe_mount(OE_DEVID_SGXFS, "/", "/", 0) == 0);
+        OE_TEST(oe_mount("/", "/", "sgxfs", 0, NULL) == 0);
     }
 
     ~oe_fd_sgxfs_file_system()
     {
-        OE_TEST(oe_unmount(OE_DEVID_SGXFS, "/") == 0);
+        OE_TEST(oe_umount("/") == 0);
     }
 };
 
@@ -337,12 +337,12 @@ class fd_hostfs_file_system : public fd_file_system
     fd_hostfs_file_system()
     {
         oe_register_hostfs_device();
-        OE_TEST(oe_mount(OE_DEVID_HOSTFS, "/", "/", 0) == 0);
+        OE_TEST(oe_mount("/", "/", "hostfs", 0, NULL) == 0);
     }
 
     ~fd_hostfs_file_system()
     {
-        OE_TEST(oe_unmount(OE_DEVID_HOSTFS, "/") == 0);
+        OE_TEST(oe_umount("/") == 0);
     }
 };
 
@@ -352,12 +352,12 @@ class fd_sgxfs_file_system : public fd_file_system
     fd_sgxfs_file_system()
     {
         oe_register_sgxfs_device();
-        OE_TEST(oe_mount(OE_DEVID_SGXFS, "/", "/", 0) == 0);
+        OE_TEST(oe_mount("/", "/", "sgxfs", 0, NULL) == 0);
     }
 
     ~fd_sgxfs_file_system()
     {
-        OE_TEST(oe_unmount(OE_DEVID_SGXFS, "/") == 0);
+        OE_TEST(oe_umount("/") == 0);
     }
 };
 
@@ -563,12 +563,12 @@ class stream_hostfs_file_system : public stream_file_system
     stream_hostfs_file_system()
     {
         oe_register_hostfs_device();
-        OE_TEST(oe_mount(OE_DEVID_SGXFS, "/", "/", 0) == 0);
+        OE_TEST(oe_mount("/", "/", "sgxfs", 0, NULL) == 0);
     }
 
     ~stream_hostfs_file_system()
     {
-        OE_TEST(oe_unmount(OE_DEVID_SGXFS, "/") == 0);
+        OE_TEST(oe_umount("/") == 0);
     }
 };
 
@@ -578,12 +578,12 @@ class stream_sgxfs_file_system : public stream_file_system
     stream_sgxfs_file_system()
     {
         oe_register_sgxfs_device();
-        OE_TEST(oe_mount(OE_DEVID_SGXFS, "/", "/", 0) == 0);
+        OE_TEST(oe_mount("/", "/", "sgxfs", 0, NULL) == 0);
     }
 
     ~stream_sgxfs_file_system()
     {
-        OE_TEST(oe_unmount(OE_DEVID_SGXFS, "/") == 0);
+        OE_TEST(oe_umount("/") == 0);
     }
 };
 

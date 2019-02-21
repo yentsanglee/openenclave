@@ -77,7 +77,7 @@ typedef struct _fs
 {
     struct _oe_device base;
     uint32_t magic;
-    uint32_t mount_flags;
+    unsigned long mount_flags;
     char mount_source[OE_PATH_MAX];
 } fs_t;
 
@@ -188,7 +188,7 @@ static int _hostfs_mount(
     oe_device_t* dev,
     const char* source,
     const char* target,
-    uint32_t flags)
+    unsigned long flags)
 {
     int ret = -1;
     fs_t* fs = _cast_fs(dev);

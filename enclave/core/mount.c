@@ -113,16 +113,54 @@ done:
     return ret;
 }
 
+static oe_device_t* _filesystemtype_to_device(const char* filesystemtype)
+{
+    oe_device_t* ret = NULL;
+    struct pair
+    {
+        const char* filesystemtype;
+        uint64_t devid;
+    };
+    struct pair pairs[] = {
+        {"hostfs", OE_DEVID_HOSTFS},
+        {"sgxfs", OE_DEVID_SGXFS},
+        {"shwfs", OE_DEVID_SHWFS},
+    };
+    static const size_t num_pairs = OE_COUNTOF(pairs);
+    size_t i;
+    uint64_t devid = OE_DEVID_NULL;
+
+    for (i = 0; i < num_pairs; i++)
+    {
+        if (oe_strcmp(pairs[i].filesystemtype, filesystemtype) == 0)
+        {
+            devid = pairs[i].devid;
+            break;
+        }
+    }
+
+    if (devid == OE_DEVID_NULL)
+        goto done;
+
+    ret = oe_get_devid_device(devid);
+
+done:
+    return ret;
+}
+
 int oe_mount(
-    uint64_t devid,
     const char* source,
     const char* target,
-    uint32_t flags)
+    const char* filesystemtype,
+    unsigned long mountflags,
+    const void* data)
 {
     int ret = -1;
-    oe_device_t* device = oe_get_devid_device(devid);
+    oe_device_t* device = _filesystemtype_to_device(filesystemtype);
     oe_device_t* new_device = NULL;
     bool locked = false;
+
+    OE_UNUSED(data);
 
     if (!device || device->type != OE_DEVICETYPE_FILESYSTEM || !target)
     {
@@ -200,7 +238,7 @@ int oe_mount(
     }
 
     /* Notify the device that it has been mounted. */
-    if (new_device->ops.fs->mount(new_device, source, target, flags) != 0)
+    if (new_device->ops.fs->mount(new_device, source, target, mountflags) != 0)
     {
         oe_free(_mount_table[--_mount_table_size].path);
         goto done;
@@ -220,11 +258,12 @@ done:
     return ret;
 }
 
-int oe_unmount(uint64_t devid, const char* target)
+int oe_umount(const char* target)
 {
     int ret = -1;
     size_t index = (size_t)-1;
-    oe_device_t* device = oe_get_devid_device(devid);
+    char suffix[OE_PATH_MAX];
+    oe_device_t* device = oe_mount_resolve(target, suffix);
 
     oe_spin_lock(&_lock);
 

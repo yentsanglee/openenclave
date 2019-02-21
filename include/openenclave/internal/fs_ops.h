@@ -7,6 +7,7 @@
 #include <openenclave/bits/fs.h>
 #include <openenclave/bits/types.h>
 #include <openenclave/corelibc/errno.h>
+#include <openenclave/corelibc/sys/mount.h>
 #include <openenclave/internal/device_ops.h>
 
 OE_EXTERNC_BEGIN
@@ -23,7 +24,7 @@ struct _oe_fs_ops
         oe_device_t* fs,
         const char* source,
         const char* target,
-        uint32_t flags);
+        unsigned long flags);
 
     int (*unmount)(oe_device_t* fs, const char* target);
 
