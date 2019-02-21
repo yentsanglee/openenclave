@@ -74,6 +74,7 @@ add_library(oelibc STATIC
     stdlib.c
     strerror.c
     sysconf.c
+    socket.c
     time.c
     __printf_chk.c
     __vfprintf_chk.c

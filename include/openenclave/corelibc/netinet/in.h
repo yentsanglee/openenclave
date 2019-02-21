@@ -38,9 +38,9 @@ struct oe_in6_addr
 #include <openenclave/corelibc/netinet/bits/in6_addr.h>
 };
 
-#define s6_addr __in6_u.__u6_addr8
-#define s6_addr16 __in6_u.__u6_addr16
-#define s6_addr32 __in6_u.__u6_addr32
+#define oe_s6_addr __in6_union.__s6_addr
+#define oe_s6_addr16 __in6_union.__s6_addr16
+#define oe_s6_addr32 __in6_union.__s6_addr32
 
 struct oe_sockaddr_in
 {
@@ -56,6 +56,9 @@ struct oe_sockaddr_in
 #define SOCK_STREAM OE_SOCK_STREAM
 #define IN6ADDR_ANY_INIT OE_IN6ADDR_ANY_INIT
 #define IN6ADDR_LOOPBACK_INIT OE_IN6ADDR_LOOPBACK_INIT
+#define s6_addr oe_s6_addr
+#define s6_addr16 oe_s6_addr16
+#define s6_addr32 oe_s6_addr32
 
 struct in_addr
 {
