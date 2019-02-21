@@ -3,7 +3,7 @@
 
 #ifndef __NETDB_H__
 #define __NETDB_H__
-#include <openenclave/bits/socket.h>
+#include <openenclave/corelibc/sys/socket.h>
 
 OE_EXTERNC_BEGIN
 
@@ -22,7 +22,7 @@ struct oe_hostent* getoe_hostent(void);
 
 struct oe_hostent* gethostbyaddr(
     const void* __addr,
-    oe_socklen_t __len,
+    socklen_t __len,
     int __type);
 
 struct oe_hostent* gethostbyname(const char* __name);
@@ -161,7 +161,7 @@ struct oe_addrinfo
     int ai_family;               /* Protocol family for socket.  */
     int ai_socktype;             /* Socket type.  */
     int ai_protocol;             /* Protocol for socket.  */
-    oe_socklen_t ai_addrlen;     /* Length of socket address.  */
+    socklen_t ai_addrlen;        /* Length of socket address.  */
     struct oe_sockaddr* ai_addr; /* Socket address for socket.  */
     char* ai_canonname;          /* Canonical name for service location.  */
     struct oe_addrinfo* ai_next; /* Pointer to next in list.  */
@@ -243,11 +243,11 @@ const char* oe_gai_strerror(int __ecode);
 
 int oe_getnameinfo(
     const struct oe_sockaddr* __restrict __sa,
-    oe_socklen_t __salen,
+    socklen_t __salen,
     char* __restrict __host,
-    oe_socklen_t __hostlen,
+    socklen_t __hostlen,
     char* __restrict __serv,
-    oe_socklen_t __servlen,
+    socklen_t __servlen,
     int __flags);
 
 OE_EXTERNC_END

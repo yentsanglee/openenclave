@@ -97,11 +97,11 @@ static resolv_t _hostresolv;
 static ssize_t _hostresolv_getnameinfo(
     oe_resolver_t* dev,
     const struct oe_sockaddr* sa,
-    oe_socklen_t salen,
+    socklen_t salen,
     char* host,
-    oe_socklen_t hostlen,
+    socklen_t hostlen,
     char* serv,
-    oe_socklen_t servlen,
+    socklen_t servlen,
     int flags)
 {
     (void)dev;
@@ -282,7 +282,7 @@ static ssize_t _hostresolv_getaddrinfo_r(
                     retinfo->ai_addr,
                     arginfo->ai_addr,
                     sizeof(struct oe_addrinfo));
-                bufptr += sizeof(oe_sockaddr);
+                bufptr += sizeof(struct oe_sockaddr);
             }
             if (retinfo->ai_canonname)
             {

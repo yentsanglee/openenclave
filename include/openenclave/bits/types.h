@@ -59,6 +59,9 @@ typedef int64_t time_t;
 typedef int64_t suseconds_t;
 typedef struct _OE_DIR OE_DIR;
 struct oe_dirent;
+typedef uint32_t socklen_t;
+typedef uint16_t sa_family_t;
+typedef uint16_t in_port_t;
 
 /* bool type */
 #ifndef __cplusplus

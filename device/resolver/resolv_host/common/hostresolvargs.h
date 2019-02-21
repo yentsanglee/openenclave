@@ -51,11 +51,11 @@ typedef struct _oe_hostresolv_args
         struct
         {
             int64_t ret;
-            oe_socklen_t addrlen; // in
+            socklen_t addrlen; // in
             // struct oe_sockaddr *addr;  data in buf
-            oe_socklen_t hostlen;
+            socklen_t hostlen;
             // Hostname returned in buf
-            oe_socklen_t servlen;
+            socklen_t servlen;
             // Service name returned in buf+hostlen after hostname
             int32_t flags;
         } getnameinfo;

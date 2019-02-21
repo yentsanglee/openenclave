@@ -44,19 +44,19 @@ typedef struct _oe_hostsock_args
         {
             int64_t ret;
             int64_t host_fd;
-            oe_socklen_t addrlen;
+            socklen_t addrlen;
         } connect;
         struct
         {
             int64_t ret;
             int64_t host_fd;
-            oe_socklen_t addrlen;
+            socklen_t addrlen;
         } accept;
         struct
         {
             int64_t ret;
             int64_t host_fd;
-            oe_socklen_t addrlen;
+            socklen_t addrlen;
         } bind;
         struct
         {
@@ -109,7 +109,7 @@ typedef struct _oe_hostsock_args
             int64_t host_fd;
             int level;
             int optname;
-            oe_socklen_t optlen;
+            socklen_t optlen;
         } setsockopt;
         struct
         {
@@ -117,19 +117,19 @@ typedef struct _oe_hostsock_args
             int64_t host_fd;
             int level;
             int optname;
-            oe_socklen_t optlen;
+            socklen_t optlen;
         } getsockopt;
         struct
         {
             int64_t ret;
             int64_t host_fd;
-            oe_socklen_t addrlen;
+            socklen_t addrlen;
         } getsockname;
         struct
         {
             int64_t ret;
             int64_t host_fd;
-            oe_socklen_t addrlen;
+            socklen_t addrlen;
         } getpeername;
         struct
         {

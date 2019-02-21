@@ -219,7 +219,7 @@ done:
 static int _hostsock_connect(
     oe_device_t* sock_,
     const struct oe_sockaddr* addr,
-    oe_socklen_t addrlen)
+    socklen_t addrlen)
 {
     int64_t ret = -1;
     sock_t* sock = _cast_sock(sock_);
@@ -272,7 +272,7 @@ done:
 static int _hostsock_accept(
     oe_device_t* sock_,
     struct oe_sockaddr* addr,
-    oe_socklen_t* addrlen)
+    socklen_t* addrlen)
 {
     int64_t ret = -1;
     sock_t* sock = _cast_sock(sock_);
@@ -310,7 +310,7 @@ static int _hostsock_accept(
         }
         else
         {
-            args->u.accept.addrlen = (oe_socklen_t)-1;
+            args->u.accept.addrlen = (socklen_t)-1;
         }
     }
 
@@ -346,7 +346,7 @@ done:
 static int _hostsock_bind(
     oe_device_t* sock_,
     const struct oe_sockaddr* addr,
-    oe_socklen_t addrlen)
+    socklen_t addrlen)
 {
     int64_t ret = -1;
     sock_t* sock = _cast_sock(sock_);
@@ -619,7 +619,7 @@ static int _hostsock_getsockopt(
     int level,
     int optname,
     void* optval,
-    oe_socklen_t* optlen)
+    socklen_t* optlen)
 {
     int64_t ret = -1;
     sock_t* sock = _cast_sock(sock_);
@@ -681,7 +681,7 @@ static int _hostsock_setsockopt(
     int level,
     int optname,
     const void* optval,
-    oe_socklen_t optlen)
+    socklen_t optlen)
 {
     int64_t ret = -1;
     sock_t* sock = _cast_sock(sock_);
@@ -749,7 +749,7 @@ static int _hostsock_ioctl(
 static int _hostsock_getpeername(
     oe_device_t* sock_,
     struct oe_sockaddr* addr,
-    oe_socklen_t* addrlen)
+    socklen_t* addrlen)
 {
     int64_t ret = -1;
     sock_t* sock = _cast_sock(sock_);
@@ -808,7 +808,7 @@ done:
 static int _hostsock_getsockname(
     oe_device_t* sock_,
     struct oe_sockaddr* addr,
-    oe_socklen_t* addrlen)
+    socklen_t* addrlen)
 {
     int64_t ret = -1;
     sock_t* sock = _cast_sock(sock_);

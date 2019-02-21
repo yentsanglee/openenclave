@@ -5,7 +5,9 @@
 #include <openenclave/internal/time.h>
 
 // enclave.h must come before socket.h
-#include <openenclave/bits/socket.h>
+#include <openenclave/corelibc/arpa/inet.h>
+#include <openenclave/corelibc/netinet/in.h>
+#include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/host_socket.h>
 
@@ -90,7 +92,7 @@ int ecall_run_server()
     struct oe_sockaddr_in serv_addr = {0};
 
     const int optVal = 1;
-    const oe_socklen_t optLen = sizeof(optVal);
+    const socklen_t optLen = sizeof(optVal);
     int rtn = oe_setsockopt(
         listenfd, OE_SOL_SOCKET, OE_SO_REUSEADDR, (void*)&optVal, optLen);
     if (rtn > 0)

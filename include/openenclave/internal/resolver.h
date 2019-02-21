@@ -6,7 +6,7 @@
 
 #include <openenclave/bits/types.h>
 #include <openenclave/corelibc/errno.h>
-typedef uint32_t oe_socklen_t;
+typedef uint32_t socklen_t;
 #include <openenclave/internal/netdb.h>
 
 OE_EXTERNC_BEGIN
@@ -28,11 +28,11 @@ typedef struct _oe_resolver_ops
     ssize_t (*getnameinfo)(
         oe_resolver_t* dev,
         const struct oe_sockaddr* sa,
-        oe_socklen_t salen,
+        socklen_t salen,
         char* host,
-        oe_socklen_t hostlen,
+        socklen_t hostlen,
         char* serv,
-        oe_socklen_t servlen,
+        socklen_t servlen,
         int flags);
 
     // 2Do:     gethostbyaddr(3), getservbyname(3), getservbyport(3),

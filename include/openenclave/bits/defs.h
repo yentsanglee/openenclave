@@ -156,6 +156,8 @@
 #define __OE_BYTE_ORDER __OE_LITTLE_ENDIAN
 #elif defined(__arm__) || defined(__aarch64__)
 #define __OE_BYTE_ORDER __OE_BIG_ENDIAN
+#elif defined(_WIN32)
+#define __OE_BYTE_ORDER __OE_LITTLE_ENDIAN
 #endif
 
 #endif /* _OE_BITS_DEFS_H */

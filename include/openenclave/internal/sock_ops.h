@@ -10,7 +10,7 @@
 
 OE_EXTERNC_BEGIN
 
-typedef uint32_t oe_socklen_t;
+typedef uint32_t socklen_t;
 struct oe_sockaddr;
 struct oe_addrinfo;
 
@@ -24,15 +24,15 @@ typedef struct _oe_sock_ops
     int (*connect)(
         oe_device_t* dev,
         const struct oe_sockaddr* addr,
-        oe_socklen_t addrlen);
+        socklen_t addrlen);
     int (*accept)(
         oe_device_t* dev,
         struct oe_sockaddr* addr,
-        oe_socklen_t* addrlen);
+        socklen_t* addrlen);
     int (*bind)(
         oe_device_t* dev,
         const struct oe_sockaddr* addr,
-        oe_socklen_t addrlen);
+        socklen_t addrlen);
 
     int (*listen)(oe_device_t* dev, int backlog);
 
@@ -45,21 +45,21 @@ typedef struct _oe_sock_ops
         int level,
         int optname,
         void* optval,
-        oe_socklen_t* optlen);
+        socklen_t* optlen);
     int (*setsockopt)(
         oe_device_t* dev,
         int level,
         int optname,
         const void* optval,
-        oe_socklen_t optlen);
+        socklen_t optlen);
     int (*getpeername)(
         oe_device_t* dev,
         struct oe_sockaddr* addr,
-        oe_socklen_t* addrlen);
+        socklen_t* addrlen);
     int (*getsockname)(
         oe_device_t* dev,
         struct oe_sockaddr* addr,
-        oe_socklen_t* addrlen);
+        socklen_t* addrlen);
 
 #if 0
     int (*getaddrinfo)( oe_device_t* dev, const char *node, const char *service, const struct oe_addrinfo *hints, struct oe_addrinfo **res);
