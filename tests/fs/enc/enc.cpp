@@ -438,6 +438,31 @@ void _test_mount(const char* tmp_dir)
         OE_TEST(oe_close(dir) == 0);
     }
 
+    /* Attempt to read the target directory with oe_getdents(). */
+    {
+        int dir = oe_open(0, target, OE_O_RDONLY | OE_O_DIRECTORY, 0);
+        OE_TEST(dir > 0);
+
+        {
+            struct oe_dirent ents[10];
+            int n;
+
+            while ((n = oe_getdents((uint32_t)dir, ents, OE_COUNTOF(ents))) > 0)
+            {
+                int count = n / (int)sizeof(oe_dirent);
+
+                for (int i = 0; i < count; i++)
+                {
+                    printf("name{%s}\n", ents[i].d_name);
+                }
+            }
+
+            OE_TEST(n == 0);
+        }
+
+        OE_TEST(oe_close(dir) == 0);
+    }
+
     OE_TEST(oe_umount(target) == 0);
     OE_TEST(oe_umount("/") == 0);
 }

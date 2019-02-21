@@ -289,7 +289,7 @@ done:
     return ret;
 }
 
-static oe_device_t* _sgxfs_open(
+static oe_device_t* _sgxfs_open_file(
     oe_device_t* fs_,
     const char* pathname,
     int flags,
@@ -436,6 +436,54 @@ done:
     return ret;
 }
 
+static oe_device_t* _sgxfs_open_directory(
+    oe_device_t* fs_,
+    const char* pathname,
+    int flags,
+    mode_t mode)
+{
+    oe_device_t* ret = NULL;
+    fs_t* fs = _cast_fs(fs_);
+    oe_device_t* hostfs = oe_fs_get_hostfs();
+
+    if (!fs || !hostfs)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Delegate the request to HOSTFS. */
+    {
+        char full_path[OE_PATH_MAX];
+
+        if (_expand_path(fs, pathname, full_path) != 0)
+            goto done;
+
+        if ((ret = hostfs->ops.fs->open(hostfs, full_path, flags, mode)) != 0)
+            goto done;
+    }
+
+done:
+
+    return ret;
+}
+
+static oe_device_t* _sgxfs_open(
+    oe_device_t* fs,
+    const char* pathname,
+    int flags,
+    mode_t mode)
+{
+    if ((flags & OE_O_DIRECTORY))
+    {
+        return _sgxfs_open_directory(fs, pathname, flags, mode);
+    }
+    else
+    {
+        return _sgxfs_open_file(fs, pathname, flags, mode);
+    }
+}
+
 static ssize_t _sgxfs_read(oe_device_t* file_, void* buf, size_t count)
 {
     ssize_t ret = -1;
@@ -515,7 +563,7 @@ done:
     return ret;
 }
 
-static int _sgxfs_close(oe_device_t* file_)
+static int _sgxfs_close_file(oe_device_t* file_)
 {
     int ret = -1;
     file_t* file = _cast_file(file_);
@@ -536,6 +584,35 @@ static int _sgxfs_close(oe_device_t* file_)
 
     memset(file, 0xDD, sizeof(file_t));
     oe_free(file);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int _sgxfs_close(oe_device_t* file_)
+{
+    int ret = -1;
+    file_t* file = _cast_file(file_);
+    oe_device_t* hostfs = oe_fs_get_hostfs();
+
+    if (!hostfs)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    if (file)
+    {
+        if (_sgxfs_close_file(file_) != 0)
+            goto done;
+    }
+    else
+    {
+        if ((*hostfs->ops.fs->base.close)(file_) != 0)
+            goto done;
+    }
 
     ret = 0;
 
@@ -608,6 +685,32 @@ static int _sgxfs_closedir(oe_device_t* dir)
     ret = (*dir->ops.fs->closedir)(dir);
 
 done:
+    return ret;
+}
+
+static int _sgxfs_getdents(
+    oe_device_t* file,
+    struct oe_dirent* dirp,
+    unsigned int count)
+{
+    int ret = -1;
+    int n;
+    oe_device_t* hostfs = oe_fs_get_hostfs();
+
+    if (!hostfs)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Delegate the request to HOSTFS. */
+    if ((n = hostfs->ops.fs->getdents(file, dirp, count)) == -1)
+        goto done;
+
+    ret = n;
+
+done:
+
     return ret;
 }
 
@@ -1117,6 +1220,7 @@ static oe_fs_ops_t _ops = {
     .opendir = _sgxfs_opendir,
     .readdir = _sgxfs_readdir,
     .closedir = _sgxfs_closedir,
+    .getdents = _sgxfs_getdents,
     .stat = _sgxfs_stat,
     .access = _sgxfs_access,
     .link = _sgxfs_link,
