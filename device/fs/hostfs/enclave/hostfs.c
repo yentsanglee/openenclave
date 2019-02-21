@@ -9,7 +9,6 @@
 
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/fs_ops.h>
-#include <openenclave/bits/fs.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/bits/safemath.h>
 #include <openenclave/internal/calls.h>

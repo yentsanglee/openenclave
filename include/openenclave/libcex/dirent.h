@@ -9,8 +9,8 @@
 #endif
 
 #include <openenclave/bits/defs.h>
-#include <openenclave/bits/fs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/internal/fs.h>
 #include <openenclave/libcex/bits/common.h>
 
 OE_EXTERNC_BEGIN

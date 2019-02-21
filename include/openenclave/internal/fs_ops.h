@@ -4,11 +4,12 @@
 #ifndef _OE_FS_OPS_H
 #define _OE_FS_OPS_H
 
-#include <openenclave/bits/fs.h>
 #include <openenclave/bits/types.h>
 #include <openenclave/corelibc/errno.h>
 #include <openenclave/corelibc/sys/mount.h>
+#include <openenclave/corelibc/sys/stat.h>
 #include <openenclave/internal/device_ops.h>
+#include <openenclave/internal/fs.h>
 
 OE_EXTERNC_BEGIN
 

@@ -4,7 +4,17 @@
 #ifndef _OE_INTERNAL_FS_H
 #define _OE_INTERNAL_FS_H
 
-#include <openenclave/bits/fs.h>
+#include <openenclave/bits/defs.h>
+#include <openenclave/bits/device.h>
+#include <openenclave/bits/types.h>
+#include <openenclave/corelibc/dirent.h>
+#include <openenclave/corelibc/fcntl.h>
+#include <openenclave/corelibc/limits.h>
+#include <openenclave/corelibc/stdio.h>
+#include <openenclave/corelibc/sys/mount.h>
+#include <openenclave/corelibc/sys/stat.h>
+#include <openenclave/corelibc/sys/uio.h>
+#include <openenclave/corelibc/unistd.h>
 #include <openenclave/internal/device.h>
 
 OE_EXTERNC_BEGIN

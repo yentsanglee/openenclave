@@ -10,8 +10,8 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/device.h>
-#include <openenclave/bits/fs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/internal/fs.h>
 #include <openenclave/libcex/bits/common.h>
 #include <stdio.h>
 

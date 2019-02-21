@@ -5,8 +5,8 @@
 #define _OE_COMMANDS_H
 
 #include <openenclave/bits/defs.h>
-#include <openenclave/bits/fs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/internal/fs.h>
 #include "../common/strarr.h"
 
 OE_EXTERNC_BEGIN
