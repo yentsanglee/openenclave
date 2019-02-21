@@ -34,12 +34,6 @@ struct _oe_fs_ops
 
     off_t (*lseek)(oe_device_t* file, off_t offset, int whence);
 
-    oe_device_t* (*opendir)(oe_device_t* fs, const char* path);
-
-    struct oe_dirent* (*readdir)(oe_device_t* dir);
-
-    int (*closedir)(oe_device_t* dir);
-
     int (*getdents)(
         oe_device_t* file,
         struct oe_dirent* dirp,

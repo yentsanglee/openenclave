@@ -630,64 +630,6 @@ static int _sgxfs_ioctl(oe_device_t* file, unsigned long request, oe_va_list ap)
     return -1;
 }
 
-static oe_device_t* _sgxfs_opendir(oe_device_t* fs_, const char* name)
-{
-    oe_device_t* hostfs = oe_fs_get_hostfs();
-    fs_t* fs = _cast_fs(fs_);
-    oe_device_t* dir = NULL;
-
-    if (!fs || !hostfs)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
-
-    /* Delegate open directory operation to HOSTFS. */
-    {
-        char full_path[OE_PATH_MAX];
-
-        if (_expand_path(fs, name, full_path) != 0)
-            goto done;
-
-        dir = (*hostfs->ops.fs->opendir)(hostfs, full_path);
-    }
-
-done:
-    return dir;
-}
-
-static struct oe_dirent* _sgxfs_readdir(oe_device_t* dir)
-{
-    struct oe_dirent* ret = NULL;
-
-    if (!dir)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
-
-    ret = (*dir->ops.fs->readdir)(dir);
-
-done:
-    return ret;
-}
-
-static int _sgxfs_closedir(oe_device_t* dir)
-{
-    int ret = -1;
-
-    if (!dir)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
-
-    ret = (*dir->ops.fs->closedir)(dir);
-
-done:
-    return ret;
-}
-
 static int _sgxfs_getdents(
     oe_device_t* file,
     struct oe_dirent* dirp,
@@ -1217,9 +1159,6 @@ static oe_fs_ops_t _ops = {
     .base.write = _sgxfs_write,
     .lseek = _sgxfs_lseek,
     .base.close = _sgxfs_close,
-    .opendir = _sgxfs_opendir,
-    .readdir = _sgxfs_readdir,
-    .closedir = _sgxfs_closedir,
     .getdents = _sgxfs_getdents,
     .stat = _sgxfs_stat,
     .access = _sgxfs_access,

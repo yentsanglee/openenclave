@@ -421,28 +421,11 @@ void test_fs(const char* src_dir, const char* tmp_dir)
 {
     (void)src_dir;
 
-    {
-        hostfs_file_system fs;
-        fs.mkdir(tmp_dir, 0777);
-    }
+    OE_TEST(oe_mkdir(OE_DEVID_HOSTFS, tmp_dir, 0777) == 0);
 
     printf("=== running all tests\n");
     printf("--- src_dir=%s\n", src_dir);
     printf("--- tmp_dir=%s\n", tmp_dir);
-
-    /* Test the hostfs file system. */
-    {
-        printf("=== testing hostfs:\n");
-        hostfs_file_system fs;
-        test_all(fs, tmp_dir);
-    }
-
-    /* Test the sgxfs file system. */
-    {
-        printf("=== testing sgxfs:\n");
-        sgxfs_file_system fs;
-        test_all(fs, tmp_dir);
-    }
 
     /* Test the HOSTFS oe file descriptor interfaces. */
     {
@@ -496,7 +479,6 @@ void test_fs(const char* src_dir, const char* tmp_dir)
     {
         printf("=== testing oe_set_thread_device:\n");
 
-        oe_register_hostfs_device();
         fd_file_system fs;
         OE_TEST(oe_set_thread_device(OE_DEVID_HOSTFS) == 0);
         OE_TEST(oe_get_thread_device() == OE_DEVID_HOSTFS);
