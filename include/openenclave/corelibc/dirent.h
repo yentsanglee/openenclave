@@ -37,6 +37,8 @@ struct oe_dirent* oe_readdir(OE_DIR* dir);
 
 int oe_closedir(OE_DIR* dir);
 
+int oe_getdents(unsigned int fd, struct oe_dirent* dirp, unsigned int count);
+
 #if defined(OE_NEED_STDC_NAMES)
 
 #define DT_UNKNOWN OE_DT_UNKNOWN

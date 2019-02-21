@@ -342,6 +342,29 @@ done:
     return ret;
 }
 
+int oe_getdents(unsigned int fd, struct oe_dirent* dirp, unsigned int count)
+{
+    int ret = -1;
+    oe_device_t* file;
+
+    if (!(file = oe_get_fd_device((int)fd)))
+    {
+        oe_errno = EBADF;
+        goto done;
+    }
+
+    if (file->ops.fs->getdents == NULL)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    ret = (*file->ops.fs->getdents)(file, dirp, count);
+
+done:
+    return ret;
+}
+
 ssize_t oe_readv(int fd, const struct oe_iovec* iov, int iovcnt)
 {
     ssize_t ret = -1;

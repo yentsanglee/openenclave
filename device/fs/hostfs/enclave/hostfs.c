@@ -86,6 +86,7 @@ typedef struct _file
     uint32_t magic;
     int host_fd;
     uint32_t ready_mask;
+    oe_device_t* dir;
 } file_t;
 
 typedef struct _dir
@@ -290,7 +291,7 @@ done:
     return ret;
 }
 
-static oe_device_t* _hostfs_open(
+static oe_device_t* _hostfs_open_file(
     oe_device_t* fs_,
     const char* pathname,
     int flags,
@@ -359,7 +360,8 @@ static oe_device_t* _hostfs_open(
             goto done;
         }
 
-        file->base.type = OE_DEVICETYPE_FILE, file->base.size = sizeof(file_t);
+        file->base.type = OE_DEVICETYPE_FILE;
+        file->base.size = sizeof(file_t);
         file->magic = FILE_MAGIC;
         file->base.ops.fs = fs->base.ops.fs;
         file->host_fd = args->u.open.ret;
@@ -377,6 +379,91 @@ done:
         oe_host_batch_free(batch);
 
     return ret;
+}
+
+static oe_device_t* _hostfs_opendir(oe_device_t* fs, const char* name);
+static int _hostfs_closedir(oe_device_t* file);
+
+static oe_device_t* _hostfs_open_directory(
+    oe_device_t* fs_,
+    const char* pathname,
+    int flags,
+    mode_t mode)
+{
+    oe_device_t* ret = NULL;
+    fs_t* fs = _cast_fs(fs_);
+    file_t* file = NULL;
+    oe_device_t* dir = NULL;
+
+    oe_errno = 0;
+
+    OE_UNUSED(mode);
+
+    /* Check parameters */
+    if (!fs || !pathname || !(flags & OE_O_DIRECTORY))
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Directories can only be opened for read access. */
+    if (oe_get_open_access_mode(flags) != OE_O_RDONLY)
+    {
+        oe_errno = EACCES;
+        goto done;
+    }
+
+    /* Attempt to open the directory. */
+    if (!(dir = _hostfs_opendir(fs_, pathname)))
+    {
+        goto done;
+    }
+
+    /* Allocate and initialize the file struct. */
+    {
+        if (!(file = oe_calloc(1, sizeof(file_t))))
+        {
+            oe_errno = ENOMEM;
+            goto done;
+        }
+
+        file->base.type = OE_DEVICETYPE_FILE;
+        file->base.size = sizeof(file_t);
+        file->magic = FILE_MAGIC;
+        file->base.ops.fs = fs->base.ops.fs;
+        file->host_fd = -1;
+        file->dir = dir;
+    }
+
+    ret = &file->base;
+    file = NULL;
+    dir = NULL;
+
+done:
+
+    if (file)
+        oe_free(file);
+
+    if (dir)
+        _hostfs_closedir(dir);
+
+    return ret;
+}
+
+static oe_device_t* _hostfs_open(
+    oe_device_t* fs,
+    const char* pathname,
+    int flags,
+    mode_t mode)
+{
+    if ((flags & OE_O_DIRECTORY))
+    {
+        return _hostfs_open_directory(fs, pathname, flags, mode);
+    }
+    else
+    {
+        return _hostfs_open_file(fs, pathname, flags, mode);
+    }
 }
 
 static ssize_t _hostfs_read(oe_device_t* file_, void* buf, size_t count)
@@ -428,6 +515,53 @@ static ssize_t _hostfs_read(oe_device_t* file_, void* buf, size_t count)
     {
         memcpy(buf, args->buf, count);
     }
+
+done:
+    return ret;
+}
+
+static struct oe_dirent* _hostfs_readdir(oe_device_t* dir_);
+
+static int _hostfs_getdents(
+    oe_device_t* file_,
+    struct oe_dirent* dirp,
+    unsigned int count)
+{
+    int ret = -1;
+    int bytes = 0;
+    file_t* file = _cast_file(file_);
+    unsigned int i;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!file || !file->dir || !dirp)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Read the entries one-by-one. */
+    for (i = 0; i < count; i++)
+    {
+        oe_errno = 0;
+
+        struct oe_dirent* ent;
+
+        if (!(ent = _hostfs_readdir(file->dir)))
+        {
+            if (oe_errno)
+                goto done;
+
+            break;
+        }
+
+        memcpy(dirp, ent, sizeof(struct oe_dirent));
+        bytes += sizeof(struct oe_dirent);
+        dirp++;
+    }
+
+    ret = bytes;
 
 done:
     return ret;
@@ -533,7 +667,7 @@ done:
     return ret;
 }
 
-static int _hostfs_close(oe_device_t* file_)
+static int _hostfs_close_file(oe_device_t* file_)
 {
     int ret = -1;
     file_t* file = _cast_file(file_);
@@ -581,6 +715,60 @@ static int _hostfs_close(oe_device_t* file_)
     oe_free(file);
 
     ret = 0;
+
+done:
+    return ret;
+}
+
+static int _hostfs_close_directory(oe_device_t* file_)
+{
+    int ret = -1;
+    file_t* file = _cast_file(file_);
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!file || !file->dir)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Release the directory object. */
+    if (_hostfs_closedir(file->dir) != 0)
+        goto done;
+
+    /* Release the file object. */
+    oe_free(file);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int _hostfs_close(oe_device_t* file_)
+{
+    int ret = -1;
+    file_t* file = _cast_file(file_);
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!file)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    if (file->dir)
+    {
+        ret = _hostfs_close_directory(file_);
+    }
+    else
+    {
+        ret = _hostfs_close_file(file_);
+    }
 
 done:
     return ret;
@@ -1247,6 +1435,7 @@ static oe_fs_ops_t _ops = {
     .opendir = _hostfs_opendir,
     .readdir = _hostfs_readdir,
     .closedir = _hostfs_closedir,
+    .getdents = _hostfs_getdents,
     .stat = _hostfs_stat,
     .access = _hostfs_access,
     .link = _hostfs_link,

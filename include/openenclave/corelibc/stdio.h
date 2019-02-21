@@ -76,7 +76,7 @@ int printf(const char* format, ...)
 
 OE_INLINE int rename(const char* oldpath, const char* newpath)
 {
-    return oe_rename(oldpath, newpath);
+    return oe_rename(0, oldpath, newpath);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

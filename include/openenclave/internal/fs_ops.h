@@ -40,6 +40,11 @@ struct _oe_fs_ops
 
     int (*closedir)(oe_device_t* dir);
 
+    int (*getdents)(
+        oe_device_t* file,
+        struct oe_dirent* dirp,
+        unsigned int count);
+
     int (*stat)(oe_device_t* fs, const char* pathname, struct oe_stat* buf);
 
     int (*access)(oe_device_t* fs, const char* pathname, int mode);
