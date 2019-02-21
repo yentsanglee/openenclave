@@ -31,18 +31,6 @@ typedef struct _oe_hostresolv_args
             int32_t hint_family;   //  AF_UNSPEC means none
             int32_t hint_socktype; //  none = 0
             int32_t hint_protocol; //  none = 0
-            int32_t buffer_needed;
-            int32_t nodelen;
-            int32_t servicelen;
-            // With a buffer big enough for a single addrinfo
-        } getaddrinfosize;
-        struct
-        {
-            int64_t ret;
-            int32_t hint_flags;    //  (AI_V4MAPPED | AI_ADDRCONFIG) means none
-            int32_t hint_family;   //  AF_UNSPEC means none
-            int32_t hint_socktype; //  none = 0
-            int32_t hint_protocol; //  none = 0
             int32_t buffer_len;
             int32_t nodelen;
             int32_t servicelen;
@@ -51,11 +39,11 @@ typedef struct _oe_hostresolv_args
         struct
         {
             int64_t ret;
-            socklen_t addrlen; // in
+            int32_t addrlen; // in
             // struct oe_sockaddr *addr;  data in buf
-            socklen_t hostlen;
+            int32_t hostlen;
             // Hostname returned in buf
-            socklen_t servlen;
+            int32_t servlen;
             // Service name returned in buf+hostlen after hostname
             int32_t flags;
         } getnameinfo;

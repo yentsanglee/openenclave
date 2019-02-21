@@ -170,7 +170,6 @@ struct oe_addrinfo
 // Lookup mode.
 #define GAI_WAIT 0
 #define GAI_NOWAIT 1
-#endif
 
 /* Possible values for `ai_flags' field in `addrinfo' structure.  */
 #define OE_AI_PASSIVE 0x0001     /* Socket address is intended for `bind'.  */
@@ -222,7 +221,6 @@ code points.  */
 #define NI_NOFQDN 4      /* Only return nodename portion.  */
 #define NI_NAMEREQD 8    /* Don't return numeric addresses.  */
 #define NI_DGRAM 16      /* Look up UDP service rather than TCP.  */
-#ifdef __USE_GNU
 #define NI_IDN 32 /* Convert name from IDN format.  */
 #define NI_IDN_ALLOW_UNASSIGNED           \
     64 /* Don't reject unassigned Unicode \
