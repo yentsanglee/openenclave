@@ -10,16 +10,16 @@
 OE_EXTERNC_BEGIN
 
 /* Address to accept any incoming messages. */
-#define OE_INADDR_ANY ((oe_in_addr_t)0x00000000)
+#define OE_INADDR_ANY ((in_addr_t)0x00000000)
 
 /* Address to send to all hosts. */
-#define OE_INADDR_BROADCAST ((oe_in_addr_t)0xffffffff)
+#define OE_INADDR_BROADCAST ((in_addr_t)0xffffffff)
 
 /* Address indicating an error return. */
-#define OE_INADDR_NONE ((oe_in_addr_t)0xffffffff)
+#define OE_INADDR_NONE ((in_addr_t)0xffffffff)
 
 /* Address to loopback in software to local host. */
-#define OE_INADDR_LOOPBACK ((oe_in_addr_t)0x7f000001) /* Inet 127.0.0.1.  */
+#define OE_INADDR_LOOPBACK ((in_addr_t)0x7f000001) /* Inet 127.0.0.1.  */
 
 #define OE_SOCK_STREAM 1
 
@@ -28,11 +28,9 @@ OE_EXTERNC_BEGIN
 #define OE_IN6ADDR_LOOPBACK_INIT { { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 } } }
 // clang-format on
 
-typedef uint32_t oe_in_addr_t;
-
 struct oe_in_addr
 {
-    oe_in_addr_t s_addr;
+    in_addr_t s_addr;
 };
 
 struct oe_in6_addr
@@ -43,12 +41,6 @@ struct oe_in6_addr
 #define s6_addr __in6_u.__u6_addr8
 #define s6_addr16 __in6_u.__u6_addr16
 #define s6_addr32 __in6_u.__u6_addr32
-
-#if 0
-/* ATTN: what are these for? */
-extern const struct oe_in6_addr in6addr_any;      /* :: */
-extern const struct oe_in6_addr in6addr_loopback; /* ::1 */
-#endif
 
 struct oe_sockaddr_in
 {
@@ -64,6 +56,21 @@ struct oe_sockaddr_in
 #define SOCK_STREAM OE_SOCK_STREAM
 #define IN6ADDR_ANY_INIT OE_IN6ADDR_ANY_INIT
 #define IN6ADDR_LOOPBACK_INIT OE_IN6ADDR_LOOPBACK_INIT
+
+struct in_addr
+{
+    in_addr_t s_addr;
+};
+
+struct in6_addr
+{
+#include <openenclave/corelibc/netinet/bits/in6_addr.h>
+};
+
+struct sockaddr_in
+{
+#include <openenclave/corelibc/netinet/bits/sockaddr_in.h>
+};
 
 #endif /* defined(OE_NEED_STDC_NAMES) */
 
