@@ -507,7 +507,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         mkpath(path, tmp_dir, "somefile");
         const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
 
-        OE_TEST(oe_mount("/", "/", "hostfs", OE_MOUNT_RDONLY, NULL) == 0);
+        OE_TEST(oe_mount("/", "/", "hostfs", OE_MS_RDONLY, NULL) == 0);
         OE_TEST(oe_open(0, path, flags, MODE) == -1);
         OE_TEST(oe_errno == EPERM);
         OE_TEST(oe_umount("/") == 0);

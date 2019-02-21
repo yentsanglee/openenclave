@@ -43,7 +43,7 @@ static fs_t* _cast_fs(const oe_device_t* device)
 
 OE_INLINE bool _is_rdonly(const fs_t* fs)
 {
-    return fs->mount_flags & OE_MOUNT_RDONLY;
+    return fs->mount_flags & OE_MS_RDONLY;
 }
 
 static char* _strrchr(const char* s, char c)

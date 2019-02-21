@@ -129,7 +129,7 @@ static dir_t* _cast_dir(const oe_device_t* device)
 
 OE_INLINE bool _is_rdonly(const fs_t* fs)
 {
-    return (fs->mount_flags & OE_MOUNT_RDONLY);
+    return (fs->mount_flags & OE_MS_RDONLY);
 }
 
 OE_INLINE bool _is_root(const char* path)

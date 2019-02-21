@@ -16,11 +16,4 @@
 #include <openenclave/corelibc/sys/uio.h>
 #include <openenclave/corelibc/unistd.h>
 
-OE_EXTERNC_BEGIN
-
-/* Mount flags. */
-#define OE_MOUNT_RDONLY 1
-
-OE_EXTERNC_END
-
 #endif // _OE_BITS_FS_H
