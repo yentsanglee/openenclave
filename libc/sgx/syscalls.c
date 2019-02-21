@@ -4,6 +4,7 @@
 #define __OE_NEED_TIME_CALLS
 #define _GNU_SOURCE
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <openenclave/enclave.h>
@@ -250,6 +251,17 @@ static int _handle_device_syscall(
             int mode = (int)arg2;
 
             *ret_out = oe_access(OE_DEVID_NULL, pathname, mode);
+            *errno_out = oe_errno;
+
+            return 0;
+        }
+        case SYS_getdents:
+        case SYS_getdents64:
+        {
+            unsigned int fd = (unsigned int)arg1;
+            struct oe_dirent* ent = (struct oe_dirent*)arg2;
+            unsigned int count = (unsigned int)arg3;
+            *ret_out = oe_getdents(fd, ent, count);
             *errno_out = oe_errno;
 
             return 0;

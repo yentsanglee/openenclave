@@ -531,6 +531,7 @@ static int _hostfs_getdents(
     int bytes = 0;
     file_t* file = _cast_file(file_);
     unsigned int i;
+    unsigned int n = count / sizeof(struct oe_dirent);
 
     oe_errno = 0;
 
@@ -542,7 +543,7 @@ static int _hostfs_getdents(
     }
 
     /* Read the entries one-by-one. */
-    for (i = 0; i < count; i++)
+    for (i = 0; i < n; i++)
     {
         oe_errno = 0;
 
@@ -901,6 +902,7 @@ static struct oe_dirent* _hostfs_readdir(oe_device_t* dir_)
     if (args->u.readdir.ret)
     {
         dir->entry = args->u.readdir.entry;
+        dir->entry.d_reclen = sizeof(struct oe_dirent);
         ret = &dir->entry;
     }
 

@@ -1,8 +1,18 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/corelibc/stdlib.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
+
+#define DIR_MAGIC 0x09180827
+
+struct _OE_DIR
+{
+    uint32_t magic;
+    int fd;
+    struct oe_dirent buf;
+};
 
 static oe_device_t* _get_fs_device(uint64_t devid)
 {
@@ -77,51 +87,56 @@ done:
     return ret;
 }
 
-static OE_DIR* _opendir(const char* pathname)
+OE_DIR* oe_opendir(uint64_t devid, const char* pathname)
 {
     OE_DIR* ret = NULL;
-    oe_device_t* fs;
-    char filepath[OE_PATH_MAX] = {0};
+    OE_DIR* dir = NULL;
+    int fd = -1;
 
-    if (!(fs = oe_mount_resolve(pathname, filepath)))
-        goto done;
-
-    if (fs->type != OE_DEVICETYPE_FILESYSTEM)
+    if (!(dir = oe_calloc(1, sizeof(OE_DIR))))
     {
-        oe_errno = EINVAL;
+        oe_errno = ENOMEM;
         goto done;
     }
 
-    if (fs->ops.fs->opendir == NULL)
+    if ((fd = oe_open(devid, pathname, OE_O_RDONLY | OE_O_DIRECTORY, 0)) < 0)
     {
-        oe_errno = EINVAL;
         goto done;
     }
 
-    ret = (OE_DIR*)(*fs->ops.fs->opendir)(fs, filepath);
+    dir->magic = DIR_MAGIC;
+    dir->fd = fd;
+
+    ret = dir;
+    dir = NULL;
+    fd = -1;
 
 done:
+
+    if (dir)
+        oe_free(dir);
+
+    if (fd >= 0)
+        oe_close(fd);
+
     return ret;
 }
 
 struct oe_dirent* oe_readdir(OE_DIR* dir)
 {
     struct oe_dirent* ret = NULL;
-    oe_device_t* dev = (oe_device_t*)dir;
+    unsigned int count = (unsigned int)sizeof(struct oe_dirent);
 
-    if (dev->type != OE_DEVICETYPE_DIRECTORY)
+    if (!dir || dir->magic != DIR_MAGIC)
     {
         oe_errno = EINVAL;
         goto done;
     }
 
-    if (dev->ops.fs->readdir == NULL)
-    {
-        oe_errno = EINVAL;
+    if (oe_getdents((unsigned int)dir->fd, &dir->buf, count) != (int)count)
         goto done;
-    }
 
-    ret = (*dev->ops.fs->readdir)(dev);
+    ret = &dir->buf;
 
 done:
     return ret;
@@ -130,21 +145,17 @@ done:
 int oe_closedir(OE_DIR* dir)
 {
     int ret = -1;
-    oe_device_t* dev = (oe_device_t*)dir;
 
-    if (dev->type != OE_DEVICETYPE_DIRECTORY)
+    if (!dir || dir->magic != DIR_MAGIC)
     {
         oe_errno = EINVAL;
         goto done;
     }
 
-    if (dev->ops.fs->closedir == NULL)
+    if ((ret = oe_close(dir->fd)) == 0)
     {
-        oe_errno = EINVAL;
-        goto done;
+        dir->magic = 0;
     }
-
-    ret = (*dev->ops.fs->closedir)(dev);
 
 done:
     return ret;
@@ -447,31 +458,6 @@ static int _access(const char* pathname, int mode)
     }
 
     ret = (*fs->ops.fs->access)(fs, suffix, mode);
-
-done:
-    return ret;
-}
-
-OE_DIR* oe_opendir(uint64_t devid, const char* pathname)
-{
-    OE_DIR* ret = NULL;
-
-    if (devid == OE_DEVID_NULL)
-    {
-        ret = _opendir(pathname);
-    }
-    else
-    {
-        oe_device_t* dev;
-
-        if (!(dev = _get_fs_device(devid)))
-        {
-            oe_errno = EINVAL;
-            goto done;
-        }
-
-        ret = (OE_DIR*)dev->ops.fs->opendir(dev, pathname);
-    }
 
 done:
     return ret;

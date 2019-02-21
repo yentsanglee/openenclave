@@ -43,7 +43,6 @@ set (PLATFORM_SRC "")
 
 if (OE_SGX)
     list(APPEND PLATFORM_SRC
-        sgx/dirent.c
         sgx/syscalls.c)
 
     if (UNIX OR USE_CLANGW)
@@ -64,6 +63,7 @@ add_library(oelibc STATIC
     arc4random.c
     atexit.c
     dladdr.c
+    dirent.c
     libunwind_stubs.c
     libcex_stdio.c
     link.c
@@ -171,6 +171,9 @@ add_library(oelibc STATIC
     ${MUSLSRC}/ctype/wcswidth.c
     ${MUSLSRC}/ctype/wctrans.c
     ${MUSLSRC}/ctype/wcwidth.c
+    ${MUSLSRC}/dirent/opendir.c
+    ${MUSLSRC}/dirent/readdir.c
+    ${MUSLSRC}/dirent/closedir.c
     ${MUSLSRC}/fcntl/open.c
     ${MUSLSRC}/env/clearenv.c
     ${MUSLSRC}/env/__environ.c
