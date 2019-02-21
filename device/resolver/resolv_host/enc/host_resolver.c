@@ -113,19 +113,19 @@ static ssize_t _hostresolv_getnameinfo(
 
     if (!batch)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (!host && !serv)
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
     if (!(hostlen > 0) && !(servlen > 0))
     {
-        oe_errno = OE_EINVAL;
+        oe_errno = EINVAL;
         goto done;
     }
 
@@ -140,16 +140,16 @@ static ssize_t _hostresolv_getnameinfo(
         }
         if (!(args = oe_host_batch_calloc(batch, sizeof(args_t) + required)))
         {
-            oe_errno = OE_ENOMEM;
+            oe_errno = ENOMEM;
             goto done;
         }
 
         //    int64_t ret;
-        //    oe_socklen_t addrlen; // in
+        //    socklen_t addrlen; // in
         //    // struct oe_sockaddr *addr;  data in buf
-        //    oe_socklen_t hostlen;
+        //    socklen_t hostlen;
         // Hostname returned in buf
-        // oe_socklen_t servlen;
+        // socklen_t servlen;
         // Service name returned in buf+hostlen after hostname
         //  int32_t flags;
 
@@ -165,7 +165,7 @@ static ssize_t _hostresolv_getnameinfo(
     {
         if (oe_ocall(OE_OCALL_HOSTRESOLVER, (uint64_t)args, NULL) != OE_OK)
         {
-            oe_errno = OE_EINVAL;
+            oe_errno = EINVAL;
             goto done;
         }
 
@@ -186,8 +186,7 @@ static ssize_t _hostresolv_getnameinfo(
         // We always pass at least a zero length node and service.
         if (hostlen > 0)
         {
-            hostlen =
-                (oe_socklen_t)oe_strnlen((const char*)bufptr, hostlen - 1);
+            hostlen = (socklen_t)oe_strnlen((const char*)bufptr, hostlen - 1);
             memcpy(host, bufptr, (size_t)hostlen);
             bufptr[hostlen] = '\0';
             bufptr += hostlen + 1;
@@ -195,8 +194,7 @@ static ssize_t _hostresolv_getnameinfo(
 
         if (servlen > 0)
         {
-            servlen =
-                (oe_socklen_t)oe_strnlen((const char*)bufptr, servlen - 1);
+            servlen = (socklen_t)oe_strnlen((const char*)bufptr, servlen - 1);
             memcpy(serv, bufptr, (size_t)servlen);
             bufptr[servlen] = '\0';
         }
