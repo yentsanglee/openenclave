@@ -14,13 +14,35 @@ static size_t PGSZ = OE_PAGE_SIZE;
 
 static bool _coverage[OE_HEAP_COVERAGE_N];
 
+// clang-format off
+#define PRINTF(...) \
+    do \
+    { \
+        printf(__VA_ARGS__); \
+    } \
+    while (0)
+// clang-format on
+
+// clang-format off
+#define FPRINTF(...) \
+    do \
+    { \
+        fprintf(__VA_ARGS__); \
+    } \
+    while (0)
+// clang-format on
+
+#define TRACE PRINTF("TRACE:%s(%u)\n", __FILE__, __LINE__)
+
 /* Merge heap implementation coverage branches into _coverage[] variable */
 static void _MergeCoverage(const OE_Heap* heap)
 {
     for (size_t i = 0; i < OE_HEAP_COVERAGE_N; i++)
     {
         if (heap->coverage[i])
+        {
             _coverage[i] = true;
+        }
     }
 }
 
@@ -31,18 +53,18 @@ static void _CheckCoverage()
     {
         if (!_coverage[i])
         {
-            fprintf(stderr, "*** uncovered: OE_HEAP_COVERAGE_%zu\n", i);
+            FPRINTF(stderr, "*** uncovered: OE_HEAP_COVERAGE_%zu\n", i);
             assert(0);
         }
         else
         {
-            printf("=== passed OE_HEAP_COVERAGE_%zu\n", i);
+            PRINTF("=== passed OE_HEAP_COVERAGE_%zu\n", i);
         }
     }
 }
 
 /* Cound the VADs in the VAD list */
-static size_t _CountVADs(const OE_VAD* list)
+size_t _CountVADs(const OE_VAD* list)
 {
     const OE_VAD* p;
     size_t count = 0;
@@ -64,7 +86,7 @@ static int _InitHeap(OE_Heap* heap, size_t size)
 
     if (OE_HeapInit(heap, (uintptr_t)base, size) != OE_OK)
     {
-        fprintf(stderr, "ERROR: OE_HeapInit(): %s\n", heap->err);
+        FPRINTF(stderr, "ERROR: OE_HeapInit(): %s\n", heap->err);
         return -1;
     }
 
@@ -132,7 +154,7 @@ static void* _HeapMap(OE_Heap* heap, void* addr, size_t length)
     void* result = OE_HeapMap(heap, addr, length, prot, flags);
 
     if (!result)
-        fprintf(stderr, "ERROR: OE_HeapMap(): %s\n", heap->err);
+        FPRINTF(stderr, "ERROR: OE_HeapMap(): %s\n", heap->err);
 
     return result;
 }
@@ -160,7 +182,7 @@ static void* _HeapRemap(
     void* result = OE_HeapRemap(heap, addr, old_size, new_size, flags);
 
     if (!result)
-        fprintf(stderr, "ERROR: OE_HeapRemap(): %s\n", heap->err);
+        FPRINTF(stderr, "ERROR: OE_HeapRemap(): %s\n", heap->err);
 
     return result;
 }
@@ -171,7 +193,7 @@ static int _HeapUnmap(OE_Heap* heap, void* address, size_t size)
     int rc = (int)OE_HeapUnmap(heap, address, size);
 
     if (rc != 0)
-        fprintf(stderr, "ERROR: OE_HeapUnmap(): %s\n", heap->err);
+        FPRINTF(stderr, "ERROR: OE_HeapUnmap(): %s\n", heap->err);
 
     return rc;
 }
@@ -185,7 +207,11 @@ static int _HeapUnmap(OE_Heap* heap, void* address, size_t size)
 */
 void TestHeap1()
 {
+    // char buf1[4096];
+    //(void)buf1;
     OE_Heap h;
+    // char buf2[4096];
+    //(void)buf2;
 
     const size_t npages = 1024;
     const size_t size = npages * OE_PAGE_SIZE;
@@ -300,7 +326,7 @@ void TestHeap1()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 /*
@@ -389,7 +415,7 @@ void TestHeap2()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 /*
@@ -479,7 +505,7 @@ void TestHeap3()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 /*
@@ -530,7 +556,7 @@ void TestHeap4()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 /*
@@ -578,7 +604,7 @@ void TestHeap5()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 /*
@@ -617,7 +643,7 @@ void TestHeap6()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 /*
@@ -658,7 +684,9 @@ void TestRemap1()
     /* Remap region, making it twice as big */
     new_size = 16 * PGSZ;
     if (!(ptr = _HeapRemap(&h, ptr, old_size, new_size)))
+    {
         assert(0);
+    }
 
     assert(_IsSorted(h.vad_list));
     assert(!_IsFlush(&h, h.vad_list));
@@ -682,7 +710,7 @@ void TestRemap1()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 /*
@@ -729,7 +757,7 @@ void TestRemap2()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 /*
@@ -777,7 +805,7 @@ void TestRemap3()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 /*
@@ -827,7 +855,7 @@ void TestRemap4()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 typedef struct _Elem
@@ -877,7 +905,8 @@ void TestHeapRandomly()
 
     static Elem elem[1024];
     const size_t N = sizeof(elem) / sizeof(elem[0]);
-    const size_t M = 20000;
+    // const size_t M = 20000;
+    const size_t M = 1000;
 
     for (size_t i = 0; i < M; i++)
     {
@@ -889,7 +918,7 @@ void TestHeapRandomly()
 
             if (rand() % 2)
             {
-                D(printf(
+                D(PRINTF(
                       "unmap: addr=%p size=%zu\n", elem[r].addr, elem[r].size);)
 
                 assert(_HeapUnmap(&h, elem[r].addr, elem[r].size) == 0);
@@ -907,7 +936,7 @@ void TestHeapRandomly()
                 size_t new_size = (rand() % 16 + 1) * PGSZ;
                 assert(new_size > 0);
 
-                D(printf(
+                D(PRINTF(
                       "remap: addr=%p old_size=%zu new_size=%zu\n",
                       addr,
                       old_size,
@@ -929,7 +958,7 @@ void TestHeapRandomly()
             void* addr = _HeapMap(&h, NULL, size);
             assert(addr);
 
-            D(printf("map: addr=%p size=%zu\n", addr, size);)
+            D(PRINTF("map: addr=%p size=%zu\n", addr, size);)
 
             elem[r].addr = addr;
             elem[r].size = size;
@@ -942,7 +971,7 @@ void TestHeapRandomly()
     {
         if (elem[i].addr)
         {
-            D(printf("addr=%p size=%zu\n", elem[i].addr, elem[i].size);)
+            D(PRINTF("addr=%p size=%zu\n", elem[i].addr, elem[i].size);)
             assert(_CheckMem(&elem[i]));
             assert(_HeapUnmap(&h, elem[i].addr, elem[i].size) == 0);
         }
@@ -959,7 +988,7 @@ void TestHeapRandomly()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 /*
@@ -983,7 +1012,7 @@ void TestOutOfMemory()
 
     _MergeCoverage(&h);
     _FreeHeap(&h);
-    printf("=== passed %s()\n", __FUNCTION__);
+    PRINTF("=== passed %s()\n", __FUNCTION__);
 }
 
 int main(int argc, const char* argv[])
@@ -1002,6 +1031,6 @@ int main(int argc, const char* argv[])
     TestHeapRandomly();
     TestOutOfMemory();
     _CheckCoverage();
-    printf("=== passed all tests (%s)\n", argv[0]);
+    PRINTF("=== passed all tests (%s)\n", argv[0]);
     return 0;
 }

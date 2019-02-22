@@ -5,9 +5,7 @@
 #define _OE_SYS_MMAN_H
 
 #include <openenclave/bits/result.h>
-#include <openenclave/corelibc/pthread.h>
 #include <openenclave/internal/defs.h>
-#include <openenclave/internal/thread.h>
 #include <openenclave/internal/types.h>
 
 OE_EXTERNC_BEGIN
@@ -130,13 +128,14 @@ typedef struct _OE_Heap
     bool scrub;
 
     /* Heap locking */
-    oe_pthread_mutex_t lock;
+    uint64_t lock[8];
 
     /* Error string */
     char err[OE_HEAP_ERROR_SIZE];
 
     /* Code coverage array */
     bool coverage[OE_HEAP_COVERAGE_N];
+
 } OE_Heap;
 
 oe_result_t OE_HeapInit(OE_Heap* heap, uintptr_t base, size_t size);

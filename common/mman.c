@@ -111,25 +111,35 @@
 **==============================================================================
 */
 
-#include <openenclave/corelibc/stdio.h>
-#include <openenclave/corelibc/string.h>
 #include <openenclave/corelibc/sys/mman.h>
-#include <openenclave/enclave.h>
+#include <openenclave/internal/defs.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
 
 #ifdef OE_BUILD_UNTRUSTED
 #include <assert.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #define ASSERT assert
 #define PRINTF printf
 #define SNPRINTF snprintf
 #else
+#include <openenclave/corelibc/pthread.h>
+#include <openenclave/corelibc/stdio.h>
+#include <openenclave/corelibc/string.h>
 #include <openenclave/enclave.h>
+#define PTHREAD_MUTEX_RECURSIVE 0
 #define ASSERT oe_assert
 #define PRINTF oe_printf
 #define SNPRINTF oe_snprintf
+#define pthread_mutex_t oe_pthread_mutex_t
+#define pthread_mutex_init oe_pthread_mutex_init
+#define pthread_mutex_lock oe_pthread_mutex_lock
+#define pthread_mutex_unlock oe_pthread_mutex_unlock
+#define pthread_mutexattr_t oe_pthread_mutexattr_t
+#define pthread_mutexattr_init oe_pthread_mutexattr_init
+#define pthread_mutexattr_settype oe_pthread_mutexattr_settype
 #endif
 
 /*
@@ -288,10 +298,16 @@ static OE_VAD* _ListFind(OE_Heap* heap, uintptr_t addr)
 **==============================================================================
 */
 
+OE_INLINE pthread_mutex_t* _get_mutex(OE_Heap* heap)
+{
+    return (pthread_mutex_t*)heap->lock;
+}
+
 /* Lock the heap and set the 'locked' parameter to true */
 OE_INLINE void _HeapLock(OE_Heap* heap, bool* locked)
 {
-    oe_pthread_mutex_lock(&heap->lock);
+    OE_STATIC_ASSERT(sizeof(pthread_mutex_t) <= sizeof(heap->lock));
+    pthread_mutex_lock(_get_mutex(heap));
     *locked = true;
 }
 
@@ -300,7 +316,7 @@ OE_INLINE void _HeapUnlock(OE_Heap* heap, bool* locked)
 {
     if (*locked)
     {
-        oe_pthread_mutex_unlock(&heap->lock);
+        pthread_mutex_unlock(_get_mutex(heap));
         *locked = false;
     }
 }
@@ -538,7 +554,12 @@ oe_result_t OE_HeapInit(OE_Heap* heap, uintptr_t base, size_t size)
     heap->magic = OE_HEAP_MAGIC;
 
     /* Initialize the mutex */
-    oe_pthread_mutex_init(&heap->lock, NULL);
+    {
+        pthread_mutexattr_t attr;
+        pthread_mutexattr_init(&attr);
+        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+        pthread_mutex_init(_get_mutex(heap), &attr);
+    }
 
     /* Finally, set initialized to true */
     heap->initialized = 1;
