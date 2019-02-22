@@ -20,6 +20,7 @@ add_subdirectory(mem)
 add_subdirectory(safecrt)
 add_subdirectory(safemath)
 add_subdirectory(str)
+add_subdirectory(mman)
 
 if (OE_SGX)
 add_subdirectory(aesm)

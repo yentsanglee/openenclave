@@ -20,6 +20,7 @@ if (OE_SGX)
         sgx/jump.c
         sgx/keys.c
         sgx/malloc.c
+        sgx/mman.c
         sgx/memory.c
         sgx/once.c
         sgx/properties.c
