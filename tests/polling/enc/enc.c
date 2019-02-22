@@ -85,7 +85,7 @@ int ecall_run_client(void)
     }
 
     const int flags = OE_O_NONBLOCK | OE_O_RDONLY;
-    file_fd = oe_open(0, "/tmp/test", flags, 0);
+    file_fd = oe_open("/tmp/test", flags, 0);
 
     printf("polling...\n");
     event.events = OE_EPOLLIN;

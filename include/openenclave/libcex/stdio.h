@@ -124,17 +124,17 @@ OE_INLINE OE_FILE* oe_fopen_secure(const char* path, const char* mode)
 
 OE_INLINE int oe_remove_nonsecure(const char* pathname)
 {
-    return oe_unlink(OE_DEVID_HOSTFS, pathname);
+    return oe_unlink_d(OE_DEVID_HOSTFS, pathname);
 }
 
 OE_INLINE int oe_remove_secure_encrypted(const char* pathname)
 {
-    return oe_unlink(OE_DEVID_SGXFS, pathname);
+    return oe_unlink_d(OE_DEVID_SGXFS, pathname);
 }
 
 OE_INLINE int oe_remove_secure_hardware(const char* pathname)
 {
-    return oe_unlink(OE_DEVID_SHWFS, pathname);
+    return oe_unlink_d(OE_DEVID_SHWFS, pathname);
 }
 
 OE_INLINE int oe_remove_secure(const char* pathname)

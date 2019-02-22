@@ -173,7 +173,7 @@ int oe_mount(
     {
         struct oe_stat buf;
 
-        if (oe_stat(0, target, &buf) != 0)
+        if (oe_stat(target, &buf) != 0)
         {
             oe_errno = EIO;
             goto done;

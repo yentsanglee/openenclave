@@ -31,7 +31,9 @@ struct oe_dirent
     char d_name[256];
 };
 
-OE_DIR* oe_opendir(uint64_t devid, const char* pathname);
+OE_DIR* oe_opendir(const char* pathname);
+
+OE_DIR* oe_opendir_d(uint64_t devid, const char* pathname);
 
 struct oe_dirent* oe_readdir(OE_DIR* dir);
 

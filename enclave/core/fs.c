@@ -54,7 +54,7 @@ done:
     return ret;
 }
 
-int oe_open(uint64_t devid, const char* pathname, int flags, mode_t mode)
+int oe_open_d(uint64_t devid, const char* pathname, int flags, mode_t mode)
 {
     int ret = -1;
 
@@ -87,7 +87,12 @@ done:
     return ret;
 }
 
-OE_DIR* oe_opendir(uint64_t devid, const char* pathname)
+int oe_open(const char* pathname, int flags, mode_t mode)
+{
+    return oe_open_d(OE_DEVID_NULL, pathname, flags, mode);
+}
+
+OE_DIR* oe_opendir_d(uint64_t devid, const char* pathname)
 {
     OE_DIR* ret = NULL;
     OE_DIR* dir = NULL;
@@ -99,7 +104,7 @@ OE_DIR* oe_opendir(uint64_t devid, const char* pathname)
         goto done;
     }
 
-    if ((fd = oe_open(devid, pathname, OE_O_RDONLY | OE_O_DIRECTORY, 0)) < 0)
+    if ((fd = oe_open_d(devid, pathname, OE_O_RDONLY | OE_O_DIRECTORY, 0)) < 0)
     {
         goto done;
     }
@@ -120,6 +125,11 @@ done:
         oe_close(fd);
 
     return ret;
+}
+
+OE_DIR* oe_opendir(const char* pathname)
+{
+    return oe_opendir_d(OE_DEVID_NULL, pathname);
 }
 
 struct oe_dirent* oe_readdir(OE_DIR* dir)
@@ -463,7 +473,7 @@ done:
     return ret;
 }
 
-int oe_unlink(uint64_t devid, const char* pathname)
+int oe_unlink_d(uint64_t devid, const char* pathname)
 {
     int ret = -1;
 
@@ -488,7 +498,12 @@ done:
     return ret;
 }
 
-int oe_link(uint64_t devid, const char* oldpath, const char* newpath)
+int oe_unlink(const char* pathname)
+{
+    return oe_unlink_d(OE_DEVID_NULL, pathname);
+}
+
+int oe_link_d(uint64_t devid, const char* oldpath, const char* newpath)
 {
     int ret = -1;
 
@@ -513,7 +528,12 @@ done:
     return ret;
 }
 
-int oe_rename(uint64_t devid, const char* oldpath, const char* newpath)
+int oe_link(const char* oldpath, const char* newpath)
+{
+    return oe_link_d(OE_DEVID_NULL, oldpath, newpath);
+}
+
+int oe_rename_d(uint64_t devid, const char* oldpath, const char* newpath)
 {
     int ret = -1;
 
@@ -538,7 +558,12 @@ done:
     return ret;
 }
 
-int oe_mkdir(uint64_t devid, const char* pathname, mode_t mode)
+int oe_rename(const char* oldpath, const char* newpath)
+{
+    return oe_rename_d(OE_DEVID_NULL, oldpath, newpath);
+}
+
+int oe_mkdir_d(uint64_t devid, const char* pathname, mode_t mode)
 {
     int ret = -1;
 
@@ -563,7 +588,12 @@ done:
     return ret;
 }
 
-int oe_rmdir(uint64_t devid, const char* pathname)
+int oe_mkdir(const char* pathname, mode_t mode)
+{
+    return oe_mkdir_d(OE_DEVID_NULL, pathname, mode);
+}
+
+int oe_rmdir_d(uint64_t devid, const char* pathname)
 {
     int ret = -1;
 
@@ -588,7 +618,12 @@ done:
     return ret;
 }
 
-int oe_stat(uint64_t devid, const char* pathname, struct oe_stat* buf)
+int oe_rmdir(const char* pathname)
+{
+    return oe_rmdir_d(OE_DEVID_NULL, pathname);
+}
+
+int oe_stat_d(uint64_t devid, const char* pathname, struct oe_stat* buf)
 {
     int ret = -1;
 
@@ -613,7 +648,12 @@ done:
     return ret;
 }
 
-int oe_truncate(uint64_t devid, const char* path, off_t length)
+int oe_stat(const char* pathname, struct oe_stat* buf)
+{
+    return oe_stat_d(OE_DEVID_NULL, pathname, buf);
+}
+
+int oe_truncate_d(uint64_t devid, const char* path, off_t length)
 {
     int ret = -1;
 
@@ -638,7 +678,12 @@ done:
     return ret;
 }
 
-int oe_access(uint64_t devid, const char* pathname, int mode)
+int oe_truncate(const char* path, off_t length)
+{
+    return oe_truncate_d(OE_DEVID_NULL, path, length);
+}
+
+int oe_access_d(uint64_t devid, const char* pathname, int mode)
 {
     int ret = -1;
 
@@ -674,4 +719,9 @@ int oe_access(uint64_t devid, const char* pathname, int mode)
 
 done:
     return ret;
+}
+
+int oe_access(const char* pathname, int mode)
+{
+    return oe_access_d(OE_DEVID_NULL, pathname, mode);
 }

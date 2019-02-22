@@ -34,7 +34,9 @@ OE_EXTERNC_BEGIN
 #define OE_O_NDELAY        O_NONBLOCK
 // clang-format on
 
-int oe_open(uint64_t devid, const char* pathname, int flags, mode_t mode);
+int oe_open(const char* pathname, int flags, mode_t mode);
+
+int oe_open_d(uint64_t devid, const char* pathname, int flags, mode_t mode);
 
 #if defined(OE_NEED_STDC_NAMES)
 

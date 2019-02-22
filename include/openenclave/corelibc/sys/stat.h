@@ -62,9 +62,13 @@ struct oe_stat
 #define st_ctime st_ctim.tv_sec
 #endif
 
-int oe_stat(uint64_t devid, const char* pathname, struct oe_stat* buf);
+int oe_stat(const char* pathname, struct oe_stat* buf);
 
-int oe_mkdir(uint64_t devid, const char* pathname, mode_t mode);
+int oe_stat_d(uint64_t devid, const char* pathname, struct oe_stat* buf);
+
+int oe_mkdir(const char* pathname, mode_t mode);
+
+int oe_mkdir_d(uint64_t devid, const char* pathname, mode_t mode);
 
 #if defined(OE_NEED_STDC_NAMES)
 

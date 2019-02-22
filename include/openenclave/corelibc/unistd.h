@@ -24,7 +24,9 @@ OE_EXTERNC_BEGIN
 #define OE_SEEK_CUR 1
 #define OE_SEEK_END 2
 
-int oe_access(uint64_t devid, const char* pathname, int mode);
+int oe_access(const char* pathname, int mode);
+
+int oe_access_d(uint64_t devid, const char* pathname, int mode);
 
 void* oe_sbrk(intptr_t increment);
 
@@ -34,13 +36,21 @@ ssize_t oe_write(int fd, const void* buf, size_t count);
 
 off_t oe_lseek(int fd, off_t offset, int whence);
 
-int oe_link(uint64_t devid, const char* oldpath, const char* newpath);
+int oe_link(const char* oldpath, const char* newpath);
 
-int oe_unlink(uint64_t devid, const char* pathname);
+int oe_link_d(uint64_t devid, const char* oldpath, const char* newpath);
 
-int oe_rmdir(uint64_t devid, const char* pathname);
+int oe_unlink(const char* pathname);
 
-int oe_truncate(uint64_t devid, const char* path, off_t length);
+int oe_unlink_d(uint64_t devid, const char* pathname);
+
+int oe_rmdir(const char* pathname);
+
+int oe_rmdir_d(uint64_t devid, const char* pathname);
+
+int oe_truncate(const char* path, off_t length);
+
+int oe_truncate_d(uint64_t devid, const char* path, off_t length);
 
 #if defined(OE_NEED_STDC_NAMES)
 
@@ -72,7 +82,7 @@ OE_INLINE ssize_t write(int fd, const void* buf, size_t count)
 
 OE_INLINE int access(const char* pathname, int mode)
 {
-    return oe_access(0, pathname, mode);
+    return oe_access(pathname, mode);
 }
 
 OE_INLINE off_t lseek(int fd, off_t offset, int whence)
@@ -82,22 +92,22 @@ OE_INLINE off_t lseek(int fd, off_t offset, int whence)
 
 OE_INLINE int link(const char* oldpath, const char* newpath)
 {
-    return oe_link(0, oldpath, newpath);
+    return oe_link(oldpath, newpath);
 }
 
 OE_INLINE int unlink(const char* pathname)
 {
-    return oe_unlink(0, pathname);
+    return oe_unlink(pathname);
 }
 
 OE_INLINE int rmdir(const char* pathname)
 {
-    return oe_rmdir(devid, pathname);
+    return oe_rmdir(pathname);
 }
 
 OE_INLINE int truncate(const char* path, off_t length)
 {
-    return oe_truncate(0, path, length);
+    return oe_truncate(path, length);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

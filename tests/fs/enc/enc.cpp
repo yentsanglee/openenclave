@@ -382,17 +382,17 @@ void _test_mount(const char* tmp_dir)
     mkpath(target, tmp_dir, "target");
 
     OE_TEST(oe_mount("/", "/", "hostfs", 0, NULL) == 0);
-    oe_unlink(0, mkpath(path, source, "newfile"));
-    oe_rmdir(0, source);
-    oe_rmdir(0, target);
+    oe_unlink(mkpath(path, source, "newfile"));
+    oe_rmdir(source);
+    oe_rmdir(target);
 
-    OE_TEST(oe_mkdir(0, source, 0777) == 0);
-    OE_TEST(oe_mkdir(0, target, 0777) == 0);
+    OE_TEST(oe_mkdir(source, 0777) == 0);
+    OE_TEST(oe_mkdir(target, 0777) == 0);
     OE_TEST(oe_mount(source, target, "sgxfs", 0, NULL) == 0);
 
     _touch(mkpath(path, target, "file1"));
     _touch(mkpath(path, target, "file2"));
-    OE_TEST(oe_mkdir(0, mkpath(path, target, "dir1"), 0777) == 0);
+    OE_TEST(oe_mkdir(mkpath(path, target, "dir1"), 0777) == 0);
     _touch(mkpath(path, target, "dir1/file3"));
 
     {
@@ -421,7 +421,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
 {
     (void)src_dir;
 
-    OE_TEST(oe_mkdir(OE_DEVID_HOSTFS, tmp_dir, 0777) == 0);
+    OE_TEST(oe_mkdir_d(OE_DEVID_HOSTFS, tmp_dir, 0777) == 0);
 
     printf("=== running all tests\n");
     printf("--- src_dir=%s\n", src_dir);
@@ -493,7 +493,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         const int flags = OE_O_CREAT | OE_O_TRUNC | OE_O_WRONLY;
 
         OE_TEST(oe_mount("/", "/", "hostfs", OE_MS_RDONLY, NULL) == 0);
-        OE_TEST(oe_open(0, path, flags, MODE) == -1);
+        OE_TEST(oe_open(path, flags, MODE) == -1);
         OE_TEST(oe_errno == EPERM);
         OE_TEST(oe_umount("/") == 0);
     }

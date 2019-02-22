@@ -26,7 +26,7 @@ OE_EXTERNC_BEGIN
 typedef struct _OE_DIR OE_DIR;
 struct oe_dirent;
 
-OE_DIR* oe_opendir(uint64_t devid, const char* pathname);
+OE_DIR* oe_opendir_d(uint64_t devid, const char* pathname);
 
 struct oe_dirent* oe_readdir(OE_DIR* dir);
 
@@ -42,17 +42,17 @@ int oe_closedir(OE_DIR* dir);
 
 OE_INLINE OE_DIR* oe_opendir_nonsecure(const char* pathname)
 {
-    return oe_opendir(OE_DEVID_HOSTFS, pathname);
+    return oe_opendir_d(OE_DEVID_HOSTFS, pathname);
 }
 
 OE_INLINE OE_DIR* oe_opendir_secure_encrypted(const char* pathname)
 {
-    return oe_opendir(OE_DEVID_SGXFS, pathname);
+    return oe_opendir_d(OE_DEVID_SGXFS, pathname);
 }
 
 OE_INLINE OE_DIR* oe_opendir_secure_hardware(const char* pathname)
 {
-    return oe_opendir(OE_DEVID_SHWFS, pathname);
+    return oe_opendir_d(OE_DEVID_SHWFS, pathname);
 }
 
 OE_INLINE OE_DIR* oe_opendir_secure(const char* pathname)
