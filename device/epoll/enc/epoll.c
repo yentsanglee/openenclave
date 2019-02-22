@@ -66,7 +66,7 @@ static oe_host_batch_t* _get_host_batch(void)
 **==============================================================================
 */
 
-#define EPOLL_MAGIC 0x45706f6
+#define EPOLL_MAGIC 0x4504f4c
 
 typedef oe_epoll_args_t args_t;
 

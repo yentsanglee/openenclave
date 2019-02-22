@@ -78,24 +78,6 @@ int main(int argc, const char* argv[])
 
     OE_TEST(oe_terminate_enclave(client_enclave) == OE_OK);
 
-#if 0
-    // enclave server to host client
-    sleep(3); // Give the server time to launch
-    OE_TEST(
-        pthread_create(
-            &server_thread_id, NULL, enclave_server_thread, (void*)argv[1]) ==
-        0);
-
-    sleep(3); // Give the server time to launch
-
-    char* test_data = host_client(1493);
-
-    printf("received from enclave server: %s\n", test_data);
-    OE_TEST(strcmp(test_data, TESTDATA) == 0);
-
-    pthread_join(server_thread_id, NULL);
-#endif
-
     printf("=== passed all tests (resolver_test)\n");
 
     return 0;

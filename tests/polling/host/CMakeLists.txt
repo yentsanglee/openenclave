@@ -8,11 +8,11 @@ oeedl_file(../epoll_test.edl
     --edl-search-dir ../../../include
 )
 
-add_executable(epoll_host
+add_executable(polling_test_host
     host.c
     ${epoll_test_u}
 )
 
-target_link_libraries(epoll_host oeepoll_host)
-target_include_directories(epoll_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(epoll_host oehostsocket_host oehostapp)
+target_link_libraries(polling_test_host oeepoll_host)
+target_include_directories(polling_test_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(polling_test_host oehostsocket_host oehostapp)

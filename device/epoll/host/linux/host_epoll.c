@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include "../../common/epollargs.h"
 
-void (*oe_handle_hostepoll_ocall_callback)(void*);
+extern void (*oe_handle_epoll_ocall_callback)(void*);
 
 static void _handle_hostepoll_ocall(void* args_)
 {
@@ -116,5 +116,5 @@ static void _handle_hostepoll_ocall(void* args_)
 
 void oe_epoll_install_hostepoll(void)
 {
-    oe_handle_hostepoll_ocall_callback = _handle_hostepoll_ocall;
+    oe_handle_epoll_ocall_callback = _handle_hostepoll_ocall;
 }

@@ -47,23 +47,24 @@ void* host_server_thread(void* arg)
 
     listen(listenfd, 10);
 
-    int n = 0;
-    while (1)
+    // int n = 0;
+    do
     {
         printf("accepting\n");
         connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
         printf("accepted fd = %d\n", connfd);
-        if (connfd >= 0)
-        {
-            write(connfd, TESTDATA, strlen(TESTDATA));
-            printf("write test data\n");
-            close(connfd);
-            if (n++ > 10)
-                break;
-        }
+    } while (connfd < 0);
+
+    while (1)
+    {
+        write(connfd, TESTDATA, strlen(TESTDATA));
+        printf("write test data\n");
+        //    if (n++ > 10)
+        //        break;
         sleep(5);
     }
 
+    close(connfd);
     close(listenfd);
     printf("exit from server thread\n");
     return NULL;

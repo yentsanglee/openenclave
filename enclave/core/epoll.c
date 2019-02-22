@@ -109,7 +109,8 @@ int oe_epoll_wait(
 {
     oe_device_t* pepoll = oe_get_fd_device(epfd);
     int ret = -1;
-    bool host_wait = false;
+    bool host_wait = true; // false; // 2do. We need to figure out how to wait
+                           // on a host or enclave file/socket.
     (void)events;
     (void)maxevents;
 
@@ -158,6 +159,7 @@ int oe_epoll_pwait(
 #endif
 
 static oe_cond_t poll_notification = OE_COND_INITIALIZER;
+static oe_mutex_t poll_lock = OE_MUTEX_INITIALIZER;
 
 //
 // We accept a list of notifications so we don't get large number
@@ -236,8 +238,12 @@ void oe_broadcast_device_notification()
 
 int oe_wait_device_notification(int timeout)
 {
-    (void)poll_notification;
     (void)timeout;
+
+    oe_mutex_lock(&poll_lock);
+    oe_cond_wait(&poll_notification, &poll_lock);
+    oe_mutex_unlock(&poll_lock);
+
     return -1;
 }
 

@@ -42,7 +42,7 @@ static void _atexit_handler()
 **==============================================================================
 */
 
-#define EVENTFD_MAGIC 0x4556454e
+#define EVENTFD_MAGIC 0x4e455645
 
 typedef struct _eventfd
 {
