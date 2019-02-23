@@ -117,18 +117,15 @@
 #include <openenclave/internal/utils.h>
 
 #ifdef OE_BUILD_UNTRUSTED
-#include <assert.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
-#define ASSERT assert
 #define PRINTF printf
 #define SNPRINTF snprintf
 #else
 #include <openenclave/corelibc/pthread.h>
 #include <openenclave/corelibc/stdio.h>
 #include <openenclave/corelibc/string.h>
-#include <openenclave/enclave.h>
 #define PTHREAD_MUTEX_RECURSIVE 0
 #define ASSERT oe_assert
 #define PRINTF oe_printf
@@ -553,7 +550,7 @@ oe_result_t oe_mman_init(oe_mman_t* mman, uintptr_t base, size_t size)
     /* Set the magic number */
     mman->magic = OE_MMAN_MAGIC;
 
-    /* Initialize the mutex */
+    /* Initialize the recursive mutex */
     {
         pthread_mutexattr_t attr;
         pthread_mutexattr_init(&attr);
