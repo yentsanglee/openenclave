@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _OE_SYS_MMAN_H
-#define _OE_SYS_MMAN_H
+#ifndef _OE_INTERNAL_MMAN_H
+#define _OE_INTERNAL_MMAN_H
 
 #include <openenclave/bits/result.h>
 #include <openenclave/internal/defs.h>
@@ -25,13 +25,13 @@ OE_EXTERNC_BEGIN
 #define OE_HEAP_ERROR_SIZE 256
 
 /* Virtual Address Descriptor */
-typedef struct _OE_VAD
+typedef struct _oe_vad
 {
-    /* Pointer to next OE_VAD on linked list */
-    struct _OE_VAD* next;
+    /* Pointer to next oe_vad_t on linked list */
+    struct _oe_vad* next;
 
-    /* Pointer to previous OE_VAD on linked list */
-    struct _OE_VAD* prev;
+    /* Pointer to previous oe_vad_t on linked list */
+    struct _oe_vad* prev;
 
     /* Address of this memory region */
     uintptr_t addr;
@@ -44,16 +44,11 @@ typedef struct _OE_VAD
 
     /* Mapping flags for this region: OE_MAP_???? */
     uint16_t flags;
-} OE_VAD;
+} oe_vad_t;
 
-OE_STATIC_ASSERT(sizeof(OE_VAD) == 32);
+OE_STATIC_ASSERT(sizeof(oe_vad_t) == 32);
 
 #define OE_HEAP_MAGIC 0xcc8e1732ebd80b0b
-
-#define OE_HEAP_INITIALIZER               \
-    {                                     \
-        0, false, OE_SPINLOCK_INITIALIZER \
-    }
 
 #define OE_HEAP_ERR_SIZE 256
 
@@ -80,15 +75,15 @@ typedef enum _OE_HeapCoverage
     OE_HEAP_COVERAGE_17,
     OE_HEAP_COVERAGE_18,
     OE_HEAP_COVERAGE_N,
-} OE_HeapCoverage;
+} oe_mman_coverage_t;
 
-/* OE_Heap data structures and fields */
-typedef struct _OE_Heap
+/* oe_mman_t data structures and fields */
+typedef struct _oe_mman
 {
     /* Magic number (OE_HEAP_MAGIC) */
     uint64_t magic;
 
-    /* True if OE_HeapInit() has been called */
+    /* True if oe_mman_init() has been called */
     bool initialized;
 
     /* Base of heap (aligned on page boundary) */
@@ -109,17 +104,17 @@ typedef struct _OE_Heap
     /* Current map value: top of mapped memory partition (grows negatively) */
     uintptr_t map;
 
-    /* The next available OE_VAD in the VADs array */
-    OE_VAD* next_vad;
+    /* The next available oe_vad_t in the VADs array */
+    oe_vad_t* next_vad;
 
     /* The end of the VADs array */
-    OE_VAD* end_vad;
+    oe_vad_t* end_vad;
 
-    /* The OE_VAD free list (singly linked) */
-    OE_VAD* free_vads;
+    /* The oe_vad_t free list (singly linked) */
+    oe_vad_t* free_vads;
 
     /* Linked list of VADs (sorted by address and doubly linked) */
-    OE_VAD* vad_list;
+    oe_vad_t* vad_list;
 
     /* Whether sanity checks are enabled: see OE_HeapEnableSanityChecks() */
     bool sanity;
@@ -136,31 +131,37 @@ typedef struct _OE_Heap
     /* Code coverage array */
     bool coverage[OE_HEAP_COVERAGE_N];
 
-} OE_Heap;
+} oe_mman_t;
 
-oe_result_t OE_HeapInit(OE_Heap* heap, uintptr_t base, size_t size);
+oe_result_t oe_mman_init(oe_mman_t* heap, uintptr_t base, size_t size);
 
-void* OE_HeapMap(OE_Heap* heap, void* addr, size_t length, int prot, int flags);
+void* oe_mman_map(
+    oe_mman_t* heap,
+    void* addr,
+    size_t length,
+    int prot,
+    int flags);
 
-void* OE_HeapRemap(
-    OE_Heap* heap,
+void* oe_mman_remap(
+    oe_mman_t* heap,
     void* addr,
     size_t old_size,
     size_t new_size,
     int flags);
 
-oe_result_t OE_HeapUnmap(OE_Heap* heap, void* address, size_t size);
+oe_result_t oe_mman_unmap(oe_mman_t* heap, void* address, size_t size);
 
-void OE_HeapDump(const OE_Heap* h, bool full);
+void oe_mman_dump(const oe_mman_t* h, bool full);
 
-void* OE_HeapSbrk(OE_Heap* heap, ptrdiff_t increment);
+void* oe_mman_sbrk(oe_mman_t* heap, ptrdiff_t increment);
 
-oe_result_t OE_HeapBrk(OE_Heap* heap, uintptr_t addr);
+oe_result_t oe_mman_brk(oe_mman_t* heap, uintptr_t addr);
 
-void OE_HeapSetSanity(OE_Heap* heap, bool sanity);
+void oe_mman_set_sanity(oe_mman_t* heap, bool sanity);
 
-bool OE_HeapSane(OE_Heap* heap);
+bool oe_mman_is_sane(oe_mman_t* heap);
 
+#if 0
 void* OE_Map(void* addr, size_t length, int prot, int flags);
 
 void* OE_Remap(void* addr, size_t old_size, size_t new_size, int flags);
@@ -170,7 +171,8 @@ int OE_Unmap(void* address, size_t size);
 void* OE_Sbrk(ptrdiff_t increment);
 
 int OE_Brk(uintptr_t addr);
+#endif
 
 OE_EXTERNC_END
 
-#endif /* _OE_SYS_MMAN_H */
+#endif /* _OE_INTERNAL_MMAN_H */

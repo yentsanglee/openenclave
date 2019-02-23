@@ -3,7 +3,7 @@
 
 #include <assert.h>
 #include <malloc.h>
-#include <openenclave/corelibc/sys/mman.h>
+#include <openenclave/internal/mman.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,7 +35,7 @@ static bool _coverage[OE_HEAP_COVERAGE_N];
 #define TRACE PRINTF("TRACE:%s(%u)\n", __FILE__, __LINE__)
 
 /* Merge heap implementation coverage branches into _coverage[] variable */
-static void _MergeCoverage(const OE_Heap* heap)
+static void _MergeCoverage(const oe_mman_t* heap)
 {
     for (size_t i = 0; i < OE_HEAP_COVERAGE_N; i++)
     {
@@ -64,9 +64,9 @@ static void _CheckCoverage()
 }
 
 /* Cound the VADs in the VAD list */
-size_t _CountVADs(const OE_VAD* list)
+size_t _CountVADs(const oe_vad_t* list)
 {
-    const OE_VAD* p;
+    const oe_vad_t* p;
     size_t count = 0;
 
     for (p = list; p; p = p->next)
@@ -76,7 +76,7 @@ size_t _CountVADs(const OE_VAD* list)
 }
 
 /* Initialize the heap object */
-static int _InitHeap(OE_Heap* heap, size_t size)
+static int _InitHeap(oe_mman_t* heap, size_t size)
 {
     void* base;
 
@@ -84,30 +84,30 @@ static int _InitHeap(OE_Heap* heap, size_t size)
     if (!(base = memalign(OE_PAGE_SIZE, size)))
         return -1;
 
-    if (OE_HeapInit(heap, (uintptr_t)base, size) != OE_OK)
+    if (oe_mman_init(heap, (uintptr_t)base, size) != OE_OK)
     {
-        FPRINTF(stderr, "ERROR: OE_HeapInit(): %s\n", heap->err);
+        FPRINTF(stderr, "ERROR: oe_mman_init(): %s\n", heap->err);
         return -1;
     }
 
     heap->scrub = true;
 
-    OE_HeapSetSanity(heap, true);
+    oe_mman_set_sanity(heap, true);
 
     return 0;
 }
 
 /* Free the base of the heap */
-static void _FreeHeap(OE_Heap* heap)
+static void _FreeHeap(oe_mman_t* heap)
 {
     free((void*)heap->base);
 }
 
 /* Check that the VAD list is sorted by starting address */
-static bool _IsSorted(const OE_VAD* list)
+static bool _IsSorted(const oe_vad_t* list)
 {
-    const OE_VAD* p;
-    const OE_VAD* prev = NULL;
+    const oe_vad_t* p;
+    const oe_vad_t* prev = NULL;
 
     for (p = list; p; prev = p, p = p->next)
     {
@@ -119,10 +119,10 @@ static bool _IsSorted(const OE_VAD* list)
 }
 
 /* Check that there are no gaps between the VADs in the list */
-static bool _IsFlush(const OE_Heap* heap, const OE_VAD* list)
+static bool _IsFlush(const oe_mman_t* heap, const oe_vad_t* list)
 {
-    const OE_VAD* p;
-    const OE_VAD* prev = NULL;
+    const oe_vad_t* p;
+    const oe_vad_t* prev = NULL;
 
     if (!list)
         return true;
@@ -145,55 +145,55 @@ static bool _IsFlush(const OE_Heap* heap, const OE_VAD* list)
     return true;
 }
 
-/* Helper for calling OE_HeapMap() */
-static void* _HeapMap(OE_Heap* heap, void* addr, size_t length)
+/* Helper for calling oe_mman_map() */
+static void* _HeapMap(oe_mman_t* heap, void* addr, size_t length)
 {
     int prot = OE_PROT_READ | OE_PROT_WRITE;
     int flags = OE_MAP_ANONYMOUS | OE_MAP_PRIVATE;
 
-    void* result = OE_HeapMap(heap, addr, length, prot, flags);
+    void* result = oe_mman_map(heap, addr, length, prot, flags);
 
     if (!result)
-        FPRINTF(stderr, "ERROR: OE_HeapMap(): %s\n", heap->err);
+        FPRINTF(stderr, "ERROR: oe_mman_map(): %s\n", heap->err);
 
     return result;
 }
 
-/* Helper for calling OE_HeapMap() without printing an error */
-static void* _HeapMapNoErr(OE_Heap* heap, void* addr, size_t length)
+/* Helper for calling oe_mman_map() without printing an error */
+static void* _HeapMapNoErr(oe_mman_t* heap, void* addr, size_t length)
 {
     int prot = OE_PROT_READ | OE_PROT_WRITE;
     int flags = OE_MAP_ANONYMOUS | OE_MAP_PRIVATE;
 
-    void* result = OE_HeapMap(heap, addr, length, prot, flags);
+    void* result = oe_mman_map(heap, addr, length, prot, flags);
 
     return result;
 }
 
-/* Helper for calling OE_HeapRemap() */
+/* Helper for calling oe_mman_remap() */
 static void* _HeapRemap(
-    OE_Heap* heap,
+    oe_mman_t* heap,
     void* addr,
     size_t old_size,
     size_t new_size)
 {
     int flags = OE_MREMAP_MAYMOVE;
 
-    void* result = OE_HeapRemap(heap, addr, old_size, new_size, flags);
+    void* result = oe_mman_remap(heap, addr, old_size, new_size, flags);
 
     if (!result)
-        FPRINTF(stderr, "ERROR: OE_HeapRemap(): %s\n", heap->err);
+        FPRINTF(stderr, "ERROR: oe_mman_remap(): %s\n", heap->err);
 
     return result;
 }
 
-/* Helper for calling OE_HeapUnmap() */
-static int _HeapUnmap(OE_Heap* heap, void* address, size_t size)
+/* Helper for calling oe_mman_unmap() */
+static int _HeapUnmap(oe_mman_t* heap, void* address, size_t size)
 {
-    int rc = (int)OE_HeapUnmap(heap, address, size);
+    int rc = (int)oe_mman_unmap(heap, address, size);
 
     if (rc != 0)
-        FPRINTF(stderr, "ERROR: OE_HeapUnmap(): %s\n", heap->err);
+        FPRINTF(stderr, "ERROR: oe_mman_unmap(): %s\n", heap->err);
 
     return rc;
 }
@@ -201,7 +201,7 @@ static int _HeapUnmap(OE_Heap* heap, void* address, size_t size)
 /*
 ** TestHeap1()
 **
-**     Test OE_HeapMap() and OE_HeapUnmap() and check expected state between
+**     Test oe_mman_map() and oe_mman_unmap() and check expected state between
 **     operations. Unmap leaves gaps and then map checks to see if those gaps
 **     are filled.
 */
@@ -209,7 +209,7 @@ void TestHeap1()
 {
     // char buf1[4096];
     //(void)buf1;
-    OE_Heap h;
+    oe_mman_t h;
     // char buf2[4096];
     //(void)buf2;
 
@@ -228,7 +228,7 @@ void TestHeap1()
     assert(_IsSorted(h.vad_list));
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     void* ptrs[16];
@@ -246,7 +246,7 @@ void TestHeap1()
     }
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     assert(h.brk == h.start);
@@ -282,7 +282,7 @@ void TestHeap1()
     }
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     assert(_IsSorted(h.vad_list));
@@ -321,7 +321,7 @@ void TestHeap1()
     assert(_IsSorted(h.vad_list));
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     _MergeCoverage(&h);
@@ -332,14 +332,14 @@ void TestHeap1()
 /*
 ** TestHeap2()
 **
-**     Test OE_HeapMap() and OE_HeapUnmap() and check expected state between
+**     Test oe_mman_map() and oe_mman_unmap() and check expected state between
 **     operations. Map several regions and then unmap regions leaving gaps.
 **     Map again and see if the new regions were allocated within the expected
 **     gaps.
 */
 void TestHeap2()
 {
-    OE_Heap h;
+    oe_mman_t h;
 
     const size_t npages = 1024;
     const size_t size = npages * OE_PAGE_SIZE;
@@ -362,7 +362,7 @@ void TestHeap2()
     assert(_IsSorted(h.vad_list));
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     void* p0a;
@@ -410,7 +410,7 @@ void TestHeap2()
     }
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     _MergeCoverage(&h);
@@ -427,7 +427,7 @@ void TestHeap2()
 */
 void TestHeap3()
 {
-    OE_Heap h;
+    oe_mman_t h;
 
     const size_t npages = 1024;
     const size_t size = npages * OE_PAGE_SIZE;
@@ -461,7 +461,7 @@ void TestHeap3()
     assert(_IsSorted(h.vad_list));
 
     /* This should be illegal since it overruns the end */
-    assert(OE_HeapUnmap(&h, ptrs[0], 2 * PGSZ) != 0);
+    assert(oe_mman_unmap(&h, ptrs[0], 2 * PGSZ) != 0);
     assert(_IsSorted(h.vad_list));
     assert(_IsFlush(&h, h.vad_list));
 
@@ -482,7 +482,7 @@ void TestHeap3()
     /* ptrs[7] -- 8 page */
 
 #if 0
-    OE_HeapDump(&h, false);
+    oe_mman_dump(&h, false);
 #endif
 
     /* Free innner 6 pages of ptrs[7] -- [mUUUUUUm] */
@@ -492,7 +492,7 @@ void TestHeap3()
     assert(_IsSorted(h.vad_list));
 
 #if 0
-    OE_HeapDump(&h, false);
+    oe_mman_dump(&h, false);
 #endif
 
     /* Map 6 pages to fill the gap created by last unmap */
@@ -500,7 +500,7 @@ void TestHeap3()
         assert(0);
 
 #if 0
-    OE_HeapDump(&h, false);
+    oe_mman_dump(&h, false);
 #endif
 
     _MergeCoverage(&h);
@@ -517,7 +517,7 @@ void TestHeap3()
 */
 void TestHeap4()
 {
-    OE_Heap h;
+    oe_mman_t h;
 
     const size_t npages = 1024;
     const size_t size = npages * OE_PAGE_SIZE;
@@ -541,17 +541,17 @@ void TestHeap4()
     assert(h.map == h.end - m);
     assert(_IsSorted(h.vad_list));
 #if 0
-    OE_HeapDump(&h, false);
+    oe_mman_dump(&h, false);
 #endif
 
     /* This should fail */
-    assert(OE_HeapUnmap(&h, ptrs[7], 1024 * PGSZ) != 0);
+    assert(oe_mman_unmap(&h, ptrs[7], 1024 * PGSZ) != 0);
 
     /* Unmap everything */
     assert(_HeapUnmap(&h, ptrs[7], m) == 0);
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     _MergeCoverage(&h);
@@ -568,7 +568,7 @@ void TestHeap4()
 */
 void TestHeap5()
 {
-    OE_Heap h;
+    oe_mman_t h;
 
     const size_t npages = 1024;
     const size_t size = npages * OE_PAGE_SIZE;
@@ -589,17 +589,17 @@ void TestHeap5()
     }
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     /* Unmap a region in the middle */
     assert(_HeapUnmap(&h, ptrs[4], 5 * PGSZ) == 0);
 
     /* Unmap everything */
-    assert(OE_HeapUnmap(&h, ptrs[7], m) != 0);
+    assert(oe_mman_unmap(&h, ptrs[7], m) != 0);
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     _MergeCoverage(&h);
@@ -616,7 +616,7 @@ void TestHeap5()
 */
 void TestHeap6()
 {
-    OE_Heap h;
+    oe_mman_t h;
     size_t i;
     const size_t n = 8;
     const size_t npages = 1024;
@@ -638,7 +638,7 @@ void TestHeap6()
     }
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     _MergeCoverage(&h);
@@ -655,7 +655,7 @@ void TestHeap6()
 */
 void TestRemap1()
 {
-    OE_Heap h;
+    oe_mman_t h;
     const size_t npages = 1024;
     const size_t size = npages * OE_PAGE_SIZE;
     size_t old_size;
@@ -671,14 +671,14 @@ void TestRemap1()
         assert(0);
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     assert(_IsSorted(h.vad_list));
     assert(_IsFlush(&h, h.vad_list));
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     /* Remap region, making it twice as big */
@@ -692,7 +692,7 @@ void TestRemap1()
     assert(!_IsFlush(&h, h.vad_list));
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     /* Remap region, making it four times smaller */
@@ -705,7 +705,7 @@ void TestRemap1()
     assert(!_IsFlush(&h, h.vad_list));
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     _MergeCoverage(&h);
@@ -722,7 +722,7 @@ void TestRemap1()
 */
 void TestRemap2()
 {
-    OE_Heap h;
+    oe_mman_t h;
     const size_t npages = 1024;
     const size_t size = npages * OE_PAGE_SIZE;
     size_t old_size;
@@ -743,7 +743,7 @@ void TestRemap2()
         assert(0);
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     /* Remap region, making it twice as big */
@@ -752,7 +752,7 @@ void TestRemap2()
         assert(0);
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     _MergeCoverage(&h);
@@ -769,7 +769,7 @@ void TestRemap2()
 */
 void TestRemap3()
 {
-    OE_Heap h;
+    oe_mman_t h;
     const size_t npages = 1024;
     const size_t size = npages * OE_PAGE_SIZE;
 
@@ -792,7 +792,7 @@ void TestRemap3()
     oe_page_t* ptr3 = ptr2 + 3;
 
 #if 0
-    OE_HeapDump(&h, false);
+    oe_mman_dump(&h, false);
 #endif
 
     /* Shrink region: [3|4] */
@@ -800,7 +800,7 @@ void TestRemap3()
         assert(0);
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     _MergeCoverage(&h);
@@ -817,7 +817,7 @@ void TestRemap3()
 */
 void TestRemap4()
 {
-    OE_Heap h;
+    oe_mman_t h;
     const size_t npages = 1024;
     const size_t size = npages * OE_PAGE_SIZE;
 
@@ -840,7 +840,7 @@ void TestRemap4()
     assert(_HeapUnmap(&h, ptr1, 4 * PGSZ) == 0);
 
 #if 0
-    OE_HeapDump(&h, false);
+    oe_mman_dump(&h, false);
 #endif
 
     oe_page_t* ptr3 = ptr2 + 2;
@@ -850,7 +850,7 @@ void TestRemap4()
         assert(0);
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     _MergeCoverage(&h);
@@ -898,7 +898,7 @@ static bool _CheckMem(Elem* elem)
 */
 void TestHeapRandomly()
 {
-    OE_Heap h;
+    oe_mman_t h;
     const size_t heap_size = 64 * 1024 * 1024;
 
     assert(_InitHeap(&h, heap_size) == 0);
@@ -980,10 +980,10 @@ void TestHeapRandomly()
     /* Everything should be unmapped */
     assert(h.vad_list == NULL);
 
-    assert(OE_HeapSane(&h));
+    assert(oe_mman_is_sane(&h));
 
 #if 0
-    OE_HeapDump(&h, true);
+    oe_mman_dump(&h, true);
 #endif
 
     _MergeCoverage(&h);
@@ -999,7 +999,7 @@ void TestHeapRandomly()
 */
 void TestOutOfMemory()
 {
-    OE_Heap h;
+    oe_mman_t h;
     const size_t heap_size = 64 * 1024 * 1024;
 
     assert(_InitHeap(&h, heap_size) == 0);
@@ -1008,7 +1008,7 @@ void TestOutOfMemory()
     while (_HeapMapNoErr(&h, NULL, 64 * PGSZ))
         ;
 
-    assert(OE_HeapSane(&h));
+    assert(oe_mman_is_sane(&h));
 
     _MergeCoverage(&h);
     _FreeHeap(&h);

@@ -111,8 +111,8 @@
 **==============================================================================
 */
 
-#include <openenclave/corelibc/sys/mman.h>
 #include <openenclave/internal/defs.h>
+#include <openenclave/internal/mman.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
 
@@ -150,24 +150,30 @@
 **==============================================================================
 */
 
+OE_INLINE pthread_mutex_t* _get_mutex(oe_mman_t* mman)
+{
+    OE_STATIC_ASSERT(sizeof(pthread_mutex_t) <= sizeof(mman->lock));
+    return (pthread_mutex_t*)mman->lock;
+}
+
 /* Get the end address of a VAD */
-OE_INLINE uintptr_t _End(OE_VAD* vad)
+OE_INLINE uintptr_t _end(oe_vad_t* vad)
 {
     return vad->addr + vad->size;
 }
 
 /* Get the size of the gap to the right of this VAD */
-OE_INLINE size_t _GetRightGap(OE_Heap* heap, OE_VAD* vad)
+OE_INLINE size_t _get_right_gap(oe_mman_t* mman, oe_vad_t* vad)
 {
     if (vad->next)
     {
         /* Get size of gap between this VAD and next one */
-        return vad->next->addr - _End(vad);
+        return vad->next->addr - _end(vad);
     }
     else
     {
         /* Get size of gap between this VAD and the end of the heap */
-        return heap->end - _End(vad);
+        return mman->end - _end(vad);
     }
 }
 
@@ -180,22 +186,22 @@ OE_INLINE size_t _GetRightGap(OE_Heap* heap, OE_VAD* vad)
 */
 
 /* Get a VAD from the free list */
-static OE_VAD* _FreeListGet(OE_Heap* heap)
+static oe_vad_t* _free_list_get(oe_mman_t* mman)
 {
-    OE_VAD* vad = NULL;
+    oe_vad_t* vad = NULL;
 
     /* First try the free list */
-    if (heap->free_vads)
+    if (mman->free_vads)
     {
-        vad = heap->free_vads;
-        heap->free_vads = vad->next;
+        vad = mman->free_vads;
+        mman->free_vads = vad->next;
         goto done;
     }
 
-    /* Now try the OE_VAD array */
-    if (heap->next_vad != heap->end_vad)
+    /* Now try the oe_vad_t array */
+    if (mman->next_vad != mman->end_vad)
     {
-        vad = heap->next_vad++;
+        vad = mman->next_vad++;
         goto done;
     }
 
@@ -203,8 +209,8 @@ done:
     return vad;
 }
 
-/* Return a free OE_VAD to the free list */
-static void _FreeListPut(OE_Heap* heap, OE_VAD* vad)
+/* Return a free oe_vad_t to the free list */
+static void _free_list_put(oe_mman_t* mman, oe_vad_t* vad)
 {
     /* Clear the VAD */
     vad->addr = 0;
@@ -213,8 +219,8 @@ static void _FreeListPut(OE_Heap* heap, OE_VAD* vad)
     vad->flags = 0;
 
     /* Insert into singly-linked free list as first element */
-    vad->next = heap->free_vads;
-    heap->free_vads = vad;
+    vad->next = mman->free_vads;
+    mman->free_vads = vad;
 }
 
 /*
@@ -226,7 +232,7 @@ static void _FreeListPut(OE_Heap* heap, OE_VAD* vad)
 */
 
 /* Insert VAD after PREV in the linked list */
-static void _ListInsertAfter(OE_Heap* heap, OE_VAD* prev, OE_VAD* vad)
+static void _list_insert_after(oe_mman_t* mman, oe_vad_t* prev, oe_vad_t* vad)
 {
     if (prev)
     {
@@ -238,29 +244,29 @@ static void _ListInsertAfter(OE_Heap* heap, OE_VAD* prev, OE_VAD* vad)
 
         prev->next = vad;
 
-        heap->coverage[OE_HEAP_COVERAGE_16] = true;
+        mman->coverage[OE_HEAP_COVERAGE_16] = true;
     }
     else
     {
         vad->prev = NULL;
-        vad->next = heap->vad_list;
+        vad->next = mman->vad_list;
 
-        if (heap->vad_list)
-            heap->vad_list->prev = vad;
+        if (mman->vad_list)
+            mman->vad_list->prev = vad;
 
-        heap->vad_list = vad;
+        mman->vad_list = vad;
 
-        heap->coverage[OE_HEAP_COVERAGE_17] = true;
+        mman->coverage[OE_HEAP_COVERAGE_17] = true;
     }
 }
 
 /* Remove VAD from the doubly-linked list */
-static void _ListRemove(OE_Heap* heap, OE_VAD* vad)
+static void _list_remove(oe_mman_t* mman, oe_vad_t* vad)
 {
     /* Remove from doubly-linked list */
-    if (vad == heap->vad_list)
+    if (vad == mman->vad_list)
     {
-        heap->vad_list = vad->next;
+        mman->vad_list = vad->next;
 
         if (vad->next)
             vad->next->prev = NULL;
@@ -276,13 +282,13 @@ static void _ListRemove(OE_Heap* heap, OE_VAD* vad)
 }
 
 /* Find a VAD that contains the given address */
-static OE_VAD* _ListFind(OE_Heap* heap, uintptr_t addr)
+static oe_vad_t* _list_find(oe_mman_t* mman, uintptr_t addr)
 {
-    OE_VAD* p;
+    oe_vad_t* p;
 
-    for (p = heap->vad_list; p; p = p->next)
+    for (p = mman->vad_list; p; p = p->next)
     {
-        if (addr >= p->addr && addr < _End(p))
+        if (addr >= p->addr && addr < _end(p))
             return p;
     }
 
@@ -293,68 +299,62 @@ static OE_VAD* _ListFind(OE_Heap* heap, uintptr_t addr)
 /*
 **==============================================================================
 **
-** _Heap functions
+** mman helper functions
 **
 **==============================================================================
 */
 
-OE_INLINE pthread_mutex_t* _get_mutex(OE_Heap* heap)
-{
-    return (pthread_mutex_t*)heap->lock;
-}
-
 /* Lock the heap and set the 'locked' parameter to true */
-OE_INLINE void _HeapLock(OE_Heap* heap, bool* locked)
+OE_INLINE void _mman_lock(oe_mman_t* mman, bool* locked)
 {
-    OE_STATIC_ASSERT(sizeof(pthread_mutex_t) <= sizeof(heap->lock));
-    pthread_mutex_lock(_get_mutex(heap));
+    pthread_mutex_lock(_get_mutex(mman));
     *locked = true;
 }
 
 /* Unlock the heap and set the 'locked' parameter to false */
-OE_INLINE void _HeapUnlock(OE_Heap* heap, bool* locked)
+OE_INLINE void _mman_unlock(oe_mman_t* mman, bool* locked)
 {
     if (*locked)
     {
-        pthread_mutex_unlock(_get_mutex(heap));
+        pthread_mutex_unlock(_get_mutex(mman));
         *locked = false;
     }
 }
 
 /* Clear the heap error message */
-static void _HeapClearErr(OE_Heap* heap)
+static void _mman_clear_err(oe_mman_t* mman)
 {
-    if (heap)
-        heap->err[0] = '\0';
+    if (mman)
+        mman->err[0] = '\0';
 }
 
 /* Set the heap error message */
-static void _HeapSetErr(OE_Heap* heap, const char* str)
+static void _mman_set_err(oe_mman_t* mman, const char* str)
 {
-    if (heap && str)
-        SNPRINTF(heap->err, sizeof(heap->err), "%s", str);
+    if (mman && str)
+        SNPRINTF(mman->err, sizeof(mman->err), "%s", str);
 }
 
 /* Inline Helper function to check heap sanity (if enable) */
-OE_INLINE bool _HeapSane(OE_Heap* heap)
+OE_INLINE bool _mman_is_sane(oe_mman_t* mman)
 {
-    if (heap->sanity)
-        return OE_HeapSane(heap);
+    if (mman->sanity)
+        return oe_mman_is_sane(mman);
 
     return true;
 }
 
 /* Allocate and initialize a new VAD */
-static OE_VAD* _HeapNewVAD(
-    OE_Heap* heap,
+static oe_vad_t* _mman_new_vad(
+    oe_mman_t* mman,
     uintptr_t addr,
     size_t size,
     int prot,
     int flags)
 {
-    OE_VAD* vad = NULL;
+    oe_vad_t* vad = NULL;
 
-    if (!(vad = _FreeListGet(heap)))
+    if (!(vad = _free_list_get(mman)))
         goto done;
 
     vad->addr = addr;
@@ -367,12 +367,12 @@ done:
 }
 
 /* Synchronize the MAP value to the address of the first list element */
-OE_INLINE void _HeapSyncTop(OE_Heap* heap)
+OE_INLINE void _mman_sync_top(oe_mman_t* mman)
 {
-    if (heap->vad_list)
-        heap->map = heap->vad_list->addr;
+    if (mman->vad_list)
+        mman->map = mman->vad_list->addr;
     else
-        heap->map = heap->end;
+        mman->map = mman->end;
 }
 
 /*
@@ -398,36 +398,36 @@ OE_INLINE void _HeapSyncTop(OE_Heap* heap)
 **     (2) MAP == END
 **
 */
-static uintptr_t _HeapFindGap(
-    OE_Heap* heap,
+static uintptr_t _mman_find_gap(
+    oe_mman_t* mman,
     size_t size,
-    OE_VAD** left,
-    OE_VAD** right)
+    oe_vad_t** left,
+    oe_vad_t** right)
 {
     uintptr_t addr = 0;
 
     *left = NULL;
     *right = NULL;
 
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         goto done;
 
     /* Look for a gap in the VAD list */
     {
-        OE_VAD* p;
+        oe_vad_t* p;
 
         /* Search for gaps between HEAD and TAIL */
-        for (p = heap->vad_list; p; p = p->next)
+        for (p = mman->vad_list; p; p = p->next)
         {
-            size_t gap = _GetRightGap(heap, p);
+            size_t gap = _get_right_gap(mman, p);
 
             if (gap >= size)
             {
                 *left = p;
                 *right = p->next;
 
-                addr = _End(p);
-                heap->coverage[OE_HEAP_COVERAGE_13] = true;
+                addr = _end(p);
+                mman->coverage[OE_HEAP_COVERAGE_13] = true;
                 goto done;
             }
         }
@@ -435,20 +435,20 @@ static uintptr_t _HeapFindGap(
 
     /* No gaps in linked list so obtain memory from mapped memory area */
     {
-        uintptr_t start = heap->map - size;
+        uintptr_t start = mman->map - size;
 
         /* If memory was exceeded (overrun of break value) */
-        if (!(heap->brk <= start))
+        if (!(mman->brk <= start))
         {
-            heap->coverage[OE_HEAP_COVERAGE_14] = true;
+            mman->coverage[OE_HEAP_COVERAGE_14] = true;
             goto done;
         }
 
-        if (heap->vad_list)
-            *right = heap->vad_list;
+        if (mman->vad_list)
+            *right = mman->vad_list;
 
         addr = start;
-        heap->coverage[OE_HEAP_COVERAGE_15] = true;
+        mman->coverage[OE_HEAP_COVERAGE_15] = true;
         goto done;
     }
 
@@ -466,7 +466,7 @@ done:
 
 /*
 **
-** OE_HeapInit()
+** oe_mman_init()
 **
 **     Initialize a heap structure by setting the 'base' and 'size' and other
 **     internal state variables. Note that the caller must obtain a lock if
@@ -481,96 +481,96 @@ done:
 **     OE_OK if successful.
 **
 */
-oe_result_t OE_HeapInit(OE_Heap* heap, uintptr_t base, size_t size)
+oe_result_t oe_mman_init(oe_mman_t* mman, uintptr_t base, size_t size)
 {
     oe_result_t result = OE_FAILURE;
 
-    _HeapClearErr(heap);
+    _mman_clear_err(mman);
 
     /* Check for invalid parameters */
-    if (!heap || !base || !size)
+    if (!mman || !base || !size)
     {
-        _HeapSetErr(heap, "bad parameter");
+        _mman_set_err(mman, "bad parameter");
         OE_RAISE(OE_INVALID_PARAMETER);
     }
 
     /* BASE must be aligned on a page boundary */
     if (base % OE_PAGE_SIZE)
     {
-        _HeapSetErr(heap, "bad base parameter");
+        _mman_set_err(mman, "bad base parameter");
         OE_RAISE(OE_INVALID_PARAMETER);
     }
 
     /* SIZE must be a mulitple of the page size */
     if (size % OE_PAGE_SIZE)
     {
-        _HeapSetErr(heap, "bad size parameter");
+        _mman_set_err(mman, "bad size parameter");
         OE_RAISE(OE_INVALID_PARAMETER);
     }
 
     /* Clear the heap object */
-    memset(heap, 0, sizeof(OE_Heap));
+    memset(mman, 0, sizeof(oe_mman_t));
 
     /* Calculate the total number of pages */
     size_t num_pages = size / OE_PAGE_SIZE;
 
     /* Save the base of the heap */
-    heap->base = base;
+    mman->base = base;
 
     /* Save the size of the heap */
-    heap->size = size;
+    mman->size = size;
 
     /* Set the start of the heap area, which follows the VADs array */
-    heap->start = base + (num_pages * sizeof(OE_VAD));
+    mman->start = base + (num_pages * sizeof(oe_vad_t));
 
     /* Round start up to next page multiple */
-    heap->start = oe_round_up_to_multiple(heap->start, OE_PAGE_SIZE);
+    mman->start = oe_round_up_to_multiple(mman->start, OE_PAGE_SIZE);
 
     /* Set the end of the heap area */
-    heap->end = base + size;
+    mman->end = base + size;
 
     /* Set the top of the break memory (grows positively) */
-    heap->brk = heap->start;
+    mman->brk = mman->start;
 
     /* Set the top of the mapped memory (grows negativey) */
-    heap->map = heap->end;
+    mman->map = mman->end;
 
-    /* Set pointer to the next available entry in the OE_VAD array */
-    heap->next_vad = (OE_VAD*)base;
+    /* Set pointer to the next available entry in the oe_vad_t array */
+    mman->next_vad = (oe_vad_t*)base;
 
-    /* Set pointer to the end address of the OE_VAD array */
-    heap->end_vad = (OE_VAD*)heap->start;
+    /* Set pointer to the end address of the oe_vad_t array */
+    mman->end_vad = (oe_vad_t*)mman->start;
 
-    /* Set the free OE_VAD list to null */
-    heap->free_vads = NULL;
+    /* Set the free oe_vad_t list to null */
+    mman->free_vads = NULL;
 
-    /* Set the OE_VAD linked list to null */
-    heap->vad_list = NULL;
+    /* Set the oe_vad_t linked list to null */
+    mman->vad_list = NULL;
 
     /* Sanity checks are disabled by default */
-    heap->sanity = false;
+    mman->sanity = false;
 
     /* Set the magic number */
-    heap->magic = OE_HEAP_MAGIC;
+    mman->magic = OE_HEAP_MAGIC;
 
     /* Initialize the mutex */
     {
         pthread_mutexattr_t attr;
         pthread_mutexattr_init(&attr);
         pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-        pthread_mutex_init(_get_mutex(heap), &attr);
+        pthread_mutex_init(_get_mutex(mman), &attr);
     }
 
     /* Finally, set initialized to true */
-    heap->initialized = 1;
+    mman->initialized = 1;
 
     /* Check sanity of heap */
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         OE_RAISE(OE_UNEXPECTED);
 
     result = OE_OK;
 
-    heap->coverage[OE_HEAP_COVERAGE_18] = true;
+    mman->coverage[OE_HEAP_COVERAGE_18] = true;
 
 done:
     return result;
@@ -578,7 +578,7 @@ done:
 
 /*
 **
-** OE_HeapSbrk()
+** oe_mman_sbrk()
 **
 **     Allocate space from the BREAK region (between the START and BRK value)
 **     This increases the BRK value by at least the increment size (rounding
@@ -595,49 +595,49 @@ done:
 **     This function is similar to the POSIX sbrk() function.
 **
 */
-void* OE_HeapSbrk(OE_Heap* heap, ptrdiff_t increment)
+void* oe_mman_sbrk(oe_mman_t* mman, ptrdiff_t increment)
 {
     void* result = NULL;
     void* ptr = NULL;
     bool locked = false;
 
-    _HeapLock(heap, &locked);
+    _mman_lock(mman, &locked);
 
-    _HeapClearErr(heap);
+    _mman_clear_err(mman);
 
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         goto done;
 
     if (increment == 0)
     {
         /* Return the current break value without changing it */
-        ptr = (void*)heap->brk;
+        ptr = (void*)mman->brk;
     }
-    else if ((uintptr_t)increment <= heap->map - heap->brk)
+    else if ((uintptr_t)increment <= mman->map - mman->brk)
     {
         /* Increment the break value and return the old break value */
-        ptr = (void*)heap->brk;
-        heap->brk += (uintptr_t)increment;
+        ptr = (void*)mman->brk;
+        mman->brk += (uintptr_t)increment;
     }
     else
     {
-        _HeapSetErr(heap, "out of memory");
+        _mman_set_err(mman, "out of memory");
         goto done;
     }
 
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         goto done;
 
     result = ptr;
 
 done:
-    _HeapUnlock(heap, &locked);
+    _mman_unlock(mman, &locked);
     return result;
 }
 
 /*
 **
-** OE_HeapBrk()
+** oe_mman_brk()
 **
 **     Change the BREAK value (within the BREAK region). Increasing the
 **     break value has the effect of allocating memory. Decresing the
@@ -655,38 +655,38 @@ done:
 **     This function is similar to the POSIX brk() function.
 **
 */
-oe_result_t OE_HeapBrk(OE_Heap* heap, uintptr_t addr)
+oe_result_t oe_mman_brk(oe_mman_t* mman, uintptr_t addr)
 {
     oe_result_t result = OE_FAILURE;
     bool locked = false;
 
-    _HeapLock(heap, &locked);
+    _mman_lock(mman, &locked);
 
-    _HeapClearErr(heap);
+    _mman_clear_err(mman);
 
     /* Fail if requested address is not within the break memory area */
-    if (addr < heap->start || addr >= heap->map)
+    if (addr < mman->start || addr >= mman->map)
     {
-        _HeapSetErr(heap, "address is out of range");
+        _mman_set_err(mman, "address is out of range");
         OE_RAISE(OE_INVALID_PARAMETER);
     }
 
     /* Set the break value */
-    heap->brk = addr;
+    mman->brk = addr;
 
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         OE_RAISE(OE_FAILURE);
 
     result = OE_OK;
 
 done:
-    _HeapUnlock(heap, &locked);
+    _mman_unlock(mman, &locked);
     return result;
 }
 
 /*
 **
-** OE_HeapMap()
+** oe_mman_map()
 **
 **     Allocate 'length' bytes from the MAPPED region. The 'length' parameter
 **     is rounded to a multiple of the page size.
@@ -710,37 +710,42 @@ done:
 **     VAD list.
 **
 */
-void* OE_HeapMap(OE_Heap* heap, void* addr, size_t length, int prot, int flags)
+void* oe_mman_map(
+    oe_mman_t* mman,
+    void* addr,
+    size_t length,
+    int prot,
+    int flags)
 {
     void* result = NULL;
     uintptr_t start = 0;
     bool locked = false;
 
-    _HeapLock(heap, &locked);
+    _mman_lock(mman, &locked);
 
-    _HeapClearErr(heap);
+    _mman_clear_err(mman);
 
     /* Check for valid heap parameter */
-    if (!heap || heap->magic != OE_HEAP_MAGIC)
+    if (!mman || mman->magic != OE_HEAP_MAGIC)
     {
-        _HeapSetErr(heap, "bad parameter");
+        _mman_set_err(mman, "bad parameter");
         goto done;
     }
 
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         goto done;
 
     /* ADDR must be page aligned */
     if (addr && (uintptr_t)addr % OE_PAGE_SIZE)
     {
-        _HeapSetErr(heap, "bad addr parameter");
+        _mman_set_err(mman, "bad addr parameter");
         goto done;
     }
 
     /* LENGTH must be non-zero */
     if (length == 0)
     {
-        _HeapSetErr(heap, "bad length parameter");
+        _mman_set_err(mman, "bad length parameter");
         goto done;
     }
 
@@ -748,19 +753,19 @@ void* OE_HeapMap(OE_Heap* heap, void* addr, size_t length, int prot, int flags)
     {
         if (!(prot & OE_PROT_READ))
         {
-            _HeapSetErr(heap, "bad prot parameter: need OE_PROT_READ");
+            _mman_set_err(mman, "bad prot parameter: need OE_PROT_READ");
             goto done;
         }
 
         if (!(prot & OE_PROT_WRITE))
         {
-            _HeapSetErr(heap, "bad prot parameter: need OE_PROT_WRITE");
+            _mman_set_err(mman, "bad prot parameter: need OE_PROT_WRITE");
             goto done;
         }
 
         if (prot & OE_PROT_EXEC)
         {
-            _HeapSetErr(heap, "bad prot parameter: remove OE_PROT_EXEC");
+            _mman_set_err(mman, "bad prot parameter: remove OE_PROT_EXEC");
             goto done;
         }
     }
@@ -769,25 +774,25 @@ void* OE_HeapMap(OE_Heap* heap, void* addr, size_t length, int prot, int flags)
     {
         if (!(flags & OE_MAP_ANONYMOUS))
         {
-            _HeapSetErr(heap, "bad flags parameter: need OE_MAP_ANONYMOUS");
+            _mman_set_err(mman, "bad flags parameter: need OE_MAP_ANONYMOUS");
             goto done;
         }
 
         if (!(flags & OE_MAP_PRIVATE))
         {
-            _HeapSetErr(heap, "bad flags parameter: need OE_MAP_PRIVATE");
+            _mman_set_err(mman, "bad flags parameter: need OE_MAP_PRIVATE");
             goto done;
         }
 
         if (flags & OE_MAP_SHARED)
         {
-            _HeapSetErr(heap, "bad flags parameter: remove OE_MAP_SHARED");
+            _mman_set_err(mman, "bad flags parameter: remove OE_MAP_SHARED");
             goto done;
         }
 
         if (flags & OE_MAP_FIXED)
         {
-            _HeapSetErr(heap, "bad flags parameter: remove OE_MAP_FIXED");
+            _mman_set_err(mman, "bad flags parameter: remove OE_MAP_FIXED");
             goto done;
         }
     }
@@ -798,22 +803,22 @@ void* OE_HeapMap(OE_Heap* heap, void* addr, size_t length, int prot, int flags)
     if (addr)
     {
         /* TODO: implement to support mapping non-zero addresses */
-        _HeapSetErr(heap, "bad addr parameter: must be null");
+        _mman_set_err(mman, "bad addr parameter: must be null");
         goto done;
     }
     else
     {
-        OE_VAD* left;
-        OE_VAD* right;
+        oe_vad_t* left;
+        oe_vad_t* right;
 
         /* Find a gap that is big enough */
-        if (!(start = _HeapFindGap(heap, length, &left, &right)))
+        if (!(start = _mman_find_gap(mman, length, &left, &right)))
         {
-            _HeapSetErr(heap, "out of memory");
+            _mman_set_err(mman, "out of memory");
             goto done;
         }
 
-        if (left && _End(left) == start)
+        if (left && _end(left) == start)
         {
             /* Coalesce with LEFT neighbor */
 
@@ -822,12 +827,12 @@ void* OE_HeapMap(OE_Heap* heap, void* addr, size_t length, int prot, int flags)
             /* Coalesce with RIGHT neighbor (and release right neighbor) */
             if (right && (start + length == right->addr))
             {
-                _ListRemove(heap, right);
+                _list_remove(mman, right);
                 left->size += right->size;
-                _FreeListPut(heap, right);
+                _free_list_put(mman, right);
             }
 
-            heap->coverage[OE_HEAP_COVERAGE_0] = true;
+            mman->coverage[OE_HEAP_COVERAGE_0] = true;
         }
         else if (right && (start + length == right->addr))
         {
@@ -835,52 +840,52 @@ void* OE_HeapMap(OE_Heap* heap, void* addr, size_t length, int prot, int flags)
 
             right->addr = start;
             right->size += length;
-            _HeapSyncTop(heap);
+            _mman_sync_top(mman);
 
-            heap->coverage[OE_HEAP_COVERAGE_1] = true;
+            mman->coverage[OE_HEAP_COVERAGE_1] = true;
         }
         else
         {
-            OE_VAD* vad;
+            oe_vad_t* vad;
 
             /* Create a new VAD and insert it into the list */
 
-            if (!(vad = _HeapNewVAD(heap, start, length, prot, flags)))
+            if (!(vad = _mman_new_vad(mman, start, length, prot, flags)))
             {
-                _HeapSetErr(heap, "unexpected: list insert failed");
+                _mman_set_err(mman, "unexpected: list insert failed");
                 goto done;
             }
 
-            _ListInsertAfter(heap, left, vad);
-            _HeapSyncTop(heap);
+            _list_insert_after(mman, left, vad);
+            _mman_sync_top(mman);
 
-            heap->coverage[OE_HEAP_COVERAGE_2] = true;
+            mman->coverage[OE_HEAP_COVERAGE_2] = true;
         }
     }
 
     /* Zero-fill mapped memory */
     memset((void*)start, 0, length);
 
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         goto done;
 
     result = (void*)start;
 
 done:
-    _HeapUnlock(heap, &locked);
+    _mman_unlock(mman, &locked);
     return result;
 }
 
 /*
 **
-** OE_HeapUnmap()
+** oe_mman_unmap()
 **
-**     Release a memory mapping obtained with OE_HeapMap() or OE_HeapRemap().
+**     Release a memory mapping obtained with oe_mman_map() or oe_mman_remap().
 **     Note that partial mappings are supported, in which case a portion of
-**     the memory obtained with OE_HeapMap() or OE_HeapRemap() is released.
+**     the memory obtained with oe_mman_map() or oe_mman_remap() is released.
 **
 ** Parameters:
-**     [IN] heap - heap structure
+**     [IN] mman - mman structure
 **     [IN] addr - addresss or memory being released (must be page aligned).
 **     [IN] length - length of memory being released (multiple of page size).
 **
@@ -898,37 +903,37 @@ done:
 **     excess (if any) is split into its own VAD.
 **
 */
-oe_result_t OE_HeapUnmap(OE_Heap* heap, void* addr, size_t length)
+oe_result_t oe_mman_unmap(oe_mman_t* mman, void* addr, size_t length)
 {
     oe_result_t result = OE_FAILURE;
-    OE_VAD* vad = NULL;
+    oe_vad_t* vad = NULL;
     bool locked = false;
 
-    _HeapLock(heap, &locked);
+    _mman_lock(mman, &locked);
 
-    _HeapClearErr(heap);
+    _mman_clear_err(mman);
 
     /* Reject invaid parameters */
-    if (!heap || heap->magic != OE_HEAP_MAGIC || !addr || !length)
+    if (!mman || mman->magic != OE_HEAP_MAGIC || !addr || !length)
     {
-        _HeapSetErr(heap, "bad parameter");
+        _mman_set_err(mman, "bad parameter");
         OE_RAISE(OE_INVALID_PARAMETER);
     }
 
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         OE_RAISE(OE_INVALID_PARAMETER);
 
     /* ADDRESS must be aligned on a page boundary */
     if ((uintptr_t)addr % OE_PAGE_SIZE)
     {
-        _HeapSetErr(heap, "bad addr parameter");
+        _mman_set_err(mman, "bad addr parameter");
         OE_RAISE(OE_INVALID_PARAMETER);
     }
 
     /* LENGTH must be a multiple of the page size */
     if (length % OE_PAGE_SIZE)
     {
-        _HeapSetErr(heap, "bad length parameter");
+        _mman_set_err(mman, "bad length parameter");
         OE_RAISE(OE_INVALID_PARAMETER);
     }
 
@@ -937,16 +942,16 @@ oe_result_t OE_HeapUnmap(OE_Heap* heap, void* addr, size_t length)
     uintptr_t end = (uintptr_t)addr + length;
 
     /* Find the VAD that contains this address */
-    if (!(vad = _ListFind(heap, start)))
+    if (!(vad = _list_find(mman, start)))
     {
-        _HeapSetErr(heap, "address not found");
+        _mman_set_err(mman, "address not found");
         OE_RAISE(OE_INVALID_PARAMETER);
     }
 
     /* Fail if this VAD does not contain the end address */
-    if (end > _End(vad))
+    if (end > _end(vad))
     {
-        _HeapSetErr(heap, "illegal range");
+        _mman_set_err(mman, "illegal range");
         OE_RAISE(OE_INVALID_PARAMETER);
     }
 
@@ -959,14 +964,14 @@ oe_result_t OE_HeapUnmap(OE_Heap* heap, void* addr, size_t length)
      *     Case3: [............uuuu]
      *     Case4: [....uuuu........]
      */
-    if (vad->addr == start && _End(vad) == end)
+    if (vad->addr == start && _end(vad) == end)
     {
         /* Case1: [uuuuuuuuuuuuuuuu] */
 
-        _ListRemove(heap, vad);
-        _HeapSyncTop(heap);
-        _FreeListPut(heap, vad);
-        heap->coverage[OE_HEAP_COVERAGE_3] = true;
+        _list_remove(mman, vad);
+        _mman_sync_top(mman);
+        _free_list_put(mman, vad);
+        mman->coverage[OE_HEAP_COVERAGE_3] = true;
     }
     else if (vad->addr == start)
     {
@@ -974,62 +979,62 @@ oe_result_t OE_HeapUnmap(OE_Heap* heap, void* addr, size_t length)
 
         vad->addr += length;
         vad->size -= length;
-        _HeapSyncTop(heap);
-        heap->coverage[OE_HEAP_COVERAGE_4] = true;
+        _mman_sync_top(mman);
+        mman->coverage[OE_HEAP_COVERAGE_4] = true;
     }
-    else if (_End(vad) == end)
+    else if (_end(vad) == end)
     {
         /* Case3: [............uuuu] */
 
         vad->size -= length;
-        heap->coverage[OE_HEAP_COVERAGE_5] = true;
+        mman->coverage[OE_HEAP_COVERAGE_5] = true;
     }
     else
     {
         /* Case4: [....uuuu........] */
 
-        size_t vad_end = _End(vad);
+        size_t vad_end = _end(vad);
 
         /* Adjust the left portion */
         vad->size = (uint32_t)(start - vad->addr);
 
-        OE_VAD* right;
+        oe_vad_t* right;
 
         /* Create VAD for the excess right portion */
-        if (!(right =
-                  _HeapNewVAD(heap, end, vad_end - end, vad->prot, vad->flags)))
+        if (!(right = _mman_new_vad(
+                  mman, end, vad_end - end, vad->prot, vad->flags)))
         {
-            _HeapSetErr(heap, "out of VADs");
+            _mman_set_err(mman, "out of VADs");
             OE_RAISE(OE_FAILURE);
         }
 
-        _ListInsertAfter(heap, vad, right);
-        _HeapSyncTop(heap);
-        heap->coverage[OE_HEAP_COVERAGE_6] = true;
+        _list_insert_after(mman, vad, right);
+        _mman_sync_top(mman);
+        mman->coverage[OE_HEAP_COVERAGE_6] = true;
     }
 
     /* If scrubbing is enabled, then scrub the unmapped memory */
-    if (heap->scrub)
+    if (mman->scrub)
         memset(addr, 0xDD, length);
 
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         OE_RAISE(OE_UNEXPECTED);
 
     result = OE_OK;
 
 done:
-    _HeapUnlock(heap, &locked);
+    _mman_unlock(mman, &locked);
     return result;
 }
 
 /*
 **
-** OE_HeapRemap()
+** oe_mman_remap()
 **
 **     Remap an existing memory region, either making it bigger or smaller.
 **
 ** Parameters:
-**     [IN] heap - heap structure
+**     [IN] mman - mman structure
 **     [IN] addr - addresss being remapped (must be multiple of page size)
 **     [IN] old_size - original size of the memory mapping
 **     [IN] new_size - new size of memory mapping (rounded up to page multiple)
@@ -1046,8 +1051,8 @@ done:
 **     not, it moves it to a new location.
 **
 */
-void* OE_HeapRemap(
-    OE_Heap* heap,
+void* oe_mman_remap(
+    oe_mman_t* mman,
     void* addr,
     size_t old_size,
     size_t new_size,
@@ -1055,48 +1060,50 @@ void* OE_HeapRemap(
 {
     void* new_addr = NULL;
     void* result = NULL;
-    OE_VAD* vad = NULL;
+    oe_vad_t* vad = NULL;
     bool locked = false;
 
-    _HeapLock(heap, &locked);
+    _mman_lock(mman, &locked);
 
-    _HeapClearErr(heap);
+    _mman_clear_err(mman);
 
-    /* Check for valid heap parameter */
-    if (!heap || heap->magic != OE_HEAP_MAGIC || !addr)
+    /* Check for valid mman parameter */
+    if (!mman || mman->magic != OE_HEAP_MAGIC || !addr)
     {
-        _HeapSetErr(heap, "invalid parameter");
+        _mman_set_err(mman, "invalid parameter");
         goto done;
     }
 
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         goto done;
 
     /* ADDR must be page aligned */
     if ((uintptr_t)addr % OE_PAGE_SIZE)
     {
-        _HeapSetErr(heap, "bad addr parameter: must be multiple of page size");
+        _mman_set_err(
+            mman, "bad addr parameter: must be multiple of page size");
         goto done;
     }
 
     /* OLD_SIZE must be non-zero */
     if (old_size == 0)
     {
-        _HeapSetErr(heap, "invalid old_size parameter: must be non-zero");
+        _mman_set_err(mman, "invalid old_size parameter: must be non-zero");
         goto done;
     }
 
     /* NEW_SIZE must be non-zero */
     if (new_size == 0)
     {
-        _HeapSetErr(heap, "invalid old_size parameter: must be non-zero");
+        _mman_set_err(mman, "invalid old_size parameter: must be non-zero");
         goto done;
     }
 
     /* FLAGS must be exactly OE_MREMAP_MAYMOVE) */
     if (flags != OE_MREMAP_MAYMOVE)
     {
-        _HeapSetErr(heap, "invalid flags parameter: must be OE_MREMAP_MAYMOVE");
+        _mman_set_err(
+            mman, "invalid flags parameter: must be OE_MREMAP_MAYMOVE");
         goto done;
     }
 
@@ -1112,16 +1119,16 @@ void* OE_HeapRemap(
     uintptr_t new_end = (uintptr_t)addr + new_size;
 
     /* Find the VAD containing START */
-    if (!(vad = _ListFind(heap, start)))
+    if (!(vad = _list_find(mman, start)))
     {
-        _HeapSetErr(heap, "invalid addr parameter: mapping not found");
+        _mman_set_err(mman, "invalid addr parameter: mapping not found");
         goto done;
     }
 
     /* Verify that the end address is within this VAD */
-    if (old_end > _End(vad))
+    if (old_end > _end(vad))
     {
-        _HeapSetErr(heap, "invalid range");
+        _mman_set_err(mman, "invalid range");
         goto done;
     }
 
@@ -1129,34 +1136,34 @@ void* OE_HeapRemap(
     if (new_size < old_size)
     {
         /* If there are excess bytes on the right of this VAD area */
-        if (_End(vad) != old_end)
+        if (_end(vad) != old_end)
         {
-            OE_VAD* right;
+            oe_vad_t* right;
 
             /* Create VAD for rightward excess */
-            if (!(right = _HeapNewVAD(
-                      heap,
+            if (!(right = _mman_new_vad(
+                      mman,
                       old_end,
-                      _End(vad) - old_end,
+                      _end(vad) - old_end,
                       vad->prot,
                       vad->flags)))
             {
-                _HeapSetErr(heap, "out of VADs");
+                _mman_set_err(mman, "out of VADs");
                 goto done;
             }
 
-            _ListInsertAfter(heap, vad, right);
-            _HeapSyncTop(heap);
+            _list_insert_after(mman, vad, right);
+            _mman_sync_top(mman);
 
-            heap->coverage[OE_HEAP_COVERAGE_7] = true;
+            mman->coverage[OE_HEAP_COVERAGE_7] = true;
         }
 
         vad->size = (uint32_t)(new_end - vad->addr);
         new_addr = addr;
-        heap->coverage[OE_HEAP_COVERAGE_8] = true;
+        mman->coverage[OE_HEAP_COVERAGE_8] = true;
 
         /* If scrubbing is enabled, scrub the unmapped portion */
-        if (heap->scrub)
+        if (mman->scrub)
             memset((void*)new_end, 0xDD, old_size - new_size);
     }
     else if (new_size > old_size)
@@ -1165,31 +1172,31 @@ void* OE_HeapRemap(
         size_t delta = new_size - old_size;
 
         /* If there is room for this area to grow without moving it */
-        if (_End(vad) == old_end && _GetRightGap(heap, vad) >= delta)
+        if (_end(vad) == old_end && _get_right_gap(mman, vad) >= delta)
         {
             vad->size += delta;
             memset((void*)(start + old_size), 0, delta);
             new_addr = addr;
-            heap->coverage[OE_HEAP_COVERAGE_9] = true;
+            mman->coverage[OE_HEAP_COVERAGE_9] = true;
 
             /* If VAD is now contiguous with next one, coalesce them */
-            if (vad->next && _End(vad) == vad->next->addr)
+            if (vad->next && _end(vad) == vad->next->addr)
             {
-                OE_VAD* next = vad->next;
+                oe_vad_t* next = vad->next;
                 vad->size += next->size;
-                _ListRemove(heap, next);
-                _HeapSyncTop(heap);
-                _FreeListPut(heap, next);
-                heap->coverage[OE_HEAP_COVERAGE_10] = true;
+                _list_remove(mman, next);
+                _mman_sync_top(mman);
+                _free_list_put(mman, next);
+                mman->coverage[OE_HEAP_COVERAGE_10] = true;
             }
         }
         else
         {
             /* Map the new area */
             if (!(addr =
-                      OE_HeapMap(heap, NULL, new_size, vad->prot, vad->flags)))
+                      oe_mman_map(mman, NULL, new_size, vad->prot, vad->flags)))
             {
-                _HeapSetErr(heap, "mapping failed");
+                _mman_set_err(mman, "mapping failed");
                 goto done;
             }
 
@@ -1197,146 +1204,146 @@ void* OE_HeapRemap(
             memcpy(addr, (void*)start, old_size);
 
             /* Ummap the old area */
-            if (OE_HeapUnmap(heap, (void*)start, old_size) != 0)
+            if (oe_mman_unmap(mman, (void*)start, old_size) != 0)
             {
-                _HeapSetErr(heap, "unmapping failed");
+                _mman_set_err(mman, "unmapping failed");
                 goto done;
             }
 
             new_addr = (void*)addr;
-            heap->coverage[OE_HEAP_COVERAGE_11] = true;
+            mman->coverage[OE_HEAP_COVERAGE_11] = true;
         }
     }
     else
     {
         /* Nothing to do since size did not change */
-        heap->coverage[OE_HEAP_COVERAGE_12] = true;
+        mman->coverage[OE_HEAP_COVERAGE_12] = true;
         new_addr = addr;
     }
 
-    if (!_HeapSane(heap))
+    if (!_mman_is_sane(mman))
         goto done;
 
     result = new_addr;
 
 done:
-    _HeapUnlock(heap, &locked);
+    _mman_unlock(mman, &locked);
     return result;
 }
 
 /*
 **
-** OE_HeapSane()
+** oe_mman_is_sane()
 **
-**     Debugging function used to check sanity (validity) of a heap structure.
+**     Debugging function used to check sanity (validity) of a mman structure.
 **
 ** Parameters:
-**     [IN] heap - heap structure
+**     [IN] mman - mman structure
 **
 ** Returns:
-**     true if heap is sane
+**     true if mman is sane
 **
 ** Implementation:
 **     Checks various contraints such as ranges being correct and VAD list
 **     being sorted.
 **
 */
-bool OE_HeapSane(OE_Heap* heap)
+bool oe_mman_is_sane(oe_mman_t* mman)
 {
     bool result = false;
 
-    _HeapClearErr(heap);
+    _mman_clear_err(mman);
 
-    if (!heap)
+    if (!mman)
     {
-        _HeapSetErr(heap, "invalid parameter");
+        _mman_set_err(mman, "invalid parameter");
         goto done;
     }
 
-    _HeapClearErr(heap);
+    _mman_clear_err(mman);
 
     /* Check the magic number */
-    if (heap->magic != OE_HEAP_MAGIC)
+    if (mman->magic != OE_HEAP_MAGIC)
     {
-        _HeapSetErr(heap, "bad magic");
+        _mman_set_err(mman, "bad magic");
         goto done;
     }
 
-    /* Check that the heap is initialized */
-    if (!heap->initialized)
+    /* Check that the mman is initialized */
+    if (!mman->initialized)
     {
-        _HeapSetErr(heap, "uninitialized");
+        _mman_set_err(mman, "uninitialized");
         goto done;
     }
 
-    /* Check that the start of the heap is strictly less than the end */
-    if (!(heap->start < heap->end))
+    /* Check that the start of the mman is strictly less than the end */
+    if (!(mman->start < mman->end))
     {
-        _HeapSetErr(heap, "start not less than end");
+        _mman_set_err(mman, "start not less than end");
         goto done;
     }
 
-    if (heap->size != (heap->end - heap->base))
+    if (mman->size != (mman->end - mman->base))
     {
-        _HeapSetErr(heap, "invalid size");
+        _mman_set_err(mman, "invalid size");
         goto done;
     }
 
-    if (!(heap->start <= heap->brk))
+    if (!(mman->start <= mman->brk))
     {
-        _HeapSetErr(heap, "!(heap->start <= heap->brk)");
+        _mman_set_err(mman, "!(mman->start <= mman->brk)");
         goto done;
     }
 
-    if (!(heap->map <= heap->end))
+    if (!(mman->map <= mman->end))
     {
-        _HeapSetErr(heap, "!(heap->map <= heap->end)");
+        _mman_set_err(mman, "!(mman->map <= mman->end)");
         goto done;
     }
 
-    if (heap->vad_list)
+    if (mman->vad_list)
     {
-        if (heap->map != heap->vad_list->addr)
+        if (mman->map != mman->vad_list->addr)
         {
-            _HeapSetErr(heap, "heap->map != heap->vad_list->addr");
+            _mman_set_err(mman, "mman->map != mman->vad_list->addr");
             goto done;
         }
     }
     else
     {
-        if (heap->map != heap->end)
+        if (mman->map != mman->end)
         {
-            _HeapSetErr(heap, "heap->map != heap->end");
+            _mman_set_err(mman, "mman->map != mman->end");
             goto done;
         }
     }
 
     /* Verify that the list is sorted */
     {
-        OE_VAD* p;
+        oe_vad_t* p;
 
-        for (p = heap->vad_list; p; p = p->next)
+        for (p = mman->vad_list; p; p = p->next)
         {
-            OE_VAD* next = p->next;
+            oe_vad_t* next = p->next;
 
             if (next)
             {
                 if (!(p->addr < next->addr))
                 {
-                    _HeapSetErr(heap, "unordered VAD list (1)");
+                    _mman_set_err(mman, "unordered VAD list (1)");
                     goto done;
                 }
 
                 /* No two elements should be contiguous due to coalescense */
-                if (_End(p) == next->addr)
+                if (_end(p) == next->addr)
                 {
-                    _HeapSetErr(heap, "contiguous VAD list elements");
+                    _mman_set_err(mman, "contiguous VAD list elements");
                     goto done;
                 }
 
-                if (!(_End(p) <= next->addr))
+                if (!(_end(p) <= next->addr))
                 {
-                    _HeapSetErr(heap, "unordered VAD list (2)");
+                    _mman_set_err(mman, "unordered VAD list (2)");
                     goto done;
                 }
             }
@@ -1351,20 +1358,20 @@ done:
 
 /*
 **
-** OE_HeapSetSanity()
+** oe_mman_set_sanity()
 **
-**     Enable live sanity checking on the given heap structure. Once enabled,
+**     Enable live sanity checking on the given mman structure. Once enabled,
 **     sanity checking is performed in all mapping functions. Be aware that
 **     this slows down the implementation and should be used for debugging
 **     and testing only.
 **
 ** Parameters:
-**     [IN] heap - heap structure
+**     [IN] mman - mman structure
 **     [IN] sanity - true to enable sanity checking; false otherwise.
 **
 */
-void OE_HeapSetSanity(OE_Heap* heap, bool sanity)
+void oe_mman_set_sanity(oe_mman_t* mman, bool sanity)
 {
-    if (heap)
-        heap->sanity = sanity;
+    if (mman)
+        mman->sanity = sanity;
 }
