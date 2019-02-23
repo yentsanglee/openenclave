@@ -244,7 +244,7 @@ static void _list_insert_after(oe_mman_t* mman, oe_vad_t* prev, oe_vad_t* vad)
 
         prev->next = vad;
 
-        mman->coverage[OE_HEAP_COVERAGE_16] = true;
+        mman->coverage[OE_MMAN_COVERAGE_16] = true;
     }
     else
     {
@@ -256,7 +256,7 @@ static void _list_insert_after(oe_mman_t* mman, oe_vad_t* prev, oe_vad_t* vad)
 
         mman->vad_list = vad;
 
-        mman->coverage[OE_HEAP_COVERAGE_17] = true;
+        mman->coverage[OE_MMAN_COVERAGE_17] = true;
     }
 }
 
@@ -304,14 +304,14 @@ static oe_vad_t* _list_find(oe_mman_t* mman, uintptr_t addr)
 **==============================================================================
 */
 
-/* Lock the heap and set the 'locked' parameter to true */
+/* Lock the mman and set the 'locked' parameter to true */
 OE_INLINE void _mman_lock(oe_mman_t* mman, bool* locked)
 {
     pthread_mutex_lock(_get_mutex(mman));
     *locked = true;
 }
 
-/* Unlock the heap and set the 'locked' parameter to false */
+/* Unlock the mman and set the 'locked' parameter to false */
 OE_INLINE void _mman_unlock(oe_mman_t* mman, bool* locked)
 {
     if (*locked)
@@ -321,21 +321,21 @@ OE_INLINE void _mman_unlock(oe_mman_t* mman, bool* locked)
     }
 }
 
-/* Clear the heap error message */
+/* Clear the mman error message */
 static void _mman_clear_err(oe_mman_t* mman)
 {
     if (mman)
         mman->err[0] = '\0';
 }
 
-/* Set the heap error message */
+/* Set the mman error message */
 static void _mman_set_err(oe_mman_t* mman, const char* str)
 {
     if (mman && str)
         SNPRINTF(mman->err, sizeof(mman->err), "%s", str);
 }
 
-/* Inline Helper function to check heap sanity (if enable) */
+/* Inline Helper function to check mman sanity (if enable) */
 OE_INLINE bool _mman_is_sane(oe_mman_t* mman)
 {
     if (mman->sanity)
@@ -427,7 +427,7 @@ static uintptr_t _mman_find_gap(
                 *right = p->next;
 
                 addr = _end(p);
-                mman->coverage[OE_HEAP_COVERAGE_13] = true;
+                mman->coverage[OE_MMAN_COVERAGE_13] = true;
                 goto done;
             }
         }
@@ -440,7 +440,7 @@ static uintptr_t _mman_find_gap(
         /* If memory was exceeded (overrun of break value) */
         if (!(mman->brk <= start))
         {
-            mman->coverage[OE_HEAP_COVERAGE_14] = true;
+            mman->coverage[OE_MMAN_COVERAGE_14] = true;
             goto done;
         }
 
@@ -448,7 +448,7 @@ static uintptr_t _mman_find_gap(
             *right = mman->vad_list;
 
         addr = start;
-        mman->coverage[OE_HEAP_COVERAGE_15] = true;
+        mman->coverage[OE_MMAN_COVERAGE_15] = true;
         goto done;
     }
 
@@ -468,12 +468,12 @@ done:
 **
 ** oe_mman_init()
 **
-**     Initialize a heap structure by setting the 'base' and 'size' and other
+**     Initialize a mman structure by setting the 'base' and 'size' and other
 **     internal state variables. Note that the caller must obtain a lock if
 **     one is needed.
 **
 ** Parameters:
-**     [IN] heap - heap structure to be initialized.
+**     [IN] mman - mman structure to be initialized.
 **     [IN] base - base address of the heap (must be must be page aligned).
 **     [IN] size - size of the heap in bytes (must be multiple of page size).
 **
@@ -551,7 +551,7 @@ oe_result_t oe_mman_init(oe_mman_t* mman, uintptr_t base, size_t size)
     mman->sanity = false;
 
     /* Set the magic number */
-    mman->magic = OE_HEAP_MAGIC;
+    mman->magic = OE_MMAN_MAGIC;
 
     /* Initialize the mutex */
     {
@@ -564,13 +564,13 @@ oe_result_t oe_mman_init(oe_mman_t* mman, uintptr_t base, size_t size)
     /* Finally, set initialized to true */
     mman->initialized = 1;
 
-    /* Check sanity of heap */
+    /* Check sanity of mman */
     if (!_mman_is_sane(mman))
         OE_RAISE(OE_UNEXPECTED);
 
     result = OE_OK;
 
-    mman->coverage[OE_HEAP_COVERAGE_18] = true;
+    mman->coverage[OE_MMAN_COVERAGE_18] = true;
 
 done:
     return result;
@@ -585,7 +585,7 @@ done:
 **     up to multiple of 8).
 **
 ** Parameters:
-**     [IN] heap - heap structure
+**     [IN] mman - mman structure
 **     [IN] increment - allocate this must space.
 **
 ** Returns:
@@ -644,7 +644,7 @@ done:
 **     break value has the effect of releasing memory.
 **
 ** Parameters:
-**     [IN] heap - heap structure
+**     [IN] mman - mman structure
 **     [IN] addr - set the BREAK value to this address (must reside within
 **     the break region (beween START and BREAK value).
 **
@@ -692,7 +692,7 @@ done:
 **     is rounded to a multiple of the page size.
 **
 ** Parameters:
-**     [IN] heap - heap structure
+**     [IN] mman - mman structure
 **     [IN] addr - must be null in this implementation
 **     [IN] length - length in bytes of the new allocation
 **     [IN] prot - must be (OE_PROT_READ | OE_PROT_WRITE)
@@ -725,8 +725,8 @@ void* oe_mman_map(
 
     _mman_clear_err(mman);
 
-    /* Check for valid heap parameter */
-    if (!mman || mman->magic != OE_HEAP_MAGIC)
+    /* Check for valid mman parameter */
+    if (!mman || mman->magic != OE_MMAN_MAGIC)
     {
         _mman_set_err(mman, "bad parameter");
         goto done;
@@ -832,7 +832,7 @@ void* oe_mman_map(
                 _free_list_put(mman, right);
             }
 
-            mman->coverage[OE_HEAP_COVERAGE_0] = true;
+            mman->coverage[OE_MMAN_COVERAGE_0] = true;
         }
         else if (right && (start + length == right->addr))
         {
@@ -842,7 +842,7 @@ void* oe_mman_map(
             right->size += length;
             _mman_sync_top(mman);
 
-            mman->coverage[OE_HEAP_COVERAGE_1] = true;
+            mman->coverage[OE_MMAN_COVERAGE_1] = true;
         }
         else
         {
@@ -859,7 +859,7 @@ void* oe_mman_map(
             _list_insert_after(mman, left, vad);
             _mman_sync_top(mman);
 
-            mman->coverage[OE_HEAP_COVERAGE_2] = true;
+            mman->coverage[OE_MMAN_COVERAGE_2] = true;
         }
     }
 
@@ -914,7 +914,7 @@ oe_result_t oe_mman_unmap(oe_mman_t* mman, void* addr, size_t length)
     _mman_clear_err(mman);
 
     /* Reject invaid parameters */
-    if (!mman || mman->magic != OE_HEAP_MAGIC || !addr || !length)
+    if (!mman || mman->magic != OE_MMAN_MAGIC || !addr || !length)
     {
         _mman_set_err(mman, "bad parameter");
         OE_RAISE(OE_INVALID_PARAMETER);
@@ -971,7 +971,7 @@ oe_result_t oe_mman_unmap(oe_mman_t* mman, void* addr, size_t length)
         _list_remove(mman, vad);
         _mman_sync_top(mman);
         _free_list_put(mman, vad);
-        mman->coverage[OE_HEAP_COVERAGE_3] = true;
+        mman->coverage[OE_MMAN_COVERAGE_3] = true;
     }
     else if (vad->addr == start)
     {
@@ -980,14 +980,14 @@ oe_result_t oe_mman_unmap(oe_mman_t* mman, void* addr, size_t length)
         vad->addr += length;
         vad->size -= length;
         _mman_sync_top(mman);
-        mman->coverage[OE_HEAP_COVERAGE_4] = true;
+        mman->coverage[OE_MMAN_COVERAGE_4] = true;
     }
     else if (_end(vad) == end)
     {
         /* Case3: [............uuuu] */
 
         vad->size -= length;
-        mman->coverage[OE_HEAP_COVERAGE_5] = true;
+        mman->coverage[OE_MMAN_COVERAGE_5] = true;
     }
     else
     {
@@ -1010,7 +1010,7 @@ oe_result_t oe_mman_unmap(oe_mman_t* mman, void* addr, size_t length)
 
         _list_insert_after(mman, vad, right);
         _mman_sync_top(mman);
-        mman->coverage[OE_HEAP_COVERAGE_6] = true;
+        mman->coverage[OE_MMAN_COVERAGE_6] = true;
     }
 
     /* If scrubbing is enabled, then scrub the unmapped memory */
@@ -1068,7 +1068,7 @@ void* oe_mman_remap(
     _mman_clear_err(mman);
 
     /* Check for valid mman parameter */
-    if (!mman || mman->magic != OE_HEAP_MAGIC || !addr)
+    if (!mman || mman->magic != OE_MMAN_MAGIC || !addr)
     {
         _mman_set_err(mman, "invalid parameter");
         goto done;
@@ -1155,12 +1155,12 @@ void* oe_mman_remap(
             _list_insert_after(mman, vad, right);
             _mman_sync_top(mman);
 
-            mman->coverage[OE_HEAP_COVERAGE_7] = true;
+            mman->coverage[OE_MMAN_COVERAGE_7] = true;
         }
 
         vad->size = (uint32_t)(new_end - vad->addr);
         new_addr = addr;
-        mman->coverage[OE_HEAP_COVERAGE_8] = true;
+        mman->coverage[OE_MMAN_COVERAGE_8] = true;
 
         /* If scrubbing is enabled, scrub the unmapped portion */
         if (mman->scrub)
@@ -1177,7 +1177,7 @@ void* oe_mman_remap(
             vad->size += delta;
             memset((void*)(start + old_size), 0, delta);
             new_addr = addr;
-            mman->coverage[OE_HEAP_COVERAGE_9] = true;
+            mman->coverage[OE_MMAN_COVERAGE_9] = true;
 
             /* If VAD is now contiguous with next one, coalesce them */
             if (vad->next && _end(vad) == vad->next->addr)
@@ -1187,7 +1187,7 @@ void* oe_mman_remap(
                 _list_remove(mman, next);
                 _mman_sync_top(mman);
                 _free_list_put(mman, next);
-                mman->coverage[OE_HEAP_COVERAGE_10] = true;
+                mman->coverage[OE_MMAN_COVERAGE_10] = true;
             }
         }
         else
@@ -1211,13 +1211,13 @@ void* oe_mman_remap(
             }
 
             new_addr = (void*)addr;
-            mman->coverage[OE_HEAP_COVERAGE_11] = true;
+            mman->coverage[OE_MMAN_COVERAGE_11] = true;
         }
     }
     else
     {
         /* Nothing to do since size did not change */
-        mman->coverage[OE_HEAP_COVERAGE_12] = true;
+        mman->coverage[OE_MMAN_COVERAGE_12] = true;
         new_addr = addr;
     }
 
@@ -1263,7 +1263,7 @@ bool oe_mman_is_sane(oe_mman_t* mman)
     _mman_clear_err(mman);
 
     /* Check the magic number */
-    if (mman->magic != OE_HEAP_MAGIC)
+    if (mman->magic != OE_MMAN_MAGIC)
     {
         _mman_set_err(mman, "bad magic");
         goto done;

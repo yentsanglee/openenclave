@@ -22,7 +22,7 @@ OE_EXTERNC_BEGIN
 
 #define OE_MREMAP_MAYMOVE 1
 
-#define OE_HEAP_ERROR_SIZE 256
+#define OE_MMAN_ERROR_SIZE 256
 
 /* Virtual Address Descriptor */
 typedef struct _oe_vad
@@ -48,39 +48,39 @@ typedef struct _oe_vad
 
 OE_STATIC_ASSERT(sizeof(oe_vad_t) == 32);
 
-#define OE_HEAP_MAGIC 0xcc8e1732ebd80b0b
+#define OE_MMAN_MAGIC 0xcc8e1732ebd80b0b
 
-#define OE_HEAP_ERR_SIZE 256
+#define OE_MMAN_ERR_SIZE 256
 
 /* Heap Code coverage */
 typedef enum _OE_HeapCoverage
 {
-    OE_HEAP_COVERAGE_0,
-    OE_HEAP_COVERAGE_1,
-    OE_HEAP_COVERAGE_2,
-    OE_HEAP_COVERAGE_3,
-    OE_HEAP_COVERAGE_4,
-    OE_HEAP_COVERAGE_5,
-    OE_HEAP_COVERAGE_6,
-    OE_HEAP_COVERAGE_7,
-    OE_HEAP_COVERAGE_8,
-    OE_HEAP_COVERAGE_9,
-    OE_HEAP_COVERAGE_10,
-    OE_HEAP_COVERAGE_11,
-    OE_HEAP_COVERAGE_12,
-    OE_HEAP_COVERAGE_13,
-    OE_HEAP_COVERAGE_14,
-    OE_HEAP_COVERAGE_15,
-    OE_HEAP_COVERAGE_16,
-    OE_HEAP_COVERAGE_17,
-    OE_HEAP_COVERAGE_18,
-    OE_HEAP_COVERAGE_N,
+    OE_MMAN_COVERAGE_0,
+    OE_MMAN_COVERAGE_1,
+    OE_MMAN_COVERAGE_2,
+    OE_MMAN_COVERAGE_3,
+    OE_MMAN_COVERAGE_4,
+    OE_MMAN_COVERAGE_5,
+    OE_MMAN_COVERAGE_6,
+    OE_MMAN_COVERAGE_7,
+    OE_MMAN_COVERAGE_8,
+    OE_MMAN_COVERAGE_9,
+    OE_MMAN_COVERAGE_10,
+    OE_MMAN_COVERAGE_11,
+    OE_MMAN_COVERAGE_12,
+    OE_MMAN_COVERAGE_13,
+    OE_MMAN_COVERAGE_14,
+    OE_MMAN_COVERAGE_15,
+    OE_MMAN_COVERAGE_16,
+    OE_MMAN_COVERAGE_17,
+    OE_MMAN_COVERAGE_18,
+    OE_MMAN_COVERAGE_N,
 } oe_mman_coverage_t;
 
 /* oe_mman_t data structures and fields */
 typedef struct _oe_mman
 {
-    /* Magic number (OE_HEAP_MAGIC) */
+    /* Magic number (OE_MMAN_MAGIC) */
     uint64_t magic;
 
     /* True if oe_mman_init() has been called */
@@ -126,10 +126,10 @@ typedef struct _oe_mman
     uint64_t lock[8];
 
     /* Error string */
-    char err[OE_HEAP_ERROR_SIZE];
+    char err[OE_MMAN_ERROR_SIZE];
 
     /* Code coverage array */
-    bool coverage[OE_HEAP_COVERAGE_N];
+    bool coverage[OE_MMAN_COVERAGE_N];
 
 } oe_mman_t;
 
