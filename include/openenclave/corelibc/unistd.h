@@ -13,6 +13,8 @@ OE_EXTERNC_BEGIN
 #define OE_STDOUT_FILENO 1
 #define OE_STDERR_FILENO 2
 
+int oe_brk(void* addr);
+
 void* oe_sbrk(intptr_t increment);
 
 #if defined(OE_NEED_STDC_NAMES)
@@ -21,10 +23,14 @@ void* oe_sbrk(intptr_t increment);
 #define STDOUT_FILENO OE_STDOUT_FILENO
 #define STDERR_FILENO OE_STDERR_FILENO
 
-OE_INLINE
-void* sbrk(intptr_t increment)
+OE_INLINE void* sbrk(intptr_t increment)
 {
     return oe_sbrk(increment);
+}
+
+OE_INLINE int brk(void* addr)
+{
+    return oe_brk(addr);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

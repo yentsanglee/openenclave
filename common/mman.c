@@ -652,7 +652,7 @@ done:
 **     This function is similar to the POSIX brk() function.
 **
 */
-oe_result_t oe_mman_brk(oe_mman_t* mman, uintptr_t addr)
+oe_result_t oe_mman_brk(oe_mman_t* mman, void* addr)
 {
     oe_result_t result = OE_FAILURE;
     bool locked = false;
@@ -662,14 +662,14 @@ oe_result_t oe_mman_brk(oe_mman_t* mman, uintptr_t addr)
     _mman_clear_err(mman);
 
     /* Fail if requested address is not within the break memory area */
-    if (addr < mman->start || addr >= mman->map)
+    if ((uintptr_t)addr < mman->start || (uintptr_t)addr >= mman->map)
     {
         _mman_set_err(mman, "address is out of range");
         OE_RAISE(OE_INVALID_PARAMETER);
     }
 
     /* Set the break value */
-    mman->brk = addr;
+    mman->brk = (uintptr_t)addr;
 
     if (!_mman_is_sane(mman))
         OE_RAISE(OE_FAILURE);

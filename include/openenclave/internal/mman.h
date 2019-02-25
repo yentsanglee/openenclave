@@ -155,7 +155,7 @@ void oe_mman_dump(const oe_mman_t* h, bool full);
 
 void* oe_mman_sbrk(oe_mman_t* heap, ptrdiff_t increment);
 
-oe_result_t oe_mman_brk(oe_mman_t* heap, uintptr_t addr);
+oe_result_t oe_mman_brk(oe_mman_t* heap, void* addr);
 
 void oe_mman_set_sanity(oe_mman_t* heap, bool sanity);
 

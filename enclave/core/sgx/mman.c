@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "../../../common/mman.c"
+#include <openenclave/corelibc/unistd.h>
 #include <openenclave/internal/globals.h>
 #include <openenclave/internal/thread.h>
 
@@ -28,7 +29,7 @@ static void _init(void)
     oe_spin_unlock(&_lock);
 }
 
-int oe_brk(uintptr_t addr)
+int oe_brk(void* addr)
 {
     if (__oe_mman.initialized == false)
         _init();
