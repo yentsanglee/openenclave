@@ -44,7 +44,7 @@ static void _check_coverage()
 }
 
 /* Cound the VADs in the VAD list */
-size_t _CountVADs(const oe_vad_t* list)
+size_t _count_vads(const oe_vad_t* list)
 {
     const oe_vad_t* p;
     size_t count = 0;
@@ -150,7 +150,7 @@ static void* _mman_mmap_no_err(oe_mman_t* heap, void* addr, size_t length)
     return result;
 }
 
-/* Helper for calling oe_mman_remap() */
+/* Helper for calling oe_mman_mremap() */
 static void* _mman_remap(
     oe_mman_t* heap,
     void* addr,
@@ -159,21 +159,21 @@ static void* _mman_remap(
 {
     int flags = OE_MREMAP_MAYMOVE;
 
-    void* result = oe_mman_remap(heap, addr, old_size, new_size, flags);
+    void* result = oe_mman_mremap(heap, addr, old_size, new_size, flags);
 
     if (!result)
-        fprintf(stderr, "ERROR: oe_mman_remap(): %s\n", heap->err);
+        fprintf(stderr, "ERROR: oe_mman_mremap(): %s\n", heap->err);
 
     return result;
 }
 
-/* Helper for calling oe_mman_unmap() */
-static int _HeapUnmap(oe_mman_t* heap, void* address, size_t size)
+/* Helper for calling oe_mman_munmap() */
+static int _mman_unmap(oe_mman_t* heap, void* address, size_t size)
 {
-    int rc = (int)oe_mman_unmap(heap, address, size);
+    int rc = (int)oe_mman_munmap(heap, address, size);
 
     if (rc != 0)
-        fprintf(stderr, "ERROR: oe_mman_unmap(): %s\n", heap->err);
+        fprintf(stderr, "ERROR: oe_mman_munmap(): %s\n", heap->err);
 
     return rc;
 }
@@ -181,7 +181,7 @@ static int _HeapUnmap(oe_mman_t* heap, void* address, size_t size)
 /*
 ** test_mman_1()
 **
-**     Test oe_mman_map() and oe_mman_unmap() and check expected state between
+**     Test oe_mman_map() and oe_mman_munmap() and check expected state between
 **     operations. Unmap leaves gaps and then map checks to see if those gaps
 **     are filled.
 */
@@ -207,10 +207,6 @@ void test_mman_1()
     assert(h.map == h.end);
     assert(_is_sorted(h.vad_list));
 
-#if 0
-    oe_mman_dump(&h, true);
-#endif
-
     void* ptrs[16];
     size_t n = sizeof(ptrs) / sizeof(ptrs[0]);
     size_t m = 0;
@@ -225,17 +221,13 @@ void test_mman_1()
         m += r;
     }
 
-#if 0
-    oe_mman_dump(&h, true);
-#endif
-
     assert(h.brk == h.start);
     assert(h.map == h.end - m);
     assert(_is_sorted(h.vad_list));
 
     for (size_t i = 0; i < n; i++)
     {
-        if (_HeapUnmap(&h, ptrs[i], (i + 1) * PGSZ) != 0)
+        if (_mman_unmap(&h, ptrs[i], (i + 1) * PGSZ) != 0)
             assert(0);
     }
 
@@ -257,17 +249,13 @@ void test_mman_1()
     {
         size_t r = (i + 1) * OE_PAGE_SIZE;
 
-        if (_HeapUnmap(&h, ptrs[i], r) != 0)
+        if (_mman_unmap(&h, ptrs[i], r) != 0)
             assert(0);
     }
 
-#if 0
-    oe_mman_dump(&h, true);
-#endif
-
     assert(_is_sorted(h.vad_list));
-    assert(_CountVADs(h.vad_list) == n / 2);
-    assert(_CountVADs(h.free_vads) == 0);
+    assert(_count_vads(h.vad_list) == n / 2);
+    assert(_count_vads(h.free_vads) == 0);
 
     /* Reallocate every other region (filling in gaps) */
     for (size_t i = 0; i < n; i += 2)
@@ -285,7 +273,7 @@ void test_mman_1()
     {
         size_t r = (i + 1) * OE_PAGE_SIZE;
 
-        if (_HeapUnmap(&h, ptrs[i], r) != 0)
+        if (_mman_unmap(&h, ptrs[i], r) != 0)
             assert(0);
     }
 
@@ -300,10 +288,6 @@ void test_mman_1()
 
     assert(_is_sorted(h.vad_list));
 
-#if 0
-    oe_mman_dump(&h, true);
-#endif
-
     _merge_coverage(&h);
     _free_mman(&h);
     printf("=== passed %s()\n", __FUNCTION__);
@@ -312,7 +296,7 @@ void test_mman_1()
 /*
 ** test_mman_2()
 **
-**     Test oe_mman_map() and oe_mman_unmap() and check expected state between
+**     Test oe_mman_map() and oe_mman_munmap() and check expected state between
 **     operations. Map several regions and then unmap regions leaving gaps.
 **     Map again and see if the new regions were allocated within the expected
 **     gaps.
@@ -341,14 +325,10 @@ void test_mman_2()
 
     assert(_is_sorted(h.vad_list));
 
-#if 0
-    oe_mman_dump(&h, true);
-#endif
-
     void* p0a;
     void* p0b;
     {
-        if (_HeapUnmap(&h, p0, 2 * OE_PAGE_SIZE) != 0)
+        if (_mman_unmap(&h, p0, 2 * OE_PAGE_SIZE) != 0)
             assert(0);
 
         assert(_is_sorted(h.vad_list));
@@ -371,7 +351,7 @@ void test_mman_2()
     void* p2a;
     void* p2b;
     {
-        if (_HeapUnmap(&h, p2, 4 * OE_PAGE_SIZE) != 0)
+        if (_mman_unmap(&h, p2, 4 * OE_PAGE_SIZE) != 0)
             assert(0);
 
         assert(_is_sorted(h.vad_list));
@@ -388,10 +368,6 @@ void test_mman_2()
         assert(_is_sorted(h.vad_list));
         assert(_is_flush(&h, h.vad_list));
     }
-
-#if 0
-    oe_mman_dump(&h, true);
-#endif
 
     _merge_coverage(&h);
     _free_mman(&h);
@@ -441,12 +417,12 @@ void test_mman_3()
     assert(_is_sorted(h.vad_list));
 
     /* This should be illegal since it overruns the end */
-    assert(oe_mman_unmap(&h, ptrs[0], 2 * PGSZ) != 0);
+    assert(oe_mman_munmap(&h, ptrs[0], 2 * PGSZ) != 0);
     assert(_is_sorted(h.vad_list));
     assert(_is_flush(&h, h.vad_list));
 
     /* Unmap ptrs[1] and ptrs[0] */
-    if (_HeapUnmap(&h, ptrs[1], 3 * PGSZ) != 0)
+    if (_mman_unmap(&h, ptrs[1], 3 * PGSZ) != 0)
         assert(0);
 
     assert(_is_sorted(h.vad_list));
@@ -461,27 +437,15 @@ void test_mman_3()
     /* ptrs[6] -- 7 page */
     /* ptrs[7] -- 8 page */
 
-#if 0
-    oe_mman_dump(&h, false);
-#endif
-
     /* Free innner 6 pages of ptrs[7] -- [mUUUUUUm] */
-    if (_HeapUnmap(&h, (uint8_t*)ptrs[7] + PGSZ, 6 * PGSZ) != 0)
+    if (_mman_unmap(&h, (uint8_t*)ptrs[7] + PGSZ, 6 * PGSZ) != 0)
         assert(0);
 
     assert(_is_sorted(h.vad_list));
 
-#if 0
-    oe_mman_dump(&h, false);
-#endif
-
     /* Map 6 pages to fill the gap created by last unmap */
     if (!_mman_mmap(&h, NULL, 6 * PGSZ))
         assert(0);
-
-#if 0
-    oe_mman_dump(&h, false);
-#endif
 
     _merge_coverage(&h);
     _free_mman(&h);
@@ -520,19 +484,12 @@ void test_mman_4()
     assert(h.brk == h.start);
     assert(h.map == h.end - m);
     assert(_is_sorted(h.vad_list));
-#if 0
-    oe_mman_dump(&h, false);
-#endif
 
     /* This should fail */
-    assert(oe_mman_unmap(&h, ptrs[7], 1024 * PGSZ) != 0);
+    assert(oe_mman_munmap(&h, ptrs[7], 1024 * PGSZ) != 0);
 
     /* Unmap everything */
-    assert(_HeapUnmap(&h, ptrs[7], m) == 0);
-
-#if 0
-    oe_mman_dump(&h, true);
-#endif
+    assert(_mman_unmap(&h, ptrs[7], m) == 0);
 
     _merge_coverage(&h);
     _free_mman(&h);
@@ -568,19 +525,11 @@ void test_mman_5()
         m += r;
     }
 
-#if 0
-    oe_mman_dump(&h, true);
-#endif
-
     /* Unmap a region in the middle */
-    assert(_HeapUnmap(&h, ptrs[4], 5 * PGSZ) == 0);
+    assert(_mman_unmap(&h, ptrs[4], 5 * PGSZ) == 0);
 
     /* Unmap everything */
-    assert(oe_mman_unmap(&h, ptrs[7], m) != 0);
-
-#if 0
-    oe_mman_dump(&h, true);
-#endif
+    assert(oe_mman_munmap(&h, ptrs[7], m) != 0);
 
     _merge_coverage(&h);
     _free_mman(&h);
@@ -614,12 +563,8 @@ void test_mman_6()
     for (i = 0; i < n; i++)
     {
         void* p = (uint8_t*)ptr + (i * PGSZ);
-        assert(_HeapUnmap(&h, p, PGSZ) == 0);
+        assert(_mman_unmap(&h, p, PGSZ) == 0);
     }
-
-#if 0
-    oe_mman_dump(&h, true);
-#endif
 
     _merge_coverage(&h);
     _free_mman(&h);
@@ -650,16 +595,8 @@ void test_remap_1()
     if (!(ptr = _mman_mmap(&h, NULL, old_size)))
         assert(0);
 
-#if 0
-    oe_mman_dump(&h, true);
-#endif
-
     assert(_is_sorted(h.vad_list));
     assert(_is_flush(&h, h.vad_list));
-
-#if 0
-    oe_mman_dump(&h, true);
-#endif
 
     /* Remap region, making it twice as big */
     new_size = 16 * PGSZ;
@@ -671,10 +608,6 @@ void test_remap_1()
     assert(_is_sorted(h.vad_list));
     assert(!_is_flush(&h, h.vad_list));
 
-#if 0
-    oe_mman_dump(&h, true);
-#endif
-
     /* Remap region, making it four times smaller */
     old_size = new_size;
     new_size = 4 * PGSZ;
@@ -683,10 +616,6 @@ void test_remap_1()
 
     assert(_is_sorted(h.vad_list));
     assert(!_is_flush(&h, h.vad_list));
-
-#if 0
-    oe_mman_dump(&h, true);
-#endif
 
     _merge_coverage(&h);
     _free_mman(&h);
@@ -722,18 +651,10 @@ void test_remap_2()
     if (!(ptr2 = _mman_mmap(&h, NULL, old_size)))
         assert(0);
 
-#if 0
-    oe_mman_dump(&h, true);
-#endif
-
     /* Remap region, making it twice as big */
     new_size = 16 * PGSZ;
     if (!(ptr2 = _mman_remap(&h, ptr2, old_size, new_size)))
         assert(0);
-
-#if 0
-    oe_mman_dump(&h, true);
-#endif
 
     _merge_coverage(&h);
     _free_mman(&h);
@@ -771,17 +692,9 @@ void test_remap_3()
     /* Set pointer to overlapped region: [3|4] */
     oe_page_t* ptr3 = ptr2 + 3;
 
-#if 0
-    oe_mman_dump(&h, false);
-#endif
-
     /* Shrink region: [3|4] */
     if (!(ptr3 = (oe_page_t*)_mman_remap(&h, ptr3, 2 * PGSZ, 1 * PGSZ)))
         assert(0);
-
-#if 0
-    oe_mman_dump(&h, true);
-#endif
 
     _merge_coverage(&h);
     _free_mman(&h);
@@ -817,21 +730,13 @@ void test_remap_4()
     assert(ptr2 + 4 == ptr1);
 
     /* Unmap [4|5|6|7] */
-    assert(_HeapUnmap(&h, ptr1, 4 * PGSZ) == 0);
-
-#if 0
-    oe_mman_dump(&h, false);
-#endif
+    assert(_mman_unmap(&h, ptr1, 4 * PGSZ) == 0);
 
     oe_page_t* ptr3 = ptr2 + 2;
 
     /* Expand region: [2|3] */
     if (!(ptr3 = (oe_page_t*)_mman_remap(&h, ptr3, 2 * PGSZ, 4 * PGSZ)))
         assert(0);
-
-#if 0
-    oe_mman_dump(&h, true);
-#endif
 
     _merge_coverage(&h);
     _free_mman(&h);
@@ -901,7 +806,7 @@ void test_mman_randomly()
                 D(printf(
                       "unmap: addr=%p size=%zu\n", elem[r].addr, elem[r].size);)
 
-                assert(_HeapUnmap(&h, elem[r].addr, elem[r].size) == 0);
+                assert(_mman_unmap(&h, elem[r].addr, elem[r].size) == 0);
                 elem[r].addr = NULL;
                 elem[r].size = 0;
             }
@@ -953,7 +858,7 @@ void test_mman_randomly()
         {
             D(printf("addr=%p size=%zu\n", elem[i].addr, elem[i].size);)
             assert(_check_mem(&elem[i]));
-            assert(_HeapUnmap(&h, elem[i].addr, elem[i].size) == 0);
+            assert(_mman_unmap(&h, elem[i].addr, elem[i].size) == 0);
         }
     }
 
@@ -961,10 +866,6 @@ void test_mman_randomly()
     assert(h.vad_list == NULL);
 
     assert(oe_mman_is_sane(&h));
-
-#if 0
-    oe_mman_dump(&h, true);
-#endif
 
     _merge_coverage(&h);
     _free_mman(&h);

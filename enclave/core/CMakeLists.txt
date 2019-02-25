@@ -25,7 +25,6 @@ if (OE_SGX)
         sgx/once.c
         sgx/properties.c
         sgx/report.c
-        sgx/sbrk.c
         sgx/sched_yield.c
         sgx/spinlock.c
         sgx/td.c

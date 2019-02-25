@@ -875,11 +875,11 @@ done:
 
 /*
 **
-** oe_mman_unmap()
+** oe_mman_munmap()
 **
-**     Release a memory mapping obtained with oe_mman_map() or oe_mman_remap().
+**     Release a memory mapping obtained with oe_mman_map() or oe_mman_mremap().
 **     Note that partial mappings are supported, in which case a portion of
-**     the memory obtained with oe_mman_map() or oe_mman_remap() is released.
+**     the memory obtained with oe_mman_map() or oe_mman_mremap() is released.
 **
 ** Parameters:
 **     [IN] mman - mman structure
@@ -900,7 +900,7 @@ done:
 **     excess (if any) is split into its own VAD.
 **
 */
-oe_result_t oe_mman_unmap(oe_mman_t* mman, void* addr, size_t length)
+oe_result_t oe_mman_munmap(oe_mman_t* mman, void* addr, size_t length)
 {
     oe_result_t result = OE_FAILURE;
     oe_vad_t* vad = NULL;
@@ -1026,7 +1026,7 @@ done:
 
 /*
 **
-** oe_mman_remap()
+** oe_mman_mremap()
 **
 **     Remap an existing memory region, either making it bigger or smaller.
 **
@@ -1048,7 +1048,7 @@ done:
 **     not, it moves it to a new location.
 **
 */
-void* oe_mman_remap(
+void* oe_mman_mremap(
     oe_mman_t* mman,
     void* addr,
     size_t old_size,
@@ -1201,7 +1201,7 @@ void* oe_mman_remap(
             memcpy(addr, (void*)start, old_size);
 
             /* Ummap the old area */
-            if (oe_mman_unmap(mman, (void*)start, old_size) != 0)
+            if (oe_mman_munmap(mman, (void*)start, old_size) != 0)
             {
                 _mman_set_err(mman, "unmapping failed");
                 goto done;

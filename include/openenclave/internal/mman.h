@@ -142,14 +142,14 @@ void* oe_mman_map(
     int prot,
     int flags);
 
-void* oe_mman_remap(
+void* oe_mman_mremap(
     oe_mman_t* heap,
     void* addr,
     size_t old_size,
     size_t new_size,
     int flags);
 
-oe_result_t oe_mman_unmap(oe_mman_t* heap, void* address, size_t size);
+oe_result_t oe_mman_munmap(oe_mman_t* heap, void* address, size_t size);
 
 void oe_mman_dump(const oe_mman_t* h, bool full);
 
