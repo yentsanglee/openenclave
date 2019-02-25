@@ -133,7 +133,7 @@ typedef struct _oe_mman
 
 } oe_mman_t;
 
-oe_result_t oe_mman_init(oe_mman_t* heap, uintptr_t base, size_t size);
+int oe_mman_init(oe_mman_t* heap, uintptr_t base, size_t size);
 
 void* oe_mman_map(
     oe_mman_t* heap,
@@ -149,29 +149,17 @@ void* oe_mman_mremap(
     size_t new_size,
     int flags);
 
-oe_result_t oe_mman_munmap(oe_mman_t* heap, void* address, size_t size);
+int oe_mman_munmap(oe_mman_t* heap, void* address, size_t size);
 
 void oe_mman_dump(const oe_mman_t* h, bool full);
 
 void* oe_mman_sbrk(oe_mman_t* heap, ptrdiff_t increment);
 
-oe_result_t oe_mman_brk(oe_mman_t* heap, void* addr);
+int oe_mman_brk(oe_mman_t* heap, void* addr);
 
 void oe_mman_set_sanity(oe_mman_t* heap, bool sanity);
 
 bool oe_mman_is_sane(oe_mman_t* heap);
-
-#if 0
-void* OE_Map(void* addr, size_t length, int prot, int flags);
-
-void* OE_Remap(void* addr, size_t old_size, size_t new_size, int flags);
-
-int OE_Unmap(void* address, size_t size);
-
-void* OE_Sbrk(ptrdiff_t increment);
-
-int OE_Brk(uintptr_t addr);
-#endif
 
 OE_EXTERNC_END
 

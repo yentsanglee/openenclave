@@ -117,12 +117,14 @@
 #include <openenclave/internal/utils.h>
 
 #ifdef OE_BUILD_UNTRUSTED
+#include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #define PRINTF printf
 #define SNPRINTF snprintf
 #else
+#include <openenclave/corelibc/errno.h>
 #include <openenclave/corelibc/pthread.h>
 #include <openenclave/corelibc/stdio.h>
 #include <openenclave/corelibc/string.h>
@@ -130,6 +132,7 @@
 #define ASSERT oe_assert
 #define PRINTF oe_printf
 #define SNPRINTF oe_snprintf
+#define errno oe_errno
 #define pthread_mutex_t oe_pthread_mutex_t
 #define pthread_mutex_init oe_pthread_mutex_init
 #define pthread_mutex_lock oe_pthread_mutex_lock
@@ -475,12 +478,12 @@ done:
 **     [IN] size - size of the heap in bytes (must be multiple of page size).
 **
 ** Returns:
-**     OE_OK if successful.
+**     0 if successful.
 **
 */
-oe_result_t oe_mman_init(oe_mman_t* mman, uintptr_t base, size_t size)
+int oe_mman_init(oe_mman_t* mman, uintptr_t base, size_t size)
 {
-    oe_result_t result = OE_FAILURE;
+    int ret = -1;
 
     _mman_clear_err(mman);
 
@@ -488,21 +491,24 @@ oe_result_t oe_mman_init(oe_mman_t* mman, uintptr_t base, size_t size)
     if (!mman || !base || !size)
     {
         _mman_set_err(mman, "bad parameter");
-        OE_RAISE(OE_INVALID_PARAMETER);
+        errno = EINVAL;
+        goto done;
     }
 
     /* BASE must be aligned on a page boundary */
     if (base % OE_PAGE_SIZE)
     {
         _mman_set_err(mman, "bad base parameter");
-        OE_RAISE(OE_INVALID_PARAMETER);
+        errno = EINVAL;
+        goto done;
     }
 
     /* SIZE must be a mulitple of the page size */
     if (size % OE_PAGE_SIZE)
     {
         _mman_set_err(mman, "bad size parameter");
-        OE_RAISE(OE_INVALID_PARAMETER);
+        errno = EINVAL;
+        goto done;
     }
 
     /* Clear the heap object */
@@ -563,14 +569,17 @@ oe_result_t oe_mman_init(oe_mman_t* mman, uintptr_t base, size_t size)
 
     /* Check sanity of mman */
     if (!_mman_is_sane(mman))
-        OE_RAISE(OE_UNEXPECTED);
+    {
+        errno = EINVAL;
+        goto done;
+    }
 
-    result = OE_OK;
+    ret = 0;
 
     mman->coverage[OE_MMAN_COVERAGE_18] = true;
 
 done:
-    return result;
+    return ret;
 }
 
 /*
@@ -594,7 +603,7 @@ done:
 */
 void* oe_mman_sbrk(oe_mman_t* mman, ptrdiff_t increment)
 {
-    void* result = NULL;
+    void* ret = NULL;
     void* ptr = NULL;
     bool locked = false;
 
@@ -603,7 +612,10 @@ void* oe_mman_sbrk(oe_mman_t* mman, ptrdiff_t increment)
     _mman_clear_err(mman);
 
     if (!_mman_is_sane(mman))
+    {
+        errno = EINVAL;
         goto done;
+    }
 
     if (increment == 0)
     {
@@ -619,17 +631,18 @@ void* oe_mman_sbrk(oe_mman_t* mman, ptrdiff_t increment)
     else
     {
         _mman_set_err(mman, "out of memory");
+        errno = ENOMEM;
         goto done;
     }
 
     if (!_mman_is_sane(mman))
         goto done;
 
-    result = ptr;
+    ret = ptr;
 
 done:
     _mman_unlock(mman, &locked);
-    return result;
+    return ret;
 }
 
 /*
@@ -646,15 +659,15 @@ done:
 **     the break region (beween START and BREAK value).
 **
 ** Returns:
-**     OE_OK if successful.
+**     0 if successful.
 **
 ** Notes:
 **     This function is similar to the POSIX brk() function.
 **
 */
-oe_result_t oe_mman_brk(oe_mman_t* mman, void* addr)
+int oe_mman_brk(oe_mman_t* mman, void* addr)
 {
-    oe_result_t result = OE_FAILURE;
+    int ret = -1;
     bool locked = false;
 
     _mman_lock(mman, &locked);
@@ -665,20 +678,24 @@ oe_result_t oe_mman_brk(oe_mman_t* mman, void* addr)
     if ((uintptr_t)addr < mman->start || (uintptr_t)addr >= mman->map)
     {
         _mman_set_err(mman, "address is out of range");
-        OE_RAISE(OE_INVALID_PARAMETER);
+        errno = ENOMEM;
+        goto done;
     }
 
     /* Set the break value */
     mman->brk = (uintptr_t)addr;
 
     if (!_mman_is_sane(mman))
-        OE_RAISE(OE_FAILURE);
+    {
+        errno = ENOMEM;
+        goto done;
+    }
 
-    result = OE_OK;
+    ret = 0;
 
 done:
     _mman_unlock(mman, &locked);
-    return result;
+    return ret;
 }
 
 /*
@@ -696,7 +713,7 @@ done:
 **     [IN] flags - must be (OE_MAP_ANONYMOUS | OE_MAP_PRIVATE)
 **
 ** Returns:
-**     OE_OK if successful.
+**     Pointer to newly mapped memory if successful.
 **
 ** Notes:
 **     This function is similar to the POSIX mmap() function.
@@ -726,6 +743,7 @@ void* oe_mman_map(
     if (!mman || mman->magic != OE_MMAN_MAGIC)
     {
         _mman_set_err(mman, "bad parameter");
+        errno = EINVAL;
         goto done;
     }
 
@@ -736,6 +754,7 @@ void* oe_mman_map(
     if (addr && (uintptr_t)addr % OE_PAGE_SIZE)
     {
         _mman_set_err(mman, "bad addr parameter");
+        errno = EINVAL;
         goto done;
     }
 
@@ -743,6 +762,7 @@ void* oe_mman_map(
     if (length == 0)
     {
         _mman_set_err(mman, "bad length parameter");
+        errno = EINVAL;
         goto done;
     }
 
@@ -751,18 +771,21 @@ void* oe_mman_map(
         if (!(prot & OE_PROT_READ))
         {
             _mman_set_err(mman, "bad prot parameter: need OE_PROT_READ");
+            errno = EINVAL;
             goto done;
         }
 
         if (!(prot & OE_PROT_WRITE))
         {
             _mman_set_err(mman, "bad prot parameter: need OE_PROT_WRITE");
+            errno = EINVAL;
             goto done;
         }
 
         if (prot & OE_PROT_EXEC)
         {
             _mman_set_err(mman, "bad prot parameter: remove OE_PROT_EXEC");
+            errno = EINVAL;
             goto done;
         }
     }
@@ -772,24 +795,28 @@ void* oe_mman_map(
         if (!(flags & OE_MAP_ANONYMOUS))
         {
             _mman_set_err(mman, "bad flags parameter: need OE_MAP_ANONYMOUS");
+            errno = EINVAL;
             goto done;
         }
 
         if (!(flags & OE_MAP_PRIVATE))
         {
             _mman_set_err(mman, "bad flags parameter: need OE_MAP_PRIVATE");
+            errno = EINVAL;
             goto done;
         }
 
         if (flags & OE_MAP_SHARED)
         {
             _mman_set_err(mman, "bad flags parameter: remove OE_MAP_SHARED");
+            errno = EINVAL;
             goto done;
         }
 
         if (flags & OE_MAP_FIXED)
         {
             _mman_set_err(mman, "bad flags parameter: remove OE_MAP_FIXED");
+            errno = EINVAL;
             goto done;
         }
     }
@@ -801,6 +828,7 @@ void* oe_mman_map(
     {
         /* TODO: implement to support mapping non-zero addresses */
         _mman_set_err(mman, "bad addr parameter: must be null");
+        errno = EINVAL;
         goto done;
     }
     else
@@ -812,6 +840,7 @@ void* oe_mman_map(
         if (!(start = _mman_find_gap(mman, length, &left, &right)))
         {
             _mman_set_err(mman, "out of memory");
+            errno = ENOMEM;
             goto done;
         }
 
@@ -850,6 +879,7 @@ void* oe_mman_map(
             if (!(vad = _mman_new_vad(mman, start, length, prot, flags)))
             {
                 _mman_set_err(mman, "unexpected: list insert failed");
+                errno = EINVAL;
                 goto done;
             }
 
@@ -900,9 +930,9 @@ done:
 **     excess (if any) is split into its own VAD.
 **
 */
-oe_result_t oe_mman_munmap(oe_mman_t* mman, void* addr, size_t length)
+int oe_mman_munmap(oe_mman_t* mman, void* addr, size_t length)
 {
-    oe_result_t result = OE_FAILURE;
+    int ret = -1;
     oe_vad_t* vad = NULL;
     bool locked = false;
 
@@ -914,24 +944,31 @@ oe_result_t oe_mman_munmap(oe_mman_t* mman, void* addr, size_t length)
     if (!mman || mman->magic != OE_MMAN_MAGIC || !addr || !length)
     {
         _mman_set_err(mman, "bad parameter");
-        OE_RAISE(OE_INVALID_PARAMETER);
+        errno = EINVAL;
+        goto done;
     }
 
     if (!_mman_is_sane(mman))
-        OE_RAISE(OE_INVALID_PARAMETER);
+    {
+        _mman_set_err(mman, "bad mman parameter");
+        errno = EINVAL;
+        goto done;
+    }
 
     /* ADDRESS must be aligned on a page boundary */
     if ((uintptr_t)addr % OE_PAGE_SIZE)
     {
         _mman_set_err(mman, "bad addr parameter");
-        OE_RAISE(OE_INVALID_PARAMETER);
+        errno = EINVAL;
+        goto done;
     }
 
     /* LENGTH must be a multiple of the page size */
     if (length % OE_PAGE_SIZE)
     {
         _mman_set_err(mman, "bad length parameter");
-        OE_RAISE(OE_INVALID_PARAMETER);
+        errno = EINVAL;
+        goto done;
     }
 
     /* Set start and end pointers for this area */
@@ -942,14 +979,16 @@ oe_result_t oe_mman_munmap(oe_mman_t* mman, void* addr, size_t length)
     if (!(vad = _list_find(mman, start)))
     {
         _mman_set_err(mman, "address not found");
-        OE_RAISE(OE_INVALID_PARAMETER);
+        errno = EINVAL;
+        goto done;
     }
 
     /* Fail if this VAD does not contain the end address */
     if (end > _end(vad))
     {
         _mman_set_err(mman, "illegal range");
-        OE_RAISE(OE_INVALID_PARAMETER);
+        errno = EINVAL;
+        goto done;
     }
 
     /* If the unapping does not cover the entire area given by the VAD, handle
@@ -1002,7 +1041,8 @@ oe_result_t oe_mman_munmap(oe_mman_t* mman, void* addr, size_t length)
                   mman, end, vad_end - end, vad->prot, vad->flags)))
         {
             _mman_set_err(mman, "out of VADs");
-            OE_RAISE(OE_FAILURE);
+            errno = EINVAL;
+            goto done;
         }
 
         _list_insert_after(mman, vad, right);
@@ -1015,13 +1055,16 @@ oe_result_t oe_mman_munmap(oe_mman_t* mman, void* addr, size_t length)
         memset(addr, 0xDD, length);
 
     if (!_mman_is_sane(mman))
-        OE_RAISE(OE_UNEXPECTED);
+    {
+        errno = EINVAL;
+        goto done;
+    }
 
-    result = OE_OK;
+    ret = 0;
 
 done:
     _mman_unlock(mman, &locked);
-    return result;
+    return ret;
 }
 
 /*
@@ -1068,6 +1111,7 @@ void* oe_mman_mremap(
     if (!mman || mman->magic != OE_MMAN_MAGIC || !addr)
     {
         _mman_set_err(mman, "invalid parameter");
+        errno = EINVAL;
         goto done;
     }
 
@@ -1079,6 +1123,7 @@ void* oe_mman_mremap(
     {
         _mman_set_err(
             mman, "bad addr parameter: must be multiple of page size");
+        errno = EINVAL;
         goto done;
     }
 
@@ -1086,6 +1131,7 @@ void* oe_mman_mremap(
     if (old_size == 0)
     {
         _mman_set_err(mman, "invalid old_size parameter: must be non-zero");
+        errno = EINVAL;
         goto done;
     }
 
@@ -1093,6 +1139,7 @@ void* oe_mman_mremap(
     if (new_size == 0)
     {
         _mman_set_err(mman, "invalid old_size parameter: must be non-zero");
+        errno = EINVAL;
         goto done;
     }
 
@@ -1101,6 +1148,7 @@ void* oe_mman_mremap(
     {
         _mman_set_err(
             mman, "invalid flags parameter: must be OE_MREMAP_MAYMOVE");
+        errno = EINVAL;
         goto done;
     }
 
@@ -1119,6 +1167,7 @@ void* oe_mman_mremap(
     if (!(vad = _list_find(mman, start)))
     {
         _mman_set_err(mman, "invalid addr parameter: mapping not found");
+        errno = ENOMEM;
         goto done;
     }
 
@@ -1126,6 +1175,7 @@ void* oe_mman_mremap(
     if (old_end > _end(vad))
     {
         _mman_set_err(mman, "invalid range");
+        errno = ENOMEM;
         goto done;
     }
 
@@ -1146,6 +1196,7 @@ void* oe_mman_mremap(
                       vad->flags)))
             {
                 _mman_set_err(mman, "out of VADs");
+                errno = ENOMEM;
                 goto done;
             }
 
@@ -1194,6 +1245,7 @@ void* oe_mman_mremap(
                       oe_mman_map(mman, NULL, new_size, vad->prot, vad->flags)))
             {
                 _mman_set_err(mman, "mapping failed");
+                errno = ENOMEM;
                 goto done;
             }
 
@@ -1204,6 +1256,7 @@ void* oe_mman_mremap(
             if (oe_mman_munmap(mman, (void*)start, old_size) != 0)
             {
                 _mman_set_err(mman, "unmapping failed");
+                errno = ENOMEM;
                 goto done;
             }
 
