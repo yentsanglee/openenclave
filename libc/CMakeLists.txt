@@ -175,6 +175,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/dirent/readdir.c
     ${MUSLSRC}/dirent/closedir.c
     ${MUSLSRC}/fcntl/open.c
+    ${MUSLSRC}/fcntl/fcntl.c
     ${MUSLSRC}/env/clearenv.c
     ${MUSLSRC}/env/__environ.c
     ${MUSLSRC}/env/getenv.c
@@ -423,6 +424,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/math/truncl.c
     ${MUSLSRC}/misc/basename.c
     ${MUSLSRC}/misc/dirname.c
+    ${MUSLSRC}/misc/ioctl.c
     ${MUSLSRC}/mman/mmap.c
     ${MUSLSRC}/mman/munmap.c
     ${MUSLSRC}/multibyte/btowc.c
@@ -685,7 +687,9 @@ add_library(oelibc STATIC
     ${MUSLSRC}/time/__tm_to_secs.c
     ${MUSLSRC}/time/__year_to_secs.c
     ${MUSLSRC}/unistd/read.c
+    ${MUSLSRC}/unistd/readv.c
     ${MUSLSRC}/unistd/write.c
+    ${MUSLSRC}/unistd/writev.c
     ${MUSLSRC}/unistd/access.c
     ${MUSLSRC}/unistd/lseek.c
     ${MUSLSRC}/unistd/truncate.c
