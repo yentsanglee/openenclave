@@ -258,7 +258,7 @@ done:
     return ret;
 }
 
-int oe_umount(const char* target)
+int oe_umount2(const char* target, int flags)
 {
     int ret = -1;
     size_t index = (size_t)-1;
@@ -266,6 +266,8 @@ int oe_umount(const char* target)
     oe_device_t* device = oe_mount_resolve(target, suffix);
 
     oe_spin_lock(&_lock);
+
+    OE_UNUSED(flags);
 
     if (!device || device->type != OE_DEVICETYPE_FILESYSTEM || !target)
     {
@@ -311,4 +313,9 @@ done:
 
     oe_spin_unlock(&_lock);
     return ret;
+}
+
+int oe_umount(const char* target)
+{
+    return oe_umount2(target, 0);
 }

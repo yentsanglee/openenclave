@@ -20,6 +20,8 @@ int oe_mount(
 
 int oe_umount(const char* target);
 
+int oe_umount2(const char* target, int flags);
+
 #if defined(OE_NEED_STDC_NAMES)
 
 #define MS_RDONLY OE_MS_RDONLY
@@ -37,6 +39,11 @@ OE_INLINE int mount(
 OE_INLINE int umount(const char* target)
 {
     return oe_umount(target);
+}
+
+OE_INLINE int umount2(const char* target, int flags)
+{
+    return oe_umount2(target, flags);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

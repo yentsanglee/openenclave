@@ -284,6 +284,31 @@ static int _handle_device_syscall(
             /* Silently ignore. */
             return 0;
         }
+        case SYS_mount:
+        {
+            const char* source = (const char*)arg1;
+            const char* target = (const char*)arg2;
+            const char* fstype = (const char*)arg3;
+            unsigned long flags = (unsigned long)arg4;
+            void* data = (void*)arg5;
+
+            *ret_out = oe_mount(source, target, fstype, flags, data);
+            *errno_out = oe_errno;
+
+            return 0;
+        }
+        case SYS_umount2:
+        {
+            const char* target = (const char*)arg1;
+            int flags = (int)arg2;
+
+            (void)flags;
+
+            *ret_out = oe_umount(target);
+            *errno_out = oe_errno;
+
+            return 0;
+        }
         default:
         {
             return -1;

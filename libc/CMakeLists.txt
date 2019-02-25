@@ -216,6 +216,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/locale/textdomain.c
     ${MUSLSRC}/locale/wcscoll.c
     ${MUSLSRC}/locale/wcsxfrm.c
+    ${MUSLSRC}/linux/mount.c
     ${MUSLSRC}/math/acos.c
     ${MUSLSRC}/math/acosf.c
     ${MUSLSRC}/math/acosh.c
