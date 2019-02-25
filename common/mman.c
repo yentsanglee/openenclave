@@ -687,6 +687,7 @@ int oe_mman_brk(oe_mman_t* mman, void* addr)
 
     if (!_mman_is_sane(mman))
     {
+        _mman_set_err(mman, "bad mman parameter");
         errno = ENOMEM;
         goto done;
     }
@@ -742,7 +743,7 @@ void* oe_mman_map(
     /* Check for valid mman parameter */
     if (!mman || mman->magic != OE_MMAN_MAGIC)
     {
-        _mman_set_err(mman, "bad parameter");
+        _mman_set_err(mman, "bad mman parameter");
         errno = EINVAL;
         goto done;
     }
