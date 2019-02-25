@@ -618,7 +618,7 @@ done:
     return ret;
 }
 
-static off_t _hostfs_lseek(oe_device_t* file_, off_t offset, int whence)
+static off_t _hostfs_lseek_file(oe_device_t* file_, off_t offset, int whence)
 {
     off_t ret = -1;
     file_t* file = _cast_file(file_);
@@ -662,6 +662,95 @@ static off_t _hostfs_lseek(oe_device_t* file_, off_t offset, int whence)
             oe_errno = args->err;
             goto done;
         }
+    }
+
+done:
+    return ret;
+}
+
+static int _hostfs_rewinddir(oe_device_t* dir_)
+{
+    int ret = -1;
+    dir_t* dir = _cast_dir(dir_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    /* Check parameters */
+    if (!dir || !batch)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+            goto done;
+
+        args->op = OE_HOSTFS_OP_REWINDDIR;
+        args->u.rewinddir.dirp = dir->host_dir;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+            goto done;
+    }
+
+done:
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
+static off_t _hostfs_lseek_dir(oe_device_t* file_, off_t offset, int whence)
+{
+    off_t ret = -1;
+    file_t* file = _cast_file(file_);
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!file || !file->dir || offset != 0 || whence != OE_SEEK_SET)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    if (_hostfs_rewinddir(file->dir) != 0)
+    {
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static off_t _hostfs_lseek(oe_device_t* file_, off_t offset, int whence)
+{
+    off_t ret = -1;
+    file_t* file = _cast_file(file_);
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!file)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    if (file->dir)
+    {
+        ret = _hostfs_lseek_dir(file_, offset, whence);
+    }
+    else
+    {
+        ret = _hostfs_lseek_file(file_, offset, whence);
     }
 
 done:

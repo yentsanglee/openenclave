@@ -61,6 +61,11 @@ class oe_fd_file_system
         return oe_readdir(dir);
     }
 
+    void rewinddir(dir_handle dir)
+    {
+        oe_rewinddir(dir);
+    }
+
     int closedir(dir_handle dir)
     {
         return oe_closedir(dir);
@@ -179,6 +184,11 @@ class fd_file_system
     struct dirent* readdir(dir_handle dir)
     {
         return ::readdir(dir);
+    }
+
+    void rewinddir(dir_handle dir)
+    {
+        ::rewinddir(dir);
     }
 
     int closedir(dir_handle dir)
@@ -405,6 +415,11 @@ class stream_file_system
     struct dirent* readdir(dir_handle dir)
     {
         return ::readdir(dir);
+    }
+
+    void rewinddir(dir_handle dir)
+    {
+        ::rewinddir(dir);
     }
 
     int closedir(dir_handle dir)

@@ -37,6 +37,8 @@ OE_DIR* oe_opendir_d(uint64_t devid, const char* pathname);
 
 struct oe_dirent* oe_readdir(OE_DIR* dir);
 
+void oe_rewinddir(OE_DIR* dir);
+
 int oe_closedir(OE_DIR* dir);
 
 int oe_getdents(unsigned int fd, struct oe_dirent* dirp, unsigned int count);
@@ -64,6 +66,11 @@ OE_INLINE DIR* opendir(const char* pathname);
 OE_INLINE struct dirent* readdir(DIR* dir);
 {
     return (struct dirent*)oe_readdir((OE_DIR*)dir);
+}
+
+OE_INLINE int rewinddir(DIR* dir)
+{
+    return oe_rewinddir((OE_DIR*)dir);
 }
 
 OE_INLINE int closedir(DIR* dir)

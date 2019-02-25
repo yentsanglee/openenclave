@@ -173,6 +173,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/ctype/wcwidth.c
     ${MUSLSRC}/dirent/opendir.c
     ${MUSLSRC}/dirent/readdir.c
+    ${MUSLSRC}/dirent/rewinddir.c
     ${MUSLSRC}/dirent/closedir.c
     ${MUSLSRC}/fcntl/open.c
     ${MUSLSRC}/fcntl/fcntl.c

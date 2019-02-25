@@ -18,6 +18,7 @@ typedef enum _oe_hostfs_op
     OE_HOSTFS_OP_CLOSE,
     OE_HOSTFS_OP_OPENDIR,
     OE_HOSTFS_OP_READDIR,
+    OE_HOSTFS_OP_REWINDDIR,
     OE_HOSTFS_OP_CLOSEDIR,
     OE_HOSTFS_OP_STAT,
     OE_HOSTFS_OP_ACCESS,
@@ -76,6 +77,10 @@ typedef struct _oe_hostfs_args
             void* dirp;
             struct oe_dirent entry;
         } readdir;
+        struct
+        {
+            void* dirp;
+        } rewinddir;
         struct
         {
             int ret;

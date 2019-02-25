@@ -182,12 +182,6 @@ static void test_readdir(FILE_SYSTEM& fs, const char* tmp_dir)
     typename FILE_SYSTEM::dir_handle dir;
     typename FILE_SYSTEM::dirent_type* ent;
     size_t count = 0;
-    bool found_alphabet = false;
-    bool found_alphabet_renamed = false;
-    bool found_dot = false;
-    bool found_dot_dot = false;
-    bool found_dir1 = false;
-    bool found_dir2 = false;
     char path[OE_PATH_MAX];
 
     printf("--- %s()\n", __FUNCTION__);
@@ -214,35 +208,47 @@ static void test_readdir(FILE_SYSTEM& fs, const char* tmp_dir)
     dir = fs.opendir(tmp_dir);
     OE_TEST(dir);
 
-    while ((ent = fs.readdir(dir)))
+    for (size_t i = 0; i < 8; i++)
     {
-        if (strcmp(ent->d_name, "alphabet") == 0)
-            found_alphabet = true;
+        bool found_alphabet = false;
+        bool found_alphabet_renamed = false;
+        bool found_dot = false;
+        bool found_dot_dot = false;
+        bool found_dir1 = false;
+        bool found_dir2 = false;
 
-        if (strcmp(ent->d_name, "alphabet.renamed") == 0)
-            found_alphabet_renamed = true;
+        while ((ent = fs.readdir(dir)))
+        {
+            if (strcmp(ent->d_name, "alphabet") == 0)
+                found_alphabet = true;
 
-        if (strcmp(ent->d_name, ".") == 0)
-            found_dot = true;
+            if (strcmp(ent->d_name, "alphabet.renamed") == 0)
+                found_alphabet_renamed = true;
 
-        if (strcmp(ent->d_name, "..") == 0)
-            found_dot_dot = true;
+            if (strcmp(ent->d_name, ".") == 0)
+                found_dot = true;
 
-        if (strcmp(ent->d_name, "dir1") == 0)
-            found_dir1 = true;
+            if (strcmp(ent->d_name, "..") == 0)
+                found_dot_dot = true;
 
-        if (strcmp(ent->d_name, "dir2") == 0)
-            found_dir2 = true;
+            if (strcmp(ent->d_name, "dir1") == 0)
+                found_dir1 = true;
 
-        count++;
+            if (strcmp(ent->d_name, "dir2") == 0)
+                found_dir2 = true;
+
+            count++;
+        }
+
+        OE_TEST(found_alphabet);
+        OE_TEST(found_alphabet_renamed);
+        OE_TEST(found_dot);
+        OE_TEST(found_dot_dot);
+        OE_TEST(found_dir1);
+        OE_TEST(!found_dir2);
+
+        fs.rewinddir(dir);
     }
-
-    OE_TEST(found_alphabet);
-    OE_TEST(found_alphabet_renamed);
-    OE_TEST(found_dot);
-    OE_TEST(found_dot_dot);
-    OE_TEST(found_dir1);
-    OE_TEST(!found_dir2);
 
     fs.closedir(dir);
 }

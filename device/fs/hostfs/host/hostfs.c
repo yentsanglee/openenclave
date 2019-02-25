@@ -124,6 +124,11 @@ void oe_handle_hostfs_ocall(void* args_)
             }
             break;
         }
+        case OE_HOSTFS_OP_REWINDDIR:
+        {
+            rewinddir(args->u.rewinddir.dirp);
+            break;
+        }
         case OE_HOSTFS_OP_CLOSEDIR:
         {
             args->u.closedir.ret = closedir(args->u.closedir.dirp);
