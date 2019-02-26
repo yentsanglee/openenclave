@@ -35,6 +35,7 @@ oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX])
 {
     oe_device_t* ret = NULL;
     size_t match_len = 0;
+    char realpath[OE_PATH_MAX];
 
     if (!path || !suffix)
     {
@@ -63,6 +64,10 @@ oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX])
         }
     }
 
+    /* Find the real path (the absolute non-relative path). */
+    if (!oe_realpath(path, realpath))
+        goto done;
+
     oe_spin_lock(&_lock);
     {
         /* Find the longest binding point that contains this path. */
@@ -77,7 +82,7 @@ oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX])
                 {
                     if (suffix)
                     {
-                        oe_strlcpy(suffix, path, OE_PATH_MAX);
+                        oe_strlcpy(suffix, realpath, OE_PATH_MAX);
                     }
 
                     match_len = len;
@@ -85,14 +90,14 @@ oe_device_t* oe_mount_resolve(const char* path, char suffix[OE_PATH_MAX])
                 }
             }
             else if (
-                oe_strncmp(mpath, path, len) == 0 &&
-                (path[len] == '/' || path[len] == '\0'))
+                oe_strncmp(mpath, realpath, len) == 0 &&
+                (realpath[len] == '/' || realpath[len] == '\0'))
             {
                 if (len > match_len)
                 {
                     if (suffix)
                     {
-                        oe_strlcpy(suffix, path + len, OE_PATH_MAX);
+                        oe_strlcpy(suffix, realpath + len, OE_PATH_MAX);
 
                         if (*suffix == '\0')
                             oe_strlcpy(suffix, "/", OE_PATH_MAX);
