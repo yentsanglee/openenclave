@@ -21,8 +21,8 @@ OE_INLINE long syscall(long n, char* buf, size_t size)
 }
 
 #define getcwd oe_getcwd
+#define errno oe_errno
 #define strdup oe_strdup
 #define PATH_MAX OE_PATH_MAX
-#define errno oe_errno
 
 #include "../../3rdparty/musl/musl/src/unistd/getcwd.c"
