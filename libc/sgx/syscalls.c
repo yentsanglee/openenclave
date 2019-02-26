@@ -3,16 +3,10 @@
 
 #define __OE_NEED_TIME_CALLS
 #define _GNU_SOURCE
-#include <assert.h>
-#include <dirent.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <openenclave/corelibc/sys/syscall.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
-#include <openenclave/internal/device.h>
-#include <openenclave/internal/fs.h>
-#include <openenclave/internal/print.h>
 #include <openenclave/internal/syscall.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/time.h>
@@ -20,12 +14,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
-#include <sys/uio.h>
 #include <time.h>
-#include <unistd.h>
 
 static oe_syscall_hook_t _hook;
 static oe_spinlock_t _lock;
@@ -151,7 +142,7 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         /* The hook ignored the syscall so fall through */
     }
 
-    /* Handle any file-system syscalls. */
+    /* Let OE-core handle select system calls. */
     {
         long ret;
 
