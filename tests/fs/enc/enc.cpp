@@ -544,7 +544,6 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         OE_TEST(strcmp(buf, "/") == 0);
 
         char path_a[OE_PATH_MAX];
-        char path[OE_PATH_MAX];
         char path_a_b[OE_PATH_MAX];
         char path_a_b_c[OE_PATH_MAX];
 
@@ -564,9 +563,8 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         OE_TEST(oe_getcwd(buf, sizeof(buf)));
         OE_TEST(strcmp(buf, path_a_b_c) == 0);
 
-        OE_TEST(oe_realpath("../..", buf));
-        mkpath(path, tmp_dir, "a");
-        OE_TEST(strcmp(buf, path) == 0);
+        OE_TEST(oe_realpath("./.././../././", buf));
+        OE_TEST(strcmp(buf, path_a) == 0);
 
         OE_TEST(oe_chdir(tmp_dir) == 0);
         OE_TEST(oe_getcwd(buf, sizeof(buf)));
