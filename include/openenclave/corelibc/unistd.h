@@ -56,6 +56,8 @@ char* oe_getcwd(char* buf, size_t size);
 
 int oe_chdir(const char* path);
 
+int oe_close(int fd);
+
 #if defined(OE_NEED_STDC_NAMES)
 
 #define STDIN_FILENO OE_STDIN_FILENO
@@ -122,6 +124,11 @@ OE_INLINE char* getcwd(char* buf, size_t size)
 OE_INLINE int chdir(const char* path)
 {
     return oe_chdir(path);
+}
+
+OE_INLINE int close(int fd)
+{
+    return oe_close(fd);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

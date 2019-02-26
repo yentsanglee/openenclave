@@ -567,7 +567,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         OE_TEST(strcmp(buf, path_a) == 0);
 
         OE_TEST(oe_chdir(tmp_dir) == 0);
-        OE_TEST(oe_getcwd(buf, sizeof(buf)));
+        OE_TEST(getcwd(buf, sizeof(buf)));
         OE_TEST(strcmp(buf, tmp_dir) == 0);
 
         OE_TEST(oe_chdir("/no/such/directory") == -1);

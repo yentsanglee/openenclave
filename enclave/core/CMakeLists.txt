@@ -100,6 +100,7 @@ add_library(oecore STATIC
     strtok_r.c
     strchrnul.c
     strtoul.c
+    syscall.c
     time.c
     ${PLATFORM_SRC})
 

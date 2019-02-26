@@ -8,6 +8,7 @@ nlink_t st_nlink;
 mode_t st_mode;
 uid_t st_uid;
 gid_t st_gid;
+unsigned int __st_pad0;
 dev_t st_rdev;
 off_t st_size;
 blksize_t st_blksize;
@@ -27,3 +28,4 @@ struct
     time_t tv_sec;
     suseconds_t tv_nsec;
 } st_ctim;
+long __st_unused[3];

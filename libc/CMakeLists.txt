@@ -75,6 +75,7 @@ add_library(oelibc STATIC
     strerror.c
     sysconf.c
     socket.c
+    stat.c
     time.c
     __printf_chk.c
     __vfprintf_chk.c
@@ -688,6 +689,8 @@ add_library(oelibc STATIC
     ${MUSLSRC}/time/time.c
     ${MUSLSRC}/time/__tm_to_secs.c
     ${MUSLSRC}/time/__year_to_secs.c
+    ${MUSLSRC}/unistd/chdir.c
+    ${MUSLSRC}/unistd/getcwd.c
     ${MUSLSRC}/unistd/read.c
     ${MUSLSRC}/unistd/readv.c
     ${MUSLSRC}/unistd/write.c

@@ -9,6 +9,7 @@ extern char __oe_cwd[OE_PATH_MAX];
 
 static const long SYS_getcwd = 79;
 
+/* ATTN: call oe_syscall(). */
 OE_INLINE long syscall(long n, char* buf, size_t size)
 {
     if (n != SYS_getcwd || !buf || !size)
