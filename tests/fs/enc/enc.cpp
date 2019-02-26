@@ -10,6 +10,7 @@
 #include <openenclave/internal/tests.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/mount.h>
 #include <set>
 #include <string>
 #include "../../../device/fs/cpio/commands.h"
@@ -425,6 +426,54 @@ void _test_mount(const char* tmp_dir)
     OE_TEST(oe_umount("/") == 0);
 }
 
+static void test_realpath(const char* tmp_dir)
+{
+    char buf[OE_PATH_MAX];
+
+    printf("--- %s()\n", __FUNCTION__);
+
+    OE_TEST(mount("/", "/", "hostfs", 0, NULL) == 0);
+
+    OE_TEST(oe_realpath("/../../..", buf));
+    OE_TEST(strcmp(buf, "/") == 0);
+
+    char path_a[OE_PATH_MAX];
+    char path_a_b[OE_PATH_MAX];
+    char path_a_b_c[OE_PATH_MAX];
+
+    mkpath(path_a, tmp_dir, "a");
+    mkpath(path_a_b, tmp_dir, "a/b");
+    mkpath(path_a_b_c, tmp_dir, "a/b/c");
+
+    rmdir(path_a_b_c);
+    rmdir(path_a_b);
+    rmdir(path_a);
+
+    OE_TEST(mkdir(path_a, 0777) == 0);
+    OE_TEST(mkdir(path_a_b, 0777) == 0);
+    OE_TEST(mkdir(path_a_b_c, 0777) == 0);
+
+    OE_TEST(chdir(path_a_b_c) == 0);
+    OE_TEST(getcwd(buf, sizeof(buf)));
+    OE_TEST(strcmp(buf, path_a_b_c) == 0);
+
+    OE_TEST(oe_realpath("./.././../././", buf));
+    OE_TEST(strcmp(buf, path_a) == 0);
+
+    OE_TEST(chdir(tmp_dir) == 0);
+    OE_TEST(getcwd(buf, sizeof(buf)));
+    OE_TEST(strcmp(buf, tmp_dir) == 0);
+
+    {
+        struct stat st;
+        OE_TEST(stat("./a", &st) == 0);
+    }
+
+    OE_TEST(chdir("/no/such/directory") == -1);
+
+    OE_TEST(umount("/") == 0);
+}
+
 void test_fs(const char* src_dir, const char* tmp_dir)
 {
     (void)src_dir;
@@ -534,51 +583,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
         OE_TEST(strcmp(buf, "/") == 0);
     }
 
-    /* Test realpath() */
-    {
-        char buf[OE_PATH_MAX];
-
-        OE_TEST(oe_mount("/", "/", "hostfs", 0, NULL) == 0);
-
-        OE_TEST(oe_realpath("/../../..", buf));
-        OE_TEST(strcmp(buf, "/") == 0);
-
-        char path_a[OE_PATH_MAX];
-        char path_a_b[OE_PATH_MAX];
-        char path_a_b_c[OE_PATH_MAX];
-
-        mkpath(path_a, tmp_dir, "a");
-        mkpath(path_a_b, tmp_dir, "a/b");
-        mkpath(path_a_b_c, tmp_dir, "a/b/c");
-
-        oe_rmdir(path_a_b_c);
-        oe_rmdir(path_a_b);
-        oe_rmdir(path_a);
-
-        OE_TEST(oe_mkdir(path_a, 0777) == 0);
-        OE_TEST(oe_mkdir(path_a_b, 0777) == 0);
-        OE_TEST(oe_mkdir(path_a_b_c, 0777) == 0);
-
-        OE_TEST(oe_chdir(path_a_b_c) == 0);
-        OE_TEST(oe_getcwd(buf, sizeof(buf)));
-        OE_TEST(strcmp(buf, path_a_b_c) == 0);
-
-        OE_TEST(oe_realpath("./.././../././", buf));
-        OE_TEST(strcmp(buf, path_a) == 0);
-
-        OE_TEST(oe_chdir(tmp_dir) == 0);
-        OE_TEST(getcwd(buf, sizeof(buf)));
-        OE_TEST(strcmp(buf, tmp_dir) == 0);
-
-        {
-            struct oe_stat st;
-            OE_TEST(oe_stat("./a", &st) == 0);
-        }
-
-        OE_TEST(oe_chdir("/no/such/directory") == -1);
-
-        OE_TEST(oe_umount("/") == 0);
-    }
+    test_realpath(tmp_dir);
 }
 
 OE_SET_ENCLAVE_SGX(
