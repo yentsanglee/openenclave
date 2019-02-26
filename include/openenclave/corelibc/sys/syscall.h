@@ -351,8 +351,7 @@ int __oe_syscall(
     long arg4,
     long arg5,
     long arg6,
-    long* ret_out,
-    int* errno_out);
+    long* ret_out);
 
 #if defined(OE_NEED_STDC_NAMES)
 
