@@ -16,6 +16,7 @@ if (OE_SGX)
         sgx/errno.c
         sgx/exception.c
         sgx/globals.c
+        sgx/globals.c
         sgx/hostbatch.c
         sgx/hostcalls.c
         sgx/hostfs.c
@@ -73,24 +74,31 @@ add_library(oecore STATIC
     __stack_chk_fail.c
     array.c
     assert.c
+    chdir.c
     ctype.c
     device.c
     epoll.c
     eventfd.c
     fd.c
     fs.c
+    getcwd.c
     gmtime.c
     hexdump.c
     intstr.c
     mount.c
     printf.c
     pthread.c
+    realpath.c
     resolver.c
     result.c
     socket.c
     stdio.c
     strerror.c
+    strcspn.c
     string.c
+    strspn.c
+    strtok_r.c
+    strchrnul.c
     strtoul.c
     time.c
     ${PLATFORM_SRC})
@@ -114,6 +122,9 @@ endif()
 # This directory contains enclave core libc headers:
 target_include_directories(oecore PRIVATE
     ${PROJECT_SOURCE_DIR}/include/openenclave/corelibc)
+
+target_include_directories(oecore PRIVATE
+    ${PROJECT_SOURCE_DIR}/enclave/core/include)
 
 if (OE_SGX)
     # Unfortunately dlmalloc uses GNU extension that allows arithmetic

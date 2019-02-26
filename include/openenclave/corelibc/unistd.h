@@ -52,6 +52,10 @@ int oe_truncate(const char* path, off_t length);
 
 int oe_truncate_d(uint64_t devid, const char* path, off_t length);
 
+char* oe_getcwd(char* buf, size_t size);
+
+int oe_chdir(const char* path);
+
 #if defined(OE_NEED_STDC_NAMES)
 
 #define STDIN_FILENO OE_STDIN_FILENO
@@ -108,6 +112,16 @@ OE_INLINE int rmdir(const char* pathname)
 OE_INLINE int truncate(const char* path, off_t length)
 {
     return oe_truncate(path, length);
+}
+
+OE_INLINE char* getcwd(char* buf, size_t size)
+{
+    return oe_getcwd(buf, size);
+}
+
+OE_INLINE int chdir(const char* path)
+{
+    return oe_chdir(path);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */
