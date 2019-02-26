@@ -165,17 +165,33 @@ int oe_setsockopt(
     const void* optval,
     socklen_t optlen);
 
+int oe_getsockopt(
+    int sockfd,
+    int level,
+    int optname,
+    void* optval,
+    socklen_t* optlen);
+
 ssize_t oe_send(int sockfd, const void* buf, size_t len, int flags);
 
 ssize_t oe_recv(int sockfd, void* buf, size_t len, int flags);
 
 int oe_socket_d(uint64_t devid, int domain, int type, int protocol);
 
-int oe_accept_d(
-    uint64_t devid,
-    int sockfd,
-    struct oe_sockaddr* addr,
-    socklen_t* addrlen);
+/* ATTN:IO: implement */
+int oe_getpeername(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen);
+
+/* ATTN:IO: implement */
+int oe_getsockname(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen);
+
+/* ATTN:IO: implement */
+int oe_network_startup_d(uint64_t devid, uint64_t version, void* data);
+
+/* ATTN:IO: implement */
+int oe_network_errno_d(uint64_t devid);
+
+/* ATTN:IO: implement */
+int oe_network_shutdown_d(uint64_t devid);
 
 #if defined(OE_NEED_STDC_NAMES)
 
@@ -352,6 +368,16 @@ OE_INLINE int setsockopt(
     return oe_setsockopt(sockfd, level, optname, optval, optlen);
 }
 
+OE_INLINE int getsockopt(
+    int sockfd,
+    int level,
+    int optname,
+    void* optval,
+    socklen_t* optlen)
+{
+    return oe_getsockopt(sockfd, level, optname, optval, optlen);
+}
+
 OE_INLINE ssize_t send(int sockfd, const void* buf, size_t len, int flags)
 {
     return oe_send(sockfd, buf, len, flags);
@@ -360,6 +386,19 @@ OE_INLINE ssize_t send(int sockfd, const void* buf, size_t len, int flags)
 OE_INLINE ssize_t recv(int sockfd, void* buf, size_t len, int flags)
 {
     return oe_recv(sockfd, buf, len, flags);
+}
+
+OE_INLINE int getpeername(int sockfd, struct sockaddr* addr, socklen_t* addrlen)
+{
+    return oe_getpeername(sockfd, (struct oe_sockaddr*)addr, addrlen);
+}
+
+OE_INLINE int getsockname(
+    int sockfd,
+    struct oe_sockaddr* addr,
+    socklen_t* addrlen)
+{
+    return oe_getsockname(sockfd, (struct sockaddr*)addr, addrlen);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

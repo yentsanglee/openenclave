@@ -58,6 +58,12 @@ int oe_chdir(const char* path);
 
 int oe_close(int fd);
 
+/* ATTN:IO: implement */
+int oe_gethostname(char* name, size_t len);
+
+/* ATTN:IO: implement */
+int oe_gethostname_d(uint64_t devid, char* name, size_t len);
+
 #if defined(OE_NEED_STDC_NAMES)
 
 #define STDIN_FILENO OE_STDIN_FILENO
@@ -129,6 +135,11 @@ OE_INLINE int chdir(const char* path)
 OE_INLINE int close(int fd)
 {
     return oe_close(fd);
+}
+
+OE_INLINE int gethostname(char* name, size_t len)
+{
+    return oe_gethostname(name, len);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

@@ -277,7 +277,7 @@ done:
     return ret;
 }
 
-int oe_ioctl(int fd, unsigned long request, ...)
+int oe_ioctl_va(int fd, unsigned long request, oe_va_list ap)
 {
     int ret = -1;
 
@@ -298,12 +298,9 @@ int oe_ioctl(int fd, unsigned long request, ...)
                     unsigned short int ws_xpixel;
                     unsigned short int ws_ypixel;
                 };
-                oe_va_list ap;
                 struct winsize* p;
 
-                oe_va_start(ap, request);
                 p = oe_va_arg(ap, struct winsize*);
-                oe_va_end(ap);
 
                 if (!p)
                     goto done;
@@ -322,7 +319,6 @@ int oe_ioctl(int fd, unsigned long request, ...)
         }
         default:
         {
-            oe_va_list ap;
             oe_device_t* pdevice = oe_get_fd_device(fd);
 
             if (!pdevice)
@@ -337,16 +333,23 @@ int oe_ioctl(int fd, unsigned long request, ...)
                 return -1;
             }
 
-            oe_va_start(ap, request);
             // The action routine sets errno
             ret = (*pdevice->ops.base->ioctl)(pdevice, request, ap);
-            oe_va_end(ap);
             goto done;
         }
     }
 
 done:
     return ret;
+}
+
+int oe_ioctl(int fd, unsigned long request, ...)
+{
+    oe_va_list ap;
+    oe_va_start(ap, request);
+    int r = oe_ioctl_va(fd, request, ap);
+    oe_va_end(ap);
+    return r;
 }
 
 static void _create_device_id_key()

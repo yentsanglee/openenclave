@@ -33,6 +33,9 @@ static const uint64_t OE_DEVID_EPOLL = 6;
 /* An event file descriptor. */
 static const uint64_t OE_DEVID_EVENTFD = 7;
 
+/* A hardware secure socket. */
+static const uint64_t OE_DEVID_HARDWARE_SECURE_SOCKET = 8;
+
 OE_EXTERNC_END
 
 #endif // _OE_BITS_DEVICE_H
