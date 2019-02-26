@@ -8,7 +8,7 @@
 // clang-format on
 
 #include <openenclave/internal/device.h>
-#include <openenclave/internal/netdb.h>
+#include <openenclave/corelibc/netdb.h>
 #include <openenclave/internal/host_resolver.h>
 #include <openenclave/internal/resolver.h>
 #include <openenclave/bits/safemath.h>

@@ -5,10 +5,10 @@
 #include <openenclave/internal/time.h>
 
 #include <openenclave/corelibc/arpa/inet.h>
+#include <openenclave/corelibc/netdb.h>
 #include <openenclave/corelibc/netinet/in.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/host_resolver.h>
-#include <openenclave/internal/netdb.h>
 
 #include <resolver_test_t.h>
 #include <stdio.h>

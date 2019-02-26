@@ -6,8 +6,9 @@
 
 #include <openenclave/bits/types.h>
 #include <openenclave/corelibc/errno.h>
-typedef uint32_t socklen_t;
-#include <openenclave/internal/netdb.h>
+#include <openenclave/corelibc/netdb.h>
+
+// typedef uint32_t socklen_t;
 
 OE_EXTERNC_BEGIN
 

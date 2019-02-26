@@ -49,6 +49,11 @@ struct oe_sockaddr_in
 #include <openenclave/corelibc/netinet/bits/sockaddr_in.h>
 };
 
+struct oe_sockaddr_in6
+{
+#include <openenclave/corelibc/netinet/bits/sockaddr_in6.h>
+};
+
 #if defined(OE_NEED_STDC_NAMES)
 
 #define INADDR_ANY OE_INADDR_ANY
@@ -75,6 +80,11 @@ struct in6_addr
 struct sockaddr_in
 {
 #include <openenclave/corelibc/netinet/bits/sockaddr_in.h>
+};
+
+struct sockaddr_in6
+{
+#include <openenclave/corelibc/netinet/bits/sockaddr_in6.h>
 };
 
 #endif /* defined(OE_NEED_STDC_NAMES) */
