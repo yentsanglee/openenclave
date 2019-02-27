@@ -1,0 +1,38 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+#include <openenclave/enclave.h>
+#include <openenclave/internal/device.h>
+#include <openenclave/internal/host_socket.h>
+#include <pthread.h>
+#include <stdio.h>
+#include "../client.h"
+#include "../server.h"
+
+static pthread_once_t once;
+
+void _initialize(void)
+{
+    oe_allocate_devid(OE_DEVID_HOST_SOCKET);
+    oe_set_devid_device(OE_DEVID_HOST_SOCKET, oe_socket_get_hostsock());
+}
+
+void run_enclave_server(uint16_t port)
+{
+    pthread_once(&once, _initialize);
+    run_server(port);
+}
+
+void run_enclave_client(uint16_t port)
+{
+    pthread_once(&once, _initialize);
+    run_client(port);
+}
+
+OE_SET_ENCLAVE_SGX(
+    1,    /* ProductID */
+    1,    /* SecurityVersion */
+    true, /* AllowDebug */
+    1024, /* HeapPageCount */
+    1024, /* StackPageCount */
+    2);   /* TCSCount */
