@@ -13,10 +13,10 @@
 #include <openenclave/bits/safemath.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/thread.h>
-#include <openenclave/internal/print.h>
 #include <openenclave/internal/hostbatch.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
+#include <openenclave/internal/print.h>
 #include "../common/hostsockargs.h"
 
 /*
@@ -324,7 +324,7 @@ static int _hostsock_accept(
 
         sock->host_fd =
             args->u.accept.ret; // The host_id going out is the connect fd
-        oe_host_printf("host_d = %ld\n", sock->host_fd);
+
         if ((ret = args->u.accept.ret) == -1)
         {
             oe_errno = args->err;
@@ -393,6 +393,7 @@ static int _hostsock_bind(
     }
 
 done:
+
     return (int)ret;
 }
 

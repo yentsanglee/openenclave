@@ -4,6 +4,9 @@
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/internal/device.h>
+#include <openenclave/internal/print.h>
+
+#define printf oe_host_printf
 
 int oe_socket(int domain, int type, int protocol)
 

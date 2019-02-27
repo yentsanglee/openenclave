@@ -2,14 +2,8 @@
 // Licensed under the MIT License.
 
 #include <openenclave/corelibc/sys/stat.h>
-#include <openenclave/internal/defs.h>
 #include <sys/stat.h>
-
-#define SIZEOF_F(T, F) sizeof(((T*)0)->F)
-
-#define CHECK_FIELD(T1, T2, F)                                  \
-    OE_STATIC_ASSERT(OE_OFFSETOF(T1, F) == OE_OFFSETOF(T2, F)); \
-    OE_STATIC_ASSERT(sizeof(((T1*)0)->F) == sizeof(((T2*)0)->F));
+#include "check_field.h"
 
 /*
 **==============================================================================

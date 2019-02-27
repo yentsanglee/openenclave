@@ -33,7 +33,6 @@ static void _handle_hostsock_ocall(void* args_)
         }
         case OE_HOSTSOCK_OP_SOCKET:
         {
-            printf("host socket\n");
             args->u.socket.ret = socket(
                 args->u.socket.domain,
                 args->u.socket.type,
@@ -80,7 +79,6 @@ static void _handle_hostsock_ocall(void* args_)
             }
             args->u.accept.ret = accept(
                 (int)args->u.accept.host_fd, (struct sockaddr*)paddr, addrlen);
-            printf("accept returned %ld\n", args->u.accept.ret);
             break;
         }
         case OE_HOSTSOCK_OP_BIND:

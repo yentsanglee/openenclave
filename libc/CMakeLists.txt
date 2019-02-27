@@ -60,6 +60,10 @@ else()
 endif()
 
 add_library(oelibc STATIC
+    socket/accept.c
+    socket/bind.c
+    socket/connect.c
+    socket/listen.c
     arc4random.c
     atexit.c
     dladdr.c
@@ -76,6 +80,7 @@ add_library(oelibc STATIC
     sysconf.c
     socket.c
     stat.c
+    errno.c
     time.c
     __printf_chk.c
     __vfprintf_chk.c
@@ -184,7 +189,6 @@ add_library(oelibc STATIC
     ${MUSLSRC}/env/putenv.c
     ${MUSLSRC}/env/setenv.c
     ${MUSLSRC}/env/unsetenv.c
-    ${MUSLSRC}/errno/__errno_location.c
     ${MUSLSRC}/exit/assert.c
     ${MUSLSRC}/fenv/fegetexceptflag.c
     ${MUSLSRC}/fenv/feholdexcept.c
@@ -452,6 +456,14 @@ add_library(oelibc STATIC
     ${MUSLSRC}/multibyte/wctomb.c
     ${MUSLSRC}/network/ntohl.c
     ${MUSLSRC}/network/ntohs.c
+    ${MUSLSRC}/network/htonl.c
+    ${MUSLSRC}/network/htons.c
+    ${MUSLSRC}/network/socket.c
+    ${MUSLSRC}/network/setsockopt.c
+    #${MUSLSRC}/network/bind.c
+    #${MUSLSRC}/network/listen.c
+    #${MUSLSRC}/network/accept.c
+    #${MUSLSRC}/network/connect.c
     ${MUSLSRC}/prng/drand48.c
     ${MUSLSRC}/prng/lcong48.c
     ${MUSLSRC}/prng/lrand48.c
@@ -704,6 +716,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/unistd/dup.c
     ${MUSLSRC}/unistd/dup3.c
     ${MUSLSRC}/unistd/rmdir.c
+    ${MUSLSRC}/unistd/sleep.c
     ${PLATFORM_SRC})
 
 maybe_build_using_clangw(oelibc)

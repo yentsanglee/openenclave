@@ -14,6 +14,8 @@
 #ifndef _OE_HOST_SOCKET_H__
 #define _OE_HOST_SOCKET_H__
 
+#include <openenclave/internal/device.h>
+
 OE_EXTERNC_BEGIN
 
 oe_device_t* oe_socket_get_hostsock();

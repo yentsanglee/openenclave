@@ -7,11 +7,13 @@
 #include <openenclave/corelibc/stdarg.h>
 #include <openenclave/corelibc/stdio.h>
 #include <openenclave/corelibc/string.h>
+#include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/corelibc/sys/stat.h>
 #include <openenclave/corelibc/sys/syscall.h>
 #include <openenclave/corelibc/sys/uio.h>
 #include <openenclave/corelibc/unistd.h>
 #include <openenclave/internal/device.h>
+#include <openenclave/internal/print.h>
 
 typedef int (*ioctl_proc)(
     int fd,
@@ -249,6 +251,55 @@ static long _syscall(
             char* path = (char*)arg1;
 
             ret = oe_chdir(path);
+            goto done;
+        }
+        case OE_SYS_socket:
+        {
+            int domain = (int)arg1;
+            int type = (int)arg2;
+            int protocol = (int)arg3;
+            ret = oe_socket(domain, type, protocol);
+            goto done;
+        }
+        case OE_SYS_connect:
+        {
+            int sd = (int)arg1;
+            const struct oe_sockaddr* addr = (const struct oe_sockaddr*)arg2;
+            socklen_t addrlen = (socklen_t)arg3;
+            ret = oe_connect(sd, addr, addrlen);
+            goto done;
+        }
+        case OE_SYS_setsockopt:
+        {
+            int sockfd = (int)arg1;
+            int level = (int)arg2;
+            int optname = (int)arg3;
+            void* optval = (void*)arg4;
+            socklen_t optlen = (socklen_t)arg5;
+            ret = oe_setsockopt(sockfd, level, optname, optval, optlen);
+            goto done;
+        }
+        case OE_SYS_bind:
+        {
+            int sockfd = (int)arg1;
+            struct oe_sockaddr* addr = (struct oe_sockaddr*)arg2;
+            socklen_t addrlen = (socklen_t)arg3;
+            ret = oe_bind(sockfd, addr, addrlen);
+            goto done;
+        }
+        case OE_SYS_listen:
+        {
+            int sockfd = (int)arg1;
+            int backlog = (int)arg2;
+            ret = oe_listen(sockfd, backlog);
+            goto done;
+        }
+        case OE_SYS_accept:
+        {
+            int sockfd = (int)arg1;
+            struct oe_sockaddr* addr = (struct oe_sockaddr*)arg2;
+            socklen_t* addrlen = (socklen_t*)arg3;
+            ret = oe_accept(sockfd, addr, addrlen);
             goto done;
         }
         default:
