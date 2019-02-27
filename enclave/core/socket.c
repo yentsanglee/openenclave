@@ -209,6 +209,27 @@ int oe_getsockname(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen)
     return (*psock->ops.socket->getsockname)(psock, addr, addrlen);
 }
 
+int oe_getpeername(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen)
+
+{
+    oe_device_t* psock = oe_get_fd_device(sockfd);
+
+    if (!psock)
+    {
+        // Log error here
+        return -1; // erno is already set
+    }
+
+    if (psock->ops.socket->getpeername == NULL)
+    {
+        oe_errno = EINVAL;
+        return -1;
+    }
+
+    // The action routine sets errno
+    return (*psock->ops.socket->getsockname)(psock, addr, addrlen);
+}
+
 int oe_getsockopt(
     int sockfd,
     int level,

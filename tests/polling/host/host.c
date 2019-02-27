@@ -41,13 +41,13 @@ void* host_server_thread(void* arg)
     }
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    serv_addr.sin_port = htons(1492);
+    serv_addr.sin_port = htons(1642);
 
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 
     listen(listenfd, 10);
 
-    // int n = 0;
+    int n = 0;
     do
     {
         printf("accepting\n");
@@ -59,8 +59,8 @@ void* host_server_thread(void* arg)
     {
         write(connfd, TESTDATA, strlen(TESTDATA));
         printf("write test data\n");
-        //    if (n++ > 10)
-        //        break;
+        if (n++ > 20)
+            break;
         sleep(5);
     }
 

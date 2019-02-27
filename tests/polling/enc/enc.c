@@ -26,6 +26,20 @@ int ecall_device_init()
     return 0;
 }
 
+const char* print_socket_success(void)
+{
+    static const char* msg = "socket success";
+    printf("%s\n", msg);
+    return msg;
+}
+
+const char* print_file_success(void)
+{
+    static const char* msg = "file success";
+    printf("%s\n", msg);
+    return msg;
+}
+
 /* This client connects to an echo server, sends a text message,
  * and outputs the text reply.
  */
@@ -33,7 +47,7 @@ int ecall_run_client(void)
 {
     int sockfd = 0;
     int file_fd = 0;
-    ssize_t n = 0;
+    // ssize_t n = 0;
     char recv_buff[1024];
     size_t buff_len = sizeof(recv_buff);
     struct oe_sockaddr_in serv_addr = {0};
@@ -63,7 +77,7 @@ int ecall_run_client(void)
     }
     serv_addr.sin_family = OE_AF_INET;
     serv_addr.sin_addr.s_addr = oe_htonl(OE_INADDR_LOOPBACK);
-    serv_addr.sin_port = oe_htons(1492);
+    serv_addr.sin_port = oe_htons(1642);
 
     printf("socket fd = %d\n", sockfd);
     printf("Connecting...\n");
@@ -88,19 +102,21 @@ int ecall_run_client(void)
     file_fd = oe_open("/tmp/test", flags, 0);
 
     printf("polling...\n");
-    event.events = OE_EPOLLIN;
-    event.data.fd = file_fd;
-
-    if (oe_epoll_ctl(epoll_fd, OE_EPOLL_CTL_ADD, 0, &event))
+    if (file_fd >= 0)
     {
-        fprintf(stderr, "Failed to add file descriptor to epoll\n");
-        oe_close(epoll_fd);
-        return 1;
+        event.events = OE_EPOLLIN;
+        event.data.ptr = (void*)print_file_success;
+
+        if (oe_epoll_ctl(epoll_fd, OE_EPOLL_CTL_ADD, 0, &event))
+        {
+            fprintf(stderr, "Failed to add file descriptor to epoll\n");
+            oe_close(epoll_fd);
+            return 1;
+        }
     }
 
-    event.events = OE_EPOLLIN;
-    event.data.fd = sockfd;
-
+    event.events = 0x3c7;
+    event.data.ptr = (void*)print_socket_success;
     if (oe_epoll_ctl(epoll_fd, OE_EPOLL_CTL_ADD, sockfd, &event))
     {
         fprintf(stderr, "Failed to add file descriptor to epoll\n");
@@ -111,24 +127,33 @@ int ecall_run_client(void)
     int nfds = 0;
     do
     {
-        while ((nfds = oe_epoll_wait(epoll_fd, events, 20, 30000)) < 0)
+        /*while*/ if ((nfds = oe_epoll_wait(epoll_fd, events, 20, 30000)) < 0)
         {
-            printf("timeout\n");
+            printf("error.\n");
         }
-        printf("input from %d fds\n", nfds);
-
-        for (int i = 0; i < nfds; i++)
+        else
         {
-            n = oe_read(events[i].data.fd, recv_buff, buff_len);
-            recv_buff[n] = 0;
-            printf(
-                "received data %s from fd %d\n", recv_buff, events[i].data.fd);
+            printf("input from %d fds\n", nfds);
+
+            for (int i = 0; i < nfds; i++)
+            {
+                const char* (*func)(void) =
+                    (const char* (*)(void))events[i].data.ptr;
+                (void)(*func)();
+
+#if 0
+                n = oe_read(events[i].data.fd, recv_buff, buff_len);
+                recv_buff[n] = 0;
+                printf(
+                    "received data %s from fd %d\n", recv_buff, events[i].data.fd);
+#endif
+            }
         }
 
     } while (nfds >= 0);
 
-    oe_close(sockfd);
-    oe_close(epoll_fd);
+    // oe_close(sockfd);
+    // oe_close(epoll_fd);
     return OE_OK;
 }
 
@@ -254,4 +279,4 @@ OE_SET_ENCLAVE_SGX(
     true, /* AllowDebug */
     256,  /* HeapPageCount */
     256,  /* StackPageCount */
-    1);   /* TCSCount */
+    16);  /* TCSCount */
