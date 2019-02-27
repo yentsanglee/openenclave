@@ -177,6 +177,7 @@ ssize_t oe_send(int sockfd, const void* buf, size_t len, int flags);
 
 ssize_t oe_recv(int sockfd, void* buf, size_t len, int flags);
 
+/* ATTN:IO: implement */
 int oe_socket_d(uint64_t devid, int domain, int type, int protocol);
 
 /* ATTN:IO: implement */
