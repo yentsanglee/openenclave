@@ -15,6 +15,7 @@
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/hostbatch.h>
+#include <openenclave/enclave.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
 #include "../common/epollargs.h"
@@ -397,19 +398,19 @@ done:
 }
 
 static int _epoll_ctl_add(
-    oe_device_t* epoll_,
+    int epoll_fd,
     int enclave_fd,
     struct oe_epoll_event* event)
 {
     int ret = -1;
-    epoll_dev_t* epoll = _cast_epoll(epoll_);
+    epoll_dev_t* epoll = _cast_epoll(oe_get_fd_device(epoll_fd));
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
     ssize_t host_fd = -1;
     oe_device_t* pdev = oe_get_fd_device(enclave_fd);
 
     /* Check parameters. */
-    if (!epoll_ || !pdev || !event)
+    if (!epoll || !pdev || !event || (enclave_fd == -1))
     {
         oe_errno = EINVAL;
         return -1;
@@ -453,7 +454,7 @@ static int _epoll_ctl_add(
         args->u.ctl_add.host_fd = host_fd;
         args->u.ctl_add.event_mask = event->events;
         args->u.ctl_add.list_idx = list_idx;
-        args->u.ctl_add.handle_type = (int)pdev->type;
+        args->u.ctl_add.epoll_enclave_fd = epoll_fd;
     }
 
     /* Call */
@@ -476,19 +477,19 @@ done:
 }
 
 static int _epoll_ctl_mod(
-    oe_device_t* epoll_,
+    int epoll_fd,
     int enclave_fd,
     struct oe_epoll_event* event)
 {
     int ret = -1;
-    epoll_dev_t* epoll = _cast_epoll(epoll_);
+    epoll_dev_t* epoll = _cast_epoll(oe_get_fd_device(epoll_fd));
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
     ssize_t host_fd = -1;
     oe_device_t* pdev = oe_get_fd_device(enclave_fd);
 
     /* Check parameters. */
-    if (!epoll_ || !pdev || !event)
+    if (!epoll || !pdev || !event)
     {
         oe_errno = EINVAL;
         return -1;
@@ -530,7 +531,7 @@ static int _epoll_ctl_mod(
         args->u.ctl_mod.host_fd = host_fd;
         args->u.ctl_mod.event_mask = event->events;
         args->u.ctl_mod.list_idx = enclave_fd;
-        args->u.ctl_mod.handle_type = (int)pdev->type;
+        args->u.ctl_add.epoll_enclave_fd = epoll_fd;
     }
 
     /* Call */
@@ -552,17 +553,17 @@ done:
     return ret;
 }
 
-static int _epoll_ctl_del(oe_device_t* epoll_, int enclave_fd)
+static int _epoll_ctl_del(int epoll_fd, int enclave_fd)
 {
     int ret = -1;
-    epoll_dev_t* epoll = _cast_epoll(epoll_);
+    epoll_dev_t* epoll = _cast_epoll(oe_get_fd_device(epoll_fd));
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
     ssize_t host_fd = -1;
     oe_device_t* pdev = oe_get_fd_device(enclave_fd);
 
     /* Check parameters. */
-    if (!epoll_ || !pdev)
+    if (!epoll || !pdev)
     {
         oe_errno = EINVAL;
         return -1;
@@ -620,19 +621,19 @@ done:
 }
 
 static int _epoll_wait(
-    oe_device_t* epoll_,
+    int epoll_fd,
     struct oe_epoll_event* events,
     size_t maxevents,
     int64_t timeout)
 {
     int ret = -1;
-    epoll_dev_t* epoll = _cast_epoll(epoll_);
+    epoll_dev_t* epoll = _cast_epoll(oe_get_fd_device(epoll_fd));
     oe_host_batch_t* batch = _get_host_batch();
     args_t* args = NULL;
-    ssize_t epoll_fd = -1;
+    ssize_t epoll_host_fd = -1;
 
     /* Check parameters. */
-    if (!epoll_ || !events)
+    if (!epoll || !events)
     {
         oe_errno = EINVAL;
         return -1;
@@ -641,10 +642,11 @@ static int _epoll_wait(
     oe_errno = 0;
     if (epoll->base.ops.base->get_host_fd != NULL)
     {
-        epoll_fd = (*epoll->base.ops.base->get_host_fd)(epoll_);
+        epoll_host_fd =
+            (*epoll->base.ops.base->get_host_fd)((oe_device_t*)epoll);
     }
 
-    if (epoll_fd == -1)
+    if (epoll_host_fd == -1)
     {
         // Not a host file system. Skip the ocall
         return 0;
@@ -662,7 +664,8 @@ static int _epoll_wait(
 
         args->op = OE_EPOLL_OP_WAIT;
         args->u.wait.ret = -1;
-        args->u.wait.epoll_fd = epoll_fd;
+        args->u.wait.epoll_fd = epoll_host_fd;
+        args->u.wait.enclaveid = (int64_t)oe_get_enclave();
         args->u.wait.maxevents = (int64_t)maxevents;
         args->u.wait.timeout = (int64_t)timeout;
     }
@@ -675,15 +678,18 @@ static int _epoll_wait(
             goto done;
         }
 
-        if ((ret = (int)args->u.ctl_add.ret) == -1)
+        if ((ret = (int)args->u.wait.ret) == -1)
         {
+            oe_printf("_epoll_wait bad host ret = %d\n", ret);
             oe_errno = args->err;
             goto done;
         }
     }
 
+    oe_printf("_epoll_wait ret = %d\n", ret);
+
     /* Output */
-    if (ret > 0)
+    if (ret >= 0)
     {
         struct oe_epoll_event* phost_events =
             ((struct oe_epoll_event*)args->buf);
@@ -752,6 +758,31 @@ done:
     return ret;
 }
 
+static uint64_t _epoll_get_event_data(oe_device_t* epoll_, uint32_t list_idx)
+{
+    epoll_dev_t* epoll = _cast_epoll(epoll_);
+
+    if (!epoll_)
+    {
+        oe_errno = EINVAL;
+        return (uint64_t)-1;
+    }
+
+    if (list_idx > epoll->num_event_data)
+    {
+        oe_errno = EINVAL;
+        return (uint64_t)-1;
+    }
+
+    if (!epoll->pevent_data)
+    {
+        oe_errno = EINVAL;
+        return (uint64_t)-1;
+    }
+
+    return epoll->pevent_data[list_idx].enclave_data;
+}
+
 static int _epoll_notify(oe_device_t* epoll_, uint64_t notification_mask)
 {
     epoll_dev_t* epoll = _cast_epoll(epoll_);
@@ -792,6 +823,7 @@ static oe_epoll_ops_t _ops = {
     .ctl_add = _epoll_ctl_add,
     .ctl_mod = _epoll_ctl_mod,
     .ctl_del = _epoll_ctl_del,
+    .geteventdata = _epoll_get_event_data,
     .wait = _epoll_wait,
 };
 

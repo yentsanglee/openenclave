@@ -31,7 +31,8 @@ oe_device_t* oe_epoll_get_epoll(void);
 
 struct oe_device_notifications
 {
-    uint64_t enclave_fd; // On the host side we set this into the event data
+    uint32_t epoll_fd;   // Enclave fd for the
+    uint32_t list_idx;   // On the host side we set this into the event data
     uint32_t event_mask; // oe_epoll_event.event
 };
 struct oe_device_notification_args
@@ -49,10 +50,10 @@ void oe_broadcast_device_notification(void);
 int oe_wait_device_notification(int timeout);
 void oe_clear_device_notification(void);
 
-#define OE_EPOLL_CTL_ADD 1 /* Add a file descriptor to the interface.  */
-#define OE_EPOLL_CTL_DEL 2 /* Remove a file descriptor from the interface.  */
+#define OE_EPOLL_CTL_ADD 1 /* Add a file descriptor to the interface. */
+#define OE_EPOLL_CTL_DEL 2 /* Remove a file descriptor from the interface. */
 #define OE_EPOLL_CTL_MOD \
-    3 /* Change file descriptor oe_epoll_event structure.  */
+    3 /* Change file descriptor oe_epoll_event structure. */
 
 typedef union oe_epoll_data {
     void* ptr;
@@ -80,6 +81,7 @@ extern "C"
         struct oe_epoll_event* events,
         int maxevents,
         int timeout);
+
     // int oe_epoll_pwait (int epfd, struct epoll_event *events, int maxevents,
     // int timeout, const sigset_t *ss);
 

@@ -21,8 +21,8 @@ typedef enum _oe_epoll_op
 union _oe_ev_data {
     struct
     {
+        uint32_t epoll_enclave_fd;
         uint32_t event_list_idx;
-        uint32_t handle_type;
     };
     uint64_t data;
 };
@@ -40,7 +40,8 @@ typedef struct _oe_epoll_args
         } create;
         struct
         {
-            int64_t ret; // returns numfds returned or -1
+            int64_t ret;       // returns numfds returned or -1
+            int64_t enclaveid; // This allows us to ecall device notification
             int64_t epoll_fd;
             int64_t maxevents;
             int64_t timeout;
@@ -53,9 +54,7 @@ typedef struct _oe_epoll_args
             int64_t host_fd;
             uint32_t event_mask;
             int32_t list_idx;
-            int32_t handle_type; // We need this for windows. A file handle !=
-                                 // socket handle in win32 and its awkward to
-                                 // figure it out.
+            int32_t epoll_enclave_fd;
         } ctl_add;
         struct
         {
@@ -70,9 +69,7 @@ typedef struct _oe_epoll_args
             int64_t host_fd;
             uint32_t event_mask;
             int32_t list_idx;
-            int32_t handle_type; // We need this for windows. A file handle !=
-                                 // socket handle in win32 and its awkward to
-                                 // figure it out.
+            int32_t epoll_enclave_fd;
         } ctl_mod;
         struct
         {

@@ -22,19 +22,22 @@ extern "C"
         oe_device_t* (*create)(oe_device_t* epoll_device, int size);
         oe_device_t* (*create1)(oe_device_t* epoll_device, int flags);
         int (*ctl_add)(
-            oe_device_t* pepoll,
+            int epoll_fd,
             int enclave_fd,
             struct oe_epoll_event* event);
-        int (*ctl_del)(oe_device_t* pepoll, int enclave_fd);
+        int (*ctl_del)(int epoll_fd, int enclave_fd);
         int (*ctl_mod)(
-            oe_device_t* pepoll,
+            int epoll_fd,
             int enclave_fd,
             struct oe_epoll_event* event);
         int (*wait)(
-            oe_device_t* pepoll,
+            int epoll_fd,
             struct oe_epoll_event* events,
             size_t maxevents,
             int64_t timeout);
+
+        uint64_t (*geteventdata)(oe_device_t* epoll_device, uint32_t list_idx);
+
     } oe_epoll_ops_t;
 
 #ifdef cplusplus
