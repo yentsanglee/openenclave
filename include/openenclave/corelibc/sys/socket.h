@@ -182,17 +182,7 @@ int oe_socket_d(uint64_t devid, int domain, int type, int protocol);
 /* ATTN:IO: implement */
 int oe_getpeername(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen);
 
-/* ATTN:IO: implement */
 int oe_getsockname(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen);
-
-/* ATTN:IO: implement */
-int oe_network_startup_d(uint64_t devid, uint64_t version, void* data);
-
-/* ATTN:IO: implement */
-int oe_network_errno_d(uint64_t devid);
-
-/* ATTN:IO: implement */
-int oe_network_shutdown_d(uint64_t devid);
 
 #if defined(OE_NEED_STDC_NAMES)
 
