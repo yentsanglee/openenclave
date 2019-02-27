@@ -4,6 +4,7 @@
 #include <openenclave/corelibc/dirent.h>
 #include <openenclave/corelibc/errno.h>
 #include <openenclave/corelibc/fcntl.h>
+#include <openenclave/corelibc/stdarg.h>
 #include <openenclave/corelibc/stdio.h>
 #include <openenclave/corelibc/string.h>
 #include <openenclave/corelibc/sys/stat.h>
@@ -20,26 +21,17 @@ typedef int (*ioctl_proc)(
     long arg3,
     long arg4);
 
-int __oe_syscall(
+static long _syscall(
     long num,
     long arg1,
     long arg2,
     long arg3,
     long arg4,
     long arg5,
-    long arg6,
-    long* ret_out)
+    long arg6)
 {
-    if (ret_out)
-        *ret_out = 0;
-
+    long ret = -1;
     oe_errno = 0;
-
-    if (!ret_out)
-    {
-        oe_errno = EINVAL;
-        return -1;
-    }
 
     /* Handle the software system call. */
     switch (num)
@@ -50,15 +42,16 @@ int __oe_syscall(
             mode_t mode = (mode_t)arg2;
             int flags = (OE_O_CREAT | OE_O_WRONLY | OE_O_TRUNC);
 
-            *ret_out = oe_open(pathname, flags, mode);
+            ret = oe_open(pathname, flags, mode);
 
             if (oe_errno == ENOENT)
             {
                 /* Not handled. Let caller dispatch this syscall. */
-                return -1;
+                oe_errno = ENOSYS;
+                goto done;
             }
 
-            return 0;
+            goto done;
         }
         case OE_SYS_open:
         {
@@ -66,12 +59,12 @@ int __oe_syscall(
             int flags = (int)arg2;
             uint32_t mode = (uint32_t)arg3;
 
-            *ret_out = oe_open(pathname, flags, mode);
+            ret = oe_open(pathname, flags, mode);
 
-            if (oe_errno == ENOENT)
-                return -1;
+            if (ret < 0 && oe_errno == ENOENT)
+                goto done;
 
-            return 0;
+            goto done;
         }
         case OE_SYS_lseek:
         {
@@ -79,9 +72,8 @@ int __oe_syscall(
             ssize_t off = (ssize_t)arg2;
             int whence = (int)arg3;
 
-            *ret_out = oe_lseek(fd, off, whence);
-
-            return 0;
+            ret = oe_lseek(fd, off, whence);
+            goto done;
         }
         case OE_SYS_readv:
         {
@@ -89,9 +81,8 @@ int __oe_syscall(
             const struct oe_iovec* iov = (const struct oe_iovec*)arg2;
             int iovcnt = (int)arg3;
 
-            *ret_out = oe_readv(fd, iov, iovcnt);
-
-            return 0;
+            ret = oe_readv(fd, iov, iovcnt);
+            goto done;
         }
         case OE_SYS_writev:
         {
@@ -99,9 +90,8 @@ int __oe_syscall(
             const struct oe_iovec* iov = (const struct oe_iovec*)arg2;
             int iovcnt = (int)arg3;
 
-            *ret_out = oe_writev(fd, iov, iovcnt);
-
-            return 0;
+            ret = oe_writev(fd, iov, iovcnt);
+            goto done;
         }
         case OE_SYS_read:
         {
@@ -109,9 +99,8 @@ int __oe_syscall(
             void* buf = (void*)arg2;
             size_t count = (size_t)arg3;
 
-            *ret_out = oe_read(fd, buf, count);
-
-            return 0;
+            ret = oe_read(fd, buf, count);
+            goto done;
         }
         case OE_SYS_write:
         {
@@ -119,17 +108,15 @@ int __oe_syscall(
             const void* buf = (void*)arg2;
             size_t count = (size_t)arg3;
 
-            *ret_out = oe_write(fd, buf, count);
-
-            return 0;
+            ret = oe_write(fd, buf, count);
+            goto done;
         }
         case OE_SYS_close:
         {
             int fd = (int)arg1;
 
-            *ret_out = oe_close(fd);
-
-            return 0;
+            ret = oe_close(fd);
+            goto done;
         }
         case OE_SYS_stat:
         {
@@ -137,70 +124,62 @@ int __oe_syscall(
             struct oe_stat* buf_out = (struct oe_stat*)arg2;
             struct oe_stat buf;
 
-            *ret_out = oe_stat(pathname, &buf);
-
+            ret = oe_stat(pathname, &buf);
             memcpy(buf_out, &buf, sizeof(struct oe_stat));
-
-            return 0;
+            goto done;
         }
         case OE_SYS_link:
         {
             const char* oldpath = (const char*)arg1;
             const char* newpath = (const char*)arg2;
 
-            *ret_out = oe_link(oldpath, newpath);
-
-            return 0;
+            ret = oe_link(oldpath, newpath);
+            goto done;
         }
         case OE_SYS_unlink:
         {
             const char* pathname = (const char*)arg1;
 
-            *ret_out = oe_unlink(pathname);
-
-            return 0;
+            ret = oe_unlink(pathname);
+            goto done;
         }
         case OE_SYS_rename:
         {
             const char* oldpath = (const char*)arg1;
             const char* newpath = (const char*)arg2;
 
-            *ret_out = oe_rename(oldpath, newpath);
-
-            return 0;
+            ret = oe_rename(oldpath, newpath);
+            goto done;
         }
         case OE_SYS_truncate:
         {
             const char* path = (const char*)arg1;
             ssize_t length = (ssize_t)arg2;
 
-            *ret_out = oe_truncate(path, length);
-
-            return 0;
+            ret = oe_truncate(path, length);
+            goto done;
         }
         case OE_SYS_mkdir:
         {
             const char* pathname = (const char*)arg1;
             uint32_t mode = (uint32_t)arg2;
 
-            *ret_out = oe_mkdir(pathname, mode);
-
-            return 0;
+            ret = oe_mkdir(pathname, mode);
+            goto done;
         }
         case OE_SYS_rmdir:
         {
             const char* pathname = (const char*)arg1;
-            *ret_out = oe_rmdir(pathname);
-            return 0;
+            ret = oe_rmdir(pathname);
+            goto done;
         }
         case OE_SYS_access:
         {
             const char* pathname = (const char*)arg1;
             int mode = (int)arg2;
 
-            *ret_out = oe_access(pathname, mode);
-
-            return 0;
+            ret = oe_access(pathname, mode);
+            goto done;
         }
         case OE_SYS_getdents:
         case OE_SYS_getdents64:
@@ -208,9 +187,8 @@ int __oe_syscall(
             unsigned int fd = (unsigned int)arg1;
             struct oe_dirent* ent = (struct oe_dirent*)arg2;
             unsigned int count = (unsigned int)arg3;
-            *ret_out = oe_getdents(fd, ent, count);
-
-            return 0;
+            ret = oe_getdents(fd, ent, count);
+            goto done;
         }
         case OE_SYS_ioctl:
         {
@@ -221,14 +199,13 @@ int __oe_syscall(
             long p3 = arg5;
             long p4 = arg6;
 
-            *ret_out = ((ioctl_proc)oe_ioctl)(fd, request, p1, p2, p3, p4);
-
-            return 0;
+            ret = ((ioctl_proc)oe_ioctl)(fd, request, p1, p2, p3, p4);
+            goto done;
         }
         case OE_SYS_fcntl:
         {
             /* Silently ignore. */
-            return 0;
+            goto done;
         }
         case OE_SYS_mount:
         {
@@ -238,9 +215,8 @@ int __oe_syscall(
             unsigned long flags = (unsigned long)arg4;
             void* data = (void*)arg5;
 
-            *ret_out = oe_mount(source, target, fstype, flags, data);
-
-            return 0;
+            ret = oe_mount(source, target, fstype, flags, data);
+            goto done;
         }
         case OE_SYS_umount2:
         {
@@ -249,9 +225,8 @@ int __oe_syscall(
 
             (void)flags;
 
-            *ret_out = oe_umount(target);
-
-            return 0;
+            ret = oe_umount(target);
+            goto done;
         }
         case OE_SYS_getcwd:
         {
@@ -260,30 +235,48 @@ int __oe_syscall(
 
             if (!oe_getcwd(buf, size))
             {
-                *ret_out = -1;
+                ret = -1;
             }
             else
             {
-                *ret_out = (long)size;
+                ret = (long)size;
             }
 
-            return 0;
+            goto done;
         }
         case OE_SYS_chdir:
         {
             char* path = (char*)arg1;
 
-            *ret_out = oe_chdir(path);
-
-            return 0;
+            ret = oe_chdir(path);
+            goto done;
         }
         default:
         {
-            oe_errno = EINVAL;
-            return -1;
+            oe_errno = ENOSYS;
+            goto done;
         }
     }
 
     /* Unreachable */
-    return -1;
+done:
+    return ret;
+}
+
+long oe_syscall(long number, ...)
+{
+    long ret;
+
+    oe_va_list ap;
+    oe_va_start(ap, number);
+    long arg1 = oe_va_arg(ap, long);
+    long arg2 = oe_va_arg(ap, long);
+    long arg3 = oe_va_arg(ap, long);
+    long arg4 = oe_va_arg(ap, long);
+    long arg5 = oe_va_arg(ap, long);
+    long arg6 = oe_va_arg(ap, long);
+    ret = _syscall(number, arg1, arg2, arg3, arg4, arg5, arg6);
+    oe_va_end(ap);
+
+    return ret;
 }

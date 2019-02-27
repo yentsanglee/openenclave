@@ -343,15 +343,7 @@ OE_EXTERNC_BEGIN
 #define OE_SYS_pkey_free 331
 #define OE_SYS_statx 332
 
-int __oe_syscall(
-    long num,
-    long arg1,
-    long arg2,
-    long arg3,
-    long arg4,
-    long arg5,
-    long arg6,
-    long* ret_out);
+long oe_syscall(long number, ...);
 
 #if defined(OE_NEED_STDC_NAMES)
 

@@ -148,10 +148,12 @@ long __syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 
         errno = 0;
 
-        if (__oe_syscall(n, x1, x2, x3, x4, x5, x6, &ret) == 0)
-        {
+        ret = oe_syscall(n, x1, x2, x3, x4, x5, x6);
+
+        if (!(ret == -1 && errno == ENOSYS))
             return ret;
-        }
+
+        /* Drop through and let the code below handle the syscall. */
     }
 
     switch (n)
