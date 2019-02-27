@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved._ops
 // Licensed under the MIT License.
 
-#ifndef _OE_BITS_DEVICE_H
-#define _OE_BITS_DEVICE_H
+#ifndef _OE_CORELIBC_BITS_DEVICE_H
+#define _OE_CORELIBC_BITS_DEVICE_H
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
@@ -38,4 +38,4 @@ static const uint64_t OE_DEVID_HARDWARE_SECURE_SOCKET = 8;
 
 OE_EXTERNC_END
 
-#endif // _OE_BITS_DEVICE_H
+#endif // _OE_CORELIBC_BITS_DEVICE_H
