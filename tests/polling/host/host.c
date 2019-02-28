@@ -29,9 +29,9 @@ void* host_server_thread(void* arg)
     int connfd = 0;
     struct sockaddr_in serv_addr = {0};
 
-    (void)arg;
     const int optVal = 1;
     const socklen_t optLen = sizeof(optVal);
+    int* done = (int*)arg;
 
     int rtn =
         setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, optLen);
@@ -55,7 +55,7 @@ void* host_server_thread(void* arg)
         printf("accepted fd = %d\n", connfd);
     } while (connfd < 0);
 
-    while (1)
+    while (!done)
     {
         write(connfd, TESTDATA, strlen(TESTDATA));
         printf("write test data\n");
@@ -78,7 +78,8 @@ int main(int argc, const char* argv[])
     pthread_t server_thread_id = 0;
     int ret = 0;
     char test_data_rtn[1024] = {0};
-    ssize_t test_data_len = 1024;
+    size_t test_data_len = 1024;
+    int done = 0;
 
     if (argc != 2)
     {
@@ -88,25 +89,10 @@ int main(int argc, const char* argv[])
     // disable buffering
     setvbuf(stdout, NULL, _IONBF, 0);
 
-#if 0
-    // host server to host client
-    OE_TEST(
-        pthread_create(&server_thread_id, NULL, host_server_thread, NULL) == 0);
-
-    sleep(3); // Give the server time to launch
-    char* test_data = host_client();
-
-    printf("received: %s\n", test_data);
-    OE_TEST(strcmp(test_data, TESTDATA) == 0);
-
-    pthread_join(server_thread_id, NULL);
-
-    sleep(3); // Let the net stack settle
-#endif
-
     // host server to enclave client
     OE_TEST(
-        pthread_create(&server_thread_id, NULL, host_server_thread, NULL) == 0);
+        pthread_create(
+            &server_thread_id, NULL, host_server_thread, (void*)&done) == 0);
 
     sleep(3); // Give the server time to launch
     const uint32_t flags = oe_get_create_flags();
@@ -123,14 +109,20 @@ int main(int argc, const char* argv[])
     OE_TEST(ecall_device_init(client_enclave, &ret) == OE_OK);
 
     test_data_len = 1024;
-    OE_TEST(ecall_run_client(client_enclave, &ret) == OE_OK);
+    OE_TEST(
+        ecall_run_client(client_enclave, &ret, test_data_len, test_data_rtn) ==
+        OE_OK);
 
     printf("host received: %s\n", test_data_rtn);
+    OE_TEST(
+        strncmp("socket success", test_data_rtn, strlen("socket success")) ==
+        0);
 
+    done = 1;
     pthread_join(server_thread_id, NULL);
     OE_TEST(oe_terminate_enclave(client_enclave) == OE_OK);
 
-    printf("=== passed all tests (socket_test)\n");
+    printf("=== passed all tests (epoll_test)\n");
 
     return 0;
 }

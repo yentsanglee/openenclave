@@ -138,22 +138,24 @@ int oe_epoll_wait(
         if ((ret = (*pepoll->ops.epoll->wait)(
                  epfd, events, (size_t)maxevents, timeout)) < 0)
         {
-            oe_printf("wait inval ret = %d\n", ret);
             oe_errno = EINVAL;
             return -1;
         }
     }
 
-    oe_printf("wait for device_notification\n");
-    if (oe_wait_device_notification(timeout) < 0)
-    {
-        oe_printf("wait bad\n");
-        oe_errno = EPROTO;
-        return -1;
-    }
-
+    // We check immedately because we might have gotten lucky and had stuff come
+    // in immediately. If so we skip the wait
     ret = oe_get_epoll_events((uint64_t)epfd, (size_t)maxevents, events);
-    oe_printf("get_epoll_events ret = %d\n", ret);
+
+    if (ret == 0)
+    {
+        if (oe_wait_device_notification(timeout) < 0)
+        {
+            oe_errno = EPROTO;
+            return -1;
+        }
+        ret = oe_get_epoll_events((uint64_t)epfd, (size_t)maxevents, events);
+    }
 
     return ret; // return the number of descriptors that have signalled
 }
@@ -360,6 +362,7 @@ int oe_post_device_notifications(
     for (; i < num_notifications; i++)
     {
         pnode = _new_notification();
+
         pnode->notice = notices[i];
         ptail->pnext = pnode;
         ptail = ptail->pnext;
@@ -394,8 +397,16 @@ int oe_get_epoll_events(
     size_t i = 0;
     int locked = false;
 
-    pplist = _table() + epfd;
+    if (epfd >= _arr.size)
+    {
+        if (oe_array_resize(&_arr, epfd + 1) != 0)
+        {
+            oe_errno = ENOMEM;
+            return -1;
+        }
+    }
 
+    pplist = _table() + epfd;
     if (!*pplist)
     {
         // Not having notifications isn't an error
@@ -495,6 +506,7 @@ void oe_signal_device_notification(oe_device_t* pdevice, uint32_t event_mask)
 
 void oe_broadcast_device_notification()
 {
+    //    oe_result_t rslt =
     oe_cond_broadcast(&poll_notification);
 }
 
