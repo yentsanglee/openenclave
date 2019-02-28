@@ -426,6 +426,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/math/truncl.c
     ${MUSLSRC}/misc/basename.c
     ${MUSLSRC}/misc/dirname.c
+    ${MUSLSRC}/misc/getdomainname.c
     ${MUSLSRC}/misc/ioctl.c
     ${MUSLSRC}/misc/uname.c
     ${MUSLSRC}/mman/mmap.c

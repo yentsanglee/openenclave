@@ -82,6 +82,8 @@ add_library(oecore STATIC
     eventfd.c
     fd.c
     fs.c
+    gethostname.c
+    getdomainname.c
     gmtime.c
     hexdump.c
     intstr.c

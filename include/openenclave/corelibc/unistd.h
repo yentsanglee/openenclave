@@ -61,6 +61,8 @@ int oe_close(int fd);
 
 int oe_gethostname(char* name, size_t len);
 
+int oe_getdomainname(char* name, size_t len);
+
 #if defined(OE_NEED_STDC_NAMES)
 
 #define STDIN_FILENO OE_STDIN_FILENO
@@ -137,6 +139,11 @@ OE_INLINE int close(int fd)
 OE_INLINE int gethostname(char* name, size_t len)
 {
     return oe_gethostname(name, len);
+}
+
+OE_INLINE int getdomainname(char* name, size_t len)
+{
+    return oe_getdomainname(name, len);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

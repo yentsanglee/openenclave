@@ -20,6 +20,8 @@ void oe_handle_uname(uint64_t arg_in, uint64_t* arg_out)
     OE_CHECK_FIELD(struct oe_utsname, struct utsname, machine);
 #ifdef _GNU_SOURCE
     OE_CHECK_FIELD(struct oe_utsname, struct utsname, domainname);
+#else
+    OE_CHECK_FIELD(struct oe_utsname, struct utsname, __domainname);
 #endif
 
     if (uname((struct utsname*)out) != 0)
