@@ -3,6 +3,7 @@
 
 #include <openenclave/corelibc/sys/utsname.h>
 #include <string.h>
+#include <windows.h>
 #include "../ocalls.h"
 
 void oe_handle_uname(uint64_t arg_in, uint64_t* arg_out)
@@ -18,13 +19,24 @@ void oe_handle_uname(uint64_t arg_in, uint64_t* arg_out)
         }
     }
 
-    /* ATTN: Provide a more complete implemenation for Windows. */
     memset(out, 0, sizeof(struct oe_utsname));
+
+    /* oe_utsname.sysname */
     strcpy(out->sysname, "Windows");
-    strcpy(out->nodename, "unknown");
+
+    /* oe_utsname.nodename */
+    GetComputerNameA(out->nodename, sizeof(out->nodename));
+
     strcpy(out->release, "unknown");
     strcpy(out->machine, "x86_64");
-    strcpy(out->version, "unknown");
+
+    /* oe_utsname.version*/
+    {
+        DWORD version = GetVersion();
+        DWORD major = (DWORD)(LOBYTE(LOWORD(version)));
+        DWORD minor = (DWORD)(HIBYTE(LOWORD(version)));
+        snprintf(out->version, sizeof(out->version), "%d.%d", major, minor);
+    }
 
     if (arg_out)
         *arg_out = 0;
