@@ -1,45 +1,90 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+// clang-format off
+#include <openenclave/enclave.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/internal/device.h>
+#include <openenclave/internal/thread.h>
 #include <openenclave/internal/print.h>
+// clang-format on
 
 #define printf oe_host_printf
 
-int oe_socket(int domain, int type, int protocol)
+static uint64_t _default_socket_devid = OE_DEVID_NULL;
+static oe_spinlock_t _default_socket_devid_lock;
 
+void oe_set_default_socket_devid(uint64_t devid)
 {
-    int sd = -1;
-    oe_device_t* psock = NULL;
-    oe_device_t* pdevice = NULL;
+    oe_spin_lock(&_default_socket_devid_lock);
+    _default_socket_devid = devid;
+    oe_spin_unlock(&_default_socket_devid_lock);
+}
 
-    switch (domain)
-    {
-        case OE_AF_ENCLAVE: // Temprory until we dicde how to indicate enclave
-                            // sockets
-            pdevice = oe_get_devid_device(OE_DEVID_ENCLAVE_SOCKET);
-            break;
+uint64_t oe_get_default_socket_devid(void)
+{
+    oe_spin_lock(&_default_socket_devid_lock);
+    uint64_t ret = _default_socket_devid;
+    oe_spin_unlock(&_default_socket_devid_lock);
+    return ret;
+}
 
-        default:
-            pdevice = oe_get_devid_device(OE_DEVID_HOST_SOCKET);
-            break;
-    }
-    if ((psock = (*pdevice->ops.socket->socket)(
-             pdevice, domain, type, protocol)) == NULL)
+int oe_socket_d(uint64_t devid, int domain, int type, int protocol)
+{
+    int ret = -1;
+    int sd;
+    oe_device_t* sock = NULL;
+    oe_device_t* device;
+
+    /* Resolve the device id. */
+    if (devid == OE_DEVID_NULL)
     {
-        return -1;
-    }
-    sd = oe_assign_fd_device(psock);
-    if (sd == -1)
-    {
-        // ATTN: release psock here.
-        // Log error here
-        return -1; // erno is already set
+        switch (domain)
+        {
+            case OE_AF_ENCLAVE:
+                devid = OE_DEVID_ENCLAVE_SOCKET;
+                break;
+
+            default:
+                devid = OE_DEVID_HOST_SOCKET;
+                break;
+        }
     }
 
-    return sd;
+    if (!(device = oe_get_devid_device(devid)))
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    if (!device->ops.socket || !device->ops.socket->socket)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    if (!(sock = (*device->ops.socket->socket)(device, domain, type, protocol)))
+    {
+        goto done;
+    }
+
+    if ((sd = oe_assign_fd_device(sock)) == -1)
+    {
+        (*device->ops.socket->base.close)(sock);
+        goto done;
+    }
+
+    ret = sd;
+
+done:
+    return ret;
+}
+
+int oe_socket(int domain, int type, int protocol)
+{
+    uint64_t devid = oe_get_default_socket_devid();
+    return oe_socket_d(devid, domain, type, protocol);
 }
 
 int oe_connect(int sockfd, const struct oe_sockaddr* addr, socklen_t addrlen)

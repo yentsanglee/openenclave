@@ -147,6 +147,10 @@ struct oe_sockaddr_storage
 #include <openenclave/corelibc/sys/bits/sockaddr_storage.h>
 };
 
+void oe_set_default_socket_devid(uint64_t devid);
+
+uint64_t oe_get_default_socket_devid(void);
+
 int oe_socket(int domain, int type, int protocol);
 
 int oe_accept(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen);
