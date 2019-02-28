@@ -2,9 +2,11 @@
 // Licensed under the MIT License.
 
 #include <openenclave/corelibc/sys/socket.h>
+#include <openenclave/corelibc/sys/utsname.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/host_socket.h>
+#include <openenclave/internal/tests.h>
 #include <pthread.h>
 #include <stdio.h>
 #include "../client.h"
@@ -17,6 +19,17 @@ void _initialize(void)
     oe_allocate_devid(OE_DEVID_HOST_SOCKET);
     oe_set_devid_device(OE_DEVID_HOST_SOCKET, oe_socket_get_hostsock());
     oe_set_default_socket_devid(OE_DEVID_HOST_SOCKET);
+
+    struct oe_utsname buf;
+    OE_TEST(oe_uname(&buf) == 0);
+    printf("sysname=%s\n", buf.sysname);
+    printf("nodename=%s\n", buf.nodename);
+    printf("release=%s\n", buf.release);
+    printf("version=%s\n", buf.version);
+    printf("machine=%s\n", buf.machine);
+#ifdef _GNU_SOURCE
+    printf("domainname=%s\n", buf.domainname);
+#endif
 }
 
 void run_enclave_server(uint16_t port)

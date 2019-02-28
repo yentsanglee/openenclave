@@ -27,7 +27,8 @@ elseif (WIN32)
     crypto/bcrypt/rsa.c
     windows/hostepoll.c
     windows/hostthread.c
-    windows/time.c)
+    windows/time.c
+    windows/uname.c)
 else()
   message(FATAL_ERROR "Unknown OS. Only supported OSes are Linux and Windows")
 endif()
