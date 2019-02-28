@@ -206,7 +206,7 @@ long syscall(long number, ...)
 
 long __syscall_ret(unsigned long r)
 {
-    /* Override MUSL __syscall_ret() which raise errno large values of r. */
+    /* Override MUSL __syscall_ret (maps certain return values to errnos). */
     return r;
 }
 

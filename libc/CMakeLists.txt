@@ -60,11 +60,6 @@ else()
 endif()
 
 add_library(oelibc STATIC
-    socket/accept.c
-    socket/bind.c
-    socket/connect.c
-    socket/listen.c
-    socket/shutdown.c
     arc4random.c
     atexit.c
     dladdr.c
@@ -461,10 +456,11 @@ add_library(oelibc STATIC
     ${MUSLSRC}/network/socket.c
     ${MUSLSRC}/network/setsockopt.c
     ${MUSLSRC}/network/getsockopt.c
-    #${MUSLSRC}/network/bind.c
-    #${MUSLSRC}/network/listen.c
-    #${MUSLSRC}/network/accept.c
-    #${MUSLSRC}/network/connect.c
+    ${MUSLSRC}/network/accept.c
+    ${MUSLSRC}/network/bind.c
+    ${MUSLSRC}/network/listen.c
+    ${MUSLSRC}/network/connect.c
+    ${MUSLSRC}/network/shutdown.c
     ${MUSLSRC}/network/send.c
     ${MUSLSRC}/network/sendto.c
     ${MUSLSRC}/network/recv.c
