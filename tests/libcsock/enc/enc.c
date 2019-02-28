@@ -9,6 +9,7 @@
 #include <openenclave/internal/tests.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "../client.h"
 #include "../server.h"
 
@@ -30,6 +31,20 @@ void _initialize(void)
 #ifdef _GNU_SOURCE
     printf("domainname=%s\n", buf.domainname);
 #endif
+
+    {
+        char buf[1024];
+        OE_TEST(gethostname(buf, sizeof(buf)) == 0);
+        printf("HOSTNAME{%s}\n", buf);
+        fflush(stdout);
+    }
+
+    {
+        char buf[1024];
+        OE_TEST(getdomainname(buf, sizeof(buf)) == 0);
+        printf("DOMAINNAME{%s}\n", buf);
+        fflush(stdout);
+    }
 }
 
 void run_enclave_server(uint16_t port)

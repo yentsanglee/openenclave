@@ -27,7 +27,7 @@ void oe_handle_uname(uint64_t arg_in, uint64_t* arg_out)
     /* oe_utsname.nodename */
     GetComputerNameA(out->nodename, sizeof(out->nodename));
 
-    strcpy(out->release, "unknown");
+    strcpy(out->release, "(none)");
     strcpy(out->machine, "x86_64");
 
     /* oe_utsname.version*/
@@ -37,6 +37,8 @@ void oe_handle_uname(uint64_t arg_in, uint64_t* arg_out)
         DWORD minor = (DWORD)(HIBYTE(LOWORD(version)));
         snprintf(out->version, sizeof(out->version), "%d.%d", major, minor);
     }
+
+    strcpy(out->__domainname, "(none)");
 
     if (arg_out)
         *arg_out = 0;
