@@ -125,7 +125,7 @@ int oe_listen(int sockfd, int backlog)
     return (*psock->ops.socket->listen)(psock, backlog);
 }
 
-ssize_t oe_recvmsg(int sockfd, void* buf, size_t len, int flags)
+ssize_t oe_recv(int sockfd, void* buf, size_t len, int flags)
 
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);
