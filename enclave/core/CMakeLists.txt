@@ -102,6 +102,7 @@ add_library(oecore STATIC
     strtoul.c
     syscall.c
     time.c
+    uname.c
     ${PLATFORM_SRC})
 
 # Suppress type conversion warnings introduced by 3rdparty code

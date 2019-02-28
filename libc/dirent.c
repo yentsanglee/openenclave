@@ -4,7 +4,6 @@
 #include <dirent.h>
 #include <openenclave/corelibc/dirent.h>
 #include <openenclave/internal/defs.h>
-#include "check_field.h"
 
 /*
 **==============================================================================
@@ -15,8 +14,8 @@
 */
 
 OE_STATIC_ASSERT(sizeof(struct oe_dirent) == sizeof(struct dirent));
-CHECK_FIELD(struct oe_dirent, struct dirent, d_ino)
-CHECK_FIELD(struct oe_dirent, struct dirent, d_off)
-CHECK_FIELD(struct oe_dirent, struct dirent, d_reclen)
-CHECK_FIELD(struct oe_dirent, struct dirent, d_type)
-CHECK_FIELD(struct oe_dirent, struct dirent, d_name)
+OE_CHECK_FIELD(struct oe_dirent, struct dirent, d_ino)
+OE_CHECK_FIELD(struct oe_dirent, struct dirent, d_off)
+OE_CHECK_FIELD(struct oe_dirent, struct dirent, d_reclen)
+OE_CHECK_FIELD(struct oe_dirent, struct dirent, d_type)
+OE_CHECK_FIELD(struct oe_dirent, struct dirent, d_name)

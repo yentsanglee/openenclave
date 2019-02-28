@@ -427,6 +427,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/misc/basename.c
     ${MUSLSRC}/misc/dirname.c
     ${MUSLSRC}/misc/ioctl.c
+    ${MUSLSRC}/misc/uname.c
     ${MUSLSRC}/mman/mmap.c
     ${MUSLSRC}/mman/munmap.c
     ${MUSLSRC}/multibyte/btowc.c
@@ -705,22 +706,23 @@ add_library(oelibc STATIC
     ${MUSLSRC}/time/time.c
     ${MUSLSRC}/time/__tm_to_secs.c
     ${MUSLSRC}/time/__year_to_secs.c
+    ${MUSLSRC}/unistd/access.c
     ${MUSLSRC}/unistd/chdir.c
+    ${MUSLSRC}/unistd/close.c
+    ${MUSLSRC}/unistd/dup3.c
+    ${MUSLSRC}/unistd/dup.c
     ${MUSLSRC}/unistd/getcwd.c
+    ${MUSLSRC}/unistd/gethostname.c
+    ${MUSLSRC}/unistd/link.c
+    ${MUSLSRC}/unistd/lseek.c
     ${MUSLSRC}/unistd/read.c
     ${MUSLSRC}/unistd/readv.c
-    ${MUSLSRC}/unistd/write.c
-    ${MUSLSRC}/unistd/writev.c
-    ${MUSLSRC}/unistd/access.c
-    ${MUSLSRC}/unistd/lseek.c
-    ${MUSLSRC}/unistd/truncate.c
-    ${MUSLSRC}/unistd/link.c
-    ${MUSLSRC}/unistd/unlink.c
-    ${MUSLSRC}/unistd/close.c
-    ${MUSLSRC}/unistd/dup.c
-    ${MUSLSRC}/unistd/dup3.c
     ${MUSLSRC}/unistd/rmdir.c
     ${MUSLSRC}/unistd/sleep.c
+    ${MUSLSRC}/unistd/truncate.c
+    ${MUSLSRC}/unistd/unlink.c
+    ${MUSLSRC}/unistd/write.c
+    ${MUSLSRC}/unistd/writev.c
     ${PLATFORM_SRC})
 
 maybe_build_using_clangw(oelibc)

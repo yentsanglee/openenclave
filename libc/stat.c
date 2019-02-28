@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include <openenclave/corelibc/sys/stat.h>
+#include <openenclave/internal/defs.h>
 #include <sys/stat.h>
-#include "check_field.h"
 
 /*
 **==============================================================================
@@ -16,16 +16,16 @@
 OE_STATIC_ASSERT(sizeof(struct oe_stat) > 0);
 
 OE_STATIC_ASSERT(sizeof(struct oe_stat) == sizeof(struct stat));
-CHECK_FIELD(struct oe_stat, struct stat, st_dev)
-CHECK_FIELD(struct oe_stat, struct stat, st_ino)
-CHECK_FIELD(struct oe_stat, struct stat, st_nlink)
-CHECK_FIELD(struct oe_stat, struct stat, st_mode)
-CHECK_FIELD(struct oe_stat, struct stat, st_uid)
-CHECK_FIELD(struct oe_stat, struct stat, st_gid)
-CHECK_FIELD(struct oe_stat, struct stat, st_rdev)
-CHECK_FIELD(struct oe_stat, struct stat, st_size)
-CHECK_FIELD(struct oe_stat, struct stat, st_blksize)
-CHECK_FIELD(struct oe_stat, struct stat, st_blocks)
-CHECK_FIELD(struct oe_stat, struct stat, st_atim)
-CHECK_FIELD(struct oe_stat, struct stat, st_mtim)
-CHECK_FIELD(struct oe_stat, struct stat, st_ctim)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_dev)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_ino)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_nlink)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_mode)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_uid)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_gid)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_rdev)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_size)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_blksize)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_blocks)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_atim)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_mtim)
+OE_CHECK_FIELD(struct oe_stat, struct stat, st_ctim)

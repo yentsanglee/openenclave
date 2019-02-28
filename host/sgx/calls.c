@@ -553,6 +553,11 @@ static oe_result_t _handle_ocall(
 
             break;
         }
+        case OE_OCALL_UNAME:
+        {
+            oe_handle_uname(arg_in, arg_out);
+            break;
+        }
 
         default:
         {

@@ -183,26 +183,6 @@ OE_INLINE int oe_remove_secure(const char* pathname)
 #define FILE OE_FILE
 #endif
 
-/* ATTN: porting. Which platform needs these? */
-#if 0
-#define ENOENT 2
-#define ENOMEM 12
-#define EACCES 13
-#define EEXIST 17
-#define EINVAL 22
-#define ERANGE 34
-#endif
-
-/* ATTN: porting. Which platform needs these? */
-#if 0
-#ifndef _FILE_DEFINED
-#define stdin ((void*)0)
-#define stdout ((void*)1)
-#define stderr ((void*)2)
-#define _FILE_DEFINED
-#endif
-#endif
-
 OE_EXTERNC_END
 
 #endif /* _LIBCEX_STDIO_H */

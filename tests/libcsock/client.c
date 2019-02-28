@@ -19,6 +19,12 @@ void run_client(uint16_t port)
     const char quit[] = "quit";
     char buf[1024];
 
+    {
+        OE_TEST(gethostname(buf, sizeof(buf)) == 0);
+        printf("HOSTNAME{%s}\n", buf);
+        fflush(stdout);
+    }
+
     /* Create the client socket. */
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {

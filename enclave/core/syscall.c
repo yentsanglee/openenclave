@@ -11,6 +11,7 @@
 #include <openenclave/corelibc/sys/stat.h>
 #include <openenclave/corelibc/sys/syscall.h>
 #include <openenclave/corelibc/sys/uio.h>
+#include <openenclave/corelibc/sys/utsname.h>
 #include <openenclave/corelibc/unistd.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/print.h>
@@ -371,8 +372,13 @@ static long _syscall(
         {
             int sockfd = (int)arg1;
             int how = (int)arg2;
-
             ret = oe_shutdown(sockfd, how);
+            goto done;
+        }
+        case OE_SYS_uname:
+        {
+            struct oe_utsname* buf = (struct oe_utsname*)arg1;
+            ret = oe_uname(buf);
             goto done;
         }
         default:

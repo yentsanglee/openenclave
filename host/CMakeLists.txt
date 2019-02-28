@@ -18,6 +18,7 @@ if (UNIX)
     linux/hostepoll.c
     linux/hostthread.c
     linux/time.c
+    linux/uname.c
     linux/windows.c)
 elseif (WIN32)
   set(PLATFORM_SRC

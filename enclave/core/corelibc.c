@@ -29,5 +29,6 @@
 #include <openenclave/corelibc/sys/syscall.h>
 #include <openenclave/corelibc/sys/time.h>
 #include <openenclave/corelibc/sys/uio.h>
+#include <openenclave/corelibc/sys/utsname.h>
 #include <openenclave/corelibc/time.h>
 #include <openenclave/corelibc/unistd.h>

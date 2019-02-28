@@ -103,6 +103,7 @@ typedef enum _oe_func
     OE_OCALL_HOSTSOCK,
     OE_OCALL_EPOLL,
     OE_OCALL_HOSTRESOLVER,
+    OE_OCALL_UNAME,
     /* Caution: always add new OCALL function numbers here */
 
     __OE_FUNC_MAX = OE_ENUM_MAX,
