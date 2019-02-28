@@ -39,15 +39,15 @@ void run_client(uint16_t port)
         }
     }
 
-    /* Write/ write "hello" to/from  the server. */
+    /* write/read "hello" to/from  the server. */
     {
-        if (write(sd, hello, sizeof(hello)) != sizeof(hello))
+        if (send(sd, hello, sizeof(hello), 0) != sizeof(hello))
         {
             OE_TEST("write() failed" == NULL);
         }
 
         /* Read "hello" from the server. */
-        if (read(sd, buf, sizeof(buf)) != sizeof(hello))
+        if (recv(sd, buf, sizeof(buf), 0) != sizeof(hello))
         {
             OE_TEST("read() failed" == NULL);
         }

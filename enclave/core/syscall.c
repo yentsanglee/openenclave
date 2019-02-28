@@ -302,6 +302,45 @@ static long _syscall(
             ret = oe_accept(sockfd, addr, addrlen);
             goto done;
         }
+        case OE_SYS_sendto:
+        {
+            int sockfd = (int)arg1;
+            const void* buf = (void*)arg2;
+            size_t len = (size_t)arg3;
+            int flags = (int)arg4;
+            const struct sockaddr* dest_add = (const struct sockaddr*)arg5;
+            socklen_t addrlen = (socklen_t)arg6;
+
+            OE_UNUSED(dest_add);
+            OE_UNUSED(addrlen);
+
+            if (dest_add || addrlen)
+            {
+                oe_errno = EINTR;
+                goto done;
+            }
+
+            ret = oe_send(sockfd, buf, len, flags);
+            goto done;
+        }
+        case OE_SYS_recvfrom:
+        {
+            int sockfd = (int)arg1;
+            void* buf = (void*)arg2;
+            size_t len = (size_t)arg3;
+            int flags = (int)arg4;
+            const struct sockaddr* dest_add = (const struct sockaddr*)arg5;
+            socklen_t addrlen = (socklen_t)arg6;
+
+            if (dest_add || addrlen)
+            {
+                oe_errno = EINTR;
+                goto done;
+            }
+
+            ret = oe_recv(sockfd, buf, len, flags);
+            goto done;
+        }
         default:
         {
             oe_errno = ENOSYS;

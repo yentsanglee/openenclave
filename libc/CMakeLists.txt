@@ -464,6 +464,10 @@ add_library(oelibc STATIC
     #${MUSLSRC}/network/listen.c
     #${MUSLSRC}/network/accept.c
     #${MUSLSRC}/network/connect.c
+    ${MUSLSRC}/network/send.c
+    ${MUSLSRC}/network/sendto.c
+    ${MUSLSRC}/network/recv.c
+    ${MUSLSRC}/network/recvfrom.c
     ${MUSLSRC}/prng/drand48.c
     ${MUSLSRC}/prng/lcong48.c
     ${MUSLSRC}/prng/lrand48.c
