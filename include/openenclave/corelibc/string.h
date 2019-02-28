@@ -111,7 +111,7 @@ char* strtok_r(char* str, const char* delim, char** saveptr)
 
 OE_INLINE char* strdup(const char* s)
 {
-    return oe_strtok_r(s);
+    return oe_strdup(s);
 }
 
 OE_INLINE size_t strspn(const char* s, const char* accept)
