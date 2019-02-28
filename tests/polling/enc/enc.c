@@ -76,12 +76,12 @@ int ecall_run_client(size_t buff_len, char* recv_buff)
 
     memset(recv_buff, '0', buff_len);
     printf("create socket\n");
-    if ((sockfd = oe_socket(OE_AF_INET, OE_SOCK_STREAM, 0)) < 0)
+    if ((sockfd = oe_socket(OE_AF_HOST, OE_SOCK_STREAM, 0)) < 0)
     {
         printf("\n Error : Could not create socket \n");
         return OE_FAILURE;
     }
-    serv_addr.sin_family = OE_AF_INET;
+    serv_addr.sin_family = OE_AF_HOST;
     serv_addr.sin_addr.s_addr = oe_htonl(OE_INADDR_LOOPBACK);
     serv_addr.sin_port = oe_htons(1642);
 

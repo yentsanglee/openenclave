@@ -46,9 +46,15 @@ int oe_socket_d(uint64_t devid, int domain, int type, int protocol)
                 devid = OE_DEVID_ENCLAVE_SOCKET;
                 break;
 
-            default:
+            case OE_AF_HOST:
                 devid = OE_DEVID_HOST_SOCKET;
                 break;
+
+            default:
+            {
+                oe_errno = EINVAL;
+                goto done;
+            }
         }
     }
 

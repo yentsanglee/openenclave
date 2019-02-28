@@ -16,6 +16,7 @@
 #include <openenclave/internal/hostbatch.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
+#include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/internal/print.h>
 #include "../common/hostsockargs.h"
 
@@ -174,6 +175,9 @@ static oe_device_t* _hostsock_socket(
         args->op = OE_HOSTSOCK_OP_SOCKET;
         args->u.socket.ret = -1;
 
+        if (domain == OE_AF_HOST)
+            domain = OE_AF_INET;
+
         args->u.socket.domain = domain;
         args->u.socket.type = type;
         args->u.socket.protocol = protocol;
@@ -216,6 +220,12 @@ done:
     return ret;
 }
 
+static void _fix_address_family(struct oe_sockaddr* addr)
+{
+    if (addr->sa_family == OE_AF_HOST)
+        addr->sa_family = OE_AF_INET;
+}
+
 static int _hostsock_connect(
     oe_device_t* sock_,
     const struct oe_sockaddr* addr,
@@ -248,6 +258,7 @@ static int _hostsock_connect(
         args->u.connect.host_fd = sock->host_fd;
         args->u.connect.addrlen = addrlen;
         memcpy(args->buf, addr, addrlen);
+        _fix_address_family((struct oe_sockaddr*)args->buf);
     }
 
     /* Call */
@@ -301,12 +312,14 @@ static int _hostsock_accept(
 
         args->op = OE_HOSTSOCK_OP_ACCEPT;
         args->u.accept.ret = -1;
-        args->u.accept.host_fd =
-            sock->host_fd; // The host_id going in is the listend fd
+        /* The host_id going in is the listend fd */
+        args->u.accept.host_fd = sock->host_fd;
+
         if (addrlen != NULL)
         {
             args->u.accept.addrlen = *addrlen;
             memcpy(args->buf, addr, *addrlen);
+            _fix_address_family((struct oe_sockaddr*)args->buf);
         }
         else
         {
@@ -375,6 +388,7 @@ static int _hostsock_bind(
         args->u.bind.host_fd = sock->host_fd;
         args->u.bind.addrlen = addrlen;
         memcpy(args->buf, addr, addrlen);
+        _fix_address_family((struct oe_sockaddr*)args->buf);
     }
 
     /* Call */
@@ -779,6 +793,7 @@ static int _hostsock_getpeername(
         args->u.getpeername.host_fd = sock->host_fd;
         args->u.getpeername.addrlen = *addrlen;
         memcpy(args->buf, addr, *addrlen);
+        _fix_address_family((struct oe_sockaddr*)args->buf);
     }
 
     /* Call */
@@ -838,6 +853,7 @@ static int _hostsock_getsockname(
         args->u.getsockname.host_fd = sock->host_fd;
         args->u.getsockname.addrlen = *addrlen;
         memcpy(args->buf, addr, *addrlen);
+        _fix_address_family((struct oe_sockaddr*)args->buf);
     }
 
     /* Call */

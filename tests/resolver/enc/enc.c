@@ -37,7 +37,7 @@ int ecall_getnameinfo(char* buffer, size_t bufflen)
     char serv[256] = {0};
 
     struct oe_sockaddr_in addr = {
-        .sin_family = OE_AF_INET,
+        .sin_family = OE_AF_HOST,
         .sin_port = 22,
         .sin_addr.s_addr = oe_htonl(OE_INADDR_LOOPBACK)};
 

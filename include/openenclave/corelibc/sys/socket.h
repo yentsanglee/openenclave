@@ -59,7 +59,8 @@ OE_EXTERNC_BEGIN
 #define OE_PF_QIPCRTR 42       /* Qualcomm IPC Router.  */
 #define OE_PF_SMC 43           /* SMC sockets.  */
 #define OE_PF_ENCLAVE 50       /* secure sockets */
-#define OE_PF_MAX 50           /* For now..  */
+#define OE_PF_HOST 51          /* non-secure host sockets */
+#define OE_PF_MAX 51           /* For now..  */
 
 /* Address families.  */
 #define OE_AF_UNSPEC OE_PF_UNSPEC
@@ -110,6 +111,7 @@ OE_EXTERNC_BEGIN
 #define OE_AF_QIPCRTR OE_PF_QIPCRTR
 #define OE_AF_SMC OE_PF_SMC
 #define OE_AF_ENCLAVE OE_PF_ENCLAVE
+#define OE_AF_HOST OE_PF_HOST
 #define OE_AF_MAX OE_PF_MAX
 
 /* oe_setsockopt()/oe_getsockopt() options. */
@@ -238,7 +240,6 @@ int oe_getsockname(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen);
 #define PF_KCM OE_PF_KCM
 #define PF_QIPCRTR OE_PF_QIPCRTR
 #define PF_SMC OE_PF_SMC
-#define PF_ENCLAVE OE_PF_ENCLAVE
 #define PF_MAX OE_PF_MAX
 #define AF_UNSPEC OE_AF_UNSPEC
 #define AF_LOCAL OE_AF_LOCAL
@@ -287,7 +288,6 @@ int oe_getsockname(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen);
 #define AF_KCM OE_AF_KCM
 #define AF_QIPCRTR OE_AF_QIPCRTR
 #define AF_SMC OE_AF_SMC
-#define AF_ENCLAVE OE_AF_ENCLAVE
 #define AF_MAX OE_AF_MAX
 #define SOL_SOCKET OE_SOL_SOCKET
 #define SO_DEBUG OE_SO_DEBUG

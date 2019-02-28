@@ -25,7 +25,7 @@ void oe_epoll_install_hostepoll(void);
 void* host_server_thread(void* arg)
 {
     const static char TESTDATA[] = "This is TEST DATA\n";
-    int listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    int listenfd = socket(AF_HOST, SOCK_STREAM, 0);
     int connfd = 0;
     struct sockaddr_in serv_addr = {0};
 
@@ -39,7 +39,7 @@ void* host_server_thread(void* arg)
     {
         printf("setsockopt failed errno = %d\n", errno);
     }
-    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_family = AF_HOST;
     serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     serv_addr.sin_port = htons(1642);
 

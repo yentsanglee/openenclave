@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/host_socket.h>
@@ -15,6 +16,7 @@ void _initialize(void)
 {
     oe_allocate_devid(OE_DEVID_HOST_SOCKET);
     oe_set_devid_device(OE_DEVID_HOST_SOCKET, oe_socket_get_hostsock());
+    oe_set_default_socket_devid(OE_DEVID_HOST_SOCKET);
 }
 
 void run_enclave_server(uint16_t port)
