@@ -116,7 +116,7 @@ static _epoll_event_data* add_event_data(
         pepoll->max_event_data = EVENT_DATA_LIST_BUMP;
         pepoll->num_event_data = 0;
         pepoll->pevent_data =
-            oe_calloc(sizeof(_epoll_event_data) * pepoll->max_event_data, 0);
+            oe_calloc(1, sizeof(_epoll_event_data) * pepoll->max_event_data);
         if (pepoll->pevent_data == NULL)
         {
             return NULL;

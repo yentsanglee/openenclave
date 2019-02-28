@@ -7,6 +7,12 @@
 #pragma once
 #include <openenclave/internal/device.h>
 
+#ifdef __x86_64__
+#define EPOLL_PACKED __attribute__((packed))
+#else
+#define EPOLL_PACKED
+#endif
+
 enum OE_EPOLL_EVENTS
 {
     OE_EPOLLIN = 0x001,
@@ -31,10 +37,18 @@ oe_device_t* oe_epoll_get_epoll(void);
 
 struct oe_device_notifications
 {
-    uint32_t epoll_fd;   // Enclave fd for the
-    uint32_t list_idx;   // On the host side we set this into the event data
     uint32_t event_mask; // oe_epoll_event.event
-};
+    union {
+        uint64_t data;
+        struct
+        {
+            uint32_t epoll_fd; // Enclave fd for the
+            uint32_t
+                list_idx; // On the host side we set this into the event data
+        };
+    };
+} EPOLL_PACKED;
+
 struct oe_device_notification_args
 {
     uint64_t num_notifications;
@@ -66,7 +80,7 @@ struct oe_epoll_event
 {
     uint32_t events;      /* Epoll events */
     oe_epoll_data_t data; /* User data variable */
-};
+} EPOLL_PACKED;
 
 #ifdef cplusplus
 extern "C"
