@@ -188,9 +188,7 @@ int oe_shutdown(int sockfd, int how)
     return (*psock->ops.socket->shutdown)(psock, how);
 }
 
-/* ATTN:IO: implement in libc. */
 int oe_getsockname(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen)
-
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);
 
@@ -210,9 +208,7 @@ int oe_getsockname(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen)
     return (*psock->ops.socket->getsockname)(psock, addr, addrlen);
 }
 
-/* ATTN:IO: implement in libc. */
 int oe_getpeername(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen)
-
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);
 
@@ -232,14 +228,12 @@ int oe_getpeername(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen)
     return (*psock->ops.socket->getsockname)(psock, addr, addrlen);
 }
 
-/* ATTN:IO: implement in libc. */
 int oe_getsockopt(
     int sockfd,
     int level,
     int optname,
     void* optval,
     socklen_t* optlen)
-
 {
     oe_device_t* psock = oe_get_fd_device(sockfd);
 

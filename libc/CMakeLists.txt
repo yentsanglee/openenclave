@@ -449,6 +449,9 @@ add_library(oelibc STATIC
     ${MUSLSRC}/multibyte/wcstombs.c
     ${MUSLSRC}/multibyte/wctob.c
     ${MUSLSRC}/multibyte/wctomb.c
+    ${MUSLSRC}/network/getpeername.c
+    ${MUSLSRC}/network/getsockname.c
+    ${MUSLSRC}/network/getsockopt.c
     ${MUSLSRC}/network/ntohl.c
     ${MUSLSRC}/network/ntohs.c
     ${MUSLSRC}/network/htonl.c

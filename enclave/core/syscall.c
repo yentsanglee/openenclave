@@ -289,6 +289,22 @@ static long _syscall(
             ret = oe_getsockopt(sockfd, level, optname, optval, optlen);
             goto done;
         }
+        case OE_SYS_getpeername:
+        {
+            int sockfd = (int)arg1;
+            struct sockaddr* addr = (struct sockaddr*)arg2;
+            socklen_t* addrlen = (socklen_t*)arg3;
+            ret = oe_getpeername(sockfd, (struct oe_sockaddr*)addr, addrlen);
+            goto done;
+        }
+        case OE_SYS_getsockname:
+        {
+            int sockfd = (int)arg1;
+            struct sockaddr* addr = (struct sockaddr*)arg2;
+            socklen_t* addrlen = (socklen_t*)arg3;
+            ret = oe_getsockname(sockfd, (struct oe_sockaddr*)addr, addrlen);
+            goto done;
+        }
         case OE_SYS_bind:
         {
             int sockfd = (int)arg1;
@@ -326,7 +342,7 @@ static long _syscall(
 
             if (dest_add || addrlen)
             {
-                oe_errno = EINTR;
+                oe_errno = EINVAL;
                 goto done;
             }
 
@@ -344,7 +360,7 @@ static long _syscall(
 
             if (dest_add || addrlen)
             {
-                oe_errno = EINTR;
+                oe_errno = EINVAL;
                 goto done;
             }
 
