@@ -74,14 +74,13 @@ add_library(oecore STATIC
     __stack_chk_fail.c
     array.c
     assert.c
-    chdir.c
     ctype.c
+    cwd.c
     device.c
     epoll.c
     eventfd.c
     fd.c
     fs.c
-    getcwd.c
     gmtime.c
     hexdump.c
     intstr.c
