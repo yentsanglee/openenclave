@@ -59,11 +59,7 @@ int oe_chdir(const char* path);
 
 int oe_close(int fd);
 
-/* ATTN:IO: implement */
 int oe_gethostname(char* name, size_t len);
-
-/* ATTN:IO: implement */
-int oe_gethostname_d(uint64_t devid, char* name, size_t len);
 
 #if defined(OE_NEED_STDC_NAMES)
 

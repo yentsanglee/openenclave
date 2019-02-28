@@ -33,123 +33,6 @@ OE_INLINE int oe_ioctlsocket(int fd, unsigned long request, ...)
     return r;
 }
 
-OE_INLINE int oe_getaddrinfo_insecure(
-    _In_z_ const char* node,
-    _In_z_ const char* service,
-    _In_ const struct addrinfo* hints,
-    _Out_ struct addrinfo** res)
-{
-    return oe_getaddrinfo_d(
-        OE_DEVID_HOST_SOCKET,
-        node,
-        service,
-        (const struct oe_addrinfo*)hints,
-        (struct oe_addrinfo**)res);
-}
-
-OE_INLINE int oe_getaddrinfo_secure_hardware(
-    _In_z_ const char* node,
-    _In_z_ const char* service,
-    _In_ const struct addrinfo* hints,
-    _Out_ struct addrinfo** res)
-{
-    return oe_getaddrinfo_d(
-        OE_DEVID_HARDWARE_SECURE_SOCKET,
-        node,
-        service,
-        (const struct oe_addrinfo*)hints,
-        (struct oe_addrinfo**)res);
-}
-
-OE_INLINE int oe_getaddrinfo_default(
-    _In_z_ const char* node,
-    _In_z_ const char* service,
-    _In_ const struct addrinfo* hints,
-    _Out_ struct addrinfo** res)
-{
-#if defined(OE_SECURE_POSIX_NETWORK_API)
-    return oe_getaddrinfo_secure_hardware(node, service, hints, res);
-#else
-    return oe_getaddrinfo_insecure(node, service, hints, res);
-#endif
-}
-
-OE_INLINE int oe_gethostname_insecure(
-    _Out_writes_(len) char* name,
-    _In_ size_t len)
-{
-    return oe_gethostname_d(OE_DEVID_HOST_SOCKET, name, len);
-}
-
-OE_INLINE int oe_gethostname_secure_hardware(
-    _Out_writes_(len) char* name,
-    _In_ size_t len)
-{
-    return oe_gethostname_d(OE_DEVID_HARDWARE_SECURE_SOCKET, name, len);
-}
-
-OE_INLINE int oe_gethostname_default(
-    _Out_writes_(len) char* name,
-    _In_ size_t len)
-{
-#if defined(OE_SECURE_POSIX_NETWORK_API)
-    return oe_gethostname_secure_hardware(name, len);
-#else
-    return oe_gethostname_insecure(name, len);
-#endif
-}
-
-OE_INLINE int oe_getnameinfo_insecure(
-    _In_ const struct oe_sockaddr* sa,
-    _In_ socklen_t salen,
-    _Out_writes_opt_z_(hostlen) char* host,
-    _In_ socklen_t hostlen,
-    _Out_writes_opt_z_(servlen) char* serv,
-    _In_ socklen_t servlen,
-    _In_ int flags)
-{
-    return oe_getnameinfo_d(
-        OE_DEVID_HOST_SOCKET, sa, salen, host, hostlen, serv, servlen, flags);
-}
-
-OE_INLINE int oe_getnameinfo_secure_hardware(
-    _In_ const struct oe_sockaddr* sa,
-    _In_ socklen_t salen,
-    _Out_writes_opt_z_(hostlen) char* host,
-    _In_ socklen_t hostlen,
-    _Out_writes_opt_z_(servlen) char* serv,
-    _In_ socklen_t servlen,
-    _In_ int flags)
-{
-    return oe_getnameinfo_d(
-        OE_DEVID_HARDWARE_SECURE_SOCKET,
-        sa,
-        salen,
-        host,
-        hostlen,
-        serv,
-        servlen,
-        flags);
-}
-
-OE_INLINE int oe_getnameinfo_default(
-    _In_ const struct oe_sockaddr* sa,
-    _In_ socklen_t salen,
-    _Out_writes_opt_z_(hostlen) char* host,
-    _In_ socklen_t hostlen,
-    _Out_writes_opt_z_(servlen) char* serv,
-    _In_ socklen_t servlen,
-    _In_ int flags)
-{
-#ifdef OE_SECURE_POSIX_NETWORK_API
-    return oe_getnameinfo_secure_hardware(
-        sa, salen, host, hostlen, serv, servlen, flags);
-#else
-    return oe_getnameinfo_insecure(
-        sa, salen, host, hostlen, serv, servlen, flags);
-#endif
-}
-
 OE_INLINE int oe_socket_insecure(
     _In_ int domain,
     _In_ int type,
@@ -179,9 +62,6 @@ OE_INLINE int oe_socket_default(
 }
 
 #if !defined(OE_NO_POSIX_SOCKET_API)
-#define getaddrinfo oe_getaddrinfo_default
-#define getnameinfo oe_getnameinfo_default
-#define gethostname oe_gethostname_default
 #define socket oe_socket_default
 #endif
 

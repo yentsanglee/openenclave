@@ -57,28 +57,9 @@ int oe_getaddrinfo(
     const struct oe_addrinfo* hints,
     struct oe_addrinfo** res);
 
-/* ATTN:IO: implement. */
-int oe_getaddrinfo_d(
-    uint64_t devid,
-    const char* node,
-    const char* service,
-    const struct oe_addrinfo* hints,
-    struct oe_addrinfo** res);
-
 void oe_freeaddrinfo(struct oe_addrinfo* res);
 
 int oe_getnameinfo(
-    const struct oe_sockaddr* sa,
-    socklen_t salen,
-    char* host,
-    socklen_t hostlen,
-    char* serv,
-    socklen_t servlen,
-    int flags);
-
-/* ATTN:IO: implement */
-int oe_getnameinfo_d(
-    uint64_t devid,
     const struct oe_sockaddr* sa,
     socklen_t salen,
     char* host,
