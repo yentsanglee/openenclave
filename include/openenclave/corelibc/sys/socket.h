@@ -390,7 +390,7 @@ OE_INLINE int getsockname(
     struct oe_sockaddr* addr,
     socklen_t* addrlen)
 {
-    return oe_getsockname(sockfd, (struct sockaddr*)addr, addrlen);
+    return oe_getsockname(sockfd, (struct oe_sockaddr*)addr, addrlen);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

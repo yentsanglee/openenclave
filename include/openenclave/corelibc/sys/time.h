@@ -15,24 +15,12 @@ struct oe_timeval
     suseconds_t tv_usec; /* microseconds */
 };
 
-struct oe_timespec
-{
-    time_t tv_sec; /* seconds */
-    long tv_nsec;  /* nanoseconds */
-};
-
 #if defined(OE_NEED_STDC_NAMES)
 
 struct timeval
 {
     time_t tv_sec;       /* seconds */
     suseconds_t tv_usec; /* microseconds */
-};
-
-struct timespec
-{
-    time_t tv_sec; /* seconds */
-    long tv_nsec;  /* nanoseconds */
 };
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

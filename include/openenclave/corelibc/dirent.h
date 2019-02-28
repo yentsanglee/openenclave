@@ -47,31 +47,31 @@ int oe_getdents(unsigned int fd, struct oe_dirent* dirp, unsigned int count);
 #if defined(OE_NEED_STDC_NAMES)
 
 #define DT_UNKNOWN OE_DT_UNKNOWN
-#define DT_UNKNOWN OE_DT_FIFO
-#define DT_UNKNOWN OE_DT_CHR
-#define DT_UNKNOWN OE_DT_DIR
-#define DT_UNKNOWN OE_DT_BLK
-#define DT_UNKNOWN OE_DT_REG
-#define DT_UNKNOWN OE_DT_LNK
-#define DT_UNKNOWN OE_DT_SOCK
-#define DT_UNKNOWN OE_DT_WHT
+#define DT_FIFO OE_DT_FIFO
+#define DT_CHR OE_DT_CHR
+#define DT_DIR OE_DT_DIR
+#define DT_BLK OE_DT_BLK
+#define DT_REG OE_DT_REG
+#define DT_LNK OE_DT_LNK
+#define DT_SOCK OE_DT_SOCK
+#define DT_WHT OE_DT_WHT
 #define dirent oe_dirent
 
 typedef OE_DIR DIR;
 
-OE_INLINE DIR* opendir(const char* pathname);
+OE_INLINE DIR* opendir(const char* pathname)
 {
-    return (DIR*)oe_opendir(0, pathname);
+    return (DIR*)oe_opendir(pathname);
 }
 
-OE_INLINE struct dirent* readdir(DIR* dir);
+OE_INLINE struct dirent* readdir(DIR* dir)
 {
     return (struct dirent*)oe_readdir((OE_DIR*)dir);
 }
 
-OE_INLINE int rewinddir(DIR* dir)
+OE_INLINE void rewinddir(DIR* dir)
 {
-    return oe_rewinddir((OE_DIR*)dir);
+    oe_rewinddir((OE_DIR*)dir);
 }
 
 OE_INLINE int closedir(DIR* dir)

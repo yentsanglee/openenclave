@@ -114,14 +114,14 @@ struct stat
 #include <openenclave/corelibc/bits/struct_stat.h>
 };
 
-OE_INLINE int stat(const char* pathname, struct oe_stat* buf)
+OE_INLINE int stat(const char* pathname, struct stat* buf)
 {
-    return oe_stat(0, (struct stat*)buf);
+    return oe_stat(pathname, (struct oe_stat*)buf);
 }
 
 OE_INLINE int mkdir(const char* pathname, mode_t mode)
 {
-    return oe_mkdir(0, pathname, mode);
+    return oe_mkdir(pathname, mode);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

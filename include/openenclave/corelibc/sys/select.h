@@ -6,8 +6,8 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/sys/time.h>
 #include <openenclave/corelibc/time.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 OE_EXTERNC_BEGIN
@@ -16,10 +16,10 @@ typedef struct _oe_fd_set oe_fd_set;
 
 int oe_select(
     int nfds,
-    fd_set* readfds,
-    fd_set* writefds,
-    fd_set* exceptfds,
-    struct timeval* timeout);
+    oe_fd_set* readfds,
+    oe_fd_set* writefds,
+    oe_fd_set* exceptfds,
+    struct oe_timeval* timeout);
 
 void OE_FD_CLR(int fd, oe_fd_set* set);
 

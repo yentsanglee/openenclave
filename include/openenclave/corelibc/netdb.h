@@ -102,10 +102,10 @@ OE_INLINE int getaddrinfo(
     struct addrinfo** res)
 {
     return oe_getaddrinfo(
-        hode,
+        node,
         service,
         (const struct oe_addrinfo*)hints,
-        (struct oe_addrinfo*)res);
+        (struct oe_addrinfo**)res);
 }
 
 OE_INLINE void freeaddrinfo(struct addrinfo* res)
@@ -120,7 +120,7 @@ OE_INLINE int getnameinfo(
     socklen_t hostlen,
     char* serv,
     socklen_t servlen,
-    int flags);
+    int flags)
 {
     return oe_getnameinfo(
         (const struct oe_sockaddr*)sa,

@@ -66,7 +66,7 @@ int oe_open_d(uint64_t devid, const char* pathname, int flags, mode_t mode);
 
 OE_INLINE int open(const char* pathname, int flags, mode_t mode)
 {
-    return oe_open(0, pathname, flags, mode);
+    return oe_open(pathname, flags, mode);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

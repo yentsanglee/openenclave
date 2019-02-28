@@ -74,6 +74,7 @@ add_library(oecore STATIC
     __stack_chk_fail.c
     array.c
     assert.c
+    corelibc.c
     ctype.c
     cwd.c
     device.c
