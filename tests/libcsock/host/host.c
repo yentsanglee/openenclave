@@ -11,7 +11,7 @@
 #include "../server.h"
 #include "libcsock_u.h"
 
-static const uint16_t PORT = 12346;
+static const uint16_t PORT = 12347;
 static oe_enclave_t* _enclave;
 
 static void* _run_host_client(void* arg)

@@ -204,6 +204,12 @@ long syscall(long number, ...)
     return ret;
 }
 
+long __syscall_ret(unsigned long r)
+{
+    /* Override MUSL __syscall_ret() which raise errno large values of r. */
+    return r;
+}
+
 void oe_register_syscall_hook(oe_syscall_hook_t hook)
 {
     oe_spin_lock(&_lock);

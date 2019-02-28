@@ -279,6 +279,16 @@ static long _syscall(
             ret = oe_setsockopt(sockfd, level, optname, optval, optlen);
             goto done;
         }
+        case OE_SYS_getsockopt:
+        {
+            int sockfd = (int)arg1;
+            int level = (int)arg2;
+            int optname = (int)arg3;
+            void* optval = (void*)arg4;
+            socklen_t* optlen = (socklen_t*)arg5;
+            ret = oe_getsockopt(sockfd, level, optname, optval, optlen);
+            goto done;
+        }
         case OE_SYS_bind:
         {
             int sockfd = (int)arg1;
@@ -339,6 +349,14 @@ static long _syscall(
             }
 
             ret = oe_recv(sockfd, buf, len, flags);
+            goto done;
+        }
+        case OE_SYS_shutdown:
+        {
+            int sockfd = (int)arg1;
+            int how = (int)arg2;
+
+            ret = oe_shutdown(sockfd, how);
             goto done;
         }
         default:

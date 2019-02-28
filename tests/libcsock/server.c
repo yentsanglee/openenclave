@@ -50,6 +50,8 @@ void run_server(uint16_t port)
 
         if (bind(listen_sd, (struct sockaddr*)&addr, sizeof(addr)) != 0)
         {
+            int tmp = errno;
+            printf("bind failed: %d\n", tmp);
             OE_TEST("bind() failed" == NULL);
         }
 

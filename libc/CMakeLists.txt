@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
+## Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
 # Build the C library, using local sources and sources from musl.
@@ -64,6 +64,7 @@ add_library(oelibc STATIC
     socket/bind.c
     socket/connect.c
     socket/listen.c
+    socket/shutdown.c
     arc4random.c
     atexit.c
     dladdr.c
@@ -200,7 +201,6 @@ add_library(oelibc STATIC
     ${MUSLSRC}/internal/intscan.c
     ${MUSLSRC}/internal/libc.c
     ${MUSLSRC}/internal/shgetc.c
-    ${MUSLSRC}/internal/syscall_ret.c
     ${MUSLSRC}/legacy/getpagesize.c
     ${MUSLSRC}/locale/bind_textdomain_codeset.c
     ${MUSLSRC}/locale/catclose.c
@@ -460,6 +460,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/network/htons.c
     ${MUSLSRC}/network/socket.c
     ${MUSLSRC}/network/setsockopt.c
+    ${MUSLSRC}/network/getsockopt.c
     #${MUSLSRC}/network/bind.c
     #${MUSLSRC}/network/listen.c
     #${MUSLSRC}/network/accept.c
