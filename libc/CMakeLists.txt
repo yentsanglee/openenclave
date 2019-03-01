@@ -71,6 +71,7 @@ add_library(oelibc STATIC
     malloc.c
     pthread.c
     sched_yield.c
+    select.c
     stdlib.c
     strerror.c
     sysconf.c
