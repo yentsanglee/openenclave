@@ -12,7 +12,14 @@
 
 OE_EXTERNC_BEGIN
 
-typedef struct _oe_fd_set oe_fd_set;
+#define FD_SETSIZE 1024
+
+typedef unsigned long fd_mask;
+
+typedef struct
+{
+    unsigned long fds_bits[FD_SETSIZE / 8 / sizeof(long)];
+} oe_fd_set;
 
 int oe_select(
     int nfds,

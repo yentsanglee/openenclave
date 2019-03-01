@@ -79,6 +79,7 @@ add_library(oecore STATIC
     cwd.c
     device.c
     epoll.c
+    select.c
     eventfd.c
     fd.c
     fs.c
