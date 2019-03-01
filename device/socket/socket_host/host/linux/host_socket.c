@@ -4,13 +4,13 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <openenclave/internal/host_socket.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "../../common/hostsockargs.h"
-#include <openenclave/internal/host_socket.h>
 
 void oe_handle_hostsock_ocall(void* args_)
 {

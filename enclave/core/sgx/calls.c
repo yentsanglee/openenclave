@@ -12,6 +12,7 @@
 #include <openenclave/internal/fault.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/globals.h>
+#include <openenclave/internal/host_socket.h>
 #include <openenclave/internal/jump.h>
 #include <openenclave/internal/malloc.h>
 #include <openenclave/internal/print.h>
@@ -20,7 +21,6 @@
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/trace.h>
 #include <openenclave/internal/utils.h>
-#include <openenclave/internal/host_socket.h>
 #include "../../sgx/report.h"
 #include "asmdefs.h"
 #include "atexit.h"
