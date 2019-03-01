@@ -52,8 +52,16 @@ typedef uint64_t ino_t;
 typedef uint32_t uid_t;
 typedef uint32_t gid_t;
 typedef uint64_t dev_t;
+#if !defined(__aarch64__)
 typedef uint64_t nlink_t;
 typedef int64_t blksize_t;
+#else
+typedef uint32_t nlink_t;
+typedef int32_t blksize_t;
+typedef int64_t blkcnt64_t;
+typedef int64_t off64_t;
+typedef uint64_t ino64_t;
+#endif
 typedef int64_t blkcnt_t;
 typedef int64_t time_t;
 typedef int64_t suseconds_t;
