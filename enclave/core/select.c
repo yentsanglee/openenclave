@@ -7,6 +7,8 @@
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/print.h>
 
+void* memset(void* dst, int value, size_t num);
+
 void _set_to_fd_list(
     oe_fd_set* set,
     uint32_t flags,
@@ -29,10 +31,25 @@ void _set_to_fd_list(
                 uint32_t fd = (idx << 5) + bitpos;
                 if (fd_idx < fdlist_max)
                 {
-                    fd_list[fd_idx] = (int)fd;
+                    for (fd_idx = 0; fd_idx < fdlist_max; fd_idx++)
+                    {
+                        if ((fd_list[fd_idx] == (int)fd) ||
+                            (fd_list[fd_idx] == (int)0xffffffff))
+                        {
+                            // If the fd is in the list, break
+                            // if the fdlist is empty here, break
+                            break;
+                        }
+                    }
+
+                    if (fd_list[fd_idx] == (int)0xffffffff)
+                    {
+                        fd_list[fd_idx] = (int)fd;
+                    }
                     fd_flags[fd] |= flags;
                 }
             }
+            bitmask <<= 1;
         }
     }
 }
@@ -67,7 +84,7 @@ int oe_select(
     int i = 0;
     int epoll_fd = -1;
     int ret = -1;
-    int ret_fds = 0;
+    int ret_fds = -1;
     struct oe_epoll_event rtn_ev[FD_SETSIZE] = {{0}};
     int timeout_ms = -1;
 
@@ -77,26 +94,37 @@ int oe_select(
         timeout_ms += timeout->tv_usec / 1000;
     }
 
+    memset(fd_list, 0xff, sizeof(uint32_t) * (size_t)(nfds + 1));
+
     _set_to_fd_list(
         readfds,
         (OE_EPOLLIN | OE_EPOLLRDNORM | OE_EPOLLRDBAND),
-        1024,
+        nfds,
         fd_list,
         fd_flags);
     _set_to_fd_list(
         writefds,
         (OE_EPOLLOUT | OE_EPOLLWRNORM | OE_EPOLLWRBAND),
-        1024,
+        nfds,
         fd_list,
         fd_flags);
     _set_to_fd_list(
         exceptfds,
         (OE_EPOLLERR | OE_EPOLLHUP | OE_EPOLLRDHUP | OE_EPOLLWAKEUP),
-        1024,
+        nfds,
         fd_list,
         fd_flags);
-
+    int j = 0;
+    for (; j < nfds; j++)
+    {
+        oe_printf("fd[%d] = %d\n", j, fd_list[j]);
+    }
     epoll_fd = oe_epoll_create1(0);
+    if (epoll_fd < 0)
+    {
+        return epoll_fd;
+    }
+
     for (i = 0; i < nfds; i++)
     {
         struct oe_epoll_event ev = {
@@ -107,11 +135,15 @@ int oe_select(
         ret = oe_epoll_ctl(epoll_fd, OE_EPOLL_CTL_ADD, fd_list[i], &ev);
         if (ret < 0)
         {
-            oe_errno = EBADF;
-            return -1;
+            goto done;
         }
     }
+
     ret_fds = oe_epoll_wait(epoll_fd, rtn_ev, FD_SETSIZE, timeout_ms);
+    if (ret_fds < 0)
+    {
+        goto done;
+    }
 
     OE_FD_ZERO(readfds);
     OE_FD_ZERO(writefds);
@@ -132,7 +164,8 @@ int oe_select(
         rtn_ev,
         (OE_EPOLLERR | OE_EPOLLHUP | OE_EPOLLRDHUP | OE_EPOLLWAKEUP),
         exceptfds);
-
+done:
+    oe_close(epoll_fd);
     return ret_fds;
 }
 

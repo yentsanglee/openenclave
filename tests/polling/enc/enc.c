@@ -7,6 +7,7 @@
 // enclave.h must come before socket.h
 #include <openenclave/corelibc/arpa/inet.h>
 #include <openenclave/corelibc/netinet/in.h>
+#include <openenclave/corelibc/sys/select.h>
 #include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/epoll.h>
@@ -49,7 +50,7 @@ const char* print_file_success(int numfds, int* fdlist)
 /* This client connects to an echo server, sends a text message,
  * and outputs the text reply.
  */
-int ecall_run_client(size_t buff_len, char* recv_buff)
+int ecall_epoll_test(size_t buff_len, char* recv_buff)
 {
     int sockfd = 0;
     int file_fd = 0;
@@ -59,19 +60,14 @@ int ecall_run_client(size_t buff_len, char* recv_buff)
     struct oe_epoll_event events[MAX_EVENTS] = {{0}};
     int epoll_fd = oe_epoll_create1(0);
 
+    printf("--------------- epoll -------------\n");
     if (epoll_fd == -1)
     {
         printf("Failed to create epoll file descriptor\n");
         return OE_FAILURE;
     }
 
-    if (epoll_fd == -1)
-    {
-        printf("Failed to create epoll file descriptor\n");
-        return OE_FAILURE;
-    }
-
-    memset(recv_buff, '0', buff_len);
+    memset(recv_buff, 0, buff_len);
     printf("create socket\n");
     if ((sockfd = oe_socket(OE_AF_HOST, OE_SOCK_STREAM, 0)) < 0)
     {
@@ -158,8 +154,113 @@ int ecall_run_client(size_t buff_len, char* recv_buff)
 
     } while (nfds >= 0);
 
-    // oe_close(sockfd);
+    oe_close(sockfd);
     // oe_close(epoll_fd);
+    oe_sleep(3);
+
+    printf("--------------- epoll done -------------\n");
+    return OE_OK;
+}
+
+int ecall_select_test(size_t buff_len, char* recv_buff)
+{
+    int sockfd = 0;
+    int file_fd = 0;
+    struct oe_sockaddr_in serv_addr = {0};
+    oe_fd_set readfds;
+    oe_fd_set writefds;
+    oe_fd_set exceptfds;
+    struct oe_timeval timeout = {0};
+
+    OE_FD_ZERO(&readfds);
+    OE_FD_ZERO(&writefds);
+    OE_FD_ZERO(&exceptfds);
+
+    printf("--------------- select -------------\n");
+    memset(recv_buff, 0, buff_len);
+    printf("create socket\n");
+    if ((sockfd = oe_socket(OE_AF_HOST, OE_SOCK_STREAM, 0)) < 0)
+    {
+        printf("\n Error : Could not create socket \n");
+        return OE_FAILURE;
+    }
+    serv_addr.sin_family = OE_AF_HOST;
+    serv_addr.sin_addr.s_addr = oe_htonl(OE_INADDR_LOOPBACK);
+    serv_addr.sin_port = oe_htons(1642);
+
+    printf("socket fd = %d\n", sockfd);
+    printf("Connecting...\n");
+    int retries = 0;
+    static const int max_retries = 4;
+    while (oe_connect(
+               sockfd, (struct oe_sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        if (retries++ > max_retries)
+        {
+            printf("\n Error : Connect Failed \n");
+            oe_close(sockfd);
+            return OE_FAILURE;
+        }
+        else
+        {
+            printf("Connect Failed. Retrying \n");
+        }
+    }
+    if (sockfd >= 0)
+    {
+        OE_FD_SET(sockfd, &readfds);
+        OE_FD_SET(sockfd, &writefds);
+        OE_FD_SET(sockfd, &exceptfds);
+    }
+
+    const int flags = OE_O_NONBLOCK | OE_O_RDONLY;
+    file_fd = oe_open("/tmp/test", flags, 0);
+
+    printf("polling...\n");
+    if (file_fd >= 0)
+    {
+        OE_FD_SET(file_fd, &readfds);
+        OE_FD_SET(file_fd, &writefds);
+        OE_FD_SET(file_fd, &exceptfds);
+    }
+
+    int nfds = 0;
+    do
+    {
+        timeout.tv_sec = 30;
+        if ((nfds = oe_select(1, &readfds, &writefds, &exceptfds, &timeout)) <
+            0)
+        {
+            printf("select error.\n");
+        }
+        else
+        {
+            printf("input from %d fds\n", nfds);
+
+            if (OE_FD_ISSET(sockfd, &readfds))
+            {
+                ssize_t n;
+                char buff[1024] = {0};
+
+                printf("read sockfd:%d\n", sockfd);
+                n = oe_read(sockfd, buff, sizeof(buff));
+                buff[n] = 0;
+                if (n > 0)
+                {
+                    memcpy(
+                        recv_buff,
+                        buff,
+                        ((size_t)n < buff_len) ? (size_t)n : buff_len);
+                    nfds = -1;
+                    break;
+                }
+            }
+        }
+
+    } while (nfds >= 0);
+
+    oe_close(sockfd);
+    printf("--------------- select done -------------\n");
     return OE_OK;
 }
 

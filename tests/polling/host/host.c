@@ -11,6 +11,7 @@
 #include <openenclave/host.h>
 #include <openenclave/internal/tests.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -20,6 +21,13 @@
 #define SERVER_PORT "12345"
 
 void oe_epoll_install_hostepoll(void);
+
+void sigpipe_handler(int unused)
+{
+    (void)unused;
+    // Doens't do anything. We expect sigpipe from the server pipe
+    printf("received sigpipe\n");
+}
 
 void* host_server_thread(void* arg)
 {
@@ -32,6 +40,9 @@ void* host_server_thread(void* arg)
     const socklen_t optLen = sizeof(optVal);
     int* done = (int*)arg;
 
+    struct sigaction action = {{sigpipe_handler}};
+    sigaction(SIGPIPE, &action, NULL);
+
     int rtn =
         setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, optLen);
     if (rtn > 0)
@@ -43,27 +54,30 @@ void* host_server_thread(void* arg)
     serv_addr.sin_port = htons(1642);
 
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
-
     listen(listenfd, 10);
 
-    int n = 0;
     do
     {
-        printf("accepting\n");
-        connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
-        printf("accepted fd = %d\n", connfd);
-    } while (connfd < 0);
+        int n = 0;
+        connfd = -1;
+        do
+        {
+            printf("accepting\n");
+            connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
+            printf("accepted fd = %d\n", connfd);
+        } while (connfd < 0);
 
-    while (!done)
-    {
-        write(connfd, TESTDATA, strlen(TESTDATA));
-        printf("write test data\n");
-        if (n++ > 20)
-            break;
-        sleep(5);
-    }
+        while (!*done)
+        {
+            ssize_t numbytes = write(connfd, TESTDATA, strlen(TESTDATA));
+            printf("write test data\n");
+            if (n++ > 3 || numbytes < 0)
+                break;
+            sleep(1);
+        }
+        close(connfd);
+    } while (*done != 2);
 
-    close(connfd);
     close(listenfd);
     printf("exit from server thread\n");
     return NULL;
@@ -71,7 +85,7 @@ void* host_server_thread(void* arg)
 
 int main(int argc, const char* argv[])
 {
-    //    static char TESTDATA[] = "This is TEST DATA\n";
+    static char TESTDATA[] = "This is TEST DATA\n";
     oe_result_t result;
     oe_enclave_t* client_enclave = NULL;
     pthread_t server_thread_id = 0;
@@ -108,15 +122,25 @@ int main(int argc, const char* argv[])
 
     test_data_len = 1024;
     OE_TEST(
-        ecall_run_client(client_enclave, &ret, test_data_len, test_data_rtn) ==
+        ecall_epoll_test(client_enclave, &ret, test_data_len, test_data_rtn) ==
         OE_OK);
 
-    printf("host received: %s\n", test_data_rtn);
+    sleep(5);
+
+    printf("epoll: host received: %s\n", test_data_rtn);
     OE_TEST(
         strncmp("socket success", test_data_rtn, strlen("socket success")) ==
         0);
 
-    done = 1;
+    test_data_len = 1024;
+    OE_TEST(
+        ecall_select_test(client_enclave, &ret, test_data_len, test_data_rtn) ==
+        OE_OK);
+
+    printf("select: host received: %s\n", test_data_rtn);
+    OE_TEST(strncmp(TESTDATA, test_data_rtn, strlen(TESTDATA)) == 0);
+
+    done = 2;
     pthread_join(server_thread_id, NULL);
     OE_TEST(oe_terminate_enclave(client_enclave) == OE_OK);
 
