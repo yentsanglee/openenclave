@@ -12,13 +12,11 @@
 
 OE_EXTERNC_BEGIN
 
-#define FD_SETSIZE 1024
-
-typedef unsigned long fd_mask;
+#define OE_FD_SETSIZE 1024
 
 typedef struct
 {
-    unsigned long fds_bits[FD_SETSIZE / 8 / sizeof(long)];
+#include <openenclave/corelibc/sys/bits/fd_set.h>
 } oe_fd_set;
 
 int oe_select(
@@ -37,6 +35,48 @@ void OE_FD_SET(int fd, oe_fd_set* set);
 void OE_FD_ZERO(oe_fd_set* set);
 
 #if defined(OE_NEED_STDC_NAMES)
+
+#define FD_SETSIZE 1024
+
+typedef struct
+{
+#include <openenclave/corelibc/sys/bits/fd_set.h>
+} fd_set;
+
+OE_INLINE int select(
+    int nfds,
+    fd_set* readfds,
+    fd_set* writefds,
+    fd_set* exceptfds,
+    struct timeval* timeout)
+{
+    return oe_select(
+        nfds,
+        (oe_fd_set*)readfds,
+        (oe_fd_set*)writefds,
+        (oe_fd_set*)exceptfds,
+        (struct oe_timeval*)timeout);
+}
+
+OE_INLINE void FD_CLR(int fd, fd_set* set)
+{
+    OE_FD_CLR(fd, (oe_fd_set*)set);
+}
+
+OE_INLINE int FD_ISSET(int fd, fd_set* set)
+{
+    return OE_FD_ISSET(fd, (oe_fd_set*)set);
+}
+
+OE_INLINE void FD_SET(int fd, fd_set* set)
+{
+    OE_FD_SET(fd, (oe_fd_set*)set);
+}
+
+OE_INLINE void FD_ZERO(fd_set* set)
+{
+    OE_FD_ZERO((oe_fd_set*)set);
+}
 
 #endif /* defined(OE_NEED_STDC_NAMES) */
 

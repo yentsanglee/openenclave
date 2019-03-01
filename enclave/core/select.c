@@ -21,7 +21,7 @@ void _set_to_fd_list(
     uint32_t* pbits = (uint32_t*)set->fds_bits;
     uint32_t bitpos;
 
-    for (idx = 0; idx<FD_SETSIZE>> 5; idx++)
+    for (idx = 0; idx<OE_FD_SETSIZE>> 5; idx++)
     {
         uint32_t bitmask = 1;
         for (bitpos = 0; bitpos < 8 * sizeof(long); bitpos++)
@@ -79,13 +79,13 @@ int oe_select(
     struct oe_timeval* timeout)
 
 {
-    int fd_list[FD_SETSIZE] = {0};  // <nfds> members
-    int fd_flags[FD_SETSIZE] = {0}; // indexed by fd
+    int fd_list[OE_FD_SETSIZE] = {0};  // <nfds> members
+    int fd_flags[OE_FD_SETSIZE] = {0}; // indexed by fd
     int i = 0;
     int epoll_fd = -1;
     int ret = -1;
     int ret_fds = -1;
-    struct oe_epoll_event rtn_ev[FD_SETSIZE] = {{0}};
+    struct oe_epoll_event rtn_ev[OE_FD_SETSIZE] = {{0}};
     int timeout_ms = -1;
 
     if (timeout)
@@ -139,7 +139,7 @@ int oe_select(
         }
     }
 
-    ret_fds = oe_epoll_wait(epoll_fd, rtn_ev, FD_SETSIZE, timeout_ms);
+    ret_fds = oe_epoll_wait(epoll_fd, rtn_ev, OE_FD_SETSIZE, timeout_ms);
     if (ret_fds < 0)
     {
         goto done;
