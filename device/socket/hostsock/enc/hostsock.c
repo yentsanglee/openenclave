@@ -9,7 +9,7 @@
 
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/sock_ops.h>
-#include <openenclave/internal/host_socket.h>
+#include <openenclave/internal/hostsock.h>
 #include <openenclave/bits/safemath.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/thread.h>
@@ -1061,7 +1061,7 @@ static sock_t _hostsock = {
     // oe_event_device_t *event_fds;
 };
 
-oe_device_t* oe_socket_get_hostsock(void)
+oe_device_t* oe_get_hostsock_device(void)
 {
     return &_hostsock.base;
 }
@@ -1076,7 +1076,7 @@ int oe_register_hostsock_device(void)
         goto done;
 
     /* Add the hostfs device to the device table. */
-    if (oe_set_devid_device(devid, oe_socket_get_hostsock()) != 0)
+    if (oe_set_devid_device(devid, oe_get_hostsock_device()) != 0)
         goto done;
 
     ret = 0;

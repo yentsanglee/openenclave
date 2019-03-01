@@ -11,6 +11,7 @@
 #include <openenclave/internal/print.h>
 #include <openenclave/corelibc/string.h>
 #include <openenclave/corelibc/stdlib.h>
+#include <openenclave/internal/hostfs.h>
 
 #define FS_MAGIC 0x4a335f60
 #define FILE_MAGIC 0x8d7e422f

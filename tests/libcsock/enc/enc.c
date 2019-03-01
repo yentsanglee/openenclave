@@ -5,7 +5,6 @@
 #include <openenclave/corelibc/sys/utsname.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/device.h>
-#include <openenclave/internal/host_socket.h>
 #include <openenclave/internal/tests.h>
 #include <pthread.h>
 #include <stdio.h>

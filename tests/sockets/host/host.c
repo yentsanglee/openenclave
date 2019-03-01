@@ -33,8 +33,6 @@ void* enclave_server_thread(void* arg)
 
     OE_TEST(result == OE_OK);
 
-    OE_TEST(ecall_device_init(server_enclave, &retval) == OE_OK);
-
     OE_TEST(ecall_run_server(server_enclave, &retval) == OE_OK);
     //    OE_TEST(oe_terminate_enclave(server_enclave) == OE_OK);
     sleep(3);
@@ -200,8 +198,6 @@ int main(int argc, const char* argv[])
         argv[1], OE_ENCLAVE_TYPE_SGX, flags, NULL, 0, &client_enclave);
 
     OE_TEST(result == OE_OK);
-
-    OE_TEST(ecall_device_init(client_enclave, &ret) == OE_OK);
 
     test_data_len = 1024;
     OE_TEST(

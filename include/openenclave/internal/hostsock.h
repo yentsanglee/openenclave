@@ -11,14 +11,14 @@
 **==============================================================================
 */
 
-#ifndef _OE_HOST_SOCKET_H
-#define _OE_HOST_SOCKET_H
+#ifndef _OE_INTERNAL_HOSTSOCK_H
+#define _OE_INTERNAL_HOSTSOCK_H
 
 #include <openenclave/internal/device.h>
 
 OE_EXTERNC_BEGIN
 
-oe_device_t* oe_socket_get_hostsock(void);
+oe_device_t* oe_get_hostsock_device(void);
 
 int oe_register_hostsock_device(void);
 
@@ -26,4 +26,4 @@ void oe_handle_hostsock_ocall(void* args);
 
 OE_EXTERNC_END
 
-#endif /* _OE_HOST_SOCKET_H */
+#endif /* _OE_INTERNAL_HOSTSOCK_H */

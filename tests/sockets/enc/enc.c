@@ -9,18 +9,10 @@
 #include <openenclave/corelibc/netinet/in.h>
 #include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/internal/device.h>
-#include <openenclave/internal/host_socket.h>
 
 #include <socket_test_t.h>
 #include <stdio.h>
 #include <string.h>
-
-int ecall_device_init()
-{
-    (void)oe_allocate_devid(OE_DEVID_HOST_SOCKET);
-    (void)oe_set_devid_device(OE_DEVID_HOST_SOCKET, oe_socket_get_hostsock());
-    return 0;
-}
 
 /* This client connects to an echo server, sends a text message,
  * and outputs the text reply.

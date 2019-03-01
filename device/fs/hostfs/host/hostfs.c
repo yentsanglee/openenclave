@@ -1,11 +1,11 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "hostfs.h"
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/hostfs.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>

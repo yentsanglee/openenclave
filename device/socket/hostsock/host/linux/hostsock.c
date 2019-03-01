@@ -4,7 +4,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <openenclave/internal/host_socket.h>
+#include <openenclave/internal/hostsock.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>

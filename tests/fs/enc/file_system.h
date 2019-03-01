@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/hostfs.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>

@@ -11,7 +11,6 @@
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/fs.h>
-#include <openenclave/internal/host_socket.h>
 
 #include <epoll_test_t.h>
 #include <stdio.h>

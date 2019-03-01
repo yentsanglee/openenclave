@@ -3,8 +3,7 @@
 
 set(LINUX_SGX_DIR ${PROJECT_SOURCE_DIR}/3rdparty/linux-sgx)
 
-add_library(oesocket_hostsocket_enc STATIC
-    host_socket.c)
+add_library(oesocket_hostsocket_enc STATIC sockhost.c)
 
 target_include_directories(oesocket_hostsocket_enc PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include)

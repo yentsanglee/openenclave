@@ -3,6 +3,7 @@
 
 #include <openenclave/enclave.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/hostfs.h>
 #include <openenclave/internal/print.h>
 
 int oe_initialize_console_devices(void)

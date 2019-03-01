@@ -22,12 +22,12 @@
 #include <openenclave/bits/safemath.h>
 #include <openenclave/host.h>
 #include <openenclave/internal/calls.h>
-#include <openenclave/internal/host_socket.h>
+#include <openenclave/internal/hostfs.h>
+#include <openenclave/internal/hostsock.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/registers.h>
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/utils.h>
-#include "../device/fs/hostfs/host/hostfs.h"
 #include "../ocalls.h"
 #include "asmdefs.h"
 #include "enclave.h"
