@@ -17,34 +17,7 @@ static pthread_once_t once;
 
 void _initialize(void)
 {
-    oe_allocate_devid(OE_DEVID_HOST_SOCKET);
-    oe_set_devid_device(OE_DEVID_HOST_SOCKET, oe_socket_get_hostsock());
     oe_set_default_socket_devid(OE_DEVID_HOST_SOCKET);
-
-    struct oe_utsname buf;
-    OE_TEST(oe_uname(&buf) == 0);
-    printf("sysname=%s\n", buf.sysname);
-    printf("nodename=%s\n", buf.nodename);
-    printf("release=%s\n", buf.release);
-    printf("version=%s\n", buf.version);
-    printf("machine=%s\n", buf.machine);
-#ifdef _GNU_SOURCE
-    printf("domainname=%s\n", buf.domainname);
-#endif
-
-    {
-        char buf[1024];
-        OE_TEST(gethostname(buf, sizeof(buf)) == 0);
-        printf("HOSTNAME{%s}\n", buf);
-        fflush(stdout);
-    }
-
-    {
-        char buf[1024];
-        OE_TEST(getdomainname(buf, sizeof(buf)) == 0);
-        printf("DOMAINNAME{%s}\n", buf);
-        fflush(stdout);
-    }
 }
 
 void run_enclave_server(uint16_t port)

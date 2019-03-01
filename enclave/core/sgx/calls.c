@@ -20,6 +20,7 @@
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/trace.h>
 #include <openenclave/internal/utils.h>
+#include <openenclave/internal/host_socket.h>
 #include "../../sgx/report.h"
 #include "asmdefs.h"
 #include "atexit.h"
@@ -176,6 +177,13 @@ static oe_result_t _handle_init_enclave(uint64_t arg_in)
 
             /* Register the host file system. */
             if (oe_register_hostfs_device() != 0)
+            {
+                result = OE_FAILURE;
+                goto done;
+            }
+
+            /* Register the host sockets device. */
+            if (oe_register_hostsock_device() != 0)
             {
                 result = OE_FAILURE;
                 goto done;

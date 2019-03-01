@@ -15,4 +15,4 @@ add_executable(polling_test_host
 
 target_link_libraries(polling_test_host oeepoll_host)
 target_include_directories(polling_test_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(polling_test_host oehostsocket_host oehostapp)
+target_link_libraries(polling_test_host oehostapp)

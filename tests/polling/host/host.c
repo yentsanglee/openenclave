@@ -19,7 +19,6 @@
 
 #define SERVER_PORT "12345"
 
-void oe_socket_install_hostsock(void);
 void oe_epoll_install_hostepoll(void);
 
 void* host_server_thread(void* arg)
@@ -98,7 +97,6 @@ int main(int argc, const char* argv[])
     const uint32_t flags = oe_get_create_flags();
 
     // oe_fs_install_hostfs();
-    oe_socket_install_hostsock();
     oe_epoll_install_hostepoll();
 
     result = oe_create_epoll_test_enclave(

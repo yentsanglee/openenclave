@@ -13,6 +13,5 @@ add_executable(socket_host
     ${socket_test_u}
 )
 
-target_link_libraries(socket_host oehostsocket_host)
 target_include_directories(socket_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(socket_host oehostapp)

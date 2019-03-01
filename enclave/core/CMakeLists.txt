@@ -20,6 +20,7 @@ if (OE_SGX)
         sgx/hostbatch.c
         sgx/hostcalls.c
         sgx/hostfs.c
+        sgx/hostsock.c
         sgx/init.c
         sgx/jump.c
         sgx/keys.c

@@ -102,6 +102,7 @@ add_library(oehost STATIC
   fopen.c
   hexdump.c
   hostfs.c
+  hostsock.c
   memalign.c
   result.c
   signkey.c

@@ -102,8 +102,6 @@ int main(int argc, const char* argv[])
     const uint32_t flags = oe_get_create_flags();
     const oe_enclave_type_t type = OE_ENCLAVE_TYPE_SGX;
 
-    oe_socket_install_hostsock();
-
     if (argc != 2)
     {
         fprintf(stderr, "Usage: %s ENCLAVE_PATH\n", argv[0]);

@@ -10,10 +10,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "../../common/hostsockargs.h"
+#include <openenclave/internal/host_socket.h>
 
-void (*oe_handle_hostsock_ocall_callback)(void*);
-
-static void _handle_hostsock_ocall(void* args_)
+void oe_handle_hostsock_ocall(void* args_)
 {
     oe_hostsock_args_t* args = (oe_hostsock_args_t*)args_;
     socklen_t* addrlen = NULL;
@@ -149,9 +148,4 @@ static void _handle_hostsock_ocall(void* args_)
         }
     }
     args->err = errno;
-}
-
-void oe_socket_install_hostsock(void)
-{
-    oe_handle_hostsock_ocall_callback = _handle_hostsock_ocall;
 }

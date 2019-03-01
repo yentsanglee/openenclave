@@ -21,8 +21,6 @@
 
 #define SERVER_PORT "12345"
 
-void oe_socket_install_hostsock();
-
 void* enclave_server_thread(void* arg)
 {
     oe_enclave_t* server_enclave = NULL;
@@ -30,7 +28,6 @@ void* enclave_server_thread(void* arg)
     oe_result_t result;
     const uint32_t flags = oe_get_create_flags();
 
-    oe_socket_install_hostsock();
     result = oe_create_socket_test_enclave(
         arg, OE_ENCLAVE_TYPE_SGX, flags, NULL, 0, &server_enclave);
 
@@ -199,7 +196,6 @@ int main(int argc, const char* argv[])
     sleep(3); // Give the server time to launch
     const uint32_t flags = oe_get_create_flags();
 
-    oe_socket_install_hostsock();
     result = oe_create_socket_test_enclave(
         argv[1], OE_ENCLAVE_TYPE_SGX, flags, NULL, 0, &client_enclave);
 

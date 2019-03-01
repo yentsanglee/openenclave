@@ -1551,17 +1551,14 @@ oe_device_t* oe_fs_get_hostfs(void)
 int oe_register_hostfs_device(void)
 {
     int ret = -1;
+    const uint64_t devid = OE_DEVID_HOSTFS;
 
     /* Allocate the device id. */
-    if (oe_allocate_devid(OE_DEVID_HOSTFS) != OE_DEVID_HOSTFS)
+    if (oe_allocate_devid(devid) != devid)
         goto done;
 
     /* Add the hostfs device to the device table. */
-    if (oe_set_devid_device(OE_DEVID_HOSTFS, oe_fs_get_hostfs()) != 0)
-        goto done;
-
-    /* Check that the above operation was successful. */
-    if (oe_get_devid_device(OE_DEVID_HOSTFS) != oe_fs_get_hostfs())
+    if (oe_set_devid_device(devid, oe_fs_get_hostfs()) != 0)
         goto done;
 
     ret = 0;

@@ -1065,3 +1065,22 @@ oe_device_t* oe_socket_get_hostsock(void)
 {
     return &_hostsock.base;
 }
+
+int oe_register_hostsock_device(void)
+{
+    int ret = -1;
+    const uint64_t devid = OE_DEVID_HOST_SOCKET;
+
+    /* Allocate the device id. */
+    if (oe_allocate_devid(devid) != devid)
+        goto done;
+
+    /* Add the hostfs device to the device table. */
+    if (oe_set_devid_device(devid, oe_socket_get_hostsock()) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}
