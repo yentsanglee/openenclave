@@ -64,6 +64,7 @@ add_library(oelibc STATIC
     atexit.c
     dladdr.c
     dirent.c
+    exit.c
     libunwind_stubs.c
     libcex_stdio.c
     link.c
@@ -187,6 +188,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/env/setenv.c
     ${MUSLSRC}/env/unsetenv.c
     ${MUSLSRC}/exit/assert.c
+    ${MUSLSRC}/exit/_Exit.c
     ${MUSLSRC}/fenv/fegetexceptflag.c
     ${MUSLSRC}/fenv/feholdexcept.c
     ${MUSLSRC}/fenv/fesetexceptflag.c

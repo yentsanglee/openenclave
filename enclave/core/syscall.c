@@ -4,8 +4,10 @@
 #include <openenclave/corelibc/dirent.h>
 #include <openenclave/corelibc/errno.h>
 #include <openenclave/corelibc/fcntl.h>
+#include <openenclave/corelibc/setjmp.h>
 #include <openenclave/corelibc/stdarg.h>
 #include <openenclave/corelibc/stdio.h>
+#include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
 #include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/corelibc/sys/stat.h>
@@ -15,6 +17,9 @@
 #include <openenclave/corelibc/unistd.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/print.h>
+
+oe_jmp_buf __oe_exit_point;
+int __oe_exit_status;
 
 typedef int (*ioctl_proc)(
     int fd,
@@ -379,6 +384,24 @@ static long _syscall(
         {
             struct oe_utsname* buf = (struct oe_utsname*)arg1;
             ret = oe_uname(buf);
+            goto done;
+        }
+        case OE_SYS_exit_group:
+        {
+            ret = 0;
+            goto done;
+        }
+        case OE_SYS_exit:
+        {
+            int status = (int)arg1;
+
+            /* ATTN: Call setjmp someplace in the enclave startup. */
+            /* ATTN: Handle thread safety. */
+
+            __oe_exit_status = status;
+            oe_longjmp(&__oe_exit_point, 1);
+
+            /* Unreachable */
             goto done;
         }
         default:

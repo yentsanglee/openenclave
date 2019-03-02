@@ -31,6 +31,8 @@ int oe_atexit(void (*function)(void));
 
 char* oe_realpath(const char* path, char* resolved_path);
 
+void oe_abort(void);
+
 #if defined(OE_NEED_STDC_NAMES)
 
 #include "bits/atexit.h"
@@ -40,6 +42,11 @@ char* oe_realpath(const char* path, char* resolved_path);
 OE_INLINE char* realpath(const char* path, char* resolved_path)
 {
     return oe_realpath(path, resolved_path);
+}
+
+OE_INLINE void abort(void)
+{
+    oe_abort();
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */
