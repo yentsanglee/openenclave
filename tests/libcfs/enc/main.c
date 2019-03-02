@@ -48,6 +48,6 @@ int main(int argc, const char* argv[])
 
     fclose(stream);
 
-    exit(123);
+    exit(0);
     return 0;
 }

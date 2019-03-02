@@ -79,6 +79,7 @@ add_library(oelibc STATIC
     socket.c
     stat.c
     errno.c
+    setjmp.c
     time.c
     __printf_chk.c
     __vfprintf_chk.c

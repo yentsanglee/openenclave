@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/corelibc/limits.h>
 #include <openenclave/corelibc/setjmp.h>
 #include <openenclave/corelibc/stdio.h>
 #include <openenclave/enclave.h>
@@ -26,9 +27,11 @@ void test_libcfs(const char* src_dir, const char* tmp_dir)
     argv[2] = tmp_dir;
     argv[3] = NULL;
 
+    __oe_exit_status = OE_INT_MAX;
+
     if (oe_setjmp(&__oe_exit_point) == 1)
     {
-        OE_TEST(__oe_exit_status == 123);
+        OE_TEST(__oe_exit_status == 0);
         return;
     }
 
