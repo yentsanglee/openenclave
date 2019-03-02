@@ -2,12 +2,11 @@
 // Licensed under the MIT License.
 
 #include <openenclave/corelibc/stdlib.h>
+#include <openenclave/corelibc/string.h>
 #include <openenclave/corelibc/sys/select.h>
 #include <openenclave/corelibc/time.h>
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/print.h>
-
-void* memset(void* dst, int value, size_t num);
 
 void _set_to_fd_list(
     oe_fd_set* set,
