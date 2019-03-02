@@ -25,7 +25,7 @@ typedef struct _jmp_buf
 
 OE_INLINE int setjmp(jmp_buf* env)
 {
-    return oe_setjmp(env);
+    return oe_setjmp((oe_jmp_buf*)env);
 }
 
 OE_INLINE void longjmp(jmp_buf* env, int val)

@@ -15,6 +15,7 @@
 #include <openenclave/corelibc/netinet/in.h>
 #include <openenclave/corelibc/pthread.h>
 #include <openenclave/corelibc/sched.h>
+#include <openenclave/corelibc/setjmp.h>
 #include <openenclave/corelibc/stdarg.h>
 #include <openenclave/corelibc/stddef.h>
 #include <openenclave/corelibc/stdint.h>
