@@ -95,6 +95,7 @@ add_library(oecore STATIC
     realpath.c
     resolver.c
     result.c
+    sleep.c
     socket.c
     stdio.c
     strerror.c

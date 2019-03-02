@@ -102,7 +102,7 @@ int ecall_run_server()
 
     while (1)
     {
-        oe_sleep(1);
+        oe_sleep_msec(1);
         printf("accepting\n");
         connfd = oe_accept(listenfd, (struct oe_sockaddr*)NULL, NULL);
         if (connfd >= 0)
@@ -121,7 +121,7 @@ int ecall_run_server()
                 {
                     printf("write test data n = %ld errno = %d\n", n, oe_errno);
                 }
-                oe_sleep(3);
+                oe_sleep_msec(3);
             } while (1);
             break;
         }
