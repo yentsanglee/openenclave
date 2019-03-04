@@ -128,6 +128,9 @@ static volatile uint64_t _enclave_rva;
 static volatile uint64_t _reloc_rva;
 static volatile uint64_t _reloc_size;
 
+static volatile uint64_t _exec_rva;
+static volatile uint64_t _exec_size;
+
 #endif
 
 /*
@@ -283,4 +286,37 @@ uint64_t oe_get_num_heap_pages(void)
 uint64_t oe_get_num_pages(void)
 {
     return __oe_get_enclave_size() / OE_PAGE_SIZE;
+}
+
+/*
+**==============================================================================
+**
+** Exec boundaries:
+**
+**==============================================================================
+*/
+
+const void* __oe_get_exec_base(void)
+{
+    const unsigned char* base = __oe_get_enclave_base();
+
+#if defined(__linux__)
+    return base + _exec_rva;
+#else
+#error
+#endif
+}
+
+const void* __oe_get_exec_end(void)
+{
+    return (const uint8_t*)__oe_get_exec_base() + __oe_get_exec_size();
+}
+
+size_t __oe_get_exec_size(void)
+{
+#if defined(__linux__)
+    return _exec_size;
+#else
+#error
+#endif
 }

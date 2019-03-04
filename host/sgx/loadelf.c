@@ -24,6 +24,9 @@
 #include "enclave.h"
 #include "sgxload.h"
 
+static const size_t NUM_EXEC_PAGES = 1024;
+static const size_t EXEC_SIZE = NUM_EXEC_PAGES * OE_PAGE_SIZE;
+
 static oe_result_t _oe_free_elf_image(oe_enclave_image_t* image)
 {
     if (image->u.elf.elf.data)
@@ -415,7 +418,7 @@ static oe_result_t _calculate_size(
     const oe_enclave_image_t* image,
     size_t* image_size)
 {
-    *image_size = image->image_size + image->reloc_size;
+    *image_size = image->image_size + EXEC_SIZE + image->reloc_size;
     return OE_OK;
 }
 
@@ -482,6 +485,51 @@ static uint64_t _make_secinfo_flags(uint32_t flags)
         r |= SGX_SECINFO_X;
 
     return r;
+}
+
+static oe_result_t _add_exec_pages(
+    oe_sgx_load_context_t* context,
+    uint64_t enclave_addr,
+    size_t npages,
+    uint64_t* vaddr)
+{
+    oe_result_t result = OE_UNEXPECTED;
+
+    if (!context || !vaddr)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    for (size_t i = 0; i < npages; i++)
+    {
+        oe_page_t zero_page;
+        uint64_t addr = enclave_addr + *vaddr;
+        uint64_t src = (uint64_t)&zero_page;
+        uint64_t flags =
+            SGX_SECINFO_REG | SGX_SECINFO_R | SGX_SECINFO_W | SGX_SECINFO_X;
+        bool extend = true;
+
+        if (i == 0)
+        {
+            memset(&zero_page, 0xCC, sizeof(zero_page));
+        }
+        else if (i + 1 == npages)
+        {
+            memset(&zero_page, 0xDD, sizeof(zero_page));
+        }
+        else
+        {
+            memset(&zero_page, 0, sizeof(zero_page));
+        }
+
+        OE_CHECK(oe_sgx_load_enclave_data(
+            context, enclave_addr, addr, src, flags, extend));
+
+        (*vaddr) += sizeof(oe_page_t);
+    }
+
+    result = OE_OK;
+
+done:
+    return result;
 }
 
 static oe_result_t _add_relocation_pages(
@@ -595,6 +643,9 @@ static oe_result_t _add_pages(
 
     *vaddr = image->image_size;
 
+    /* Add the exec-pages */
+    OE_CHECK(_add_exec_pages(context, enclave->addr, NUM_EXEC_PAGES, vaddr));
+
     /* Add the relocation pages (contain relocation entries) */
     OE_CHECK(_add_relocation_pages(
         context,
@@ -691,16 +742,21 @@ static oe_result_t _patch(
     OE_CHECK(_get_symbol_rva(image, "_enclave_rva", &enclave_rva));
     OE_CHECK(_set_uint64_t_symbol_value(image, "_enclave_rva", enclave_rva));
 
-    /* reloc right after image */
-    oeprops->image_info.reloc_rva = image->image_size;
+    /* exec right after image */
+    OE_CHECK(_set_uint64_t_symbol_value(image, "_exec_rva", image->image_size));
+    OE_CHECK(_set_uint64_t_symbol_value(image, "_exec_size", EXEC_SIZE));
+
+    size_t exec_end_offset = image->image_size + EXEC_SIZE;
+
+    /* reloc right after exec */
+    oeprops->image_info.reloc_rva = exec_end_offset;
     oeprops->image_info.reloc_size = image->reloc_size;
-    OE_CHECK(
-        _set_uint64_t_symbol_value(image, "_reloc_rva", image->image_size));
+    OE_CHECK(_set_uint64_t_symbol_value(image, "_reloc_rva", exec_end_offset));
     OE_CHECK(
         _set_uint64_t_symbol_value(image, "_reloc_size", image->reloc_size));
 
     /* ecal right after reloc */
-    oeprops->image_info.ecall_rva = image->image_size + image->reloc_size;
+    oeprops->image_info.ecall_rva = exec_end_offset + image->reloc_size;
     oeprops->image_info.ecall_size = ecall_size;
 
     /* heap right after ecall */
