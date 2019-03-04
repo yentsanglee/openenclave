@@ -18,9 +18,6 @@
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/print.h>
 
-oe_jmp_buf __oe_exit_point;
-int __oe_exit_status;
-
 typedef int (*ioctl_proc)(
     int fd,
     unsigned long request,
@@ -394,15 +391,7 @@ static long _syscall(
         case OE_SYS_exit:
         {
             int status = (int)arg1;
-
-            /* ATTN: Call setjmp someplace in the enclave startup. */
-            /* ATTN: Handle thread safety. */
-
-            __oe_exit_status = status;
-            oe_longjmp(&__oe_exit_point, 1);
-
-            /* Unreachable */
-            goto done;
+            oe_exit(status);
         }
         default:
         {

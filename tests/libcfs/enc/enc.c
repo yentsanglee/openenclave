@@ -4,13 +4,35 @@
 #include <openenclave/corelibc/limits.h>
 #include <openenclave/corelibc/setjmp.h>
 #include <openenclave/corelibc/stdio.h>
+#include <openenclave/corelibc/stdlib.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/tests.h>
 
-oe_jmp_buf __oe_exit_point;
-int __oe_exit_status;
+static oe_jmp_buf _jmp_buf;
+static int _exit_status = OE_INT_MAX;
 
-int main(int argc, const char* argv[]);
+static void _exit_handler(int status)
+{
+    _exit_status = status;
+    oe_longjmp(&_jmp_buf, 1);
+}
+
+static int _run_main(int argc, const char* argv[])
+{
+    int ret;
+    int main(int argc, const char* argv[]);
+
+    if (oe_setjmp(&_jmp_buf) == 1)
+    {
+        return _exit_status;
+    }
+
+    oe_set_exit_handler(_exit_handler);
+
+    ret = main(argc, argv);
+
+    return ret;
+}
 
 void test_libcfs(const char* src_dir, const char* tmp_dir)
 {
@@ -27,15 +49,7 @@ void test_libcfs(const char* src_dir, const char* tmp_dir)
     argv[2] = tmp_dir;
     argv[3] = NULL;
 
-    __oe_exit_status = OE_INT_MAX;
-
-    if (oe_setjmp(&__oe_exit_point) == 1)
-    {
-        OE_TEST(__oe_exit_status == 0);
-        return;
-    }
-
-    main(argc, argv);
+    OE_TEST(_run_main(argc, argv) == 0);
 }
 
 OE_SET_ENCLAVE_SGX(
