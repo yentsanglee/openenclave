@@ -7,3 +7,8 @@ int* __errno_location(void)
 {
     return __oe_errno_location();
 }
+
+int* ___errno_location(void)
+{
+    return __oe_errno_location();
+}
