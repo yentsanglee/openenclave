@@ -7,11 +7,14 @@
 #include <openenclave/internal/cpuid.h>
 #include <openenclave/internal/elf.h>
 #include <openenclave/internal/globals.h>
+#include <openenclave/internal/jump.h>
 #include <openenclave/internal/load.h>
+#include <openenclave/internal/print.h>
 #include <openenclave/internal/utils.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syscall.h>
 #include "exec_t.h"
 
 typedef struct _elf_image
@@ -429,12 +432,67 @@ done:
 
 typedef void (*entry_proc)();
 
-static uint64_t _exception_handler(oe_exception_record_t* exception_record)
+#define SYSCALL_OPCODE 0x050F
+
+typedef struct _syscall_info
 {
-    if (exception_record->code == OE_EXCEPTION_ILLEGAL_INSTRUCTION)
+    long num;
+    long arg1;
+    long arg2;
+    long arg3;
+    long arg4;
+    long arg5;
+    long arg6;
+} syscall_info_t;
+
+static syscall_info_t _si;
+
+long handle_syscall(void)
+{
+    if (_si.num == SYS_write)
     {
-        exception_record->context->rip += 2;
-        return OE_EXCEPTION_CONTINUE_EXECUTION;
+        // oe_host_write(1, (const char*)_si.arg2, (size_t)_si.arg3);
+        return 0;
+    }
+
+    return -1;
+}
+
+static uint64_t _exception_handler(oe_exception_record_t* exception)
+{
+    oe_context_t* context = exception->context;
+
+    if (exception->code == OE_EXCEPTION_ILLEGAL_INSTRUCTION)
+    {
+        uint64_t opcode = *((uint16_t*)context->rip);
+
+        if (opcode == SYSCALL_OPCODE)
+        {
+            /* Extract the syscall arguments. */
+            _si.num = (long)context->rax;
+            _si.arg1 = (long)context->rdi;
+            _si.arg2 = (long)context->rsi;
+            _si.arg3 = (long)context->rdx;
+            _si.arg4 = (long)context->r10;
+            _si.arg5 = (long)context->r8;
+            _si.arg6 = (long)context->r9;
+
+            handle_syscall();
+
+#if 0
+            assert(_si.num == 99);
+            assert(_si.arg1 == 10);
+            assert(_si.arg2 == 20);
+            assert(_si.arg3 == 30);
+            assert(_si.arg4 == 40);
+            assert(_si.arg5 == 50);
+            assert(_si.arg6 == 60);
+#endif
+
+            context->rip += 2;
+
+            return OE_EXCEPTION_CONTINUE_EXECUTION;
+        }
     }
 
     return OE_EXCEPTION_CONTINUE_SEARCH;
@@ -446,17 +504,14 @@ void test_exec(const uint8_t* image_base, size_t image_size)
     size_t exec_size = __oe_get_exec_size();
     elf_image_t image;
     entry_proc entry;
+    oe_result_t r;
 
-#if 0
-    oe_result_t r = oe_add_vectored_exception_handler(false, _exception_handler);
+    r = oe_add_vectored_exception_handler(false, _exception_handler);
     if (r != OE_OK)
     {
         fprintf(stderr, "oe_add_vectored_exception_handler() failed\n");
         abort();
     }
-#endif
-
-    (void)_exception_handler;
 
     // asm volatile("syscall");
 
