@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #include "asmdefs.h"
-#include <openenclave/internal/context.inc>
+#include <openenclave/internal/enclave_context.inc>
 #include "asmcommon.inc"
 
 //==============================================================================

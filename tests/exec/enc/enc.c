@@ -19,6 +19,14 @@
 
 extern void (*oe_continue_execution_hook)(void);
 
+void MEMSET(void* s, unsigned char c, size_t n)
+{
+    uint8_t* p = (uint8_t*)s;
+
+    while (n--)
+        *p++ = c;
+}
+
 typedef struct _elf_image
 {
     elf64_t elf;
@@ -91,7 +99,7 @@ static int _elf64_init(elf64_t* elf, const void* data, size_t size)
     int rc = -1;
 
     if (elf)
-        memset(elf, 0, sizeof(elf64_t));
+        MEMSET(elf, 0, sizeof(elf64_t));
 
     if (!data || !size || !elf)
         goto done;
@@ -110,7 +118,7 @@ done:
     if (rc != 0)
     {
         free(elf->data);
-        memset(elf, 0, sizeof(elf64_t));
+        MEMSET(elf, 0, sizeof(elf64_t));
     }
 
     return rc;
@@ -134,7 +142,7 @@ static void _free_elf_image(elf_image_t* image)
         if (image->segments)
             free(image->segments);
 
-        memset(image, 0, sizeof(elf_image_t));
+        MEMSET(image, 0, sizeof(elf_image_t));
     }
 }
 
@@ -145,7 +153,7 @@ static int _load_elf_image(elf_image_t* image, const uint8_t* data, size_t size)
     const elf64_ehdr_t* eh;
     size_t num_segments;
 
-    memset(image, 0, sizeof(elf_image_t));
+    MEMSET(image, 0, sizeof(elf_image_t));
 
     if (_elf64_init(&image->elf, data, size) != 0)
         goto done;
@@ -270,7 +278,7 @@ static int _load_elf_image(elf_image_t* image, const uint8_t* data, size_t size)
     }
 
     /* Clear the image memory */
-    memset(image->image_base, 0, image->image_size);
+    MEMSET(image->image_base, 0, image->image_size);
 
     /* Add all loadable program segments to SEGMENTS array */
     for (i = 0, num_segments = 0; i < eh->e_phnum; i++)
@@ -451,13 +459,22 @@ static syscall_args_t _args;
 
 long handle_syscall(syscall_args_t* args)
 {
-    printf("handle_syscall(): num=%lu\n", args->num);
+    printf("handle_syscall():\n");
+    printf("   num=%lu\n", args->num);
+    printf("   arg1=%lu\n", args->arg1);
+    printf("   arg2=%lu\n", args->arg2);
+    printf("   arg3=%lu\n", args->arg3);
+    printf("   arg4=%lu\n", args->arg4);
+    printf("   arg5=%lu\n", args->arg5);
+    printf("   arg6=%lu\n", args->arg6);
 
+#if 0
     if (args->num == SYS_write)
     {
         oe_host_write(1, (const char*)args->arg2, (size_t)args->arg3);
         return 0;
     }
+#endif
 
     return -1;
 }
@@ -483,8 +500,11 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
             args->arg5 = (long)context->r8;
             args->arg6 = (long)context->r9;
 
+            // syscall: %rax %edi %esi %edx %r10d %r8d %r9d
+
 #if 0
-            assert(_args.num == 99);
+            long n = _args.num;
+            assert(n == 77 || n == 88 || n == 99);
             assert(_args.arg1 == 10);
             assert(_args.arg2 == 20);
             assert(_args.arg3 == 30);
