@@ -434,7 +434,7 @@ typedef void (*entry_proc)();
 
 #define SYSCALL_OPCODE 0x050F
 
-typedef struct _syscall_info
+typedef struct _syscall_args
 {
     long num;
     long arg1;
@@ -443,15 +443,15 @@ typedef struct _syscall_info
     long arg4;
     long arg5;
     long arg6;
-} syscall_info_t;
+} syscall_args_t;
 
-static syscall_info_t _si;
+static syscall_args_t _args;
 
 long handle_syscall(void)
 {
-    if (_si.num == SYS_write)
+    if (_args.num == SYS_write)
     {
-        // oe_host_write(1, (const char*)_si.arg2, (size_t)_si.arg3);
+        // oe_host_write(1, (const char*)_args.arg2, (size_t)_args.arg3);
         return 0;
     }
 
@@ -469,24 +469,22 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
         if (opcode == SYSCALL_OPCODE)
         {
             /* Extract the syscall arguments. */
-            _si.num = (long)context->rax;
-            _si.arg1 = (long)context->rdi;
-            _si.arg2 = (long)context->rsi;
-            _si.arg3 = (long)context->rdx;
-            _si.arg4 = (long)context->r10;
-            _si.arg5 = (long)context->r8;
-            _si.arg6 = (long)context->r9;
-
-            handle_syscall();
+            _args.num = (long)context->rax;
+            _args.arg1 = (long)context->rdi;
+            _args.arg2 = (long)context->rsi;
+            _args.arg3 = (long)context->rdx;
+            _args.arg4 = (long)context->r10;
+            _args.arg5 = (long)context->r8;
+            _args.arg6 = (long)context->r9;
 
 #if 0
-            assert(_si.num == 99);
-            assert(_si.arg1 == 10);
-            assert(_si.arg2 == 20);
-            assert(_si.arg3 == 30);
-            assert(_si.arg4 == 40);
-            assert(_si.arg5 == 50);
-            assert(_si.arg6 == 60);
+            assert(_args.num == 99);
+            assert(_args.arg1 == 10);
+            assert(_args.arg2 == 20);
+            assert(_args.arg3 == 30);
+            assert(_args.arg4 == 40);
+            assert(_args.arg5 == 50);
+            assert(_args.arg6 == 60);
 #endif
 
             context->rip += 2;
