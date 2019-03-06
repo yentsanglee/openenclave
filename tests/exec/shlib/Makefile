@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 CC=/opt/musl/bin/musl-gcc
+#CC=/usr/bin/gcc
 
 SOURCES = main.c
 
