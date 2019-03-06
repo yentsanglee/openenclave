@@ -449,11 +449,13 @@ typedef struct _syscall_args
 
 static syscall_args_t _args;
 
-long handle_syscall(void)
+long handle_syscall(syscall_args_t* args)
 {
-    if (_args.num == SYS_write)
+    printf("handle_syscall(): num=%lu\n", args->num);
+
+    if (args->num == SYS_write)
     {
-        oe_host_write(1, (const char*)_args.arg2, (size_t)_args.arg3);
+        oe_host_write(1, (const char*)args->arg2, (size_t)args->arg3);
         return 0;
     }
 
@@ -470,14 +472,16 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
 
         if (opcode == SYSCALL_OPCODE)
         {
+            syscall_args_t* args = &_args;
+
             /* Extract the syscall arguments. */
-            _args.num = (long)context->rax;
-            _args.arg1 = (long)context->rdi;
-            _args.arg2 = (long)context->rsi;
-            _args.arg3 = (long)context->rdx;
-            _args.arg4 = (long)context->r10;
-            _args.arg5 = (long)context->r8;
-            _args.arg6 = (long)context->r9;
+            args->num = (long)context->rax;
+            args->arg1 = (long)context->rdi;
+            args->arg2 = (long)context->rsi;
+            args->arg3 = (long)context->rdx;
+            args->arg4 = (long)context->r10;
+            args->arg5 = (long)context->r8;
+            args->arg6 = (long)context->r9;
 
 #if 0
             assert(_args.num == 99);
@@ -500,7 +504,7 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
 
 static void _continue_execution_hook(void)
 {
-    handle_syscall();
+    handle_syscall(&_args);
 }
 
 void test_exec(const uint8_t* image_base, size_t image_size)

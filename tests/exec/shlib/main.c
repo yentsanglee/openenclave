@@ -8,10 +8,10 @@
 void _start(void)
 {
 #if 1
-    int fd = 1;
-    const void* buf = "hello\n";
-    size_t count = strlen(buf);
-    syscall3(SYS_write, (long)fd, (long)buf, (long)count);
+    syscall3(SYS_write, 1, (long)"xxx\n", 4);
+    syscall3(SYS_write, 1, (long)"xxx\n", 4);
+    syscall3(SYS_write, 1, (long)"yyy\n", 4);
+    syscall3(SYS_write, 1, (long)"zzz\n", 4);
 #else
     syscall6(99, 10, 20, 30, 40, 50, 60);
 #endif
