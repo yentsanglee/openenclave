@@ -258,6 +258,7 @@ static int _reset_buffer(
     return 0;
 }
 
+#ifndef OE_BUILD_ENCLAVE
 int elf64_load(const char* path, elf64_t* elf)
 {
     int rc = -1;
@@ -332,6 +333,7 @@ done:
 
     return rc;
 }
+#endif
 
 int elf64_unload(elf64_t* elf)
 {

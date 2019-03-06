@@ -296,9 +296,9 @@ uint64_t oe_get_num_pages(void)
 **==============================================================================
 */
 
-const void* __oe_get_exec_base(void)
+void* __oe_get_exec_base(void)
 {
-    const unsigned char* base = __oe_get_enclave_base();
+    uint8_t* base = (uint8_t*)__oe_get_enclave_base();
 
 #if defined(__linux__)
     return base + _exec_rva;
@@ -307,9 +307,9 @@ const void* __oe_get_exec_base(void)
 #endif
 }
 
-const void* __oe_get_exec_end(void)
+void* __oe_get_exec_end(void)
 {
-    return (const uint8_t*)__oe_get_exec_base() + __oe_get_exec_size();
+    return (uint8_t*)__oe_get_exec_base() + __oe_get_exec_size();
 }
 
 size_t __oe_get_exec_size(void)

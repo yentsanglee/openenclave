@@ -4,7 +4,7 @@
 enclave {
     trusted {
         public void test_exec(
-            [in, count=size] const uint8_t* data,
-            size_t size);
+            [in, count=image_size] const uint8_t* image_base,
+            size_t image_size);
     };
 };
