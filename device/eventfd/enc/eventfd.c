@@ -332,7 +332,7 @@ static eventfd_dev_t _eventfd = {
     .waitfor = OE_COND_INITIALIZER,
 };
 
-oe_device_t* oe_eventfd_get_eventfd(void)
+oe_device_t* oe_get_eventfd_device(void)
 {
     return &_eventfd.base;
 }

@@ -17,6 +17,7 @@
 #include <openenclave/corelibc/unistd.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/epoll.h>
+#include <openenclave/internal/eventfd.h>
 #include <openenclave/internal/print.h>
 
 typedef int (*ioctl_proc)(
@@ -445,6 +446,14 @@ static long _syscall(
             int fd = (int)arg3;
             struct oe_epoll_event* event = (struct oe_epoll_event*)arg4;
             ret = oe_epoll_ctl(epfd, op, fd, event);
+            goto done;
+        }
+        case OE_SYS_eventfd:
+        case OE_SYS_eventfd2:
+        {
+            unsigned int initval = (unsigned int)arg1;
+            int flags = (int)arg2;
+            ret = oe_eventfd(initval, flags);
             goto done;
         }
         case OE_SYS_exit_group:
