@@ -197,6 +197,9 @@ oe_continue_execution:
     // Restore flags.
     popfq
 
+    // Give last chance to handler.
+    call oe_call_continue_execution_hook
+
     // Recovery the correct rsp.
     add     $(ABI_REDZONE_BYTE_SIZE + 8), %rsp
 

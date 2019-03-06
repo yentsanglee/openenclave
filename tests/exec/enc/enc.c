@@ -17,6 +17,8 @@
 #include <syscall.h>
 #include "exec_t.h"
 
+extern void (*oe_continue_execution_hook)(void);
+
 typedef struct _elf_image
 {
     elf64_t elf;
@@ -451,7 +453,7 @@ long handle_syscall(void)
 {
     if (_args.num == SYS_write)
     {
-        // oe_host_write(1, (const char*)_args.arg2, (size_t)_args.arg3);
+        oe_host_write(1, (const char*)_args.arg2, (size_t)_args.arg3);
         return 0;
     }
 
@@ -496,6 +498,11 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
     return OE_EXCEPTION_CONTINUE_SEARCH;
 }
 
+static void _continue_execution_hook(void)
+{
+    handle_syscall();
+}
+
 void test_exec(const uint8_t* image_base, size_t image_size)
 {
     uint8_t* exec_base = (uint8_t*)__oe_get_exec_base();
@@ -503,6 +510,8 @@ void test_exec(const uint8_t* image_base, size_t image_size)
     elf_image_t image;
     entry_proc entry;
     oe_result_t r;
+
+    oe_continue_execution_hook = _continue_execution_hook;
 
     r = oe_add_vectored_exception_handler(false, _exception_handler);
     if (r != OE_OK)

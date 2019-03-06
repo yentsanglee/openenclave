@@ -10,6 +10,7 @@
 #include <openenclave/internal/fault.h>
 #include <openenclave/internal/globals.h>
 #include <openenclave/internal/jump.h>
+#include <openenclave/internal/print.h>
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/trace.h>
@@ -19,6 +20,8 @@
 #include "td.h"
 
 #define MAX_EXCEPTION_HANDLER_COUNT 64
+
+#define printf oe_host_printf
 
 // The spin lock to synchronize the exception handler access.
 static oe_spinlock_t g_exception_lock = OE_SPINLOCK_INITIALIZER;
@@ -417,4 +420,12 @@ void oe_cleanup_xstates(void)
     __builtin_ia32_xrstor64(xsave_area, restore_mask);
 
     return;
+}
+
+void (*oe_continue_execution_hook)(void);
+
+void oe_call_continue_execution_hook(void)
+{
+    if (oe_continue_execution_hook)
+        oe_continue_execution_hook();
 }
