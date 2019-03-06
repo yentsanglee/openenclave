@@ -9,6 +9,7 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/device.h>
+#include <openenclave/internal/epoll.h>
 #include <openenclave/internal/fault.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/globals.h>
@@ -185,6 +186,13 @@ static oe_result_t _handle_init_enclave(uint64_t arg_in)
 
             /* Register the host sockets device. */
             if (oe_register_hostsock_device() != 0)
+            {
+                result = OE_FAILURE;
+                goto done;
+            }
+
+            /* Register the host sockets device. */
+            if (oe_register_epoll_device() != 0)
             {
                 result = OE_FAILURE;
                 goto done;

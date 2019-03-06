@@ -77,6 +77,7 @@ add_library(oelibc STATIC
     strerror.c
     sysconf.c
     socket.c
+    epoll.c
     stat.c
     errno.c
     setjmp.c

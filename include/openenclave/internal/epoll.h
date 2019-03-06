@@ -7,6 +7,8 @@
 #pragma once
 #include <openenclave/internal/device.h>
 
+OE_EXTERNC_BEGIN
+
 #ifdef __x86_64__
 #define EPOLL_PACKED __attribute__((packed))
 #else
@@ -34,6 +36,7 @@ enum OE_EPOLL_EVENTS
 
 void oe_epoll_install_epoll(void);
 oe_device_t* oe_epoll_get_epoll(void);
+int oe_register_epoll_device(void);
 
 struct oe_device_notifications
 {
@@ -82,25 +85,18 @@ struct oe_epoll_event
     oe_epoll_data_t data; /* User data variable */
 } EPOLL_PACKED;
 
-#ifdef cplusplus
-extern "C"
-{
-#endif
+int oe_epoll_create(int size);
+int oe_epoll_create1(int flags);
+int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event);
+int oe_epoll_wait(
+    int epfd,
+    struct oe_epoll_event* events,
+    int maxevents,
+    int timeout);
 
-    int oe_epoll_create(int size);
-    int oe_epoll_create1(int flags);
-    int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event);
-    int oe_epoll_wait(
-        int epfd,
-        struct oe_epoll_event* events,
-        int maxevents,
-        int timeout);
+// int oe_epoll_pwait (int epfd, struct epoll_event *events, int maxevents,
+// int timeout, const sigset_t *ss);
 
-    // int oe_epoll_pwait (int epfd, struct epoll_event *events, int maxevents,
-    // int timeout, const sigset_t *ss);
-
-#ifdef cplusplus
-}
-#endif
+OE_EXTERNC_END
 
 #endif

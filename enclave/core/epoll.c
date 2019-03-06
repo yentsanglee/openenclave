@@ -524,3 +524,22 @@ int oe_wait_device_notification(int timeout)
 void oe_clear_device_notification()
 {
 }
+
+int oe_register_epoll_device(void)
+{
+    int ret = -1;
+    const uint64_t devid = OE_DEVID_EPOLL;
+
+    /* Allocate the device id. */
+    if (oe_allocate_devid(devid) != devid)
+        goto done;
+
+    /* Add the hostfs device to the device table. */
+    if (oe_set_devid_device(devid, oe_epoll_get_epoll()) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}

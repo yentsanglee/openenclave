@@ -21,6 +21,7 @@ if (OE_SGX)
         sgx/hostcalls.c
         sgx/hostfs.c
         sgx/hostsock.c
+        sgx/epoll.c
         sgx/init.c
         sgx/jump.c
         sgx/keys.c
