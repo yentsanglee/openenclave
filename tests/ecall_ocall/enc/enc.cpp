@@ -11,11 +11,10 @@
 #include <mutex>
 #include <system_error>
 #include "ecall_ocall_t.h"
-#include "helpers.h"
 
 unsigned g_enclave_id = ~0u;
 
-static tls_wrapper g_per_thread_flow_id;
+thread_local unsigned t_flow_id = 0;
 
 // class to verify OCalls in static Initializers
 class static_init_ocaller
@@ -75,10 +74,10 @@ oe_result_t enc_parallel_execution(
     std::atomic<unsigned>* release =
         reinterpret_cast<std::atomic<unsigned>*>(_release);
 
-    unsigned old_flow_id = g_per_thread_flow_id.get_u();
+    unsigned old_flow_id = t_flow_id;
     if (0 == old_flow_id)
     {
-        g_per_thread_flow_id.set(flow_id);
+        t_flow_id = flow_id;
 
         ++(*counter);
 
@@ -87,7 +86,7 @@ oe_result_t enc_parallel_execution(
         while (0 == release->load(std::memory_order_acquire))
             ;
 
-        old_flow_id = g_per_thread_flow_id.get_u();
+        old_flow_id = t_flow_id;
         if (old_flow_id != flow_id)
         {
             printf(
@@ -97,7 +96,7 @@ oe_result_t enc_parallel_execution(
                 old_flow_id);
             result = OE_UNEXPECTED;
         }
-        g_per_thread_flow_id.set(0u);
+        t_flow_id = 0u;
     }
     else
     {

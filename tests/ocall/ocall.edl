@@ -16,9 +16,9 @@ enclave {
         public bool was_destructor_called();
 
         public int enc_set_tsd(
-            [user_check] void* value);
+            [user_check] char* str);
 
-        public void* enc_get_tsd();
+        public char* enc_get_tsd();
 
         public uint64_t enc_test_my_ocall();
 

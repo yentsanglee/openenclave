@@ -9,7 +9,7 @@
 #include <openenclave/internal/globals.h>
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/tests.h>
-#include <openenclave/internal/thread.h>
+#include <memory>
 #include "ocall_t.h"
 
 uint64_t enc_test2(uint64_t val)
@@ -29,45 +29,51 @@ void enc_test4()
     }
 }
 
-static oe_once_t g_once = OE_ONCE_INIT;
-static oe_thread_key_t g_key = OE_THREADKEY_INITIALIZER;
-
 static bool g_destructor_called = false;
 
-static void _destructor(void* data)
+class thread_data
 {
-    char* str = (char*)data;
-
-    if (oe_strcmp(str, "TSD-DATA") == 0)
+  public:
+    /*ctor*/ thread_data(char* str) : m_str(str)
     {
-        oe_host_free(str);
+        // empty
+    }
+
+    /*dtor*/ ~thread_data()
+    {
         g_destructor_called = true;
-        OE_TEST(oe_thread_setspecific(g_key, NULL) == 0);
+        if (m_str)
+        {
+            oe_host_free(m_str);
+            m_str = nullptr;
+        }
     }
-}
 
-static void _init()
-{
-    if (oe_thread_key_create(&g_key, _destructor) != 0)
+    char* get_str() const
     {
-        oe_abort();
+        return m_str;
     }
-}
-int enc_set_tsd(void* value)
+
+  private:
+    char* m_str;
+};
+
+thread_local std::unique_ptr<thread_data> t_data;
+
+int enc_set_tsd(char* str)
 {
-    int rval = 0;
-    /* Initialize this the first time */
-    if (oe_once(&g_once, _init) != 0 ||
-        oe_thread_setspecific(g_key, value) != 0)
+    int rval = -1;
+    if (!t_data)
     {
-        rval = -1;
+        t_data.reset(new thread_data(str));
+        rval = 0;
     }
     return rval;
 }
 
-void* enc_get_tsd()
+char* enc_get_tsd()
 {
-    return oe_thread_getspecific(g_key);
+    return t_data ? t_data->get_str() : nullptr;
 }
 
 bool was_destructor_called()

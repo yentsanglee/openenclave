@@ -92,7 +92,7 @@ int main(int argc, const char* argv[])
 
     /* Call enc_get_tsd */
     {
-        void* ret_value = NULL;
+        char* ret_value = NULL;
         result = enc_get_tsd(enclave, &ret_value);
         OE_TEST(OE_OK == result);
         /*returning from enc_set_tsd() cleared this TSD slot */
