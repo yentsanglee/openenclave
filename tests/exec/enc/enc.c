@@ -17,7 +17,7 @@
 #include <syscall.h>
 #include "exec_t.h"
 
-extern void (*oe_continue_execution_hook)(void);
+extern long (*oe_continue_execution_hook)(long ret);
 
 void MEMSET(void* s, unsigned char c, size_t n)
 {
@@ -499,6 +499,8 @@ done:
 
 typedef void (*entry_proc)();
 
+typedef void (*start_proc)(long* p);
+
 #define SYSCALL_OPCODE 0x050F
 
 typedef struct _syscall_args
@@ -516,8 +518,6 @@ static syscall_args_t _args;
 
 long handle_syscall(syscall_args_t* args)
 {
-    printf("handle_syscall(): %d\n", args->num);
-
     if (args->num == SYS_write)
     {
         oe_host_write(1, (const char*)args->arg2, (size_t)args->arg3);
@@ -525,13 +525,14 @@ long handle_syscall(syscall_args_t* args)
     }
     else
     {
+        printf("handle_syscall(): panic: num=%ld\n", args->num);
         oe_abort();
     }
 
     return -1;
 }
 
-static int _count = 0;
+static int _num_exceptions = 0;
 
 static uint64_t _exception_handler(oe_exception_record_t* exception)
 {
@@ -556,6 +557,8 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
 
             context->rip += 2;
 
+            _num_exceptions++;
+
             return OE_EXCEPTION_CONTINUE_EXECUTION;
         }
         else
@@ -567,9 +570,10 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
     return OE_EXCEPTION_CONTINUE_SEARCH;
 }
 
-static void _continue_execution_hook(void)
+static long _continue_execution_hook(long ret)
 {
-    handle_syscall(&_args);
+    (void)ret;
+    return handle_syscall(&_args);
 }
 
 void test_exec(const uint8_t* image_base, size_t image_size)
@@ -577,7 +581,6 @@ void test_exec(const uint8_t* image_base, size_t image_size)
     uint8_t* exec_base = (uint8_t*)__oe_get_exec_base();
     size_t exec_size = __oe_get_exec_size();
     elf_image_t image;
-    entry_proc entry;
     oe_result_t r;
 
     oe_continue_execution_hook = _continue_execution_hook;
@@ -588,8 +591,6 @@ void test_exec(const uint8_t* image_base, size_t image_size)
         fprintf(stderr, "oe_add_vectored_exception_handler() failed\n");
         abort();
     }
-
-    // asm volatile("syscall");
 
     if (image_size > exec_size)
     {
@@ -615,15 +616,39 @@ void test_exec(const uint8_t* image_base, size_t image_size)
         abort();
     }
 
-    entry = (entry_proc)(exec_base + image.entry_rva);
-
-    printf("<<<<<<<<<<<\n");
+#if 0
+    entry_proc entry = (entry_proc)(exec_base + image.entry_rva);
     entry();
-    printf(">>>>>>>>>>>\n");
+#else
+    {
+        start_proc start = (start_proc)(exec_base + image.entry_rva);
+        typedef struct _args
+        {
+            long argc;
+            const char* argv[8];
+        } args_t;
+        args_t args = {
+            1,
+            {"/tmp/prog", NULL},
+        };
+        long* p = (long*)&args;
+
+        printf("p[0]=%ld\n", p[0]);
+
+        char** argv = (void*)(p + 1);
+
+        printf("argv[0]=%s\n", argv[0]);
+        printf("argv[1]=%s\n", argv[1]);
+
+        printf("<<<<<<<<<<<\n");
+        start(p);
+        printf(">>>>>>>>>>>\n");
+    }
+#endif
 
     _free_elf_image(&image);
 
-    printf("_count=%d\n", _count);
+    printf("_num_exceptions=%d\n", _num_exceptions);
 }
 
 OE_SET_ENCLAVE_SGX(

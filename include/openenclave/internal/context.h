@@ -36,6 +36,10 @@ void oe_snap_current_context(oe_context_t* oe_context);
 void oe_restore_partial_context(oe_context_t* oe_context);
 void oe_continue_execution(oe_context_t* oe_context);
 
+extern long (*oe_continue_execution_hook)(long ret);
+
+long oe_call_continue_execution_hook(long ret);
+
 #endif // !__ASSEMBLER__
 
 #endif /* _OE_INTERNAL_CONTEXT_H */

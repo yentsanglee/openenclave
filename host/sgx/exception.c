@@ -4,6 +4,7 @@
 #include "exception.h"
 #include <openenclave/host.h>
 #include <openenclave/internal/calls.h>
+#include <openenclave/internal/context.h>
 #include <stdio.h>
 #include "enclave.h"
 
@@ -73,7 +74,7 @@ uint64_t oe_host_handle_exception(oe_host_exception_context_t* context)
     }
 }
 
-void oe_call_continue_execution_hook(void);
-void oe_call_continue_execution_hook(void)
+long oe_call_continue_execution_hook(long ret)
 {
+    return ret;
 }

@@ -422,10 +422,12 @@ void oe_cleanup_xstates(void)
     return;
 }
 
-void (*oe_continue_execution_hook)(void);
+long (*oe_continue_execution_hook)(long ret);
 
-void oe_call_continue_execution_hook(void)
+long oe_call_continue_execution_hook(long ret)
 {
     if (oe_continue_execution_hook)
-        oe_continue_execution_hook();
+        return oe_continue_execution_hook(ret);
+
+    return ret;
 }

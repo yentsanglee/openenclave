@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #ifndef __SYSCALLX_H
 #define __SYSCALLX_H
 
@@ -93,6 +96,11 @@ syscall6(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         : "rcx", "r11", "memory");
 
     return ret;
+}
+
+static __inline__ void debug(const char* str)
+{
+    syscall3(SYS_write, 1, (long)str, strlen(str));
 }
 
 #endif /* __SYSCALLX_H */
