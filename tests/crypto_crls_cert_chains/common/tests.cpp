@@ -120,18 +120,18 @@ void test_cert_chain_negative(
     printf("===test_cert_chain_negative passed\n");
 }
 
-#ifndef OE_BUILD_ENCLAVE
+//#ifndef OE_BUILD_ENCLAVE
 
 #define ERROR_MSG_CERT_REVOKED "certificate revoked"
 #define ERROR_MSG_MISSING_CRL "unable to get certificate CRL"
 
-#else
+//#else
 
-#define ERROR_MSG_CERT_REVOKED \
-    "The certificate has been revoked (is on a CRL)\n"
-#define ERROR_MSG_MISSING_CRL "unable to get certificate CRL"
+//#define ERROR_MSG_CERT_REVOKED \
+//    "The certificate has been revoked (is on a CRL)\n"
+//#define ERROR_MSG_MISSING_CRL "unable to get certificate CRL"
 
-#endif
+//#endif
 
 void test_crls(
     const char* root,

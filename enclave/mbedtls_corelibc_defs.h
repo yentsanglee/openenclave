@@ -16,5 +16,5 @@
  * can be scoped to the mbedtls headers and subsequently undefined afterwards.
  */
 #if !defined(pthread_mutex_t)
-#define pthread_mutex_t oe_pthread_mutex_t
+//#define pthread_mutex_t oe_pthread_mutex_t
 #endif

@@ -31,6 +31,7 @@ add_library(oeenclave STATIC
     ec.c
     cmac.c
     hmac.c
+    init.c
     key.c
     random.c
     rsa.c
@@ -42,12 +43,18 @@ maybe_build_using_clangw(oeenclave)
 if(CMAKE_C_COMPILER_ID MATCHES GNU)
 target_compile_options(oeenclave PRIVATE -Wjump-misses-init)
 endif()
+target_compile_options(oeenclave PRIVATE -Wno-error)
 
 target_include_directories(oeenclave PRIVATE
+    ${PROJECT_SOURCE_DIR}/enclave/include
+    ${PROJECT_SOURCE_DIR}/build/3rdparty/musl/musl/include/
+    ${PROJECT_SOURCE_DIR}/build/output/include/openenclave/libc
     ${PROJECT_SOURCE_DIR}/include/openenclave/corelibc)
 
 target_link_libraries(oeenclave PUBLIC
+    -L/home/johnkord/intel-sgx-ssl/Linux/package/lib/ -loe_tssl_crypto
     oe_includes
+    -L/home/johnkord/openenclave/build/output/lib/openenclave/enclave/ -loecore -loelibc
     mbedcrypto)
 
 set_property(TARGET oeenclave PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)

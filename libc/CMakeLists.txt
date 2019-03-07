@@ -80,8 +80,13 @@ add_library(oelibc STATIC
     stat.c
     errno.c
     setjmp.c
+    ssl_stubs.c
     time.c
+    __memcpy_chk.c
+    __memset_chk.c
     __printf_chk.c
+    __strcat_chk.c
+    __strdup.c
     __vfprintf_chk.c
 
     ${MUSLSRC}/complex/cabs.c
@@ -798,6 +803,7 @@ target_link_libraries(oelibc
 
 if (OE_SGX)
 target_include_directories(oelibc PRIVATE
+  ${PROJECT_BINARY_DIR}/../enclave/include
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/include
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/internal
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/arch/x86_64)

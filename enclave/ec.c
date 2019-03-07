@@ -2,86 +2,66 @@
 // Licensed under the MIT License.
 
 #include "ec.h"
-#include <mbedtls/asn1.h>
-#include <mbedtls/asn1write.h>
-#include <mbedtls/ecp.h>
 #include <openenclave/bits/safecrt.h>
-#include <openenclave/enclave.h>
+#include <openenclave/internal/defs.h>
+#include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
+#include <openssl/obj_mac.h>
+#include <openssl/pem.h>
+#include <string.h>
+#include "init.h"
 #include "key.h"
-#include "pem.h"
-#include "random.h"
 
-static uint64_t _PRIVATE_KEY_MAGIC = 0xf12c37bb02814eeb;
-static uint64_t _PUBLIC_KEY_MAGIC = 0xd7490a56f6504ee6;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+/* Needed for compatibility with ssl1.1 */
+static int ECDSA_SIG_set0(ECDSA_SIG* sig, BIGNUM* r, BIGNUM* s)
+{
+    if (r == NULL || s == NULL)
+        return 0;
+    BN_clear_free(sig->r);
+    BN_clear_free(sig->s);
+    sig->r = r;
+    sig->s = s;
+    return 1;
+}
 
-OE_STATIC_ASSERT(sizeof(oe_private_key_t) <= sizeof(oe_ec_private_key_t));
+#endif
+/* Magic numbers for the EC key implementation structures */
+static const uint64_t _PRIVATE_KEY_MAGIC = 0x19a751419ae04bbc;
+static const uint64_t _PUBLIC_KEY_MAGIC = 0xb1d39580c1f14c02;
+
 OE_STATIC_ASSERT(sizeof(oe_public_key_t) <= sizeof(oe_ec_public_key_t));
+OE_STATIC_ASSERT(sizeof(oe_private_key_t) <= sizeof(oe_ec_private_key_t));
 
-static mbedtls_ecp_group_id _get_group_id(oe_ec_type_t ec_type)
+static int _get_nid(oe_ec_type_t ec_type)
 {
     switch (ec_type)
     {
         case OE_EC_TYPE_SECP256R1:
-            return MBEDTLS_ECP_DP_SECP256R1;
+            return NID_X9_62_prime256v1;
         default:
-            return MBEDTLS_ECP_DP_NONE;
+            return NID_undef;
     }
 }
 
-static oe_result_t _copy_key(
-    mbedtls_pk_context* dest,
-    const mbedtls_pk_context* src,
-    bool copy_private_fields)
+static oe_result_t _private_key_write_pem_callback(BIO* bio, EVP_PKEY* pkey)
 {
     oe_result_t result = OE_UNEXPECTED;
-    const mbedtls_pk_info_t* info;
-    int rc = 0;
+    EC_KEY* ec = NULL;
 
-    if (dest)
-        mbedtls_pk_init(dest);
+    if (!(ec = EVP_PKEY_get1_EC_KEY(pkey)))
+        OE_RAISE(OE_FAILURE);
 
-    /* Check parameters */
-    if (!dest || !src)
-        OE_RAISE(OE_INVALID_PARAMETER);
-
-    /* Lookup the info for this key type */
-    if (!(info = mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY)))
-        OE_RAISE(OE_PUBLIC_KEY_NOT_FOUND);
-
-    /* Setup the context for this key type */
-    rc = mbedtls_pk_setup(dest, info);
-    if (rc != 0)
-        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x", rc);
-
-    /* Copy all fields of the key structure */
-    {
-        mbedtls_ecp_keypair* ec_dest = mbedtls_pk_ec(*dest);
-        const mbedtls_ecp_keypair* ec_src = mbedtls_pk_ec(*src);
-
-        if (!ec_dest || !ec_src)
-            OE_RAISE(OE_FAILURE);
-
-        if (mbedtls_ecp_group_copy(&ec_dest->grp, &ec_src->grp) != 0)
-            OE_RAISE(OE_FAILURE);
-
-        if (copy_private_fields)
-        {
-            if (mbedtls_mpi_copy(&ec_dest->d, &ec_src->d) != 0)
-                OE_RAISE(OE_FAILURE);
-        }
-
-        if (mbedtls_ecp_copy(&ec_dest->Q, &ec_src->Q) != 0)
-            OE_RAISE(OE_FAILURE);
-    }
+    if (!PEM_write_bio_ECPrivateKey(bio, ec, NULL, NULL, 0, 0, NULL))
+        OE_RAISE(OE_FAILURE);
 
     result = OE_OK;
 
 done:
 
-    if (result != OE_OK)
-        mbedtls_pk_free(dest);
+    if (ec)
+        EC_KEY_free(ec);
 
     return result;
 }
@@ -92,65 +72,123 @@ static oe_result_t _generate_key_pair(
     oe_public_key_t* public_key)
 {
     oe_result_t result = OE_UNEXPECTED;
-    mbedtls_ctr_drbg_context* drbg;
-    mbedtls_pk_context pk;
-    mbedtls_ecp_group_id curve;
-    int rc = 0;
-
-    /* Initialize structures */
-    mbedtls_pk_init(&pk);
+    int nid;
+    EC_KEY* ec_private = NULL;
+    EC_KEY* ec_public = NULL;
+    EVP_PKEY* pkey_private = NULL;
+    EVP_PKEY* pkey_public = NULL;
+    EC_POINT* point = NULL;
 
     if (private_key)
         oe_secure_zero_fill(private_key, sizeof(*private_key));
 
     if (public_key)
-        oe_secure_zero_fill(public_key, sizeof(*public_key));
+        oe_secure_zero_fill(public_key, sizeof(oe_public_key_t));
 
-    /* Check for invalid parameters */
+    /* Check parameters */
     if (!private_key || !public_key)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    /* Get the group id and curve info structure for this EC type */
-    {
-        const mbedtls_ecp_curve_info* info;
-        mbedtls_ecp_group_id group_id;
+    /* Initialize OpenSSL */
+    oe_initialize_openssl();
 
-        if ((group_id = _get_group_id(ec_type)) == MBEDTLS_ECP_DP_NONE)
-            OE_RAISE(OE_FAILURE);
-
-        if (!(info = mbedtls_ecp_curve_info_from_grp_id(group_id)))
-            OE_RAISE(OE_INVALID_PARAMETER);
-
-        curve = info->grp_id;
-    }
-
-    /* Get the drbg object */
-    if (!(drbg = oe_mbedtls_get_drbg()))
+    /* Get the NID for this curve type */
+    if ((nid = _get_nid(ec_type)) == NID_undef)
         OE_RAISE(OE_FAILURE);
 
-    /* Create key struct */
-    rc = mbedtls_pk_setup(&pk, mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY));
-    if (rc != 0)
-        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x", rc);
+    /* Create the private EC key */
+    {
+        /* Create the private key */
+        if (!(ec_private = EC_KEY_new_by_curve_name(nid)))
+            OE_RAISE(OE_FAILURE);
 
-    /* Generate the EC key */
-    rc = mbedtls_ecp_gen_key(
-        curve, mbedtls_pk_ec(pk), mbedtls_ctr_drbg_random, drbg);
-    if (rc != 0)
-        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x", rc);
+        /* Set the EC named-curve flag */
+        EC_KEY_set_asn1_flag(ec_private, OPENSSL_EC_NAMED_CURVE);
 
-    /* Initialize the private key parameter */
-    OE_CHECK(
-        oe_private_key_init(private_key, &pk, _copy_key, _PRIVATE_KEY_MAGIC));
+        /* Generate the public/private key pair */
+        if (!EC_KEY_generate_key(ec_private))
+            OE_RAISE(OE_FAILURE);
+    }
 
-    /* Initialize the public key parameter */
-    OE_CHECK(oe_public_key_init(public_key, &pk, _copy_key, _PUBLIC_KEY_MAGIC));
+    /* Create the public EC key */
+    {
+        /* Create the public key */
+        if (!(ec_public = EC_KEY_new_by_curve_name(nid)))
+            OE_RAISE(OE_FAILURE);
+
+        /* Set the EC named-curve flag */
+        EC_KEY_set_asn1_flag(ec_public, OPENSSL_EC_NAMED_CURVE);
+
+        /* Duplicate public key point from the private key */
+        if (!(point = EC_POINT_dup(
+                  EC_KEY_get0_public_key(ec_private),
+                  EC_KEY_get0_group(ec_public))))
+        {
+            OE_RAISE(OE_FAILURE);
+        }
+
+        /* Set the public key */
+        if (!EC_KEY_set_public_key(ec_public, point))
+            OE_RAISE(OE_FAILURE);
+
+        /* Keep from being freed below */
+        point = NULL;
+    }
+
+    /* Create the PKEY private key wrapper */
+    {
+        /* Create the private key structure */
+        if (!(pkey_private = EVP_PKEY_new()))
+            OE_RAISE(OE_FAILURE);
+
+        /* Initialize the private key from the generated key pair */
+        if (!EVP_PKEY_assign_EC_KEY(pkey_private, ec_private))
+            OE_RAISE(OE_FAILURE);
+
+        /* Initialize the private key */
+        oe_private_key_init(private_key, pkey_private, _PRIVATE_KEY_MAGIC);
+
+        /* Keep these from being freed below */
+        ec_private = NULL;
+        pkey_private = NULL;
+    }
+
+    /* Create the PKEY public key wrapper */
+    {
+        /* Create the public key structure */
+        if (!(pkey_public = EVP_PKEY_new()))
+            OE_RAISE(OE_FAILURE);
+
+        /* Initialize the public key from the generated key pair */
+        if (!EVP_PKEY_assign_EC_KEY(pkey_public, ec_public))
+            OE_RAISE(OE_FAILURE);
+
+        /* Initialize the public key */
+        oe_public_key_init(public_key, pkey_public, _PUBLIC_KEY_MAGIC);
+
+        /* Keep these from being freed below */
+        ec_public = NULL;
+        pkey_public = NULL;
+    }
 
     result = OE_OK;
 
 done:
 
-    mbedtls_pk_free(&pk);
+    if (ec_private)
+        EC_KEY_free(ec_private);
+
+    if (ec_public)
+        EC_KEY_free(ec_public);
+
+    if (pkey_private)
+        EVP_PKEY_free(pkey_private);
+
+    if (pkey_public)
+        EVP_PKEY_free(pkey_public);
+
+    if (point)
+        EC_POINT_free(point);
 
     if (result != OE_OK)
     {
@@ -161,12 +199,14 @@ done:
     return result;
 }
 
-static oe_result_t oe_public_key_equal(
+static oe_result_t _public_key_equal(
     const oe_public_key_t* public_key1,
     const oe_public_key_t* public_key2,
     bool* equal)
 {
     oe_result_t result = OE_UNEXPECTED;
+    EC_KEY* ec1 = NULL;
+    EC_KEY* ec2 = NULL;
 
     if (equal)
         *equal = false;
@@ -176,16 +216,20 @@ static oe_result_t oe_public_key_equal(
         !oe_public_key_is_valid(public_key2, _PUBLIC_KEY_MAGIC) || !equal)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    /* Compare the groups and EC points */
     {
-        const mbedtls_ecp_keypair* ec1 = mbedtls_pk_ec(public_key1->pk);
-        const mbedtls_ecp_keypair* ec2 = mbedtls_pk_ec(public_key2->pk);
+        ec1 = EVP_PKEY_get1_EC_KEY(public_key1->pkey);
+        ec2 = EVP_PKEY_get1_EC_KEY(public_key2->pkey);
+        const EC_GROUP* group1 = EC_KEY_get0_group(ec1);
+        const EC_GROUP* group2 = EC_KEY_get0_group(ec2);
+        const EC_POINT* point1 = EC_KEY_get0_public_key(ec1);
+        const EC_POINT* point2 = EC_KEY_get0_public_key(ec2);
 
-        if (!ec1 || !ec2)
-            OE_RAISE(OE_INVALID_PARAMETER);
+        if (!ec1 || !ec2 || !group1 || !group2 || !point1 || !point2)
+            OE_RAISE(OE_FAILURE);
 
-        if (ec1->grp.id == ec2->grp.id &&
-            mbedtls_ecp_point_cmp(&ec1->Q, &ec2->Q) == 0)
+        /* Compare group and public key point */
+        if (EC_GROUP_cmp(group1, group2, NULL) == 0 &&
+            EC_POINT_cmp(group1, point1, point2, NULL) == 0)
         {
             *equal = true;
         }
@@ -194,23 +238,26 @@ static oe_result_t oe_public_key_equal(
     result = OE_OK;
 
 done:
+
+    if (ec1)
+        EC_KEY_free(ec1);
+
+    if (ec2)
+        EC_KEY_free(ec2);
+
     return result;
 }
 
-oe_result_t oe_ec_public_key_init(
-    oe_ec_public_key_t* public_key,
-    const mbedtls_pk_context* pk)
+void oe_ec_public_key_init(oe_ec_public_key_t* public_key, EVP_PKEY* pkey)
 {
     return oe_public_key_init(
-        (oe_public_key_t*)public_key, pk, _copy_key, _PUBLIC_KEY_MAGIC);
+        (oe_public_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
 }
 
-oe_result_t oe_ec_private_key_init(
-    oe_ec_private_key_t* private_key,
-    const mbedtls_pk_context* pk)
+void oe_ec_private_key_init(oe_ec_private_key_t* private_key, EVP_PKEY* pkey)
 {
     return oe_private_key_init(
-        (oe_private_key_t*)private_key, pk, _copy_key, _PRIVATE_KEY_MAGIC);
+        (oe_private_key_t*)private_key, pkey, _PRIVATE_KEY_MAGIC);
 }
 
 oe_result_t oe_ec_private_key_read_pem(
@@ -222,7 +269,7 @@ oe_result_t oe_ec_private_key_read_pem(
         pem_data,
         pem_size,
         (oe_private_key_t*)private_key,
-        MBEDTLS_PK_ECKEY,
+        EVP_PKEY_EC,
         _PRIVATE_KEY_MAGIC);
 }
 
@@ -235,19 +282,20 @@ oe_result_t oe_ec_private_key_write_pem(
         (const oe_private_key_t*)private_key,
         pem_data,
         pem_size,
+        _private_key_write_pem_callback,
         _PRIVATE_KEY_MAGIC);
 }
 
 oe_result_t oe_ec_public_key_read_pem(
-    oe_ec_public_key_t* private_key,
+    oe_ec_public_key_t* public_key,
     const uint8_t* pem_data,
     size_t pem_size)
 {
     return oe_public_key_read_pem(
         pem_data,
         pem_size,
-        (oe_public_key_t*)private_key,
-        MBEDTLS_PK_ECKEY,
+        (oe_public_key_t*)public_key,
+        EVP_PKEY_EC,
         _PUBLIC_KEY_MAGIC);
 }
 
@@ -327,40 +375,41 @@ oe_result_t oe_ec_generate_key_pair_from_private(
     oe_ec_public_key_t* public_key)
 {
     oe_result_t result = OE_UNEXPECTED;
-    int mbedtls_result;
-    mbedtls_pk_context key;
-    mbedtls_ecp_keypair* keypair;
-    mbedtls_ctr_drbg_context* drbg;
+    int openssl_result;
+    EC_KEY* key = NULL;
+    BIGNUM* private_bn = NULL;
+    EC_POINT* public_point = NULL;
+    EVP_PKEY* public_pkey = NULL;
+    EVP_PKEY* private_pkey = NULL;
 
-    mbedtls_pk_init(&key);
-
-    /* Reject invalid parameters */
-    if (!private_key_buf || !private_key || !public_key)
+    if (!private_key_buf || !private_key || !public_key ||
+        private_key_buf_size > OE_INT_MAX)
+    {
         OE_RAISE(OE_INVALID_PARAMETER);
+    }
 
-    /* Load all the mbedtls variables. */
-    mbedtls_result =
-        mbedtls_pk_setup(&key, mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY));
-    if (mbedtls_result != 0)
-        OE_RAISE_MSG(OE_FAILURE, "mbedtls error: 0x%x", mbedtls_result);
+    /* Initialize OpenSSL. */
+    oe_initialize_openssl();
 
-    keypair = mbedtls_pk_ec(key);
-    mbedtls_result =
-        mbedtls_ecp_group_load(&keypair->grp, _get_group_id(curve));
-    if (mbedtls_result != 0)
-        OE_RAISE_MSG(OE_FAILURE, "mbedtls error: 0x%x", mbedtls_result);
+    /* Initialize the EC key. */
+    key = EC_KEY_new_by_curve_name(_get_nid(curve));
+    if (key == NULL)
+        OE_RAISE(OE_FAILURE);
 
-    mbedtls_result = mbedtls_mpi_read_binary(
-        &keypair->d, private_key_buf, private_key_buf_size);
+    /* Set the EC named-curve flag. */
+    EC_KEY_set_asn1_flag(key, OPENSSL_EC_NAMED_CURVE);
 
-    if (mbedtls_result != 0)
-        OE_RAISE_MSG(OE_FAILURE, "mbedtls error: 0x%x", mbedtls_result);
+    /* Load private key into the EC key. */
+    private_bn = BN_bin2bn(private_key_buf, (int)private_key_buf_size, NULL);
 
-    mbedtls_result = mbedtls_ecp_check_privkey(&keypair->grp, &keypair->d);
-    if (mbedtls_result != 0)
-        OE_RAISE_MSG(OE_FAILURE, "mbedtls error: 0x%x", mbedtls_result);
+    if (private_bn == NULL)
+        OE_RAISE(OE_FAILURE);
 
-    if (!(drbg = oe_mbedtls_get_drbg()))
+    if (EC_KEY_set_private_key(key, private_bn) == 0)
+        OE_RAISE(OE_FAILURE);
+
+    public_point = EC_POINT_new(EC_KEY_get0_group(key));
+    if (public_point == NULL)
         OE_RAISE(OE_FAILURE);
 
     /*
@@ -368,35 +417,50 @@ oe_result_t oe_ec_generate_key_pair_from_private(
      * multiplication with the factors being the private key and the base
      * generator point of the curve.
      */
-    mbedtls_result = mbedtls_ecp_mul(
-        &keypair->grp,
-        &keypair->Q,
-        &keypair->d,
-        &keypair->grp.G,
-        mbedtls_ctr_drbg_random,
-        drbg);
+    openssl_result = EC_POINT_mul(
+        EC_KEY_get0_group(key), public_point, private_bn, NULL, NULL, NULL);
+    if (openssl_result == 0)
+        OE_RAISE(OE_FAILURE);
 
-    if (mbedtls_result != 0)
-        OE_RAISE_MSG(OE_FAILURE, "mbedtls error: 0x%x", mbedtls_result);
+    /* Sanity check the params. */
+    if (EC_KEY_set_public_key(key, public_point) == 0)
+        OE_RAISE(OE_FAILURE);
 
-    mbedtls_result = mbedtls_ecp_check_pubkey(&keypair->grp, &keypair->Q);
-    if (mbedtls_result != 0)
-        OE_RAISE_MSG(OE_FAILURE, "mbedtls error: 0x%x", mbedtls_result);
+    if (EC_KEY_check_key(key) == 0)
+        OE_RAISE(OE_FAILURE);
 
-    /* Export to OE structs. */
-    OE_CHECK(oe_ec_public_key_init(public_key, &key));
-    result = oe_ec_private_key_init(private_key, &key);
-    if (result != OE_OK)
-    {
-        /* Need to free the public key before exiting. */
-        oe_ec_public_key_free(public_key);
-        OE_RAISE(result);
-    }
+    /* Map the key to the EVP_PKEY wrapper. */
+    public_pkey = EVP_PKEY_new();
+    if (public_pkey == NULL)
+        OE_RAISE(OE_FAILURE);
 
+    if (EVP_PKEY_set1_EC_KEY(public_pkey, key) == 0)
+        OE_RAISE(OE_FAILURE);
+
+    private_pkey = EVP_PKEY_new();
+    if (private_pkey == NULL)
+        OE_RAISE(OE_FAILURE);
+
+    if (EVP_PKEY_set1_EC_KEY(private_pkey, key) == 0)
+        OE_RAISE(OE_FAILURE);
+
+    oe_ec_public_key_init(public_key, public_pkey);
+    oe_ec_private_key_init(private_key, private_pkey);
+    public_pkey = NULL;
+    private_pkey = NULL;
     result = OE_OK;
 
 done:
-    mbedtls_pk_free(&key);
+    if (key != NULL)
+        EC_KEY_free(key);
+    if (private_bn != NULL)
+        BN_clear_free(private_bn);
+    if (public_point != NULL)
+        EC_POINT_clear_free(public_point);
+    if (public_pkey != NULL)
+        EVP_PKEY_free(public_pkey);
+    if (private_pkey != NULL)
+        EVP_PKEY_free(private_pkey);
     return result;
 }
 
@@ -405,7 +469,7 @@ oe_result_t oe_ec_public_key_equal(
     const oe_ec_public_key_t* public_key2,
     bool* equal)
 {
-    return oe_public_key_equal(
+    return _public_key_equal(
         (oe_public_key_t*)public_key1, (oe_public_key_t*)public_key2, equal);
 }
 
@@ -419,62 +483,103 @@ oe_result_t oe_ec_public_key_from_coordinates(
 {
     oe_result_t result = OE_UNEXPECTED;
     oe_public_key_t* impl = (oe_public_key_t*)public_key;
-    const mbedtls_pk_info_t* info = NULL;
-    int rc = 0;
+    int nid;
+    EC_KEY* ec = NULL;
+    EVP_PKEY* pkey = NULL;
+    EC_GROUP* group = NULL;
+    EC_POINT* point = NULL;
+    BIGNUM* x = NULL;
+    BIGNUM* y = NULL;
 
     if (public_key)
         oe_secure_zero_fill(public_key, sizeof(oe_ec_public_key_t));
 
-    if (impl)
-        mbedtls_pk_init(&impl->pk);
+    /* Initialize OpenSSL */
+    oe_initialize_openssl();
 
     /* Reject invalid parameters */
-    if (!public_key || !x_data || !x_size || !y_data || !y_size)
+    if (!public_key || !x_data || !x_size || x_size > OE_INT_MAX || !y_data ||
+        !y_size || y_size > OE_INT_MAX)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    /* Lookup the info for this key type */
-    if (!(info = mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY)))
-        OE_RAISE(OE_PUBLIC_KEY_NOT_FOUND);
+    /* Get the NID for this curve type */
+    if ((nid = _get_nid(ec_type)) == NID_undef)
+        OE_RAISE(OE_FAILURE);
 
-    /* Setup the context for this key type */
-    rc = mbedtls_pk_setup(&impl->pk, info);
-    if (rc != 0)
-        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x", rc);
-
-    /* Initialize the key */
+    /* Create the public EC key */
     {
-        mbedtls_ecp_keypair* ecp = mbedtls_pk_ec(impl->pk);
-        mbedtls_ecp_group_id group_id;
-
-        if ((group_id = _get_group_id(ec_type)) == MBEDTLS_ECP_DP_NONE)
+        if (!(group = EC_GROUP_new_by_curve_name(nid)))
             OE_RAISE(OE_FAILURE);
 
-        if (mbedtls_ecp_group_load(&ecp->grp, group_id) != 0)
+        if (!(ec = EC_KEY_new()))
             OE_RAISE(OE_FAILURE);
 
-        if (mbedtls_mpi_read_binary(&ecp->Q.X, x_data, x_size) != 0)
+        if (!(EC_KEY_set_group(ec, group)))
             OE_RAISE(OE_FAILURE);
 
-        if (mbedtls_mpi_read_binary(&ecp->Q.Y, y_data, y_size) != 0)
+        if (!(point = EC_POINT_new(group)))
             OE_RAISE(OE_FAILURE);
 
-        // Used internally by MBEDTLS. Set Z to 1 to indicate that X-Y
-        // represents a standard coordinate point. Zero indicates that the
-        // point is zero or infinite, and values >= 2 have internal meaning
-        // only to MBEDTLS.
-        if (mbedtls_mpi_lset(&ecp->Q.Z, 1) != 0)
+        if (!(x = BN_new()) || !(y = BN_new()))
             OE_RAISE(OE_FAILURE);
+
+        if (!(BN_bin2bn(x_data, (int)x_size, x)))
+            OE_RAISE(OE_FAILURE);
+
+        if (!(BN_bin2bn(y_data, (int)y_size, y)))
+            OE_RAISE(OE_FAILURE);
+
+        if (!EC_POINT_set_affine_coordinates_GFp(group, point, x, y, NULL))
+            OE_RAISE(OE_FAILURE);
+
+        if (!EC_KEY_set_public_key(ec, point))
+            OE_RAISE(OE_FAILURE);
+
+        point = NULL;
     }
 
-    /* Set the magic number */
-    impl->magic = _PUBLIC_KEY_MAGIC;
+    /* Create the PKEY public key wrapper */
+    {
+        /* Create the public key structure */
+        if (!(pkey = EVP_PKEY_new()))
+            OE_RAISE(OE_FAILURE);
+
+        /* Initialize the public key from the generated key pair */
+        {
+            if (!EVP_PKEY_assign_EC_KEY(pkey, ec))
+                OE_RAISE(OE_FAILURE);
+
+            ec = NULL;
+        }
+
+        /* Initialize the public key */
+        {
+            oe_public_key_init(impl, pkey, _PUBLIC_KEY_MAGIC);
+            pkey = NULL;
+        }
+    }
 
     result = OE_OK;
 
 done:
 
-    if (result != OE_OK && impl)
-        mbedtls_pk_free(&impl->pk);
+    if (ec)
+        EC_KEY_free(ec);
+
+    if (group)
+        EC_GROUP_free(group);
+
+    if (pkey)
+        EVP_PKEY_free(pkey);
+
+    if (x)
+        BN_free(x);
+
+    if (y)
+        BN_free(y);
+
+    if (point)
+        EC_POINT_free(point);
 
     return result;
 }
@@ -488,82 +593,68 @@ oe_result_t oe_ecdsa_signature_write_der(
     size_t s_size)
 {
     oe_result_t result = OE_UNEXPECTED;
-    mbedtls_mpi r;
-    mbedtls_mpi s;
-    unsigned char buf[MBEDTLS_ECDSA_MAX_LEN];
-    unsigned char* p = buf + sizeof(buf);
-    int n;
-    size_t len = 0;
-
-    mbedtls_mpi_init(&r);
-    mbedtls_mpi_init(&s);
+    ECDSA_SIG* sig = NULL;
+    int sig_len;
+    BIGNUM* sig_r = NULL;
+    BIGNUM* sig_s = NULL;
 
     /* Reject invalid parameters */
-    if (!signature_size || !data || !size || !s_data || !s_size)
+    if (!signature_size || !data || !size || size > OE_INT_MAX || !s_data ||
+        !s_size || s_size > OE_INT_MAX)
         OE_RAISE(OE_INVALID_PARAMETER);
 
     /* If signature is null, then signature_size must be zero */
     if (!signature && *signature_size != 0)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    /* Convert raw R data to big number */
-    if (mbedtls_mpi_read_binary(&r, data, size) != 0)
+    /* Create new signature object */
+    if (!(sig = ECDSA_SIG_new()))
         OE_RAISE(OE_FAILURE);
 
-    /* Convert raw S data to big number */
-    if (mbedtls_mpi_read_binary(&s, s_data, s_size) != 0)
+    sig_r = BN_new();
+    sig_s = BN_new();
+    /* Convert R to big number object */
+    if (!(BN_bin2bn(data, (int)size, (BIGNUM*)sig_r)))
         OE_RAISE(OE_FAILURE);
 
-    /* Write S to ASN.1 */
+    /* Convert S to big number object */
+    if (!(BN_bin2bn(s_data, (int)s_size, (BIGNUM*)sig_s)))
+        OE_RAISE(OE_FAILURE);
+
+    ECDSA_SIG_set0(sig, sig_r, sig_s);
+
+    /* Determine the size of the binary signature */
+    if ((sig_len = i2d_ECDSA_SIG(sig, NULL)) <= 0)
+        OE_RAISE(OE_FAILURE);
+
+    /* Copy binary signature to output buffer */
+    if (signature && ((size_t)sig_len <= *signature_size))
     {
-        if ((n = mbedtls_asn1_write_mpi(&p, buf, &s)) < 0)
+        uint8_t* p = signature;
+
+        if (!i2d_ECDSA_SIG(sig, &p))
             OE_RAISE(OE_FAILURE);
 
-        len += (size_t)n;
-    }
-
-    /* Write R to ASN.1 */
-    {
-        if ((n = mbedtls_asn1_write_mpi(&p, buf, &r)) < 0)
+        if (p - signature != sig_len)
             OE_RAISE(OE_FAILURE);
-
-        len += (size_t)n;
     }
 
-    /* Write the length to ASN.1 */
+    /* Check whether buffer is too small */
+    if ((size_t)sig_len > *signature_size)
     {
-        if ((n = mbedtls_asn1_write_len(&p, buf, len)) < 0)
-            OE_RAISE_MSG(OE_FAILURE, "n = 0x%x\n", n);
-
-        len += (size_t)n;
-    }
-
-    /* Write the tag to ASN.1 */
-    {
-        unsigned char tag = MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE;
-
-        if ((n = mbedtls_asn1_write_tag(&p, buf, tag)) < 0)
-            OE_RAISE_MSG(OE_FAILURE, "n = 0x%x\n", n);
-
-        len += (size_t)n;
-    }
-
-    /* Check that buffer is big enough */
-    if (len > *signature_size)
-    {
-        *signature_size = len;
+        *signature_size = (size_t)sig_len;
         OE_RAISE(OE_BUFFER_TOO_SMALL);
     }
 
-    OE_CHECK(oe_memcpy_s(signature, *signature_size, p, len));
-    *signature_size = len;
+    /* Set the size of the output buffer */
+    *signature_size = (size_t)sig_len;
 
     result = OE_OK;
 
 done:
 
-    mbedtls_mpi_free(&r);
-    mbedtls_mpi_free(&s);
+    if (sig)
+        ECDSA_SIG_free(sig);
 
     return result;
 }
@@ -573,42 +664,41 @@ bool oe_ec_valid_raw_private_key(
     const uint8_t* key,
     size_t keysize)
 {
-    mbedtls_mpi num;
-    mbedtls_ecp_group group;
+    BIGNUM* bn = NULL;
+    EC_GROUP* group = NULL;
+    BIGNUM* order = NULL;
     bool is_valid = false;
-    int res;
 
-    mbedtls_mpi_init(&num);
-    mbedtls_ecp_group_init(&group);
-
-    if (!key)
+    if (!key || keysize > OE_INT_MAX)
         goto done;
 
-    res = mbedtls_mpi_read_binary(&num, key, keysize);
-    if (res != 0)
-    {
-        OE_TRACE_ERROR("mbedtls_error = 0x%x", res);
+    bn = BN_bin2bn(key, (int)keysize, NULL);
+    if (bn == NULL)
         goto done;
-    }
 
-    res = mbedtls_ecp_group_load(&group, _get_group_id(type));
-    if (res != 0)
-    {
-        OE_TRACE_ERROR("mbedtls_error = 0x%x", res);
+    order = BN_new();
+    if (order == NULL)
         goto done;
-    }
 
-    res = mbedtls_ecp_check_privkey(&group, &num);
-    if (res != 0)
-    {
-        OE_TRACE_ERROR("mbedtls_error = 0x%x", res);
+    group = EC_GROUP_new_by_curve_name(_get_nid(type));
+    if (group == NULL)
         goto done;
-    }
+
+    if (EC_GROUP_get_order(group, order, NULL) == 0)
+        goto done;
+
+    /* Constraint is 1 <= private_key <= order - 1. */
+    if (BN_is_zero(bn) || BN_cmp(bn, order) >= 0)
+        goto done;
 
     is_valid = true;
 
 done:
-    mbedtls_ecp_group_free(&group);
-    mbedtls_mpi_free(&num);
+    if (bn != NULL)
+        BN_clear_free(bn);
+    if (group != NULL)
+        EC_GROUP_clear_free(group);
+    if (order != NULL)
+        BN_clear_free(order);
     return is_valid;
 }

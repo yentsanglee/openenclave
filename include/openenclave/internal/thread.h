@@ -132,8 +132,6 @@ typedef uint32_t oe_once_t;
  */
 oe_result_t oe_once(oe_once_t* once, void (*func)(void));
 
-#define OE_SPINLOCK_INITIALIZER 0
-
 typedef volatile uint32_t oe_spinlock_t;
 
 /**

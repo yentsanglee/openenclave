@@ -1,24 +1,31 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-/* Nest mbedtls header includes with required corelibc defines */
-// clang-format off
-#include "mbedtls_corelibc_defs.h"
-#include <mbedtls/md.h>
-#include "mbedtls_corelibc_undef.h"
-// clang-format on
-
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/hmac.h>
 #include <openenclave/internal/raise.h>
+#include <openssl/hmac.h>
 
 typedef struct _oe_hmac_sha256_context_impl
 {
-    mbedtls_md_context_t ctx;
+    HMAC_CTX* ctx;
 } oe_hmac_sha256_context_impl_t;
 
 OE_STATIC_ASSERT(
     sizeof(oe_hmac_sha256_context_impl_t) <= sizeof(oe_hmac_sha256_context_t));
+
+static void _free_hmac_ctx(HMAC_CTX* ctx)
+{
+    if (!ctx)
+        return;
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    HMAC_CTX_cleanup(ctx);
+    free(ctx);
+#else
+    HMAC_CTX_free(ctx);
+#endif
+}
 
 oe_result_t oe_hmac_sha256_init(
     oe_hmac_sha256_context_t* context,
@@ -26,30 +33,38 @@ oe_result_t oe_hmac_sha256_init(
     size_t keysize)
 {
     oe_result_t result = OE_UNEXPECTED;
-    int mbedtls_result;
-    oe_hmac_sha256_context_impl_t* impl =
-        (oe_hmac_sha256_context_impl_t*)context;
+    HMAC_CTX* ctx = NULL;
+    int openssl_result;
 
-    if (!context || !key)
+    if (!context || !key || keysize > OE_INT_MAX)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    mbedtls_md_init(&impl->ctx);
-    mbedtls_result = mbedtls_md_setup(
-        &impl->ctx, mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), 1);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    ctx = (HMAC_CTX*)malloc(sizeof(*ctx));
+    if (ctx == NULL)
+        OE_RAISE(OE_OUT_OF_MEMORY);
 
-    if (mbedtls_result != 0)
-        OE_RAISE_MSG(OE_FAILURE, "mbedtls error: 0x%x", mbedtls_result);
+    HMAC_CTX_init(ctx);
+#else
+    ctx = HMAC_CTX_new();
+    if (ctx == NULL)
+        OE_RAISE(OE_OUT_OF_MEMORY);
+#endif
 
-    mbedtls_result = mbedtls_md_hmac_starts(&impl->ctx, key, keysize);
-    if (mbedtls_result != 0)
-    {
-        mbedtls_md_free(&impl->ctx);
-        OE_RAISE_MSG(OE_FAILURE, "mbedtls error: 0x%x", mbedtls_result);
-    }
+    openssl_result =
+        HMAC_Init_ex(ctx, (const void*)key, (int)keysize, EVP_sha256(), NULL);
 
+    if (openssl_result == 0)
+        OE_RAISE(OE_FAILURE);
+
+    ((oe_hmac_sha256_context_impl_t*)context)->ctx = ctx;
+    ctx = NULL;
     result = OE_OK;
 
 done:
+    if (ctx != NULL)
+        _free_hmac_ctx(ctx);
+
     return result;
 }
 
@@ -61,14 +76,12 @@ oe_result_t oe_hmac_sha256_update(
     oe_result_t result = OE_UNEXPECTED;
     oe_hmac_sha256_context_impl_t* impl =
         (oe_hmac_sha256_context_impl_t*)context;
-    int res;
 
-    if (!context || !data)
+    if (!context || !data || size > OE_INT_MAX)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    res = mbedtls_md_hmac_update(&impl->ctx, (const uint8_t*)data, size);
-    if (res != 0)
-        OE_RAISE_MSG(OE_FAILURE, "mbedtls error: 0x%x", res);
+    if (HMAC_Update(impl->ctx, (const uint8_t*)data, size) == 0)
+        OE_RAISE(OE_FAILURE);
 
     result = OE_OK;
 
@@ -83,14 +96,16 @@ oe_result_t oe_hmac_sha256_final(
     oe_result_t result = OE_UNEXPECTED;
     oe_hmac_sha256_context_impl_t* impl =
         (oe_hmac_sha256_context_impl_t*)context;
-    int res;
+    unsigned int hmac_size;
 
     if (!context || !sha256)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    res = mbedtls_md_hmac_finish(&impl->ctx, sha256->buf);
-    if (res != 0)
-        OE_RAISE_MSG(OE_FAILURE, "mbedtls error: 0x%x", res);
+    if (HMAC_Final(impl->ctx, sha256->buf, &hmac_size) == 0)
+        OE_RAISE(OE_FAILURE);
+
+    if (hmac_size != sizeof(sha256->buf))
+        OE_RAISE(OE_FAILURE);
 
     result = OE_OK;
 
@@ -107,7 +122,7 @@ oe_result_t oe_hmac_sha256_free(oe_hmac_sha256_context_t* context)
     if (!context)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    mbedtls_md_free(&impl->ctx);
+    _free_hmac_ctx(impl->ctx);
     result = OE_OK;
 
 done:
