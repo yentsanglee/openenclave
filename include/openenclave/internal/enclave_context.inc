@@ -201,13 +201,42 @@ oe_continue_execution:
     // Restore flags.
     popfq
 
-    jmp return_to_exception_site
+    //jmp return_to_exception_site
 
 call_handler:
 
-    call oe_call_continue_execution_hook
     movq %r15, %rdi
-    //restore_common_registers
+    movq %rax, OE_CONTEXT_RAX(%rdi)
+    movq %rbx, OE_CONTEXT_RBX(%rdi)
+    movq %rcx, OE_CONTEXT_RCX(%rdi)
+    movq %rdx, OE_CONTEXT_RDX(%rdi)
+    movq %rsi, OE_CONTEXT_RSI(%rdi)
+    movq %r8,  OE_CONTEXT_R8(%rdi)
+    movq %r9,  OE_CONTEXT_R9(%rdi)
+    movq %r10, OE_CONTEXT_R10(%rdi)
+    movq %r11, OE_CONTEXT_R11(%rdi)
+    movq %r12, OE_CONTEXT_R12(%rdi)
+    movq %r13, OE_CONTEXT_R13(%rdi)
+    movq %r14, OE_CONTEXT_R14(%rdi)
+    movq %r15, OE_CONTEXT_R15(%rdi)
+    movq OE_CONTEXT_RDI(%rdi), %rdi
+
+    //call oe_call_continue_execution_hook
+
+    movq %r15, %rdi
+    movq OE_CONTEXT_RAX(%rdi), %rax
+    movq OE_CONTEXT_RBX(%rdi), %rbx
+    movq OE_CONTEXT_RCX(%rdi), %rcx
+    movq OE_CONTEXT_RDX(%rdi), %rdx
+    movq OE_CONTEXT_RSI(%rdi), %rsi
+    movq OE_CONTEXT_R8(%rdi),  %r8
+    movq OE_CONTEXT_R9(%rdi),  %r9
+    movq OE_CONTEXT_R10(%rdi), %r10
+    movq OE_CONTEXT_R11(%rdi), %r11
+    movq OE_CONTEXT_R12(%rdi), %r12
+    movq OE_CONTEXT_R13(%rdi), %r13
+    movq OE_CONTEXT_R14(%rdi), %r14
+    movq OE_CONTEXT_R15(%rdi), %r15
     movq OE_CONTEXT_RDI(%rdi), %rdi
 
 return_to_exception_site:

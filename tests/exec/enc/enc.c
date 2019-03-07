@@ -460,13 +460,13 @@ static syscall_args_t _args;
 long handle_syscall(syscall_args_t* args)
 {
     printf("handle_syscall():\n");
-    printf("   num=%lu\n", args->num);
-    printf("   arg1=%lu\n", args->arg1);
-    printf("   arg2=%lu\n", args->arg2);
-    printf("   arg3=%lu\n", args->arg3);
-    printf("   arg4=%lu\n", args->arg4);
-    printf("   arg5=%lu\n", args->arg5);
-    printf("   arg6=%lu\n", args->arg6);
+    printf("   num=%lx\n", args->num);
+    printf("   arg1=%lx\n", args->arg1);
+    printf("   arg2=%lx\n", args->arg2);
+    printf("   arg3=%lx\n", args->arg3);
+    printf("   arg4=%lx\n", args->arg4);
+    printf("   arg5=%lx\n", args->arg5);
+    printf("   arg6=%lx\n", args->arg6);
 
 #if 0
     if (args->num == SYS_write)
@@ -502,6 +502,7 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
             args->arg5 = (long)context->r8;
             args->arg6 = (long)context->r9;
 
+#if 1
             switch (context->rax)
             {
                 case 1:
@@ -513,38 +514,36 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
                     assert(context->r9 == 0x0f);
                     break;
                 case 2:
-                    assert(context->rdi == 0x0a0);
-                    assert(context->rsi == 0x0b0);
-                    assert(context->rdx == 0x0c0);
-                    assert(context->r10 == 0x0d0);
-                    assert(context->r8 == 0x0e0);
-                    assert(context->r9 == 0x0f0);
+                    assert(context->rdi == 0x0a);
+                    assert(context->rsi == 0x0b);
+                    assert(context->rdx == 0x0c);
+                    assert(context->r10 == 0x0d);
+                    assert(context->r8 == 0x0e);
+                    assert(context->r9 == 0x0f);
                     break;
                 case 3:
-                    assert(context->rdi == 0x0a00);
-                    assert(context->rsi == 0x0b00);
-                    assert(context->rdx == 0x0c00);
-                    assert(context->r10 == 0x0d00);
-                    assert(context->r8 == 0x0e00);
-                    assert(context->r9 == 0x0f00);
+                    assert(context->rdi == 0x0a);
+                    assert(context->rsi == 0x0b);
+                    assert(context->rdx == 0x0c);
+                    assert(context->r10 == 0x0d);
+                    assert(context->r8 == 0x0e);
+                    assert(context->r9 == 0x0f);
                     break;
                 default:
                     assert(0);
             }
 
+            assert(context->rdi == 0x0a);
+            assert(context->rsi == 0x0b);
+            assert(context->rdx == 0x0c);
+            assert(context->r10 == 0x0d);
+            assert(context->r8 == 0x0e);
+            assert(context->r9 == 0x0f);
+
             _count++;
+#endif
 
             // syscall: %rax %edi %esi %edx %r10d %r8d %r9d
-
-#if 0
-            long n = _args.num;
-            assert(_args.arg1 == 10);
-            assert(_args.arg2 == 20);
-            assert(_args.arg3 == 30);
-            assert(_args.arg4 == 40);
-            assert(_args.arg5 == 50);
-            assert(_args.arg6 == 60);
-#endif
 
             context->rip += 2;
 
