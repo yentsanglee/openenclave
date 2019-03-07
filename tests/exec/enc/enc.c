@@ -440,6 +440,63 @@ done:
     return ret;
 }
 
+static int _relocate_symbols(
+    elf_image_t* image,
+    uint8_t* exec_base,
+    size_t exec_size)
+{
+    int ret = -1;
+    void* data = NULL;
+    size_t size;
+    const elf64_rela_t* p;
+    size_t n;
+
+    (void)exec_base;
+    (void)exec_size;
+
+    if (elf64_load_relocations(&image->elf, &data, &size) != 0)
+        goto done;
+
+    p = (const elf64_rela_t*)data;
+    n = size / sizeof(elf64_rela_t);
+
+    for (size_t i = 0; i < n; i++, p++)
+    {
+        if (p->r_offset == 0)
+            break;
+
+        uint64_t* dest = (uint64_t*)(exec_base + p->r_offset);
+        uint64_t reloc_type = ELF64_R_TYPE(p->r_info);
+
+        /* Relocate the reference */
+        if (reloc_type == R_X86_64_RELATIVE)
+        {
+            *dest = (uint64_t)(exec_base + p->r_addend);
+
+            printf(
+                "Applied relocation: offset=%llu addend==%lld\n",
+                p->r_offset,
+                p->r_addend);
+        }
+        else
+        {
+            printf(
+                "Skipped relocation: offset=%llu addend==%lld\n",
+                p->r_offset,
+                p->r_addend);
+        }
+    }
+
+    ret = 0;
+
+done:
+
+    if (data)
+        free(data);
+
+    return ret;
+}
+
 typedef void (*entry_proc)();
 
 #define SYSCALL_OPCODE 0x050F
@@ -459,24 +516,17 @@ static syscall_args_t _args;
 
 long handle_syscall(syscall_args_t* args)
 {
-#if 1
-    printf("handle_syscall():\n");
-    printf("   num=%lx\n", args->num);
-    printf("   arg1=%lx\n", args->arg1);
-    printf("   arg2=%lx\n", args->arg2);
-    printf("   arg3=%lx\n", args->arg3);
-    printf("   arg4=%lx\n", args->arg4);
-    printf("   arg5=%lx\n", args->arg5);
-    printf("   arg6=%lx\n", args->arg6);
-#endif
+    printf("handle_syscall(): %d\n", args->num);
 
-#if 0
     if (args->num == SYS_write)
     {
         oe_host_write(1, (const char*)args->arg2, (size_t)args->arg3);
         return 0;
     }
-#endif
+    else
+    {
+        oe_abort();
+    }
 
     return -1;
 }
@@ -495,7 +545,7 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
         {
             syscall_args_t* args = &_args;
 
-            /* Extract the syscall arguments. */
+            /* Extract syscall arguments. */
             args->num = (long)context->rax;
             args->arg1 = (long)context->rdi;
             args->arg2 = (long)context->rsi;
@@ -504,52 +554,13 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
             args->arg5 = (long)context->r8;
             args->arg6 = (long)context->r9;
 
-#if 1
-
-            switch (context->rax)
-            {
-                case 1:
-                    assert(context->rdi == 0x0a);
-                    assert(context->rsi == 0x0b);
-                    assert(context->rdx == 0x0c);
-                    assert(context->r10 == 0x0d);
-                    assert(context->r8 == 0x0e);
-                    assert(context->r9 == 0x0f);
-                    break;
-                case 2:
-                    assert(context->rdi == 0x0a);
-                    assert(context->rsi == 0x0b);
-                    assert(context->rdx == 0x0c);
-                    assert(context->r10 == 0x0d);
-                    assert(context->r8 == 0x0e);
-                    assert(context->r9 == 0x0f);
-                    break;
-                case 3:
-                    assert(context->rdi == 0x0a);
-                    assert(context->rsi == 0x0b);
-                    assert(context->rdx == 0x0c);
-                    assert(context->r10 == 0x0d);
-                    assert(context->r8 == 0x0e);
-                    assert(context->r9 == 0x0f);
-                    break;
-                default:
-                    assert(0);
-            }
-
-            // assert(context->rdi == 0x0a);
-            // assert(context->rsi == 0x0b);
-            // assert(context->rdx == 0x0c);
-            // assert(context->r10 == 0x0d);
-            // assert(context->r8 == 0x0e);
-            // assert(context->r9 == 0x0f);
-            _count++;
-#endif
-
-            // syscall: %rax %edi %esi %edx %r10d %r8d %r9d
-
             context->rip += 2;
 
             return OE_EXCEPTION_CONTINUE_EXECUTION;
+        }
+        else
+        {
+            oe_abort();
         }
     }
 
@@ -593,6 +604,12 @@ void test_exec(const uint8_t* image_base, size_t image_size)
     }
 
     if (_add_pages(&image, exec_base, exec_size) != 0)
+    {
+        fprintf(stderr, "_add_pages() failed\n");
+        abort();
+    }
+
+    if (_relocate_symbols(&image, exec_base, exec_size) != 0)
     {
         fprintf(stderr, "_add_pages() failed\n");
         abort();
