@@ -479,6 +479,8 @@ long handle_syscall(syscall_args_t* args)
     return -1;
 }
 
+static int _count = 0;
+
 static uint64_t _exception_handler(oe_exception_record_t* exception)
 {
     oe_context_t* context = exception->context;
@@ -500,11 +502,42 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
             args->arg5 = (long)context->r8;
             args->arg6 = (long)context->r9;
 
+            switch (context->rax)
+            {
+                case 1:
+                    assert(context->rdi == 0x0a);
+                    assert(context->rsi == 0x0b);
+                    assert(context->rdx == 0x0c);
+                    assert(context->r10 == 0x0d);
+                    assert(context->r8 == 0x0e);
+                    assert(context->r9 == 0x0f);
+                    break;
+                case 2:
+                    assert(context->rdi == 0x0a0);
+                    assert(context->rsi == 0x0b0);
+                    assert(context->rdx == 0x0c0);
+                    assert(context->r10 == 0x0d0);
+                    assert(context->r8 == 0x0e0);
+                    assert(context->r9 == 0x0f0);
+                    break;
+                case 3:
+                    assert(context->rdi == 0x0a00);
+                    assert(context->rsi == 0x0b00);
+                    assert(context->rdx == 0x0c00);
+                    assert(context->r10 == 0x0d00);
+                    assert(context->r8 == 0x0e00);
+                    assert(context->r9 == 0x0f00);
+                    break;
+                default:
+                    assert(0);
+            }
+
+            _count++;
+
             // syscall: %rax %edi %esi %edx %r10d %r8d %r9d
 
 #if 0
             long n = _args.num;
-            assert(n == 77 || n == 88 || n == 99);
             assert(_args.arg1 == 10);
             assert(_args.arg2 == 20);
             assert(_args.arg3 == 30);
@@ -571,6 +604,8 @@ void test_exec(const uint8_t* image_base, size_t image_size)
     printf(">>>>>>>>>>>\n");
 
     _free_elf_image(&image);
+
+    printf("_count=%d\n", _count);
 }
 
 OE_SET_ENCLAVE_SGX(

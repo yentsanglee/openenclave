@@ -174,54 +174,11 @@ oe_restore_partial_context:
 //
 //==============================================================================
 
-/*
 .globl oe_continue_execution
 .type oe_continue_execution, @function
 oe_continue_execution:
 .cfi_startproc
-    restore_common_registers
 
-    // Restore rbp, rsp
-    movq    OE_CONTEXT_RBP(%rdi), %rbp
-    movq    OE_CONTEXT_RSP(%rdi), %rsp
-
-    // Put local variables under the red zone.
-    sub     $ABI_REDZONE_BYTE_SIZE, %rsp
-
-    // Push the target address to stack.
-    pushq   OE_CONTEXT_RIP(%rdi)
-
-    movq %rdi, %r15
-    movq OE_CONTEXT_RDI(%rdi), %rdi
-
-    // Restore the flags.
-    pushq   OE_CONTEXT_FLAGS(%rdi)
-    popfq
-
-    //jmp return_to_exception_site
-
-call_handler:
-
-    call oe_call_continue_execution_hook
-    movq %r15, %rdi
-    restore_common_registers
-    movq OE_CONTEXT_RDI(%rdi), %rdi
-
-return_to_exception_site:
-
-    // Recovery the correct rsp.
-    add     $(ABI_REDZONE_BYTE_SIZE + 8), %rsp
-
-    // Jump to the target.
-    jmp     *-(ABI_REDZONE_BYTE_SIZE + 8)(%rsp)
-
-.cfi_endproc
-*/
-
-.globl oe_continue_execution
-.type oe_continue_execution, @function
-oe_continue_execution:
-.cfi_startproc
     restore_common_registers
 
     // Restore rbp, rsp
@@ -244,7 +201,7 @@ oe_continue_execution:
     // Restore flags.
     popfq
 
-    //jmp return_to_exception_site
+    jmp return_to_exception_site
 
 call_handler:
 
@@ -260,4 +217,5 @@ return_to_exception_site:
 
     // Jump to the target.
     jmp     *-(ABI_REDZONE_BYTE_SIZE + 8)(%rsp)
+
 .cfi_endproc
