@@ -25,6 +25,7 @@
 .type oe_snap_current_context, @function
 oe_snap_current_context:
 .cfi_startproc
+
     // Save the flags to stack.
     pushfq
 
@@ -76,6 +77,7 @@ oe_snap_current_context:
 
     // Return
     retq
+
 .cfi_endproc
 
 //==============================================================================
@@ -176,6 +178,9 @@ oe_restore_partial_context:
 .type oe_continue_execution, @function
 oe_continue_execution:
 .cfi_startproc
+
+restore_registers:
+
     restore_common_registers
 
     // Restore rbp, rsp
@@ -192,14 +197,61 @@ oe_continue_execution:
     pushq   OE_CONTEXT_FLAGS(%rdi)
 
     // Restore rdi.
-    movq    OE_CONTEXT_RDI(%rdi), %rdi
+    movq OE_CONTEXT_RDI(%rdi), %rdi
 
     // Restore flags.
     popfq
+
+    //jmp return_to_exception_site
+
+call_handler:
+
+    // ATTN: what about X87 and SSE values?
+    // ATTN: what about SEE control flags?
+    // ATTN: Why doesn't this function call preserve RBX?
+    // ATTN: Is it necessary to save R12-R15?
+
+    pushq %rax
+    pushq %rbx
+    pushq %rcx
+    pushq %rdx
+    pushq %rsi
+    pushq %rdi
+    pushq %r8
+    pushq %r9
+    pushq %r10
+    pushq %r11
+    pushq %r12
+    pushq %r13
+    pushq %r14
+    pushq %r15
+
+    call oe_call_continue_execution_hook
+
+    popq %r15
+    popq %r14
+    popq %r13
+    popq %r12
+    popq %r11
+    popq %r10
+    popq %r9
+    popq %r8
+    popq %rdi
+    popq %rsi
+    popq %rdx
+    popq %rcx
+    popq %rbx
+    popq %rax
+
+return_to_exception_site:
 
     // Recovery the correct rsp.
     add     $(ABI_REDZONE_BYTE_SIZE + 8), %rsp
 
     // Jump to the target.
     jmp     *-(ABI_REDZONE_BYTE_SIZE + 8)(%rsp)
+
+crash:
+    ud2
+
 .cfi_endproc
