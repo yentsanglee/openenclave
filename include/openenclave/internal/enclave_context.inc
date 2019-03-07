@@ -195,8 +195,7 @@ oe_continue_execution:
     pushq   OE_CONTEXT_FLAGS(%rdi)
 
     // Restore rdi.
-    movq %rdi, %r15
-    movq    OE_CONTEXT_RDI(%rdi), %rdi
+    movq OE_CONTEXT_RDI(%rdi), %rdi
 
     // Restore flags.
     popfq
@@ -205,39 +204,37 @@ oe_continue_execution:
 
 call_handler:
 
-    movq %r15, %rdi
-    movq %rax, OE_CONTEXT_RAX(%rdi)
-    movq %rbx, OE_CONTEXT_RBX(%rdi)
-    movq %rcx, OE_CONTEXT_RCX(%rdi)
-    movq %rdx, OE_CONTEXT_RDX(%rdi)
-    movq %rsi, OE_CONTEXT_RSI(%rdi)
-    movq %r8,  OE_CONTEXT_R8(%rdi)
-    movq %r9,  OE_CONTEXT_R9(%rdi)
-    movq %r10, OE_CONTEXT_R10(%rdi)
-    movq %r11, OE_CONTEXT_R11(%rdi)
-    movq %r12, OE_CONTEXT_R12(%rdi)
-    movq %r13, OE_CONTEXT_R13(%rdi)
-    movq %r14, OE_CONTEXT_R14(%rdi)
-    movq %r15, OE_CONTEXT_R15(%rdi)
-    movq OE_CONTEXT_RDI(%rdi), %rdi
+    pushq %rax
+    pushq %rbx
+    pushq %rcx
+    pushq %rdx
+    pushq %rsi
+    pushq %rdi
+    pushq %r8
+    pushq %r9
+    pushq %r10
+    pushq %r11
+    pushq %r12
+    pushq %r13
+    pushq %r14
+    pushq %r15
 
-    //call oe_call_continue_execution_hook
+    call oe_call_continue_execution_hook
 
-    movq %r15, %rdi
-    movq OE_CONTEXT_RAX(%rdi), %rax
-    movq OE_CONTEXT_RBX(%rdi), %rbx
-    movq OE_CONTEXT_RCX(%rdi), %rcx
-    movq OE_CONTEXT_RDX(%rdi), %rdx
-    movq OE_CONTEXT_RSI(%rdi), %rsi
-    movq OE_CONTEXT_R8(%rdi),  %r8
-    movq OE_CONTEXT_R9(%rdi),  %r9
-    movq OE_CONTEXT_R10(%rdi), %r10
-    movq OE_CONTEXT_R11(%rdi), %r11
-    movq OE_CONTEXT_R12(%rdi), %r12
-    movq OE_CONTEXT_R13(%rdi), %r13
-    movq OE_CONTEXT_R14(%rdi), %r14
-    movq OE_CONTEXT_R15(%rdi), %r15
-    movq OE_CONTEXT_RDI(%rdi), %rdi
+    popq %r15
+    popq %r14
+    popq %r13
+    popq %r12
+    popq %r11
+    popq %r10
+    popq %r9
+    popq %r8
+    popq %rdi
+    popq %rsi
+    popq %rdx
+    popq %rcx
+    popq %rbx
+    popq %rax
 
 return_to_exception_site:
 
@@ -246,5 +243,8 @@ return_to_exception_site:
 
     // Jump to the target.
     jmp     *-(ABI_REDZONE_BYTE_SIZE + 8)(%rsp)
+
+crash:
+    ud2
 
 .cfi_endproc

@@ -459,6 +459,7 @@ static syscall_args_t _args;
 
 long handle_syscall(syscall_args_t* args)
 {
+#if 1
     printf("handle_syscall():\n");
     printf("   num=%lx\n", args->num);
     printf("   arg1=%lx\n", args->arg1);
@@ -467,6 +468,7 @@ long handle_syscall(syscall_args_t* args)
     printf("   arg4=%lx\n", args->arg4);
     printf("   arg5=%lx\n", args->arg5);
     printf("   arg6=%lx\n", args->arg6);
+#endif
 
 #if 0
     if (args->num == SYS_write)
@@ -502,7 +504,8 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
             args->arg5 = (long)context->r8;
             args->arg6 = (long)context->r9;
 
-#if 1
+#if 0
+
             switch (context->rax)
             {
                 case 1:
@@ -533,13 +536,12 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
                     assert(0);
             }
 
-            assert(context->rdi == 0x0a);
-            assert(context->rsi == 0x0b);
-            assert(context->rdx == 0x0c);
-            assert(context->r10 == 0x0d);
-            assert(context->r8 == 0x0e);
-            assert(context->r9 == 0x0f);
-
+            //assert(context->rdi == 0x0a);
+            //assert(context->rsi == 0x0b);
+            //assert(context->rdx == 0x0c);
+            //assert(context->r10 == 0x0d);
+            //assert(context->r8 == 0x0e);
+            //assert(context->r9 == 0x0f);
             _count++;
 #endif
 
