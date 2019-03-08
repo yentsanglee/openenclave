@@ -208,9 +208,10 @@ call_handler:
 
     // ATTN: what about X87 and SSE values?
     // ATTN: what about SEE control flags?
-    // ATTN: Why doesn't this function call preserve RBX?
-    // ATTN: Is it necessary to save R12-R15?
 
+    pushfq
+    pushq %rbp
+    pushq %rsp
     pushq %rbx
     pushq %rcx
     pushq %rdx
@@ -224,13 +225,33 @@ call_handler:
     pushq %r13
     pushq %r14
     pushq %r15
-    pushfq
 
-    movq %rax, %rdi
+    subq $8, %rsp
+    stmxcsr (%rsp)
+
+    subq $512 + 16, %rsp
+    pushq %rdx
+    movq %rsp, %rdx
+    addq $15, %rdx
+    andq $0xFFFFFFFFFFFFFFF0, %rdx
+    fxsave (%rdx)
+    popq %rdx
+
     /* %rax = oe_call_continue_execution_hook(%rdi) */
+    movq %rax, %rdi
     call oe_call_continue_execution_hook
 
-    popfq
+    pushq %rdx
+    movq %rsp, %rdx
+    addq $15, %rdx
+    andq $0xFFFFFFFFFFFFFFF0, %rdx
+    fxrstor (%rdx)
+    popq %rdx
+    addq $512 + 16, %rsp
+
+    ldmxcsr (%rsp)
+    addq $8, %rsp
+
     popq %r15
     popq %r14
     popq %r13
@@ -244,6 +265,9 @@ call_handler:
     popq %rdx
     popq %rcx
     popq %rbx
+    popq %rsp
+    popq %rbp
+    popfq
 
 return_to_exception_site:
 

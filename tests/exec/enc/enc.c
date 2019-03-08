@@ -512,54 +512,13 @@ typedef void (*start_proc)(long* p);
 
 #define SYSCALL_OPCODE 0x050F
 
-static void _write_n(const char* s, size_t n)
-{
-    oe_host_write(1, s, n);
-}
+void __write_n(const char* s, size_t n);
 
-static void _write(const char* s)
-{
-    _write_n(s, strlen(s));
-}
+void __write(const char* s);
 
-static void _puts(const char* s)
-{
-    char nl = '\n';
-    _write(s);
-    _write_n(&nl, 1);
-}
+void __puts(const char* s);
 
-typedef struct _uint64str
-{
-    char data[21];
-} uint64str_t;
-
-static const char* _uint64str(uint64str_t* buf, uint64_t x, size_t* size)
-{
-    char* p;
-
-    p = &buf->data[20];
-    *p = '\0';
-
-    do
-    {
-        *--p = '0' + x % 10;
-    } while (x /= 10);
-
-    if (size)
-        *size = (size_t)(&buf->data[20] - p);
-
-    return p;
-}
-
-void __put_uint64(uint64_t x)
-{
-    uint64str_t buf;
-    size_t size;
-    const char* s = _uint64str(&buf, x, &size);
-    _write_n(s, size);
-    _puts("\n");
-}
+void __put_uint64(uint64_t x);
 
 static oe_jmpbuf_t _jmp_buf;
 static int _exit_status = INT_MAX;
@@ -635,7 +594,7 @@ static long _syscall_set_tid_address(int* tidptr)
 
 static long _syscall_exit_group(int status)
 {
-    // _puts("_syscall_exit_group()");
+    // __puts("_syscall_exit_group()");
 
     _exit_status = status;
     oe_longjmp(&_jmp_buf, 1);
@@ -1423,7 +1382,7 @@ long handle_syscall(syscall_args_t* args)
     {
         case SYS_write:
         {
-            _write_n((const char*)args->arg2, (size_t)args->arg3);
+            __write_n((const char*)args->arg2, (size_t)args->arg3);
             return 0;
         }
         case SYS_arch_prctl:
@@ -1453,8 +1412,8 @@ long handle_syscall(syscall_args_t* args)
         default:
         {
             const char* name = _syscall_name(args->num);
-            _write("syscall panic: ");
-            _puts(name);
+            __write("syscall panic: ");
+            __puts(name);
             oe_abort();
         }
     }
@@ -1496,9 +1455,42 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
     return OE_EXCEPTION_CONTINUE_SEARCH;
 }
 
+extern int __recurse(int x);
+
 static long _continue_execution_hook(long ret)
 {
+#if 0
+    //printf("ret=%d\n", ret);
+    __puts("ret=");
+    __put_uint64((uint16_t)ret);
+#endif
+
+#if 0
     (void)ret;
+    uint64_t buf[4096];
+    MEMSET(buf, 0, sizeof(buf));
+
+    for (size_t i = 0; i < OE_COUNTOF(buf); i++)
+    {
+        __put_uint64(buf[i]);
+    }
+
+
+    uint64_t buf2[4096];
+    MEMSET(buf2, 0, sizeof(buf2));
+
+    for (size_t i = 0; i < OE_COUNTOF(buf2); i++)
+    {
+        __put_uint64(buf2[i]);
+    }
+
+    oe_host_printf("ret=%ld\n", ret);
+
+    __recurse(1024);
+#endif
+
+    (void)ret;
+    // oe_host_printf("ret=%ld\n", ret);
     return handle_syscall(&_args);
 }
 
