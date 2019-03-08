@@ -509,8 +509,6 @@ done:
 
 typedef void (*entry_proc)();
 
-typedef void (*start_proc)(long* p);
-
 #define SYSCALL_OPCODE 0x050F
 
 static oe_jmpbuf_t _jmp_buf;
@@ -1501,8 +1499,26 @@ int exec(const uint8_t* image_base, size_t image_size)
 #if 0
     entry_proc entry = (entry_proc)(exec_base + image.entry_rva);
     entry();
+#elif 1
+    {
+        typedef void (*start_proc)(long* p);
+        start_proc start = (start_proc)(exec_base + image.entry_rva);
+        typedef struct _args
+        {
+            long argc;
+            const char* argv[8];
+        } args_t;
+        args_t args = {
+            1,
+            {"/tmp/prog", NULL},
+        };
+        long* p = (long*)&args;
+
+        start(p);
+    }
 #else
     {
+        typedef void (*start_proc)(long* p);
         start_proc start = (start_proc)(exec_base + image.entry_rva);
         typedef struct _args
         {

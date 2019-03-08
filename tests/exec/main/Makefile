@@ -22,7 +22,7 @@ run: all
 	( cd ../; ctest -V )
 
 zzz:
-	$(CC) -o main -g -fPIC -pie -static --verbose main.c
+	$(CC) -o main -fPIC -g -static main.c
 
 r:
 	(cd ../; ctest -V )
