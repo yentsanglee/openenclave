@@ -2,6 +2,9 @@
 // Licensed under the MIT License.
 
 #include <assert.h>
+#include <limits.h>
+#include <openenclave/corelibc/ctype.h>
+#include <openenclave/corelibc/stdio.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/cpuid.h>
@@ -14,7 +17,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <sys/uio.h>
 #include <syscall.h>
+#include <unistd.h>
 #include "exec_t.h"
 
 extern long (*oe_continue_execution_hook)(long ret);
@@ -472,18 +478,21 @@ static int _relocate_symbols(
         if (reloc_type == R_X86_64_RELATIVE)
         {
             *dest = (uint64_t)(exec_base + p->r_addend);
-
+#if 0
             printf(
                 "Applied relocation: offset=%llu addend==%lld\n",
                 p->r_offset,
                 p->r_addend);
+#endif
         }
         else
         {
+#if 0
             printf(
                 "Skipped relocation: offset=%llu addend==%lld\n",
                 p->r_offset,
                 p->r_addend);
+#endif
         }
     }
 
@@ -503,6 +512,58 @@ typedef void (*start_proc)(long* p);
 
 #define SYSCALL_OPCODE 0x050F
 
+static void _write_n(const char* s, size_t n)
+{
+    oe_host_write(1, s, n);
+}
+
+static void _write(const char* s)
+{
+    _write_n(s, strlen(s));
+}
+
+static void _puts(const char* s)
+{
+    char nl = '\n';
+    _write(s);
+    _write_n(&nl, 1);
+}
+
+typedef struct _uint64str
+{
+    char data[21];
+} uint64str_t;
+
+static const char* _uint64str(uint64str_t* buf, uint64_t x, size_t* size)
+{
+    char* p;
+
+    p = &buf->data[20];
+    *p = '\0';
+
+    do
+    {
+        *--p = '0' + x % 10;
+    } while (x /= 10);
+
+    if (size)
+        *size = (size_t)(&buf->data[20] - p);
+
+    return p;
+}
+
+void __put_uint64(uint64_t x)
+{
+    uint64str_t buf;
+    size_t size;
+    const char* s = _uint64str(&buf, x, &size);
+    _write_n(s, size);
+    _puts("\n");
+}
+
+static oe_jmpbuf_t _jmp_buf;
+static int _exit_status = INT_MAX;
+
 typedef struct _syscall_args
 {
     long num;
@@ -516,23 +577,890 @@ typedef struct _syscall_args
 
 static syscall_args_t _args;
 
+static int _syscall_arch_prctl(int code, unsigned long addr)
+{
+    static const int ARCH_SET_FS = 0x1002;
+    static const int ARCH_GET_FS = 0x1003;
+    static const int ARCH_SET_GS = 0x1001;
+    static const int ARCH_GET_GS = 0x1004;
+    static __thread void* _gs_base = NULL;
+    static __thread void* _fs_base = NULL;
+
+    (void)addr;
+
+    switch (code)
+    {
+        case ARCH_SET_GS:
+        {
+            _gs_base = (void*)addr;
+            return 0;
+        }
+        case ARCH_GET_GS:
+        {
+            *((void**)addr) = _gs_base;
+            return 0;
+        }
+        case ARCH_SET_FS:
+        {
+            _fs_base = (void*)addr;
+            return 0;
+        }
+        case ARCH_GET_FS:
+        {
+            *((void**)addr) = _gs_base;
+            return 0;
+        }
+        default:
+        {
+            printf("_syscall_arch_prctl() failed\n");
+            oe_abort();
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+static long _syscall_set_tid_address(int* tidptr)
+{
+    static __thread int* _clear_child_tid = NULL;
+
+    if (!tidptr)
+        return -1;
+
+    _clear_child_tid = tidptr;
+
+    return (long)tidptr;
+}
+
+static long _syscall_exit_group(int status)
+{
+    // _puts("_syscall_exit_group()");
+
+    _exit_status = status;
+    oe_longjmp(&_jmp_buf, 1);
+
+    /* Unrechable. */
+    oe_abort();
+    return 0;
+}
+
+static const char* _syscall_name(long num)
+{
+    switch (num)
+    {
+        case SYS_read:
+            return "SYS_read";
+        case SYS_write:
+            return "SYS_write";
+        case SYS_open:
+            return "SYS_open";
+        case SYS_close:
+            return "SYS_close";
+        case SYS_stat:
+            return "SYS_stat";
+        case SYS_fstat:
+            return "SYS_fstat";
+        case SYS_lstat:
+            return "SYS_lstat";
+        case SYS_poll:
+            return "SYS_poll";
+        case SYS_lseek:
+            return "SYS_lseek";
+        case SYS_mmap:
+            return "SYS_mmap";
+        case SYS_mprotect:
+            return "SYS_mprotect";
+        case SYS_munmap:
+            return "SYS_munmap";
+        case SYS_brk:
+            return "SYS_brk";
+        case SYS_rt_sigaction:
+            return "SYS_rt_sigaction";
+        case SYS_rt_sigprocmask:
+            return "SYS_rt_sigprocmask";
+        case SYS_rt_sigreturn:
+            return "SYS_rt_sigreturn";
+        case SYS_ioctl:
+            return "SYS_ioctl";
+        case SYS_pread64:
+            return "SYS_pread64";
+        case SYS_pwrite64:
+            return "SYS_pwrite64";
+        case SYS_readv:
+            return "SYS_readv";
+        case SYS_writev:
+            return "SYS_writev";
+        case SYS_access:
+            return "SYS_access";
+        case SYS_pipe:
+            return "SYS_pipe";
+        case SYS_select:
+            return "SYS_select";
+        case SYS_sched_yield:
+            return "SYS_sched_yield";
+        case SYS_mremap:
+            return "SYS_mremap";
+        case SYS_msync:
+            return "SYS_msync";
+        case SYS_mincore:
+            return "SYS_mincore";
+        case SYS_madvise:
+            return "SYS_madvise";
+        case SYS_shmget:
+            return "SYS_shmget";
+        case SYS_shmat:
+            return "SYS_shmat";
+        case SYS_shmctl:
+            return "SYS_shmctl";
+        case SYS_dup:
+            return "SYS_dup";
+        case SYS_dup2:
+            return "SYS_dup2";
+        case SYS_pause:
+            return "SYS_pause";
+        case SYS_nanosleep:
+            return "SYS_nanosleep";
+        case SYS_getitimer:
+            return "SYS_getitimer";
+        case SYS_alarm:
+            return "SYS_alarm";
+        case SYS_setitimer:
+            return "SYS_setitimer";
+        case SYS_getpid:
+            return "SYS_getpid";
+        case SYS_sendfile:
+            return "SYS_sendfile";
+        case SYS_socket:
+            return "SYS_socket";
+        case SYS_connect:
+            return "SYS_connect";
+        case SYS_accept:
+            return "SYS_accept";
+        case SYS_sendto:
+            return "SYS_sendto";
+        case SYS_recvfrom:
+            return "SYS_recvfrom";
+        case SYS_sendmsg:
+            return "SYS_sendmsg";
+        case SYS_recvmsg:
+            return "SYS_recvmsg";
+        case SYS_shutdown:
+            return "SYS_shutdown";
+        case SYS_bind:
+            return "SYS_bind";
+        case SYS_listen:
+            return "SYS_listen";
+        case SYS_getsockname:
+            return "SYS_getsockname";
+        case SYS_getpeername:
+            return "SYS_getpeername";
+        case SYS_socketpair:
+            return "SYS_socketpair";
+        case SYS_setsockopt:
+            return "SYS_setsockopt";
+        case SYS_getsockopt:
+            return "SYS_getsockopt";
+        case SYS_clone:
+            return "SYS_clone";
+        case SYS_fork:
+            return "SYS_fork";
+        case SYS_vfork:
+            return "SYS_vfork";
+        case SYS_execve:
+            return "SYS_execve";
+        case SYS_exit:
+            return "SYS_exit";
+        case SYS_wait4:
+            return "SYS_wait4";
+        case SYS_kill:
+            return "SYS_kill";
+        case SYS_uname:
+            return "SYS_uname";
+        case SYS_semget:
+            return "SYS_semget";
+        case SYS_semop:
+            return "SYS_semop";
+        case SYS_semctl:
+            return "SYS_semctl";
+        case SYS_shmdt:
+            return "SYS_shmdt";
+        case SYS_msgget:
+            return "SYS_msgget";
+        case SYS_msgsnd:
+            return "SYS_msgsnd";
+        case SYS_msgrcv:
+            return "SYS_msgrcv";
+        case SYS_msgctl:
+            return "SYS_msgctl";
+        case SYS_fcntl:
+            return "SYS_fcntl";
+        case SYS_flock:
+            return "SYS_flock";
+        case SYS_fsync:
+            return "SYS_fsync";
+        case SYS_fdatasync:
+            return "SYS_fdatasync";
+        case SYS_truncate:
+            return "SYS_truncate";
+        case SYS_ftruncate:
+            return "SYS_ftruncate";
+        case SYS_getdents:
+            return "SYS_getdents";
+        case SYS_getcwd:
+            return "SYS_getcwd";
+        case SYS_chdir:
+            return "SYS_chdir";
+        case SYS_fchdir:
+            return "SYS_fchdir";
+        case SYS_rename:
+            return "SYS_rename";
+        case SYS_mkdir:
+            return "SYS_mkdir";
+        case SYS_rmdir:
+            return "SYS_rmdir";
+        case SYS_creat:
+            return "SYS_creat";
+        case SYS_link:
+            return "SYS_link";
+        case SYS_unlink:
+            return "SYS_unlink";
+        case SYS_symlink:
+            return "SYS_symlink";
+        case SYS_readlink:
+            return "SYS_readlink";
+        case SYS_chmod:
+            return "SYS_chmod";
+        case SYS_fchmod:
+            return "SYS_fchmod";
+        case SYS_chown:
+            return "SYS_chown";
+        case SYS_fchown:
+            return "SYS_fchown";
+        case SYS_lchown:
+            return "SYS_lchown";
+        case SYS_umask:
+            return "SYS_umask";
+        case SYS_gettimeofday:
+            return "SYS_gettimeofday";
+        case SYS_getrlimit:
+            return "SYS_getrlimit";
+        case SYS_getrusage:
+            return "SYS_getrusage";
+        case SYS_sysinfo:
+            return "SYS_sysinfo";
+        case SYS_times:
+            return "SYS_times";
+        case SYS_ptrace:
+            return "SYS_ptrace";
+        case SYS_getuid:
+            return "SYS_getuid";
+        case SYS_syslog:
+            return "SYS_syslog";
+        case SYS_getgid:
+            return "SYS_getgid";
+        case SYS_setuid:
+            return "SYS_setuid";
+        case SYS_setgid:
+            return "SYS_setgid";
+        case SYS_geteuid:
+            return "SYS_geteuid";
+        case SYS_getegid:
+            return "SYS_getegid";
+        case SYS_setpgid:
+            return "SYS_setpgid";
+        case SYS_getppid:
+            return "SYS_getppid";
+        case SYS_getpgrp:
+            return "SYS_getpgrp";
+        case SYS_setsid:
+            return "SYS_setsid";
+        case SYS_setreuid:
+            return "SYS_setreuid";
+        case SYS_setregid:
+            return "SYS_setregid";
+        case SYS_getgroups:
+            return "SYS_getgroups";
+        case SYS_setgroups:
+            return "SYS_setgroups";
+        case SYS_setresuid:
+            return "SYS_setresuid";
+        case SYS_getresuid:
+            return "SYS_getresuid";
+        case SYS_setresgid:
+            return "SYS_setresgid";
+        case SYS_getresgid:
+            return "SYS_getresgid";
+        case SYS_getpgid:
+            return "SYS_getpgid";
+        case SYS_setfsuid:
+            return "SYS_setfsuid";
+        case SYS_setfsgid:
+            return "SYS_setfsgid";
+        case SYS_getsid:
+            return "SYS_getsid";
+        case SYS_capget:
+            return "SYS_capget";
+        case SYS_capset:
+            return "SYS_capset";
+        case SYS_rt_sigpending:
+            return "SYS_rt_sigpending";
+        case SYS_rt_sigtimedwait:
+            return "SYS_rt_sigtimedwait";
+        case SYS_rt_sigqueueinfo:
+            return "SYS_rt_sigqueueinfo";
+        case SYS_rt_sigsuspend:
+            return "SYS_rt_sigsuspend";
+        case SYS_sigaltstack:
+            return "SYS_sigaltstack";
+        case SYS_utime:
+            return "SYS_utime";
+        case SYS_mknod:
+            return "SYS_mknod";
+        case SYS_uselib:
+            return "SYS_uselib";
+        case SYS_personality:
+            return "SYS_personality";
+        case SYS_ustat:
+            return "SYS_ustat";
+        case SYS_statfs:
+            return "SYS_statfs";
+        case SYS_fstatfs:
+            return "SYS_fstatfs";
+        case SYS_sysfs:
+            return "SYS_sysfs";
+        case SYS_getpriority:
+            return "SYS_getpriority";
+        case SYS_setpriority:
+            return "SYS_setpriority";
+        case SYS_sched_setparam:
+            return "SYS_sched_setparam";
+        case SYS_sched_getparam:
+            return "SYS_sched_getparam";
+        case SYS_sched_setscheduler:
+            return "SYS_sched_setscheduler";
+        case SYS_sched_getscheduler:
+            return "SYS_sched_getscheduler";
+        case SYS_sched_get_priority_max:
+            return "SYS_sched_get_priority_max";
+        case SYS_sched_get_priority_min:
+            return "SYS_sched_get_priority_min";
+        case SYS_sched_rr_get_interval:
+            return "SYS_sched_rr_get_interval";
+        case SYS_mlock:
+            return "SYS_mlock";
+        case SYS_munlock:
+            return "SYS_munlock";
+        case SYS_mlockall:
+            return "SYS_mlockall";
+        case SYS_munlockall:
+            return "SYS_munlockall";
+        case SYS_vhangup:
+            return "SYS_vhangup";
+        case SYS_modify_ldt:
+            return "SYS_modify_ldt";
+        case SYS_pivot_root:
+            return "SYS_pivot_root";
+        case SYS__sysctl:
+            return "SYS__sysctl";
+        case SYS_prctl:
+            return "SYS_prctl";
+        case SYS_arch_prctl:
+            return "SYS_arch_prctl";
+        case SYS_adjtimex:
+            return "SYS_adjtimex";
+        case SYS_setrlimit:
+            return "SYS_setrlimit";
+        case SYS_chroot:
+            return "SYS_chroot";
+        case SYS_sync:
+            return "SYS_sync";
+        case SYS_acct:
+            return "SYS_acct";
+        case SYS_settimeofday:
+            return "SYS_settimeofday";
+        case SYS_mount:
+            return "SYS_mount";
+        case SYS_umount2:
+            return "SYS_umount2";
+        case SYS_swapon:
+            return "SYS_swapon";
+        case SYS_swapoff:
+            return "SYS_swapoff";
+        case SYS_reboot:
+            return "SYS_reboot";
+        case SYS_sethostname:
+            return "SYS_sethostname";
+        case SYS_setdomainname:
+            return "SYS_setdomainname";
+        case SYS_iopl:
+            return "SYS_iopl";
+        case SYS_ioperm:
+            return "SYS_ioperm";
+        case SYS_create_module:
+            return "SYS_create_module";
+        case SYS_init_module:
+            return "SYS_init_module";
+        case SYS_delete_module:
+            return "SYS_delete_module";
+        case SYS_get_kernel_syms:
+            return "SYS_get_kernel_syms";
+        case SYS_query_module:
+            return "SYS_query_module";
+        case SYS_quotactl:
+            return "SYS_quotactl";
+        case SYS_nfsservctl:
+            return "SYS_nfsservctl";
+        case SYS_getpmsg:
+            return "SYS_getpmsg";
+        case SYS_putpmsg:
+            return "SYS_putpmsg";
+        case SYS_afs_syscall:
+            return "SYS_afs_syscall";
+        case SYS_tuxcall:
+            return "SYS_tuxcall";
+        case SYS_security:
+            return "SYS_security";
+        case SYS_gettid:
+            return "SYS_gettid";
+        case SYS_readahead:
+            return "SYS_readahead";
+        case SYS_setxattr:
+            return "SYS_setxattr";
+        case SYS_lsetxattr:
+            return "SYS_lsetxattr";
+        case SYS_fsetxattr:
+            return "SYS_fsetxattr";
+        case SYS_getxattr:
+            return "SYS_getxattr";
+        case SYS_lgetxattr:
+            return "SYS_lgetxattr";
+        case SYS_fgetxattr:
+            return "SYS_fgetxattr";
+        case SYS_listxattr:
+            return "SYS_listxattr";
+        case SYS_llistxattr:
+            return "SYS_llistxattr";
+        case SYS_flistxattr:
+            return "SYS_flistxattr";
+        case SYS_removexattr:
+            return "SYS_removexattr";
+        case SYS_lremovexattr:
+            return "SYS_lremovexattr";
+        case SYS_fremovexattr:
+            return "SYS_fremovexattr";
+        case SYS_tkill:
+            return "SYS_tkill";
+        case SYS_time:
+            return "SYS_time";
+        case SYS_futex:
+            return "SYS_futex";
+        case SYS_sched_setaffinity:
+            return "SYS_sched_setaffinity";
+        case SYS_sched_getaffinity:
+            return "SYS_sched_getaffinity";
+        case SYS_set_thread_area:
+            return "SYS_set_thread_area";
+        case SYS_io_setup:
+            return "SYS_io_setup";
+        case SYS_io_destroy:
+            return "SYS_io_destroy";
+        case SYS_io_getevents:
+            return "SYS_io_getevents";
+        case SYS_io_submit:
+            return "SYS_io_submit";
+        case SYS_io_cancel:
+            return "SYS_io_cancel";
+        case SYS_get_thread_area:
+            return "SYS_get_thread_area";
+        case SYS_lookup_dcookie:
+            return "SYS_lookup_dcookie";
+        case SYS_epoll_create:
+            return "SYS_epoll_create";
+        case SYS_epoll_ctl_old:
+            return "SYS_epoll_ctl_old";
+        case SYS_epoll_wait_old:
+            return "SYS_epoll_wait_old";
+        case SYS_remap_file_pages:
+            return "SYS_remap_file_pages";
+        case SYS_getdents64:
+            return "SYS_getdents64";
+        case SYS_set_tid_address:
+            return "SYS_set_tid_address";
+        case SYS_restart_syscall:
+            return "SYS_restart_syscall";
+        case SYS_semtimedop:
+            return "SYS_semtimedop";
+        case SYS_fadvise64:
+            return "SYS_fadvise64";
+        case SYS_timer_create:
+            return "SYS_timer_create";
+        case SYS_timer_settime:
+            return "SYS_timer_settime";
+        case SYS_timer_gettime:
+            return "SYS_timer_gettime";
+        case SYS_timer_getoverrun:
+            return "SYS_timer_getoverrun";
+        case SYS_timer_delete:
+            return "SYS_timer_delete";
+        case SYS_clock_settime:
+            return "SYS_clock_settime";
+        case SYS_clock_gettime:
+            return "SYS_clock_gettime";
+        case SYS_clock_getres:
+            return "SYS_clock_getres";
+        case SYS_clock_nanosleep:
+            return "SYS_clock_nanosleep";
+        case SYS_exit_group:
+            return "SYS_exit_group";
+        case SYS_epoll_wait:
+            return "SYS_epoll_wait";
+        case SYS_epoll_ctl:
+            return "SYS_epoll_ctl";
+        case SYS_tgkill:
+            return "SYS_tgkill";
+        case SYS_utimes:
+            return "SYS_utimes";
+        case SYS_vserver:
+            return "SYS_vserver";
+        case SYS_mbind:
+            return "SYS_mbind";
+        case SYS_set_mempolicy:
+            return "SYS_set_mempolicy";
+        case SYS_get_mempolicy:
+            return "SYS_get_mempolicy";
+        case SYS_mq_open:
+            return "SYS_mq_open";
+        case SYS_mq_unlink:
+            return "SYS_mq_unlink";
+        case SYS_mq_timedsend:
+            return "SYS_mq_timedsend";
+        case SYS_mq_timedreceive:
+            return "SYS_mq_timedreceive";
+        case SYS_mq_notify:
+            return "SYS_mq_notify";
+        case SYS_mq_getsetattr:
+            return "SYS_mq_getsetattr";
+        case SYS_kexec_load:
+            return "SYS_kexec_load";
+        case SYS_waitid:
+            return "SYS_waitid";
+        case SYS_add_key:
+            return "SYS_add_key";
+        case SYS_request_key:
+            return "SYS_request_key";
+        case SYS_keyctl:
+            return "SYS_keyctl";
+        case SYS_ioprio_set:
+            return "SYS_ioprio_set";
+        case SYS_ioprio_get:
+            return "SYS_ioprio_get";
+        case SYS_inotify_init:
+            return "SYS_inotify_init";
+        case SYS_inotify_add_watch:
+            return "SYS_inotify_add_watch";
+        case SYS_inotify_rm_watch:
+            return "SYS_inotify_rm_watch";
+        case SYS_migrate_pages:
+            return "SYS_migrate_pages";
+        case SYS_openat:
+            return "SYS_openat";
+        case SYS_mkdirat:
+            return "SYS_mkdirat";
+        case SYS_mknodat:
+            return "SYS_mknodat";
+        case SYS_fchownat:
+            return "SYS_fchownat";
+        case SYS_futimesat:
+            return "SYS_futimesat";
+        case SYS_newfstatat:
+            return "SYS_newfstatat";
+        case SYS_unlinkat:
+            return "SYS_unlinkat";
+        case SYS_renameat:
+            return "SYS_renameat";
+        case SYS_linkat:
+            return "SYS_linkat";
+        case SYS_symlinkat:
+            return "SYS_symlinkat";
+        case SYS_readlinkat:
+            return "SYS_readlinkat";
+        case SYS_fchmodat:
+            return "SYS_fchmodat";
+        case SYS_faccessat:
+            return "SYS_faccessat";
+        case SYS_pselect6:
+            return "SYS_pselect6";
+        case SYS_ppoll:
+            return "SYS_ppoll";
+        case SYS_unshare:
+            return "SYS_unshare";
+        case SYS_set_robust_list:
+            return "SYS_set_robust_list";
+        case SYS_get_robust_list:
+            return "SYS_get_robust_list";
+        case SYS_splice:
+            return "SYS_splice";
+        case SYS_tee:
+            return "SYS_tee";
+        case SYS_sync_file_range:
+            return "SYS_sync_file_range";
+        case SYS_vmsplice:
+            return "SYS_vmsplice";
+        case SYS_move_pages:
+            return "SYS_move_pages";
+        case SYS_utimensat:
+            return "SYS_utimensat";
+        case SYS_epoll_pwait:
+            return "SYS_epoll_pwait";
+        case SYS_signalfd:
+            return "SYS_signalfd";
+        case SYS_timerfd_create:
+            return "SYS_timerfd_create";
+        case SYS_eventfd:
+            return "SYS_eventfd";
+        case SYS_fallocate:
+            return "SYS_fallocate";
+        case SYS_timerfd_settime:
+            return "SYS_timerfd_settime";
+        case SYS_timerfd_gettime:
+            return "SYS_timerfd_gettime";
+        case SYS_accept4:
+            return "SYS_accept4";
+        case SYS_signalfd4:
+            return "SYS_signalfd4";
+        case SYS_eventfd2:
+            return "SYS_eventfd2";
+        case SYS_epoll_create1:
+            return "SYS_epoll_create1";
+        case SYS_dup3:
+            return "SYS_dup3";
+        case SYS_pipe2:
+            return "SYS_pipe2";
+        case SYS_inotify_init1:
+            return "SYS_inotify_init1";
+        case SYS_preadv:
+            return "SYS_preadv";
+        case SYS_pwritev:
+            return "SYS_pwritev";
+        case SYS_rt_tgsigqueueinfo:
+            return "SYS_rt_tgsigqueueinfo";
+        case SYS_perf_event_open:
+            return "SYS_perf_event_open";
+        case SYS_recvmmsg:
+            return "SYS_recvmmsg";
+        case SYS_fanotify_init:
+            return "SYS_fanotify_init";
+        case SYS_fanotify_mark:
+            return "SYS_fanotify_mark";
+        case SYS_prlimit64:
+            return "SYS_prlimit64";
+        case SYS_name_to_handle_at:
+            return "SYS_name_to_handle_at";
+        case SYS_open_by_handle_at:
+            return "SYS_open_by_handle_at";
+        case SYS_clock_adjtime:
+            return "SYS_clock_adjtime";
+        case SYS_syncfs:
+            return "SYS_syncfs";
+        case SYS_sendmmsg:
+            return "SYS_sendmmsg";
+        case SYS_setns:
+            return "SYS_setns";
+        case SYS_getcpu:
+            return "SYS_getcpu";
+        case SYS_process_vm_readv:
+            return "SYS_process_vm_readv";
+        case SYS_process_vm_writev:
+            return "SYS_process_vm_writev";
+        case SYS_kcmp:
+            return "SYS_kcmp";
+        case SYS_finit_module:
+            return "SYS_finit_module";
+        case SYS_sched_setattr:
+            return "SYS_sched_setattr";
+        case SYS_sched_getattr:
+            return "SYS_sched_getattr";
+        case SYS_renameat2:
+            return "SYS_renameat2";
+        case SYS_seccomp:
+            return "SYS_seccomp";
+        case SYS_getrandom:
+            return "SYS_getrandom";
+        case SYS_memfd_create:
+            return "SYS_memfd_create";
+        case SYS_kexec_file_load:
+            return "SYS_kexec_file_load";
+        case SYS_bpf:
+            return "SYS_bpf";
+        case SYS_execveat:
+            return "SYS_execveat";
+        case SYS_userfaultfd:
+            return "SYS_userfaultfd";
+        case SYS_membarrier:
+            return "SYS_membarrier";
+        case SYS_mlock2:
+            return "SYS_mlock2";
+        case SYS_copy_file_range:
+            return "SYS_copy_file_range";
+        case SYS_preadv2:
+            return "SYS_preadv2";
+        case SYS_pwritev2:
+            return "SYS_pwritev2";
+        case SYS_pkey_mprotect:
+            return "SYS_pkey_mprotect";
+        case SYS_pkey_alloc:
+            return "SYS_pkey_alloc";
+        case SYS_pkey_free:
+            return "SYS_pkey_free";
+        case SYS_statx:
+            return "SYS_statx";
+        case SYS_io_pgetevents:
+            return "SYS_io_pgetevents";
+        case SYS_rseq:
+            return "SYS_rseq";
+        default:
+            return "unknown";
+    }
+}
+
+long _syscall_ioctl(syscall_args_t* args)
+{
+    int ret = -1;
+    int fd = (int)args->arg1;
+    unsigned long request = (unsigned long)args->arg2;
+
+    switch (fd)
+    {
+        case STDIN_FILENO:
+        case STDERR_FILENO:
+        case STDOUT_FILENO:
+        {
+            static const unsigned long _TIOCGWINSZ = 0x5413;
+
+            if (request == _TIOCGWINSZ)
+            {
+                struct winsize
+                {
+                    unsigned short int ws_row;
+                    unsigned short int ws_col;
+                    unsigned short int ws_xpixel;
+                    unsigned short int ws_ypixel;
+                };
+                struct winsize* p;
+
+                p = (struct winsize*)args->arg3;
+
+                if (!p)
+                    goto done;
+
+                p->ws_row = 24;
+                p->ws_col = 80;
+                p->ws_xpixel = 0;
+                p->ws_ypixel = 0;
+
+                ret = 0;
+                goto done;
+            }
+
+            ret = -1;
+            goto done;
+        }
+        default:
+        {
+            ret = -1;
+            goto done;
+        }
+    }
+
+done:
+
+    if (ret != 0)
+        abort();
+
+    return ret;
+}
+
+static long _syscall_writev(int fd, const struct iovec* iov, int iovcnt)
+{
+    long ret = -1;
+    int device;
+    size_t bytes_written = 0;
+
+    /* Allow writing only to stdout and stderr */
+    switch (fd)
+    {
+        case STDOUT_FILENO:
+        {
+            device = 0;
+            break;
+        }
+        case STDERR_FILENO:
+        {
+            device = 1;
+            break;
+        }
+        default:
+        {
+            abort();
+        }
+    }
+
+    for (int i = 0; i < iovcnt; i++)
+    {
+        oe_host_write(device, iov[i].iov_base, iov[i].iov_len);
+        bytes_written += iov[i].iov_len;
+    }
+
+    ret = (long)bytes_written;
+
+    return ret;
+}
+
 long handle_syscall(syscall_args_t* args)
 {
-    if (args->num == SYS_write)
+    switch (args->num)
     {
-        oe_host_write(1, (const char*)args->arg2, (size_t)args->arg3);
-        return 0;
-    }
-    else
-    {
-        printf("handle_syscall(): panic: num=%ld\n", args->num);
-        oe_abort();
+        case SYS_write:
+        {
+            _write_n((const char*)args->arg2, (size_t)args->arg3);
+            return 0;
+        }
+        case SYS_arch_prctl:
+        {
+            return _syscall_arch_prctl(
+                (int)args->arg1, (unsigned long)args->arg2);
+        }
+        case SYS_set_tid_address:
+        {
+            return _syscall_set_tid_address((int*)args->arg1);
+        }
+        case SYS_exit_group:
+        {
+            return _syscall_exit_group((int)args->arg1);
+        }
+        case SYS_ioctl:
+        {
+            return _syscall_ioctl(args);
+        }
+        case SYS_writev:
+        {
+            int fd = (int)args->arg1;
+            const struct iovec* iov = (const struct iovec*)args->arg2;
+            int iovcnt = (int)args->arg3;
+            return _syscall_writev(fd, iov, iovcnt);
+        }
+        default:
+        {
+            const char* name = _syscall_name(args->num);
+            _write("syscall panic: ");
+            _puts(name);
+            oe_abort();
+        }
     }
 
     return -1;
 }
-
-static int _num_exceptions = 0;
 
 static uint64_t _exception_handler(oe_exception_record_t* exception)
 {
@@ -557,8 +1485,6 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
 
             context->rip += 2;
 
-            _num_exceptions++;
-
             return OE_EXCEPTION_CONTINUE_EXECUTION;
         }
         else
@@ -576,7 +1502,7 @@ static long _continue_execution_hook(long ret)
     return handle_syscall(&_args);
 }
 
-void test_exec(const uint8_t* image_base, size_t image_size)
+int exec(const uint8_t* image_base, size_t image_size)
 {
     uint8_t* exec_base = (uint8_t*)__oe_get_exec_base();
     size_t exec_size = __oe_get_exec_size();
@@ -616,6 +1542,12 @@ void test_exec(const uint8_t* image_base, size_t image_size)
         abort();
     }
 
+    /* Set up exit handling. */
+    if (oe_setjmp(&_jmp_buf) == 1)
+    {
+        goto done;
+    }
+
 #if 0
     entry_proc entry = (entry_proc)(exec_base + image.entry_rva);
     entry();
@@ -631,24 +1563,16 @@ void test_exec(const uint8_t* image_base, size_t image_size)
             1,
             {"/tmp/prog", NULL},
         };
-        long* p = (long*)&args;
 
-        printf("p[0]=%ld\n", p[0]);
-
-        char** argv = (void*)(p + 1);
-
-        printf("argv[0]=%s\n", argv[0]);
-        printf("argv[1]=%s\n", argv[1]);
-
-        printf("<<<<<<<<<<<\n");
-        start(p);
-        printf(">>>>>>>>>>>\n");
+        start((long*)&args);
     }
 #endif
 
+done:
+
     _free_elf_image(&image);
 
-    printf("_num_exceptions=%d\n", _num_exceptions);
+    return _exit_status;
 }
 
 OE_SET_ENCLAVE_SGX(

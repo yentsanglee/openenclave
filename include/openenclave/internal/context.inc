@@ -211,7 +211,6 @@ call_handler:
     // ATTN: Why doesn't this function call preserve RBX?
     // ATTN: Is it necessary to save R12-R15?
 
-    //pushq %rax
     pushq %rbx
     pushq %rcx
     pushq %rdx
@@ -225,11 +224,13 @@ call_handler:
     pushq %r13
     pushq %r14
     pushq %r15
+    pushfq
 
     movq %rax, %rdi
     /* %rax = oe_call_continue_execution_hook(%rdi) */
     call oe_call_continue_execution_hook
 
+    popfq
     popq %r15
     popq %r14
     popq %r13
@@ -243,7 +244,6 @@ call_handler:
     popq %rdx
     popq %rcx
     popq %rbx
-    //popq %rax
 
 return_to_exception_site:
 

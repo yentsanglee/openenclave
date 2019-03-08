@@ -29,8 +29,11 @@ int main(int argc, const char* argv[])
     r = oe_create_exec_enclave(argv[1], type, flags, NULL, 0, &enclave);
     OE_TEST(r == OE_OK);
 
-    r = test_exec(enclave, data, size);
+    int ret;
+    r = exec(enclave, &ret, data, size);
     OE_TEST(r == OE_OK);
+
+    printf("host: exit status=%d\n", ret);
 
     r = oe_terminate_enclave(enclave);
     OE_TEST(r == OE_OK);

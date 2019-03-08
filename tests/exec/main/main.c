@@ -3,8 +3,16 @@
 
 #include <stdio.h>
 
-int main()
+int main(int argc, const char* argv[])
 {
-    // printf("Hello World!\n");
+#if 0
+    for (int i = 0; i < argc; i++)
+    {
+        printf("argv[%d]=%s\n", i, argv[i]);
+    }
+#endif
+
+    printf("Hello world!\n");
+
     return 0;
 }
