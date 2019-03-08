@@ -16,6 +16,7 @@ if (UNIX)
     crypto/openssl/random.c
     crypto/openssl/rsa.c
     linux/hostepoll.c
+    linux/hostuid.c
     linux/hostthread.c
     linux/time.c
     linux/uname.c
@@ -26,6 +27,7 @@ elseif (WIN32)
     crypto/bcrypt/hmac.c
     crypto/bcrypt/rsa.c
     windows/hostepoll.c
+    windows/hostuid.c
     windows/hostthread.c
     windows/time.c
     windows/uname.c)

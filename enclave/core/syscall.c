@@ -19,6 +19,7 @@
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/eventfd.h>
 #include <openenclave/internal/print.h>
+#include <openenclave/internal/uid.h>
 
 typedef int (*ioctl_proc)(
     int fd,
@@ -466,6 +467,33 @@ static long _syscall(
             int status = (int)arg1;
             oe_exit(status);
         }
+        case OE_SYS_getpid:
+        {
+            ret = (long)oe_getpid();
+            goto done;
+        }
+        case OE_SYS_getuid:
+        {
+            ret = (long)oe_getuid();
+            goto done;
+        }
+        case OE_SYS_geteuid:
+        {
+            ret = (long)oe_geteuid();
+            goto done;
+        }
+        case OE_SYS_getppid:
+        {
+            ret = (long)oe_getppid();
+            goto done;
+        }
+        case OE_SYS_getpgrp:
+        {
+            ret = (long)oe_getpgrp();
+            goto done;
+        }
+            // case OE_SYS_getegid:
+
         default:
         {
             oe_errno = ENOSYS;
