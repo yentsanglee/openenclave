@@ -5,7 +5,6 @@ CC=/opt/musl/bin/musl-gcc
 
 SOURCES = main.c
 
-#CFLAGS += --verbose
 CFLAGS += -g
 CFLAGS += -fPIC
 CFLAGS += -pie
@@ -21,3 +20,9 @@ clean:
 
 run: all
 	( cd ../; ctest -V )
+
+zzz:
+	$(CC) -o main -g -fPIC -pie -static --verbose main.c
+
+r:
+	(cd ../; ctest -V )

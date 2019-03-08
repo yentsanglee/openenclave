@@ -4,8 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int x = 0;
+
+__attribute__((__constructor__)) void foo(void)
+{
+    x = 99;
+}
+
 int main(int argc, const char* argv[])
 {
     printf("Hello world!\n");
-    exit(1);
+    exit(x);
 }
