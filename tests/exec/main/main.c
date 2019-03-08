@@ -4,10 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int x = 0;
+int x = 1;
 
 __attribute__((__constructor__)) void foo(void)
 {
+    abort();
     x = 99;
 }
 

@@ -426,8 +426,18 @@ long (*oe_continue_execution_hook)(long ret);
 
 long oe_call_continue_execution_hook(long ret)
 {
+    uint64_t rsp;
+
+    /* Align the stack pointer on a 16-byte boundary. */
+    __asm__ __volatile__("movq %%rsp, %0\n\t"
+                         "and $-16, %%rsp\n\t"
+                         : "=r"(rsp));
+
     if (oe_continue_execution_hook)
         return oe_continue_execution_hook(ret);
+
+    /* Restore the stack pointer. */
+    __asm__ __volatile__("movq %0, %%rsp\n\t" : : "r"(rsp));
 
     return ret;
 }

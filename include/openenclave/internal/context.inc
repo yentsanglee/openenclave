@@ -226,7 +226,7 @@ call_handler:
     pushq %r14
     pushq %r15
 
-    subq $8, %rsp
+    subq $16, %rsp
     stmxcsr (%rsp)
 
     subq $512 + 16, %rsp
@@ -237,6 +237,7 @@ call_handler:
     fxsave (%rdx)
     popq %rdx
 
+    /* Note: the function is responisble for aligning the stack. */
     /* %rax = oe_call_continue_execution_hook(%rdi) */
     movq %rax, %rdi
     call oe_call_continue_execution_hook
@@ -250,7 +251,7 @@ call_handler:
     addq $512 + 16, %rsp
 
     ldmxcsr (%rsp)
-    addq $8, %rsp
+    addq $16, %rsp
 
     popq %r15
     popq %r14

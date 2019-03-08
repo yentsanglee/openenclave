@@ -14,6 +14,7 @@
 #include <openenclave/internal/load.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/utils.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -512,14 +513,6 @@ typedef void (*start_proc)(long* p);
 
 #define SYSCALL_OPCODE 0x050F
 
-void __write_n(const char* s, size_t n);
-
-void __write(const char* s);
-
-void __puts(const char* s);
-
-void __put_uint64(uint64_t x);
-
 static oe_jmpbuf_t _jmp_buf;
 static int _exit_status = INT_MAX;
 
@@ -594,13 +587,11 @@ static long _syscall_set_tid_address(int* tidptr)
 
 static long _syscall_exit_group(int status)
 {
-    // __puts("_syscall_exit_group()");
-
     _exit_status = status;
     oe_longjmp(&_jmp_buf, 1);
 
     /* Unrechable. */
-    oe_abort();
+    abort();
     return 0;
 }
 
@@ -1382,7 +1373,7 @@ long handle_syscall(syscall_args_t* args)
     {
         case SYS_write:
         {
-            __write_n((const char*)args->arg2, (size_t)args->arg3);
+            printf("%.*s", (int)args->arg3, (const char*)args->arg2);
             return 0;
         }
         case SYS_arch_prctl:
@@ -1412,8 +1403,7 @@ long handle_syscall(syscall_args_t* args)
         default:
         {
             const char* name = _syscall_name(args->num);
-            __write("syscall panic: ");
-            __puts(name);
+            fprintf(stderr, "syscall panic: %s", name);
             oe_abort();
         }
     }
@@ -1455,42 +1445,10 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
     return OE_EXCEPTION_CONTINUE_SEARCH;
 }
 
-extern int __recurse(int x);
-
 static long _continue_execution_hook(long ret)
 {
-#if 0
-    //printf("ret=%d\n", ret);
-    __puts("ret=");
-    __put_uint64((uint16_t)ret);
-#endif
-
-#if 0
     (void)ret;
-    uint64_t buf[4096];
-    MEMSET(buf, 0, sizeof(buf));
-
-    for (size_t i = 0; i < OE_COUNTOF(buf); i++)
-    {
-        __put_uint64(buf[i]);
-    }
-
-
-    uint64_t buf2[4096];
-    MEMSET(buf2, 0, sizeof(buf2));
-
-    for (size_t i = 0; i < OE_COUNTOF(buf2); i++)
-    {
-        __put_uint64(buf2[i]);
-    }
-
-    oe_host_printf("ret=%ld\n", ret);
-
-    __recurse(1024);
-#endif
-
-    (void)ret;
-    // oe_host_printf("ret=%ld\n", ret);
+    // printf("_continue_execution_hook.ret=%ld\n", ret);
     return handle_syscall(&_args);
 }
 
@@ -1563,6 +1521,8 @@ int exec(const uint8_t* image_base, size_t image_size)
 done:
 
     _free_elf_image(&image);
+
+    printf("_exit_status=%ld\n", _exit_status);
 
     return _exit_status;
 }
