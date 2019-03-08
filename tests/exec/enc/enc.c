@@ -37,6 +37,7 @@ void MEMSET(void* s, unsigned char c, size_t n)
 typedef struct _elf_image
 {
     elf64_t elf;
+    uint64_t image_offset;
     uint8_t* image_base;
     size_t image_size;
     //    const elf64_ehdr_t* ehdr;
@@ -143,9 +144,6 @@ static void _free_elf_image(elf_image_t* image)
 {
     if (image)
     {
-        if (image->image_base)
-            free(image->image_base);
-
         if (image->segments)
             free(image->segments);
 
@@ -153,7 +151,12 @@ static void _free_elf_image(elf_image_t* image)
     }
 }
 
-static int _load_elf_image(elf_image_t* image, const uint8_t* data, size_t size)
+static int _load_elf_image(
+    elf_image_t* image,
+    const uint8_t* data,
+    size_t size,
+    uint8_t* exec_base,
+    size_t exec_size)
 {
     int ret = -1;
     size_t i;
@@ -214,10 +217,9 @@ static int _load_elf_image(elf_image_t* image, const uint8_t* data, size_t size)
         goto done;
 
     /* Find out the image size and number of segments to be loaded */
+    uint64_t lo = 0xFFFFFFFFFFFFFFFF; /* lowest address of all segments */
+    uint64_t hi = 0;                  /* highest address of all segments */
     {
-        uint64_t lo = 0xFFFFFFFFFFFFFFFF; /* lowest address of all segments */
-        uint64_t hi = 0;                  /* highest address of all segments */
-
         for (i = 0; i < eh->e_phnum; i++)
         {
             const elf64_phdr_t* ph;
@@ -249,7 +251,7 @@ static int _load_elf_image(elf_image_t* image, const uint8_t* data, size_t size)
         }
 
         /* Fail if LO not found */
-        if (lo != 0)
+        if (lo == 0xFFFFFFFFFFFFFFFF)
             goto done;
 
         /* Fail if HI not found */
@@ -264,6 +266,9 @@ static int _load_elf_image(elf_image_t* image, const uint8_t* data, size_t size)
         image->image_size = oe_round_up_to_page_size(hi - lo);
     }
 
+    /* Save the image offset. */
+    image->image_offset = lo;
+
     /* allocate segments */
     {
         image->segments = (oe_elf_segment_t*)calloc(
@@ -277,7 +282,13 @@ static int _load_elf_image(elf_image_t* image, const uint8_t* data, size_t size)
 
     /* Allocate image on a page boundary */
     {
-        image->image_base = (uint8_t*)memalign(OE_PAGE_SIZE, image->image_size);
+        if (image->image_size > exec_size)
+        {
+            goto done;
+        }
+
+        image->image_base = (uint8_t*)exec_base;
+
         if (!image->image_base)
         {
             goto done;
@@ -351,7 +362,9 @@ static int _load_elf_image(elf_image_t* image, const uint8_t* data, size_t size)
         if (segdata)
         {
             /* copy the segment to image */
-            memcpy(image->image_base + seg->vaddr, segdata, seg->filesz);
+            assert(seg->vaddr >= image->image_offset);
+            uint64_t off = seg->vaddr - image->image_offset;
+            memcpy(image->image_base + off, segdata, seg->filesz);
         }
 
         num_segments++;
@@ -387,66 +400,6 @@ done:
     return ret;
 }
 
-int _add_segment_pages(
-    uint8_t* image_base,
-    size_t image_size,
-    oe_elf_segment_t* segment,
-    uint8_t* exec_base,
-    size_t exec_size)
-{
-    int result = -1;
-    uint64_t page_rva;
-    uint64_t segment_end;
-    const uint8_t* image_end = image_base + image_size;
-    const uint8_t* exec_end = exec_base + exec_size;
-
-    page_rva = oe_round_down_to_page_size(segment->vaddr);
-    segment_end = segment->vaddr + segment->memsz;
-
-    for (; page_rva < segment_end; page_rva += OE_PAGE_SIZE)
-    {
-        uint8_t* dest = exec_base + page_rva;
-        const uint8_t* src = image_base + page_rva;
-
-        if (!(dest >= exec_base && dest <= exec_end + OE_PAGE_SIZE))
-            goto done;
-
-        if (!(src >= image_base && src <= image_end + OE_PAGE_SIZE))
-            goto done;
-
-        memcpy(dest, src, OE_PAGE_SIZE);
-    }
-
-    result = 0;
-
-done:
-    return result;
-}
-
-static int _add_pages(elf_image_t* image, uint8_t* exec_base, size_t exec_size)
-{
-    int ret = -1;
-    size_t i;
-
-    for (i = 0; i < image->num_segments; i++)
-    {
-        if (_add_segment_pages(
-                image->image_base,
-                image->image_size,
-                &image->segments[i],
-                exec_base,
-                exec_size) != 0)
-        {
-            goto done;
-        }
-    }
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
 static int _relocate_symbols(
     elf_image_t* image,
     uint8_t* exec_base,
@@ -472,14 +425,22 @@ static int _relocate_symbols(
         if (p->r_offset == 0)
             break;
 
-        uint64_t* dest = (uint64_t*)(exec_base + p->r_offset);
+        if (p->r_offset < image->image_offset)
+            goto done;
+
+        uint64_t off = p->r_offset - image->image_offset;
+        uint64_t* dest = (uint64_t*)(exec_base + off);
         uint64_t reloc_type = ELF64_R_TYPE(p->r_info);
 
         /* Relocate the reference */
         if (reloc_type == R_X86_64_RELATIVE)
         {
-            *dest = (uint64_t)(exec_base + p->r_addend);
-#if 0
+            if (p->r_addend < (int64_t)image->image_offset)
+                goto done;
+
+            int64_t add = p->r_addend - (int64_t)image->image_offset;
+            *dest = (uint64_t)(exec_base + add);
+#if 1
             printf(
                 "Applied relocation: offset=%llu addend==%lld\n",
                 p->r_offset,
@@ -488,7 +449,7 @@ static int _relocate_symbols(
         }
         else
         {
-#if 0
+#if 1
             printf(
                 "Skipped relocation: offset=%llu addend==%lld\n",
                 p->r_offset,
@@ -1472,37 +1433,44 @@ int exec(const uint8_t* image_base, size_t image_size)
         abort();
     }
 
-    if (_load_elf_image(&image, image_base, image_size) != 0)
+    printf("T=%d\n", __LINE__);
+    if (_load_elf_image(&image, image_base, image_size, exec_base, exec_size) !=
+        0)
     {
         fprintf(stderr, "_load_elf_image() failed\n");
         abort();
     }
 
-    if (_add_pages(&image, exec_base, exec_size) != 0)
-    {
-        fprintf(stderr, "_add_pages() failed\n");
-        abort();
-    }
-
+    printf("T=%d\n", __LINE__);
     if (_relocate_symbols(&image, exec_base, exec_size) != 0)
     {
         fprintf(stderr, "_add_pages() failed\n");
         abort();
     }
 
+    printf("T=%d\n", __LINE__);
+    if (_test_elf_header((const elf64_ehdr_t*)image.image_base) != 0)
+    {
+        fprintf(stderr, "_test_elf_header() failed\n");
+        abort();
+    }
+
+    printf("T=%d\n", __LINE__);
     /* Set up exit handling. */
     if (oe_setjmp(&_jmp_buf) == 1)
     {
         goto done;
     }
 
+    printf("T=%d\n", __LINE__);
 #if 0
     entry_proc entry = (entry_proc)(exec_base + image.entry_rva);
     entry();
 #elif 1
     {
         typedef void (*start_proc)(long* p);
-        start_proc start = (start_proc)(exec_base + image.entry_rva);
+        uint64_t offset = image.entry_rva - image.image_offset;
+        start_proc start = (start_proc)(exec_base + offset);
         typedef struct _args
         {
             long argc;
@@ -1514,7 +1482,9 @@ int exec(const uint8_t* image_base, size_t image_size)
         };
         long* p = (long*)&args;
 
+        printf("T=%d\n", __LINE__);
         start(p);
+        printf("T=%d\n", __LINE__);
     }
 #else
     {
