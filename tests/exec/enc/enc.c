@@ -1433,7 +1433,6 @@ int exec(const uint8_t* image_base, size_t image_size)
         abort();
     }
 
-    printf("T=%d\n", __LINE__);
     if (_load_elf_image(&image, image_base, image_size, exec_base, exec_size) !=
         0)
     {
@@ -1441,28 +1440,24 @@ int exec(const uint8_t* image_base, size_t image_size)
         abort();
     }
 
-    printf("T=%d\n", __LINE__);
     if (_relocate_symbols(&image, exec_base, exec_size) != 0)
     {
         fprintf(stderr, "_add_pages() failed\n");
         abort();
     }
 
-    printf("T=%d\n", __LINE__);
     if (_test_elf_header((const elf64_ehdr_t*)image.image_base) != 0)
     {
         fprintf(stderr, "_test_elf_header() failed\n");
         abort();
     }
 
-    printf("T=%d\n", __LINE__);
     /* Set up exit handling. */
     if (oe_setjmp(&_jmp_buf) == 1)
     {
         goto done;
     }
 
-    printf("T=%d\n", __LINE__);
 #if 0
     entry_proc entry = (entry_proc)(exec_base + image.entry_rva);
     entry();
@@ -1482,9 +1477,9 @@ int exec(const uint8_t* image_base, size_t image_size)
         };
         long* p = (long*)&args;
 
-        printf("T=%d\n", __LINE__);
+        printf("<<<<<<<<<<\n");
         start(p);
-        printf("T=%d\n", __LINE__);
+        printf(">>>>>>>>>>\n");
     }
 #else
     {
