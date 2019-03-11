@@ -7,10 +7,10 @@ SOURCES = main.c
 
 CFLAGS += -g
 CFLAGS += -fPIC
-#CFLAGS += -pie
+CFLAGS += -pie
 CFLAGS += -static
 
-#LDFLAGS += -Wl,--entry=_start_c
+LDFLAGS += -Wl,--entry=_start_c
 
 all:
 	$(CC) $(CFLAGS) main.c -omain $(LDFLAGS)

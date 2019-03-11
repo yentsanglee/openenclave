@@ -1413,29 +1413,34 @@ static long _continue_execution_hook(long ret)
     return r;
 }
 
-static void _call_start(void)
+#define MAX_ARGC 256
+
+void oe_call_start(
+    const void* stack,
+    const void* stack_end,
+    void (*func)(void));
+
+int __call_start(int argc, const char* argv[], void (*func)(void))
 {
     typedef struct _stack
     {
-        long argc;
-        const char* argv[5];
+        int64_t argc;
+        const char* argv[MAX_ARGC];
     } stack_t;
-    stack_t stack = {4,
-                     {
-                         "/bin/program",
-                         "arg1",
-                         "arg2",
-                         "arg3",
-                         NULL,
-                     }};
+    stack_t stack;
 
-    extern void oe_call_start(const void* stack, const void* stack_end);
+    if (argc >= MAX_ARGC)
+        return -1;
 
-    printf("base=%p\n", __oe_get_stack_base());
-    printf("end=%p\n", __oe_get_stack_end());
-    printf("size=%lu\n", __oe_get_stack_size());
+    stack.argc = argc;
 
-    oe_call_start(&stack.argc, __oe_get_stack_end());
+    for (int i = 0; i < argc; i++)
+        stack.argv[i] = argv[i];
+
+    oe_call_start(&stack.argc, __oe_get_stack_end(), func);
+
+    /* Should not return. */
+    return 0;
 }
 
 int exec(const uint8_t* image_base, size_t image_size)
@@ -1444,11 +1449,6 @@ int exec(const uint8_t* image_base, size_t image_size)
     size_t exec_size = __oe_get_exec_size();
     elf_image_t image;
     oe_result_t r;
-
-    printf("before\n");
-    _call_start();
-    printf("after\n");
-    return 0;
 
     (void)image_base;
     (void)image_size;
@@ -1468,7 +1468,6 @@ int exec(const uint8_t* image_base, size_t image_size)
         abort();
     }
 
-#if 1
     if (__load_elf_image(
             &image, image_base, image_size, exec_base, exec_size) != 0)
     {
@@ -1487,7 +1486,6 @@ int exec(const uint8_t* image_base, size_t image_size)
         fprintf(stderr, "_test_elf_header() failed\n");
         abort();
     }
-#endif
 
     /* Set up exit handling. */
     if (oe_setjmp(&_jmp_buf) == 1)
@@ -1495,38 +1493,19 @@ int exec(const uint8_t* image_base, size_t image_size)
         goto done;
     }
 
-#if 0
-    entry_proc entry = (entry_proc)(exec_base + image.entry_rva);
-    entry();
-#elif 0
+    /* Jump to the ELF's entry point. */
     {
-        typedef void (*start_proc)(long* p);
+        typedef void (*start_proc)(void);
         uint64_t offset = image.entry_rva - image.image_offset;
         start_proc start = (start_proc)(exec_base + offset);
-        __attribute__((aligned(16))) typedef struct _args
-        {
-            long argc;
-            const char* argv[8];
-            long padding[256];
-        } args_t;
-        const __attribute__((aligned(16))) args_t args = {
-            1,
-            {"/tmp/prog", NULL},
-        };
-        __attribute__((aligned(16))) long* p = (long*)&args;
 
-        int argc = (int)p[0];
-        printf("argc=%d\n", argc);
+        const char* argv[] = {"/bin/program", "arg1", "arg2", NULL};
+        const int argc = OE_COUNTOF(argv) - 1;
 
-        printf("<<<<<<<<<<\n");
-        start(p);
-        printf(">>>>>>>>>>\n");
+        void my_start(void);
+        __call_start(argc, argv, start);
+        return 0;
     }
-#else
-    {
-        _call_start();
-    }
-#endif
 
 done:
 
