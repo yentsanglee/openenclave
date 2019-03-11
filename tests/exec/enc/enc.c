@@ -56,7 +56,7 @@ typedef struct _elf_image
     size_t num_segments;
 } elf_image_t;
 
-static int _test_elf_header(const elf64_ehdr_t* ehdr)
+int __test_elf_header(const elf64_ehdr_t* ehdr)
 {
     if (!ehdr)
         return -1;
@@ -112,7 +112,7 @@ static int _elf64_init(elf64_t* elf, const void* data, size_t size)
     if (!data || !size || !elf)
         goto done;
 
-    if (_test_elf_header((elf64_ehdr_t*)data) != 0)
+    if (__test_elf_header((elf64_ehdr_t*)data) != 0)
         goto done;
 
     elf->data = (void*)data;
@@ -151,7 +151,7 @@ static void _free_elf_image(elf_image_t* image)
     }
 }
 
-static int _load_elf_image(
+int __load_elf_image(
     elf_image_t* image,
     const uint8_t* data,
     size_t size,
@@ -365,6 +365,9 @@ static int _load_elf_image(
             assert(seg->vaddr >= image->image_offset);
             uint64_t off = seg->vaddr - image->image_offset;
             memcpy(image->image_base + off, segdata, seg->filesz);
+
+            uint8_t* end = image->image_base + off + seg->filesz;
+            assert(end < image->image_base + (uint64_t)image->image_size);
         }
 
         num_segments++;
@@ -400,10 +403,7 @@ done:
     return ret;
 }
 
-static int _relocate_symbols(
-    elf_image_t* image,
-    uint8_t* exec_base,
-    size_t exec_size)
+int __relocate_symbols(elf_image_t* image, uint8_t* exec_base, size_t exec_size)
 {
     int ret = -1;
     void* data = NULL;
@@ -1332,8 +1332,8 @@ long handle_syscall(syscall_args_t* args)
     {
         case SYS_write:
         {
-            printf("%.*s", (int)args->arg3, (const char*)args->arg2);
-            return 0;
+            oe_host_write(1, (const char*)args->arg2, (size_t)args->arg3);
+            return args->arg3;
         }
         case SYS_arch_prctl:
         {
@@ -1407,8 +1407,35 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
 static long _continue_execution_hook(long ret)
 {
     (void)ret;
-    // printf("_continue_execution_hook.ret=%ld\n", ret);
-    return handle_syscall(&_args);
+    printf("_continue_execution_hook().ret=%ld\n", ret);
+    long r = handle_syscall(&_args);
+    printf("_continue_execution_hook().r=%ld\n", r);
+    return r;
+}
+
+static void _call_start(void)
+{
+    typedef struct _stack
+    {
+        long argc;
+        const char* argv[5];
+    } stack_t;
+    stack_t stack = {4,
+                     {
+                         "/bin/program",
+                         "arg1",
+                         "arg2",
+                         "arg3",
+                         NULL,
+                     }};
+
+    extern void oe_call_start(const void* stack, const void* stack_end);
+
+    printf("base=%p\n", __oe_get_stack_base());
+    printf("end=%p\n", __oe_get_stack_end());
+    printf("size=%lu\n", __oe_get_stack_size());
+
+    oe_call_start(&stack.argc, __oe_get_stack_end());
 }
 
 int exec(const uint8_t* image_base, size_t image_size)
@@ -1417,6 +1444,14 @@ int exec(const uint8_t* image_base, size_t image_size)
     size_t exec_size = __oe_get_exec_size();
     elf_image_t image;
     oe_result_t r;
+
+    printf("before\n");
+    _call_start();
+    printf("after\n");
+    return 0;
+
+    (void)image_base;
+    (void)image_size;
 
     oe_continue_execution_hook = _continue_execution_hook;
 
@@ -1433,24 +1468,26 @@ int exec(const uint8_t* image_base, size_t image_size)
         abort();
     }
 
-    if (_load_elf_image(&image, image_base, image_size, exec_base, exec_size) !=
-        0)
+#if 1
+    if (__load_elf_image(
+            &image, image_base, image_size, exec_base, exec_size) != 0)
     {
         fprintf(stderr, "_load_elf_image() failed\n");
         abort();
     }
 
-    if (_relocate_symbols(&image, exec_base, exec_size) != 0)
+    if (__relocate_symbols(&image, exec_base, exec_size) != 0)
     {
         fprintf(stderr, "_add_pages() failed\n");
         abort();
     }
 
-    if (_test_elf_header((const elf64_ehdr_t*)image.image_base) != 0)
+    if (__test_elf_header((const elf64_ehdr_t*)image.image_base) != 0)
     {
         fprintf(stderr, "_test_elf_header() failed\n");
         abort();
     }
+#endif
 
     /* Set up exit handling. */
     if (oe_setjmp(&_jmp_buf) == 1)
@@ -1461,21 +1498,25 @@ int exec(const uint8_t* image_base, size_t image_size)
 #if 0
     entry_proc entry = (entry_proc)(exec_base + image.entry_rva);
     entry();
-#elif 1
+#elif 0
     {
         typedef void (*start_proc)(long* p);
         uint64_t offset = image.entry_rva - image.image_offset;
         start_proc start = (start_proc)(exec_base + offset);
-        typedef struct _args
+        __attribute__((aligned(16))) typedef struct _args
         {
             long argc;
             const char* argv[8];
+            long padding[256];
         } args_t;
-        args_t args = {
+        const __attribute__((aligned(16))) args_t args = {
             1,
             {"/tmp/prog", NULL},
         };
-        long* p = (long*)&args;
+        __attribute__((aligned(16))) long* p = (long*)&args;
+
+        int argc = (int)p[0];
+        printf("argc=%d\n", argc);
 
         printf("<<<<<<<<<<\n");
         start(p);
@@ -1483,19 +1524,7 @@ int exec(const uint8_t* image_base, size_t image_size)
     }
 #else
     {
-        typedef void (*start_proc)(long* p);
-        start_proc start = (start_proc)(exec_base + image.entry_rva);
-        typedef struct _args
-        {
-            long argc;
-            const char* argv[8];
-        } args_t;
-        args_t args = {
-            1,
-            {"/tmp/prog", NULL},
-        };
-
-        start((long*)&args);
+        _call_start();
     }
 #endif
 
@@ -1506,6 +1535,29 @@ done:
     printf("_exit_status=%ld\n", _exit_status);
 
     return _exit_status;
+}
+
+int __oe_libc_start_main(
+    int*(main)(int, char**, char**), /* rdi */
+    int argc,                        /* rsi */
+    char** argv,                     /* rdx */
+    void (*init)(void),              /* rcx */
+    void (*fini)(void),              /* r8 */
+    void(*stack_end))                /* r9 */
+{
+    printf("=== my_main()\n");
+    printf("main=%p\n", main);
+    printf("argc=%d\n", argc);
+
+    printf("argv=%p\n", argv);
+
+    for (int i = 0; i < argc; i++)
+        printf("argv[i]=%s\n", argv[i]);
+
+    printf("init=%p\n", init);
+    printf("fini=%p\n", fini);
+    printf("stack_end=%p\n", stack_end);
+    return 0;
 }
 
 OE_SET_ENCLAVE_SGX(

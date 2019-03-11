@@ -24,7 +24,7 @@
 #include "enclave.h"
 #include "sgxload.h"
 
-static const size_t NUM_EXEC_PAGES = 2 * 4096;
+static const size_t NUM_EXEC_PAGES = 4096;
 static const size_t EXEC_SIZE = NUM_EXEC_PAGES * OE_PAGE_SIZE;
 
 static oe_result_t _oe_free_elf_image(oe_enclave_image_t* image)

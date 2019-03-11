@@ -3,6 +3,7 @@
 
 #include <openenclave/enclave.h>
 #include <openenclave/internal/globals.h>
+#include "../sgx/td.h"
 
 /* Note: The variables below are initialized during enclave loading */
 
@@ -319,4 +320,45 @@ size_t __oe_get_exec_size(void)
 #else
 #error
 #endif
+}
+
+/*
+**==============================================================================
+**
+** Stack boundaries:
+**
+**      +-------------+
+**      | Guard page  |
+**      +-------------+ <- stack-end
+**      | Stack pages |
+**      +-------------+ <- stack-base
+**      | Guard page  |
+**      +-------------+
+**      | TCS         |
+**      +-------------+
+**
+**==============================================================================
+*/
+
+size_t __oe_get_stack_size(void)
+{
+    return oe_enclave_properties_sgx.header.size_settings.num_stack_pages *
+           OE_PAGE_SIZE;
+}
+
+void* __oe_get_stack_base(void)
+{
+    td_t* td;
+    void* tcs;
+
+    if (!(td = oe_get_td()) || !(tcs = td_to_tcs(td)))
+        return NULL;
+
+    /* Get pointer to guard page immediately after the stack pages. */
+    return (uint8_t*)tcs - OE_PAGE_SIZE;
+}
+
+void* __oe_get_stack_end(void)
+{
+    return (uint8_t*)__oe_get_stack_base() - __oe_get_stack_size();
 }

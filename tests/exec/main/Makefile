@@ -7,10 +7,10 @@ SOURCES = main.c
 
 CFLAGS += -g
 CFLAGS += -fPIC
-CFLAGS += -pie
+#CFLAGS += -pie
 CFLAGS += -static
 
-LDFLAGS += -Wl,--entry=_start_c
+#LDFLAGS += -Wl,--entry=_start_c
 
 all:
 	$(CC) $(CFLAGS) main.c -omain $(LDFLAGS)
@@ -21,8 +21,11 @@ clean:
 run: all
 	( cd ../; ctest -V )
 
-zzz:
-	$(CC) -o main -fPIC -g -static main.c
+clang:
+	clang-7 -fPIC -static main.c -omain
 
-r:
-	(cd ../; ctest -V )
+gcc:
+	gcc -fPIC -static main.c -omain
+
+dump:
+	objdump -d main > main.dump

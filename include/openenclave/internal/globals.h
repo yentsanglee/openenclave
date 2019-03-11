@@ -40,6 +40,15 @@ void* __oe_get_exec_base(void);
 void* __oe_get_exec_end(void);
 size_t __oe_get_exec_size(void);
 
+/* Get the size of the stack for this TCS. */
+size_t __oe_get_stack_size(void);
+
+/* Get the highest stack address for this TCS. */
+void* __oe_get_stack_base(void);
+
+/* Get the lowest stack address for this TCS. */
+void* __oe_get_stack_end(void);
+
 OE_EXTERNC_END
 
 #endif /* _OE_GLOBALS_H */

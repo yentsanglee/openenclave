@@ -57,6 +57,7 @@
 // XSTATE constants.
 //
 
+#define XSAVE_SIZE 512
 #define XSAVE_ALIGNMENT 0x40
 #define LEGACY_XSAVE_AREA 0X200
 #define XSAVE_HEADER_LENGTH 0X40
