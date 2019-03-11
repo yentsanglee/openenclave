@@ -6,6 +6,15 @@
 
 int main(int argc, const char* argv[])
 {
-    printf("Hello world!\n");
+    printf("Hello World!\n");
+
+    printf("argc=%d\n", argc);
+#if 0
+
+    for (int i = 0; i < argc; i++)
+    {
+        printf("argv[%d]=%s\n", i, argv[i]);
+    }
+#endif
     exit(1);
 }
