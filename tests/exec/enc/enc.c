@@ -295,8 +295,9 @@ int __load_elf_image(
         }
     }
 
-    /* Clear the image memory */
     MEMSET(image->image_base, 0, image->image_size);
+
+    /* Clear the image memory */
 
     /* Add all loadable program segments to SEGMENTS array */
     for (i = 0, num_segments = 0; i < eh->e_phnum; i++)
@@ -1290,6 +1291,7 @@ done:
     return ret;
 }
 
+#if 0
 static long _syscall_writev(int fd, const struct iovec* iov, int iovcnt)
 {
     long ret = -1;
@@ -1325,6 +1327,9 @@ static long _syscall_writev(int fd, const struct iovec* iov, int iovcnt)
 
     return ret;
 }
+#endif
+
+long oe_syscall(long number, ...);
 
 long handle_syscall(syscall_args_t* args)
 {
@@ -1332,8 +1337,7 @@ long handle_syscall(syscall_args_t* args)
     {
         case SYS_write:
         {
-            oe_host_write(1, (const char*)args->arg2, (size_t)args->arg3);
-            return args->arg3;
+            return oe_syscall(args->num, args->arg1, args->arg2, args->arg3);
         }
         case SYS_arch_prctl:
         {
@@ -1354,10 +1358,7 @@ long handle_syscall(syscall_args_t* args)
         }
         case SYS_writev:
         {
-            int fd = (int)args->arg1;
-            const struct iovec* iov = (const struct iovec*)args->arg2;
-            int iovcnt = (int)args->arg3;
-            return _syscall_writev(fd, iov, iovcnt);
+            return oe_syscall(args->num, args->arg1, args->arg2, args->arg3);
         }
         default:
         {
