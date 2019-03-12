@@ -1422,36 +1422,22 @@ void oe_call_start(
 
 int __call_start(int argc, const char* argv[], void (*func)(void))
 {
-    __attribute__((aligned(16))) typedef struct _stack
+    if (argc >= MAX_ARGC)
+        return -1;
+
+    __attribute__((aligned(64))) typedef struct _stack
     {
         int64_t argc;
         const char* argv[MAX_ARGC];
     } stack_t;
-    __attribute__((aligned(16))) stack_t stack;
-
-    __attribute__((aligned(16))) long* p = (long*)&stack;
-
-    if (argc >= MAX_ARGC)
-        return -1;
+    __attribute__((aligned(64))) stack_t stack;
 
     stack.argc = argc;
 
     for (int i = 0; i < argc; i++)
         stack.argv[i] = argv[i];
 
-#if 0
     oe_call_start(&stack.argc, __oe_get_stack_end(), func);
-#else
-
-    printf("stack.argc=%ld\n", stack.argc);
-    int x = (int)p[0];
-    printf("x=%d\n", x);
-
-    typedef void (*start_c_proc_t)(long* p);
-    start_c_proc_t start_c = (start_c_proc_t)func;
-    start_c(p);
-
-#endif
 
     /* Should not return. */
     return 0;
@@ -1485,19 +1471,19 @@ int exec(const uint8_t* image_base, size_t image_size)
     if (__load_elf_image(
             &image, image_base, image_size, exec_base, exec_size) != 0)
     {
-        fprintf(stderr, "_load_elf_image() failed\n");
+        fprintf(stderr, "__load_elf_image() failed\n");
         abort();
     }
 
     if (__relocate_symbols(&image, exec_base, exec_size) != 0)
     {
-        fprintf(stderr, "_add_pages() failed\n");
+        fprintf(stderr, "__relocate_symbols() failed\n");
         abort();
     }
 
     if (__test_elf_header((const elf64_ehdr_t*)image.image_base) != 0)
     {
-        fprintf(stderr, "_test_elf_header() failed\n");
+        fprintf(stderr, "__test_elf_header() failed\n");
         abort();
     }
 
@@ -1507,51 +1493,19 @@ int exec(const uint8_t* image_base, size_t image_size)
         goto done;
     }
 
-#if 1
-    {
-        typedef void (*start_proc)(long* p);
-        uint64_t offset = image.entry_rva - image.image_offset;
-        start_proc start = (start_proc)(exec_base + offset);
-        __attribute__((aligned(16))) typedef struct _args
-        {
-            long argc;
-            const char* argv[8];
-            long padding[256];
-        } args_t;
-        const __attribute__((aligned(16))) args_t args = {
-            1,
-            {"/tmp/prog", NULL},
-        };
-        __attribute__((aligned(16))) long* p = (long*)&args;
-
-#if 0
-        int argc = (int)p[0];
-        printf("argc=%d\n", argc);
-
-        printf("<<<<<<<<<<\n");
-#endif
-        start(p);
-#if 0
-        printf(">>>>>>>>>>\n");
-#endif
-    }
-#else
     /* Jump to the ELF's entry point. */
     {
         typedef void (*start_proc)(void);
         uint64_t offset = image.entry_rva - image.image_offset;
         start_proc start = (start_proc)(exec_base + offset);
 
-        (void)start;
-
         const char* argv[] = {"/bin/program", "arg1", "arg2", NULL};
         const int argc = OE_COUNTOF(argv) - 1;
 
-        void my_start(void);
+        extern void my_start(void);
         __call_start(argc, argv, start);
         return 0;
     }
-#endif
 
 done:
 
@@ -1562,6 +1516,7 @@ done:
     return _exit_status;
 }
 
+#if 0
 int __oe_libc_start_main(
     int*(main)(int, char**, char**), /* rdi */
     int argc,                        /* rsi */
@@ -1584,6 +1539,7 @@ int __oe_libc_start_main(
     printf("stack_end=%p\n", stack_end);
     return 0;
 }
+#endif
 
 OE_SET_ENCLAVE_SGX(
     1,    /* ProductID */
