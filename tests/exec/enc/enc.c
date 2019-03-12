@@ -1234,102 +1234,19 @@ static const char* _syscall_name(long num)
     }
 }
 
-long _syscall_ioctl(syscall_args_t* args)
-{
-    int ret = -1;
-    int fd = (int)args->arg1;
-    unsigned long request = (unsigned long)args->arg2;
-
-    switch (fd)
-    {
-        case STDIN_FILENO:
-        case STDERR_FILENO:
-        case STDOUT_FILENO:
-        {
-            static const unsigned long _TIOCGWINSZ = 0x5413;
-
-            if (request == _TIOCGWINSZ)
-            {
-                struct winsize
-                {
-                    unsigned short int ws_row;
-                    unsigned short int ws_col;
-                    unsigned short int ws_xpixel;
-                    unsigned short int ws_ypixel;
-                };
-                struct winsize* p;
-
-                p = (struct winsize*)args->arg3;
-
-                if (!p)
-                    goto done;
-
-                p->ws_row = 24;
-                p->ws_col = 80;
-                p->ws_xpixel = 0;
-                p->ws_ypixel = 0;
-
-                ret = 0;
-                goto done;
-            }
-
-            ret = -1;
-            goto done;
-        }
-        default:
-        {
-            ret = -1;
-            goto done;
-        }
-    }
-
-done:
-
-    if (ret != 0)
-        abort();
-
-    return ret;
-}
-
-#if 0
-static long _syscall_writev(int fd, const struct iovec* iov, int iovcnt)
-{
-    long ret = -1;
-    int device;
-    size_t bytes_written = 0;
-
-    /* Allow writing only to stdout and stderr */
-    switch (fd)
-    {
-        case STDOUT_FILENO:
-        {
-            device = 0;
-            break;
-        }
-        case STDERR_FILENO:
-        {
-            device = 1;
-            break;
-        }
-        default:
-        {
-            abort();
-        }
-    }
-
-    for (int i = 0; i < iovcnt; i++)
-    {
-        oe_host_write(device, iov[i].iov_base, iov[i].iov_len);
-        bytes_written += iov[i].iov_len;
-    }
-
-    ret = (long)bytes_written;
-
-    return ret;
-}
-#endif
-
 long oe_syscall(long number, ...);
+
+static long _dispatch_syscall(syscall_args_t* args)
+{
+    return oe_syscall(
+        args->num,
+        args->arg1,
+        args->arg2,
+        args->arg3,
+        args->arg4,
+        args->arg5,
+        args->arg6);
+}
 
 long handle_syscall(syscall_args_t* args)
 {
@@ -1337,7 +1254,7 @@ long handle_syscall(syscall_args_t* args)
     {
         case SYS_write:
         {
-            return oe_syscall(args->num, args->arg1, args->arg2, args->arg3);
+            return _dispatch_syscall(args);
         }
         case SYS_arch_prctl:
         {
@@ -1354,11 +1271,11 @@ long handle_syscall(syscall_args_t* args)
         }
         case SYS_ioctl:
         {
-            return _syscall_ioctl(args);
+            return _dispatch_syscall(args);
         }
         case SYS_writev:
         {
-            return oe_syscall(args->num, args->arg1, args->arg2, args->arg3);
+            return _dispatch_syscall(args);
         }
         default:
         {
