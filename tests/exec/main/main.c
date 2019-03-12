@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int init;
+static int initialized = 0;
 
-__attribute__((constructor)) void foo()
+__attribute__((constructor)) void constructor(void)
 {
-    init = 1;
+    initialized = 1;
 }
 
 int main(int argc, const char* argv[])
@@ -16,6 +16,8 @@ int main(int argc, const char* argv[])
     //_call_inits();
 
     printf("main(): argc=%d\n", argc);
+
+    printf("initialized=%d\n", initialized);
 
     for (int i = 0; i < argc; i++)
         printf("argv[%d]=%s\n", i, argv[i]);
