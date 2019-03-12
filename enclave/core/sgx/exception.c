@@ -426,6 +426,12 @@ long (*oe_continue_execution_hook)(long ret);
 
 long oe_call_continue_execution_hook(long ret)
 {
+    /* ATTN: force compiler not to remove this with optimization. */
+    /* Force 64-byte stack alignment. */
+    __attribute__((aligned(64))) uint64_t dummy;
+
+    OE_UNUSED(dummy);
+
     if (oe_continue_execution_hook)
         return oe_continue_execution_hook(ret);
 

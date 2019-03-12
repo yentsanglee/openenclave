@@ -6,11 +6,11 @@ CC=/opt/musl/bin/musl-gcc
 SOURCES = main.c
 
 CFLAGS += -g
-CFLAGS += -fPIC
 CFLAGS += -pie
+CFLAGS += -fPIE
 CFLAGS += -static
-
-#LDFLAGS += -Wl,--entry=_start_c
+#CFLAGS += -ftls-model=initial-exec
+#CFLAGS += -fvisibility=hidden
 
 all:
 	$(CC) $(CFLAGS) main.c -omain $(LDFLAGS)

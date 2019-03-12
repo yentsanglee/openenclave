@@ -1406,10 +1406,14 @@ static uint64_t _exception_handler(oe_exception_record_t* exception)
 
 static long _continue_execution_hook(long ret)
 {
-    (void)ret;
-    // printf("_continue_execution_hook().ret=%ld\n", ret);
-    long r = handle_syscall(&_args);
-    // printf("_continue_execution_hook().r=%ld\n", r);
+    long r;
+
+    OE_UNUSED(ret);
+
+    // printf("_continue_execution_hook().syscall=%ld\n", ret);
+    r = handle_syscall(&_args);
+    // printf("_continue_execution_hook().syscallret=%ld\n", r);
+
     return r;
 }
 
@@ -1425,19 +1429,25 @@ int __call_start(int argc, const char* argv[], void (*func)(void))
     if (argc >= MAX_ARGC)
         return -1;
 
-    __attribute__((aligned(64))) typedef struct _stack
+    typedef struct _args
     {
         int64_t argc;
         const char* argv[MAX_ARGC];
-    } stack_t;
-    __attribute__((aligned(64))) stack_t stack;
+    } args_t;
+    __attribute__((aligned(16))) args_t args;
 
-    stack.argc = argc;
+    args.argc = argc;
 
     for (int i = 0; i < argc; i++)
-        stack.argv[i] = argv[i];
+        args.argv[i] = argv[i];
 
-    oe_call_start(&stack.argc, __oe_get_stack_end(), func);
+    const void* stack = &args.argc;
+
+    /* Check for 16-byte alignment of the stack. */
+    if (((uint64_t)stack % 16) != 0)
+        return -1;
+
+    oe_call_start(stack, __oe_get_stack_end(), func);
 
     /* Should not return. */
     return 0;
@@ -1504,6 +1514,8 @@ int exec(const uint8_t* image_base, size_t image_size)
 
         extern void my_start(void);
         __call_start(argc, argv, start);
+        printf("start failed\n");
+        abort();
         return 0;
     }
 
@@ -1515,31 +1527,6 @@ done:
 
     return _exit_status;
 }
-
-#if 0
-int __oe_libc_start_main(
-    int*(main)(int, char**, char**), /* rdi */
-    int argc,                        /* rsi */
-    char** argv,                     /* rdx */
-    void (*init)(void),              /* rcx */
-    void (*fini)(void),              /* r8 */
-    void(*stack_end))                /* r9 */
-{
-    printf("=== my_main()\n");
-    printf("main=%p\n", main);
-    printf("argc=%d\n", argc);
-
-    printf("argv=%p\n", argv);
-
-    for (int i = 0; i < argc; i++)
-        printf("argv[i]=%s\n", argv[i]);
-
-    printf("init=%p\n", init);
-    printf("fini=%p\n", fini);
-    printf("stack_end=%p\n", stack_end);
-    return 0;
-}
-#endif
 
 OE_SET_ENCLAVE_SGX(
     1,    /* ProductID */

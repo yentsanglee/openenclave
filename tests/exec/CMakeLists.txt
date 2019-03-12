@@ -11,4 +11,6 @@ endif()
 
 set(PROGRAM ${CMAKE_CURRENT_SOURCE_DIR}/main/main)
 
-add_enclave_test(tests/exec exec_host exec_enc ${PROGRAM})
+add_test(tests/exec1 make -C ${CMAKE_CURRENT_SOURCE_DIR}/main)
+
+add_enclave_test(tests/exec2 exec_host exec_enc ${PROGRAM})
