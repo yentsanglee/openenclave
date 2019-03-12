@@ -13,8 +13,6 @@ __attribute__((constructor)) void constructor(void)
 
 int main(int argc, const char* argv[])
 {
-    //_call_inits();
-
     printf("main(): argc=%d\n", argc);
 
     printf("initialized=%d\n", initialized);
