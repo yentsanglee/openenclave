@@ -12,8 +12,11 @@ typedef enum _oe_hostsock_op
 {
     OE_HOSTSOCK_OP_NONE,
     OE_HOSTSOCK_OP_SOCKET,
+    OE_HOSTSOCK_OP_SOCKETPAIR,
     OE_HOSTSOCK_OP_RECV,
     OE_HOSTSOCK_OP_SEND,
+    OE_HOSTSOCK_OP_RECVMSG,
+    OE_HOSTSOCK_OP_SENDMSG,
     OE_HOSTSOCK_OP_CLOSE,
     OE_HOSTSOCK_OP_CONNECT,
     OE_HOSTSOCK_OP_ACCEPT,
@@ -26,6 +29,7 @@ typedef enum _oe_hostsock_op
     OE_HOSTSOCK_OP_GETPEERNAME,
     OE_HOSTSOCK_OP_GETSOCKNAME,
     OE_HOSTSOCK_OP_SHUTDOWN_DEVICE
+
 } oe_hostsock_op_t;
 
 typedef struct _oe_hostsock_args
@@ -40,6 +44,15 @@ typedef struct _oe_hostsock_args
             int type;
             int protocol;
         } socket;
+        struct
+        {
+            int64_t ret;
+            int domain;
+            int type;
+            int protocol;
+            int hostfd1; // return
+            int hostfd2; // return
+        } socketpair;
         struct
         {
             int64_t ret;

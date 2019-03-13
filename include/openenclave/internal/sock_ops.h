@@ -13,6 +13,7 @@ OE_EXTERNC_BEGIN
 typedef uint32_t socklen_t;
 struct oe_sockaddr;
 struct oe_addrinfo;
+struct oe_msghdr;
 
 typedef struct _oe_sock_ops
 {
@@ -38,6 +39,15 @@ typedef struct _oe_sock_ops
 
     ssize_t (*recv)(oe_device_t* dev, void* buf, size_t len, int flags);
     ssize_t (*send)(oe_device_t* dev, const void* buf, size_t len, int flags);
+    ssize_t (*socketpair)(
+        oe_device_t* dev,
+        int domain,
+        int type,
+        int protocol,
+        oe_device_t* retdevs[2]);
+    ssize_t (
+        *sendmsg)(oe_device_t* dev, const struct oe_msghdr* msg, int flags);
+    ssize_t (*recvmsg)(oe_device_t* dev, struct oe_msghdr* msg, int flags);
 
     int (*shutdown)(oe_device_t* dev, int how);
     int (*getsockopt)(

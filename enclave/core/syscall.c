@@ -373,6 +373,35 @@ static long _syscall(
             ret = oe_recv(sockfd, buf, len, flags);
             goto done;
         }
+        case OE_SYS_sendmsg:
+        {
+            int sockfd = (int)arg1;
+            struct msghdr* buf = (struct msghdr*)arg2;
+            int flags = (int)arg3;
+
+            ret = oe_sendmsg(sockfd, (struct oe_msghdr*)buf, flags);
+            goto done;
+        }
+        case OE_SYS_recvmsg:
+        {
+            int sockfd = (int)arg1;
+            struct msghdr* buf = (struct msghdr*)arg2;
+            int flags = (int)arg3;
+
+            ret = oe_recvmsg(sockfd, (struct oe_msghdr*)buf, flags);
+            goto done;
+        }
+        case OE_SYS_socketpair:
+        {
+            int domain = (int)arg1;
+            int type = (int)arg2;
+            int protocol = (int)arg3;
+            int* sv = (int*)arg4;
+
+            ret = oe_socketpair(domain, type, protocol, sv);
+            goto done;
+        }
+
         case OE_SYS_shutdown:
         {
             int sockfd = (int)arg1;

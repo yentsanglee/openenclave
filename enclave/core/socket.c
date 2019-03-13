@@ -87,6 +87,67 @@ done:
     return ret;
 }
 
+int oe_socketpair(int domain, int type, int protocol, int retfd[2])
+{
+    ssize_t ret = -1;
+    oe_device_t* socks[2] = {0};
+    oe_device_t* device;
+    uint64_t devid = OE_DEVID_NULL;
+
+    /* Resolve the device id. */
+    switch (domain)
+    {
+        case OE_AF_ENCLAVE:
+            devid = OE_DEVID_ENCLAVE_SOCKET;
+            break;
+
+        case OE_AF_HOST:
+            devid = OE_DEVID_HOST_SOCKET;
+            break;
+
+        default:
+        {
+            oe_errno = EINVAL;
+            goto done;
+        }
+    }
+
+    if (!(device = oe_get_devid_device(devid)))
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    if (!device->ops.socket || !device->ops.socket->socketpair)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    if (!(ret = (*device->ops.socket->socketpair)(
+              device, domain, type, protocol, socks)))
+    {
+        goto done;
+    }
+
+    if ((retfd[0] = oe_assign_fd_device(socks[0])) < 0)
+    {
+        (*device->ops.socket->base.close)(socks[0]);
+        ret = -1;
+        goto done;
+    }
+
+    if ((retfd[1] = oe_assign_fd_device(socks[1])) < 0)
+    {
+        (*device->ops.socket->base.close)(socks[1]);
+        ret = -1;
+        goto done;
+    }
+
+done:
+    return (int)ret;
+}
+
 int oe_socket(int domain, int type, int protocol)
 {
     uint64_t devid = oe_get_default_socket_devid();
@@ -216,6 +277,48 @@ ssize_t oe_send(int sockfd, const void* buf, size_t len, int flags)
 
     // The action routine sets errno
     return (*psock->ops.socket->send)(psock, buf, len, flags);
+}
+
+ssize_t oe_recvmsg(int sockfd, struct oe_msghdr* buf, int flags)
+
+{
+    oe_device_t* psock = oe_get_fd_device(sockfd);
+
+    if (!psock)
+    {
+        // Log error here
+        return -1; // erno is already set
+    }
+
+    if (psock->ops.socket->recvmsg == NULL)
+    {
+        oe_errno = EINVAL;
+        return -1;
+    }
+
+    // The action routine sets errno
+    return (*psock->ops.socket->recvmsg)(psock, buf, flags);
+}
+
+ssize_t oe_sendmsg(int sockfd, const struct oe_msghdr* buf, int flags)
+
+{
+    oe_device_t* psock = oe_get_fd_device(sockfd);
+
+    if (!psock)
+    {
+        // Log error here
+        return -1; // erno is already set
+    }
+
+    if (psock->ops.socket->sendmsg == NULL)
+    {
+        oe_errno = EINVAL;
+        return -1;
+    }
+
+    // The action routine sets errno
+    return (*psock->ops.socket->sendmsg)(psock, buf, flags);
 }
 
 int oe_shutdown(int sockfd, int how)

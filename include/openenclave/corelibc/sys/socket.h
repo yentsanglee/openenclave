@@ -7,6 +7,7 @@
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
 #include <openenclave/corelibc/bits/devids.h>
+#include <openenclave/corelibc/sys/uio.h>
 
 OE_EXTERNC_BEGIN
 
@@ -149,11 +150,30 @@ struct oe_sockaddr_storage
 #include <openenclave/corelibc/sys/bits/sockaddr_storage.h>
 };
 
+struct oe_msghdr
+{
+    void* msg_name;        /* Address to send to/receive from.  */
+    socklen_t msg_namelen; /* Length of address data.  */
+
+    struct oe_iovec* msg_iov; /* Vector of data to send/receive into.  */
+    size_t msg_iovlen;        /* Number of elements in the vector.  */
+
+    void* msg_control;     /* Ancillary data (eg BSD filedesc passing). */
+    size_t msg_controllen; /* Ancillary data buffer length.
+                              !! The type should be socklen_t but the
+                              definition of the linux kernel is incompatible
+                              with this.  */
+
+    int msg_flags; /* Flags on received message.  */
+};
+
 void oe_set_default_socket_devid(uint64_t devid);
 
 uint64_t oe_get_default_socket_devid(void);
 
 int oe_socket(int domain, int type, int protocol);
+
+int oe_socketpair(int domain, int type, int protocol, int rtnfd[2]);
 
 int oe_accept(int sockfd, struct oe_sockaddr* addr, socklen_t* addrlen);
 
@@ -180,8 +200,10 @@ int oe_getsockopt(
     socklen_t* optlen);
 
 ssize_t oe_send(int sockfd, const void* buf, size_t len, int flags);
+ssize_t oe_sendmsg(int sockfd, const struct oe_msghdr* buf, int flags);
 
 ssize_t oe_recv(int sockfd, void* buf, size_t len, int flags);
+ssize_t oe_recvmsg(int sockfd, struct oe_msghdr* buf, int flags);
 
 int oe_socket_d(uint64_t devid, int domain, int type, int protocol);
 

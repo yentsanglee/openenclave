@@ -175,3 +175,18 @@ done:
 
     return ret;
 }
+
+int oe_dup(int oldfd)
+
+{
+    (void)oldfd;
+    return -1;
+}
+
+int oe_dup2(int oldfd, int newfd)
+
+{
+    (void)oldfd;
+    (void)newfd;
+    return -1;
+}

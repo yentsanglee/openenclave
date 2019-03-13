@@ -16,6 +16,7 @@
 #include <openenclave/internal/hostbatch.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
+#include <openenclave/corelibc/sys/uio.h>
 #include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/internal/print.h>
 #include "../common/hostsockargs.h"
@@ -57,6 +58,65 @@ static oe_host_batch_t* _get_host_batch(void)
     }
 
     return _host_batch;
+}
+
+static ssize_t _copy_iov(
+    struct oe_msghdr* dst,
+    const struct oe_msghdr* src,
+    ssize_t bytes_available)
+
+{
+    ssize_t required = -1;
+    size_t iovidx = 0;
+    uint8_t* pbuf = (uint8_t*)dst;
+
+    pbuf += src->msg_namelen;
+    pbuf += sizeof(struct oe_iovec) * src->msg_iovlen;
+    for (iovidx = 0; iovidx < src->msg_iovlen; iovidx++)
+    {
+        pbuf += src->msg_iov[iovidx].iov_len;
+    }
+    pbuf += src->msg_controllen;
+
+    required = (pbuf - (uint8_t*)dst);
+    if (!dst)
+    {
+        return (ssize_t)required;
+    }
+
+    if ((ssize_t)required > bytes_available)
+    {
+        return -1;
+    }
+
+    pbuf = (uint8_t*)dst;
+    dst->msg_namelen = src->msg_namelen;
+    dst->msg_name = pbuf;
+    memcpy(dst->msg_name, src->msg_name, src->msg_namelen);
+    pbuf += src->msg_namelen;
+
+    dst->msg_iovlen = src->msg_iovlen;
+    pbuf += sizeof(struct oe_iovec) * src->msg_iovlen;
+
+    for (iovidx = 0; iovidx < src->msg_iovlen; iovidx++)
+    {
+        dst->msg_iov[iovidx].iov_base = pbuf;
+        dst->msg_iov[iovidx].iov_len = src->msg_iov[iovidx].iov_len;
+        memcpy(
+            dst->msg_iov[iovidx].iov_base,
+            src->msg_iov[iovidx].iov_base,
+            src->msg_iov[iovidx].iov_len);
+        pbuf += src->msg_iov[iovidx].iov_len;
+    }
+
+    dst->msg_controllen = src->msg_controllen;
+    dst->msg_control = pbuf;
+    memcpy(dst->msg_control, src->msg_control, src->msg_controllen);
+    pbuf += dst->msg_controllen;
+
+    dst->msg_flags = src->msg_flags;
+
+    return required;
 }
 
 /*
@@ -213,6 +273,103 @@ done:
 
     if (sock)
         oe_free(sock);
+
+    if (args)
+        oe_host_batch_free(batch);
+
+    return ret;
+}
+
+static ssize_t _hostsock_socketpair(
+    oe_device_t* sock_,
+    int domain,
+    int type,
+    int protocol,
+    oe_device_t* retdevs[2])
+{
+    ssize_t ret = -1;
+    oe_device_t* retdev1 = NULL;
+    oe_device_t* retdev2 = NULL;
+    sock_t* sock1 = NULL;
+    sock_t* sock2 = NULL;
+    args_t* args = NULL;
+    oe_host_batch_t* batch = _get_host_batch();
+
+    oe_errno = 0;
+
+    if (!batch)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    (void)_hostsock_clone(sock_, &retdev1);
+    (void)_hostsock_clone(sock_, &retdev2);
+    sock1 = _cast_sock(retdev1);
+    sock2 = _cast_sock(retdev2);
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+        {
+            oe_errno = ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTSOCK_OP_SOCKETPAIR;
+        args->u.socketpair.ret = -1;
+
+        if (domain == OE_AF_HOST)
+            domain = OE_AF_INET;
+
+        args->u.socketpair.domain = domain;
+        args->u.socketpair.type = type;
+        args->u.socketpair.protocol = protocol;
+        args->u.socketpair.hostfd1 = -1;
+        args->u.socketpair.hostfd2 = -1;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = EINVAL;
+            goto done;
+        }
+
+        ret = args->u.socketpair.ret;
+        if (args->u.socketpair.ret < 0)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    /* Output */
+    {
+        sock1->base.type = OE_DEVICETYPE_SOCKET;
+        sock1->base.size = sizeof(sock_t);
+        sock1->magic = SOCKET_MAGIC;
+        sock1->base.ops.socket = _hostsock.base.ops.socket;
+        sock1->host_fd = args->u.socketpair.hostfd1;
+
+        sock2->base.type = OE_DEVICETYPE_SOCKET;
+        sock2->base.size = sizeof(sock_t);
+        sock2->magic = SOCKET_MAGIC;
+        sock2->base.ops.socket = _hostsock.base.ops.socket;
+        sock1->host_fd = args->u.socketpair.hostfd2;
+        retdevs[0] = retdev1;
+        retdevs[1] = retdev2;
+    }
+
+    sock1 = NULL;
+
+done:
+
+    if (sock1)
+    {
+        oe_free(sock1);
+        oe_free(sock2);
+    }
 
     if (args)
         oe_host_batch_free(batch);
@@ -521,6 +678,75 @@ done:
     return ret;
 }
 
+static ssize_t _hostsock_recvmsg(
+    oe_device_t* sock_,
+    struct oe_msghdr* msg,
+    int flags)
+{
+    ssize_t ret = -1;
+    sock_t* sock = _cast_sock(sock_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock || !batch || !msg)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    ssize_t required = _copy_iov(NULL, msg, 0);
+    {
+        if (!(args = oe_host_batch_calloc(
+                  batch, sizeof(args_t) + (size_t)required)))
+        {
+            oe_errno = ENOMEM;
+            goto done;
+        }
+
+        // the args->buf has [ msg_hdr | iovs | [*iov_base[0] | .. |
+        // [*iov_base[n]] | msg_control ]
+        //
+
+        args->op = OE_HOSTSOCK_OP_RECVMSG;
+        args->u.recvmsg.ret = -1;
+        args->u.recvmsg.host_fd = sock->host_fd;
+        args->u.recvmsg.flags = flags;
+
+        (void)_copy_iov((struct oe_msghdr*)args->buf, msg, required);
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = EINVAL;
+            goto done;
+        }
+
+        if ((ret = args->u.recv.ret) == -1)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    /* Output */
+    {
+        if (_copy_iov(msg, (const struct oe_msghdr*)args->buf, required) < 0)
+        {
+            oe_errno = EINVAL;
+            goto done;
+        }
+    }
+
+done:
+    return ret;
+}
+
 static ssize_t _hostsock_send(
     oe_device_t* sock_,
     const void* buf,
@@ -555,6 +781,61 @@ static ssize_t _hostsock_send(
         args->u.send.count = count;
         args->u.send.flags = flags;
         memcpy(args->buf, buf, count);
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = EINVAL;
+            goto done;
+        }
+
+        if ((ret = args->u.send.ret) == -1)
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+done:
+    return ret;
+}
+
+static ssize_t _hostsock_sendmsg(
+    oe_device_t* sock_,
+    const struct oe_msghdr* msg,
+    int flags)
+{
+    ssize_t ret = -1;
+    sock_t* sock = _cast_sock(sock_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock || !batch || !msg)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        ssize_t required = _copy_iov(NULL, msg, 0);
+        if (!(args = oe_host_batch_calloc(
+                  batch, sizeof(args_t) + (size_t)required)))
+        {
+            oe_errno = ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTSOCK_OP_SEND;
+        args->u.sendmsg.ret = -1;
+        args->u.send.host_fd = sock->host_fd;
+        args->u.send.flags = flags;
+        (void)_copy_iov((struct oe_msghdr*)args->buf, msg, required);
     }
 
     /* Call */
@@ -1037,6 +1318,7 @@ static oe_sock_ops_t _ops = {
     .base.ready_state = _hostsock_readystate,
     .base.shutdown = _hostsock_shutdown_device,
     .socket = _hostsock_socket,
+    .socketpair = _hostsock_socketpair,
     .connect = _hostsock_connect,
     .accept = _hostsock_accept,
     .bind = _hostsock_bind,
@@ -1048,6 +1330,8 @@ static oe_sock_ops_t _ops = {
     .getsockname = _hostsock_getsockname,
     .recv = _hostsock_recv,
     .send = _hostsock_send,
+    .recvmsg = _hostsock_recvmsg,
+    .sendmsg = _hostsock_sendmsg,
 };
 
 static sock_t _hostsock = {
