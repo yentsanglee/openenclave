@@ -2,9 +2,12 @@
 // Licensed under the MIT License.
 
 #include <assert.h>
+#include <errno.h>
 #include <limits.h>
 #include <openenclave/corelibc/ctype.h>
+#include <openenclave/corelibc/linux/futex.h>
 #include <openenclave/corelibc/stdio.h>
+#include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/cpuid.h>
@@ -13,16 +16,21 @@
 #include <openenclave/internal/jump.h>
 #include <openenclave/internal/load.h>
 #include <openenclave/internal/print.h>
+#include <openenclave/internal/time.h>
 #include <openenclave/internal/utils.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 #include <sys/uio.h>
 #include <syscall.h>
+#include <time.h>
 #include <unistd.h>
 #include "exec_t.h"
+
+extern void oe_register_sgxfs_device(void);
 
 extern long (*oe_continue_execution_hook)(long ret);
 
@@ -1248,6 +1256,29 @@ static long _dispatch_syscall(syscall_args_t* args)
         args->arg6);
 }
 
+static long _syscall_nanosleep(const struct timespec* req, struct timespec* rem)
+{
+    long ret = -1;
+    uint64_t milliseconds = 0;
+
+    if (rem)
+        memset(rem, 0, sizeof(*rem));
+
+    if (!req)
+        goto done;
+
+    /* Convert timespec to milliseconds */
+    milliseconds += (uint64_t)req->tv_sec * 1000UL;
+    milliseconds += (uint64_t)req->tv_nsec / 1000000UL;
+
+    /* Perform OCALL */
+    ret = oe_sleep_msec(milliseconds);
+
+done:
+
+    return ret;
+}
+
 long handle_syscall(syscall_args_t* args)
 {
     switch (args->num)
@@ -1277,11 +1308,72 @@ long handle_syscall(syscall_args_t* args)
         {
             return _dispatch_syscall(args);
         }
+        case SYS_brk:
+        {
+            /* MUSL does not implement this! */
+            return -1;
+        }
+        case SYS_mmap:
+        {
+            void* addr = (void*)args->arg1;
+            size_t length = (size_t)args->arg2;
+            int prot = (int)args->arg3;
+            int flags = (int)args->arg4;
+            int fd = (int)args->arg5;
+            off_t offset = (off_t)args->arg6;
+            void* ptr;
+
+            if (addr)
+                return -1;
+
+            if (length == 0 || (length % OE_PAGE_SIZE))
+                return -1;
+
+            if (prot != (PROT_READ | PROT_WRITE))
+                return -1;
+
+            if (flags != (MAP_PRIVATE | MAP_ANONYMOUS))
+                return -1;
+
+            if (fd != -1)
+                return -1;
+
+            if (offset != 0)
+                return -1;
+
+            if (!(ptr = memalign(OE_PAGE_SIZE, length)))
+                return -1;
+
+            return (long)ptr;
+        }
+        case SYS_nanosleep:
+        {
+            const struct timespec* req = (struct timespec*)args->arg1;
+            struct timespec* rem = (struct timespec*)args->arg2;
+            return _syscall_nanosleep(req, rem);
+        }
+        case SYS_futex:
+        {
+            int* uaddr = (int*)args->arg1;
+            int futex_op = (int)args->arg2;
+            int val = (int)args->arg3;
+            struct oe_timespec* timeout = (struct oe_timespec*)args->arg4;
+            int* uaddr2 = (int*)args->arg5;
+            int val3 = (int)args->arg6;
+            return oe_futex(uaddr, futex_op, val, timeout, uaddr2, val3);
+        }
         default:
         {
-            const char* name = _syscall_name(args->num);
-            fprintf(stderr, "syscall panic: %s", name);
-            oe_abort();
+            long ret = _dispatch_syscall(args);
+
+            if (ret == -1 && errno == ENOSYS)
+            {
+                const char* name = _syscall_name(args->num);
+                fprintf(stderr, "*** syscall panic: %s\n", name);
+                oe_abort();
+            }
+
+            return ret;
         }
     }
 
@@ -1414,6 +1506,9 @@ int exec(const uint8_t* image_base, size_t image_size)
         fprintf(stderr, "__test_elf_header() failed\n");
         abort();
     }
+
+    oe_set_default_socket_devid(OE_DEVID_HOST_SOCKET);
+    oe_register_sgxfs_device();
 
     /* Set up exit handling. */
     if (oe_setjmp(&_jmp_buf) == 1)

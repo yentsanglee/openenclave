@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include "exec_u.h"
 
+void oe_fs_install_sgxfs(void);
+
 int main(int argc, const char* argv[])
 {
     oe_result_t r;
@@ -22,6 +24,8 @@ int main(int argc, const char* argv[])
         fprintf(stderr, "Usage: %s ENCLAVE_PATH PROGRAM\n", argv[0]);
         return 1;
     }
+
+    oe_fs_install_sgxfs();
 
     r = __oe_load_file(argv[2], 0, &data, &size);
     OE_TEST(r == OE_OK);

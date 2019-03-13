@@ -397,6 +397,7 @@ void _test_mount(const char* tmp_dir)
 
     OE_TEST(oe_mkdir(source, 0777) == 0);
     OE_TEST(oe_mkdir(target, 0777) == 0);
+
     OE_TEST(oe_mount(source, target, "sgxfs", 0, NULL) == 0);
 
     _touch(mkpath(path, target, "file1"));

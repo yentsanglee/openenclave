@@ -445,6 +445,12 @@ static oe_result_t _handle_ocall(
             break;
         }
 
+        case OE_OCALL_FUTEX:
+        {
+            oe_handle_futex(enclave, arg_in);
+            break;
+        }
+
         default:
         {
             /* No function found with the number */

@@ -15,6 +15,7 @@ if (OE_SGX)
         sgx/entropy.c
         sgx/errno.c
         sgx/exception.c
+        sgx/futex.c
         sgx/globals.c
         sgx/globals.c
         sgx/hostbatch.c

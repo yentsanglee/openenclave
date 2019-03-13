@@ -6,6 +6,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/time.h>
 #include <openenclave/internal/cpuid.h>
 #include <openenclave/internal/defs.h>
 #include "backtrace.h"
@@ -101,6 +102,7 @@ typedef enum _oe_func
     OE_OCALL_EPOLL,
     OE_OCALL_HOSTRESOLVER,
     OE_OCALL_UNAME,
+    OE_OCALL_FUTEX,
     /* Caution: always add new OCALL function numbers here */
 
     __OE_FUNC_MAX = OE_ENUM_MAX,
@@ -295,6 +297,28 @@ typedef struct _oe_backtrace_symbols_args
     int size;
     char** ret;
 } oe_backtrace_symbols_args_t;
+
+/*
+**==============================================================================
+**
+** oe_futex_args_t
+**
+**==============================================================================
+*/
+
+typedef struct _oe_futex_args
+{
+    long ret;
+    int err;
+    uint64_t tcs;
+    int* uaddr;
+    int futex_op;
+    int val;
+    struct oe_timespec timeout_buf;
+    const struct oe_timespec* timeout;
+    int* uaddr2;
+    int val3;
+} oe_futex_args_t;
 
 /**
  * Perform a low-level enclave function call (ECALL).

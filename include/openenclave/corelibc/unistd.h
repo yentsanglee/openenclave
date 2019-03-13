@@ -29,6 +29,8 @@ int oe_access(const char* pathname, int mode);
 
 int oe_access_d(uint64_t devid, const char* pathname, int mode);
 
+int oe_brk(void* addr);
+
 void* oe_sbrk(intptr_t increment);
 
 ssize_t oe_read(int fd, void* buf, size_t count);
@@ -77,6 +79,11 @@ unsigned int oe_sleep(unsigned int seconds);
 #define SEEK_SET OE_SEEK_SET
 #define SEEK_CUR OE_SEEK_CUR
 #define SEEK_END OE_SEEK_END
+
+OE_INLINE int brk(void* addr)
+{
+    return oe_brk(addr);
+}
 
 OE_INLINE void* sbrk(intptr_t increment)
 {
