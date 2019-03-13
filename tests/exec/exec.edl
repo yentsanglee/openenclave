@@ -5,6 +5,8 @@ enclave {
     trusted {
         public int exec(
             [in, count=image_size] const uint8_t* image_base,
-            size_t image_size);
+            size_t image_size,
+            size_t argc,
+            [in, count=argc] const char** argv);
     };
 };

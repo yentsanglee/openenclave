@@ -1344,6 +1344,8 @@ long handle_syscall(syscall_args_t* args)
             if (!(ptr = memalign(OE_PAGE_SIZE, length)))
                 return -1;
 
+            memset(ptr, 0, length);
+
             return (long)ptr;
         }
         case SYS_nanosleep:
@@ -1463,12 +1465,21 @@ int __call_start(int argc, const char* argv[], void (*func)(void))
     return 0;
 }
 
-int exec(const uint8_t* image_base, size_t image_size)
+int exec(
+    const uint8_t* image_base,
+    size_t image_size,
+    size_t argc,
+    const char** argv)
 {
     uint8_t* exec_base = (uint8_t*)__oe_get_exec_base();
     size_t exec_size = __oe_get_exec_size();
     elf_image_t image;
     oe_result_t r;
+
+#if 0
+    for (size_t i = 0; i < argc; i++)
+        printf("argv[%zu]=%s\n", i, argv[i]);
+#endif
 
     (void)image_base;
     (void)image_size;
@@ -1522,11 +1533,13 @@ int exec(const uint8_t* image_base, size_t image_size)
         uint64_t offset = image.entry_rva - image.image_offset;
         start_proc start = (start_proc)(exec_base + offset);
 
+#if 0
         const char* argv[] = {"/bin/program", "arg1", "arg2", NULL};
         const int argc = OE_COUNTOF(argv) - 1;
+#endif
 
         extern void my_start(void);
-        __call_start(argc, argv, start);
+        __call_start((int)argc, argv, start);
         printf("start failed\n");
         abort();
         return 0;
@@ -1535,8 +1548,6 @@ int exec(const uint8_t* image_base, size_t image_size)
 done:
 
     _free_elf_image(&image);
-
-    printf("_exit_status=%ld\n", _exit_status);
 
     return _exit_status;
 }

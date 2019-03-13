@@ -18,31 +18,38 @@ int main(int argc, const char* argv[])
     const oe_enclave_type_t type = OE_ENCLAVE_TYPE_SGX;
     void* data;
     size_t size;
+    const char* enclave_path;
 
-    if (argc != 3)
+    if (argc < 2)
     {
-        fprintf(stderr, "Usage: %s ENCLAVE_PATH PROGRAM\n", argv[0]);
+        fprintf(stderr, "Usage: %s PROGRAM\n", argv[0]);
+        return 1;
+    }
+
+    if (!(enclave_path = getenv("OEEXEC_ENCLAVE_PATH")))
+    {
+        fprintf(stderr, "%s please define OEEXEC_ENCLAVE_PATH\n", argv[0]);
         return 1;
     }
 
     oe_fs_install_sgxfs();
 
-    r = __oe_load_file(argv[2], 0, &data, &size);
+    r = __oe_load_file(argv[1], 0, &data, &size);
     OE_TEST(r == OE_OK);
 
-    r = oe_create_exec_enclave(argv[1], type, flags, NULL, 0, &enclave);
+    r = oe_create_exec_enclave(enclave_path, type, flags, NULL, 0, &enclave);
     OE_TEST(r == OE_OK);
 
     int ret;
-    r = exec(enclave, &ret, data, size);
+    r = exec(enclave, &ret, data, size, (size_t)(argc - 1), argv + 1);
     OE_TEST(r == OE_OK);
 
-    printf("host: exit status=%d\n", ret);
+    // printf("host: exit status=%d\n", ret);
 
     r = oe_terminate_enclave(enclave);
     OE_TEST(r == OE_OK);
 
     free(data);
 
-    return 0;
+    return ret;
 }

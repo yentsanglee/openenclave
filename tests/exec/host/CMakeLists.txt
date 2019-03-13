@@ -4,8 +4,8 @@
 
 oeedl_file(../exec.edl host gen)
 
-add_executable(exec_host host.c ${gen})
+add_executable(oeexec host.c ${gen})
 
-target_include_directories(exec_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(oeexec PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(exec_host oesgxfshost oehostapp)
+target_link_libraries(oeexec oesgxfshost oehostapp)

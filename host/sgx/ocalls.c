@@ -275,28 +275,3 @@ void oe_handle_log(oe_enclave_t* enclave, uint64_t arg)
         log_message(true, args);
     }
 }
-
-void oe_handle_futex(oe_enclave_t* enclave, uint64_t arg)
-{
-    oe_futex_args_t* args = (oe_futex_args_t*)arg;
-
-    if (args)
-    {
-        EnclaveEvent* event = GetEnclaveEvent(enclave, args->tcs);
-        assert(event);
-
-        errno = 0;
-        args->ret = syscall(
-            __NR_futex,
-            &event->value,
-            args->futex_op,
-            args->val,
-            args->timeout,
-            args->uaddr2,
-            args->val3);
-        args->err = errno;
-        printf("ret=%ld\n", args->ret);
-        printf("err=%d\n", args->err);
-        exit(1);
-    }
-}

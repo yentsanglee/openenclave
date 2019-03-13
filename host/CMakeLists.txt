@@ -52,6 +52,7 @@ if (OE_SGX)
     sgx/loadelf.c
     sgx/loadpe.c
     sgx/ocalls.c
+    sgx/futex.c
     sgx/quote.c
     sgx/registers.c
     sgx/report.c

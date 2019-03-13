@@ -9,10 +9,11 @@ CFLAGS += -g
 CFLAGS += -pie
 CFLAGS += -fPIE
 CFLAGS += -static
+CFLAGS += -fno-builtin
 #CFLAGS += -ftls-model=initial-exec
 #CFLAGS += -fvisibility=hidden
 
-all:
+all: hello
 	$(CC) $(CFLAGS) main.c -omain $(LDFLAGS)
 
 clean:
@@ -29,3 +30,8 @@ gcc:
 
 dump:
 	objdump -d main > main.dump
+
+.PHONY: hello
+
+hello:
+	$(CC) -fPIC -static hello.c -ohello -fno-builtin
