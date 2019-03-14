@@ -28,14 +28,9 @@ oe_result_t oe_aes_cmac_sign(
     oe_secure_zero_fill(aes_cmac->impl, sizeof(*aes_cmac));
 
 CMAC_CTX *ctx = CMAC_CTX_new();
-CMAC_Init(ctx, key, key_size, EVP_aes_128_ecb(), NULL);
+CMAC_Init(ctx, key, key_size, EVP_aes_128_cbc(), NULL);
 CMAC_Update(ctx, message, message_length);
-CMAC_Final(ctx, aes_cmac, &final_size);
-
-if (final_size != sizeof(oe_aes_cmac_t))
-{
-OE_RAISE(OE_UNEXPECTED);
-}
+CMAC_Final(ctx, (unsigned char*)aes_cmac->impl, &final_size);
 
 
     result = OE_OK;
