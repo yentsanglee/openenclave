@@ -171,6 +171,11 @@ int __load_elf_image(
     const elf64_ehdr_t* eh;
     size_t num_segments;
 
+#if 0
+    printf("exec_base=%lx\n", (uint64_t)exec_base);
+    printf("exec_size=%ld\n", exec_size);
+#endif
+
     MEMSET(image, 0, sizeof(elf_image_t));
 
     if (_elf64_init(&image->elf, data, size) != 0)

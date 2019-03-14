@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <openenclave/bits/sgx/sgxproperties.h>
+#include <openenclave/bits/properties.h>
 #include <openenclave/corelibc/errno.h>
 #include <openenclave/corelibc/linux/futex.h>
 #include <openenclave/corelibc/stdio.h>
