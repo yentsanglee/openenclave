@@ -19,6 +19,7 @@ endif ()
 add_subdirectory(mem)
 #add_subdirectory(safecrt)
 add_subdirectory(safemath)
+add_subdirectory(openssl_server)
 add_subdirectory(str)
 
 if (OE_SGX)
