@@ -9,6 +9,8 @@
 #include <openenclave/corelibc/stdio.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
+#include <openenclave/corelibc/sys/poll.h>
+#include <openenclave/corelibc/sys/select.h>
 #include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/corelibc/sys/stat.h>
 #include <openenclave/corelibc/sys/syscall.h>
@@ -430,7 +432,24 @@ static long _syscall(
             ret = oe_uname(buf);
             goto done;
         }
-
+        case OE_SYS_select:
+        {
+            int nfds = (int)arg1;
+            oe_fd_set* readfds = (oe_fd_set*)arg2;
+            oe_fd_set* writefds = (oe_fd_set*)arg3;
+            oe_fd_set* exceptfds = (oe_fd_set*)arg4;
+            struct oe_timeval* tmo = (struct oe_timeval*)arg5;
+            ret = oe_select(nfds, readfds, writefds, exceptfds, tmo);
+            goto done;
+        }
+        case OE_SYS_poll:
+        {
+            struct oe_pollfd* fds = (struct oe_pollfd*)arg1;
+            nfds_t nfds = (nfds_t)arg2;
+            int millis = (int)arg3;
+            ret = oe_poll(fds, nfds, millis);
+            goto done;
+        }
         case OE_SYS_epoll_create:
         {
             int size = (int)arg1;

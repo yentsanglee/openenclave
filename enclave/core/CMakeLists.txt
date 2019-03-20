@@ -84,6 +84,7 @@ add_library(oecore STATIC
     epoll.c
     exit.c
     select.c
+    poll.c
     eventfd.c
     fd.c
     fs.c
