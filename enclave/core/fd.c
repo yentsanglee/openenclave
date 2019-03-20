@@ -177,16 +177,53 @@ done:
 }
 
 int oe_dup(int oldfd)
-
 {
-    (void)oldfd;
-    return -1;
+    oe_device_t* old_dev = oe_get_fd_device(oldfd);
+    oe_device_t* new_dev = NULL;
+    int newfd = -1;
+    int retval = -1;
+
+    if ((retval = (*old_dev->ops.base->dup)(old_dev, &new_dev)) < 0)
+    {
+        oe_errno = EBADF;
+        newfd = -1;
+        goto done;
+    }
+    newfd = oe_assign_fd_device(new_dev);
+
+done:
+
+    return newfd;
 }
 
 int oe_dup2(int oldfd, int newfd)
-
 {
-    (void)oldfd;
-    (void)newfd;
-    return -1;
+    oe_device_t* old_dev = oe_get_fd_device(oldfd);
+    oe_device_t* old_new_dev = oe_get_fd_device(newfd);
+    oe_device_t* new_dev = NULL;
+    int retval = -1;
+
+    if (old_new_dev)
+    {
+        (*old_new_dev->ops.base->close)(old_new_dev);
+    }
+
+    if ((retval = (*old_dev->ops.base->dup)(old_dev, &new_dev)) < 0)
+    {
+        oe_errno = EBADF;
+        newfd = -1;
+        goto done;
+    }
+
+    if (oe_set_fd_device(newfd, new_dev))
+    {
+        oe_errno = EBADF;
+        (*new_dev->ops.base->close)(new_dev);
+        newfd = -1;
+        goto done;
+    }
+
+done:
+
+    return newfd;
 }

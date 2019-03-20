@@ -73,6 +73,11 @@ void oe_handle_hostfs_ocall(void* args_)
             args->u.close.ret = close(args->u.close.fd);
             break;
         }
+        case OE_HOSTFS_OP_DUP:
+        {
+            args->u.dup.ret = dup((int)args->u.dup.host_fd);
+            break;
+        }
         case OE_HOSTFS_OP_READ:
         {
             args->u.read.ret =

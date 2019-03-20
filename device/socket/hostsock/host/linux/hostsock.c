@@ -43,6 +43,11 @@ void oe_handle_hostsock_ocall(void* args_)
             args->u.close.ret = close((int)args->u.close.host_fd);
             break;
         }
+        case OE_HOSTSOCK_OP_DUP:
+        {
+            args->u.dup.ret = dup((int)args->u.dup.host_fd);
+            break;
+        }
         case OE_HOSTSOCK_OP_RECV:
         {
             args->u.recv.ret = recv(

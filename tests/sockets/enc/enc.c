@@ -54,8 +54,10 @@ int ecall_run_client(char* recv_buff, ssize_t* recv_buff_len)
         }
     }
 
+    int sockdup = oe_dup(sockfd);
+
     printf("reading...\n");
-    n = oe_read(sockfd, recv_buff, buff_len);
+    n = oe_read(sockdup, recv_buff, buff_len);
     *recv_buff_len = n;
     if (n > 0)
     {

@@ -97,6 +97,10 @@ ssize_t oe_write(int fd, const void* buf, size_t count);
 
 int oe_close(int fd);
 
+int oe_dup(int fd);
+
+int oe_dup2(int fd, int newfd);
+
 int oe_ioctl(int fd, unsigned long request, ...);
 
 /* Set the default device for this thread (used in lieu of the mount table). */

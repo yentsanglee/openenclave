@@ -910,6 +910,71 @@ done:
     return ret;
 }
 
+static int _hostsock_dup(oe_device_t* sock_, oe_device_t** new_sock)
+{
+    int ret = -1;
+    sock_t* sock = _cast_sock(sock_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!sock_ || !batch)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+        {
+            oe_errno = ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTSOCK_OP_DUP;
+        args->u.dup.ret = -1;
+        args->u.dup.host_fd = sock->host_fd;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTSOCK, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = EINVAL;
+            goto done;
+        }
+
+        if (args->u.dup.ret >= 0)
+        {
+            sock_t* s = NULL;
+            _hostsock_clone(sock_, (oe_device_t**)&s);
+            if (!s)
+            {
+                oe_errno = EINVAL;
+                goto done;
+            }
+            s->host_fd = args->u.dup.ret;
+            *new_sock = (oe_device_t*)s;
+        }
+        else
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    /* Release the sock_ object. */
+    oe_free(sock);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 static int _hostsock_getsockopt(
     oe_device_t* sock_,
     int level,
@@ -1313,6 +1378,7 @@ static oe_sock_ops_t _ops = {
     .base.read = _hostsock_read,
     .base.write = _hostsock_write,
     .base.close = _hostsock_close,
+    .base.dup = _hostsock_dup,
     .base.notify = _hostsock_notify,
     .base.get_host_fd = _hostsock_gethostfd,
     .base.ready_state = _hostsock_readystate,

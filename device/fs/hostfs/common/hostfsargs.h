@@ -16,6 +16,7 @@ typedef enum _oe_hostfs_op
     OE_HOSTFS_OP_WRITE,
     OE_HOSTFS_OP_LSEEK,
     OE_HOSTFS_OP_CLOSE,
+    OE_HOSTFS_OP_DUP,
     OE_HOSTFS_OP_OPENDIR,
     OE_HOSTFS_OP_READDIR,
     OE_HOSTFS_OP_REWINDDIR,
@@ -66,6 +67,11 @@ typedef struct _oe_hostfs_args
             int ret;
             int fd;
         } close;
+        struct
+        {
+            int64_t ret;
+            int64_t host_fd;
+        } dup;
         struct
         {
             void* ret;

@@ -466,6 +466,71 @@ static oe_device_t* _hostfs_open(
     }
 }
 
+static int _hostfs_dup(oe_device_t* file_, oe_device_t** new_file)
+{
+    int ret = -1;
+    file_t* file = _cast_file(file_);
+    oe_host_batch_t* batch = _get_host_batch();
+    args_t* args = NULL;
+
+    oe_errno = 0;
+
+    /* Check parameters. */
+    if (!file_ || !batch)
+    {
+        oe_errno = EINVAL;
+        goto done;
+    }
+
+    /* Input */
+    {
+        if (!(args = oe_host_batch_calloc(batch, sizeof(args_t))))
+        {
+            oe_errno = ENOMEM;
+            goto done;
+        }
+
+        args->op = OE_HOSTFS_OP_DUP;
+        args->u.dup.ret = -1;
+        args->u.dup.host_fd = file->host_fd;
+    }
+
+    /* Call */
+    {
+        if (oe_ocall(OE_OCALL_HOSTFS, (uint64_t)args, NULL) != OE_OK)
+        {
+            oe_errno = EINVAL;
+            goto done;
+        }
+
+        if (args->u.dup.ret >= 0)
+        {
+            file_t* f = NULL;
+            _hostfs_clone(file_, (oe_device_t**)&f);
+            if (!f)
+            {
+                oe_errno = EINVAL;
+                goto done;
+            }
+            f->host_fd = (int32_t)args->u.dup.ret;
+            *new_file = (oe_device_t*)f;
+        }
+        else
+        {
+            oe_errno = args->err;
+            goto done;
+        }
+    }
+
+    /* Release the file_ object. */
+    oe_free(file);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 static ssize_t _hostfs_read(oe_device_t* file_, void* buf, size_t count)
 {
     int ret = -1;
@@ -1511,6 +1576,7 @@ static uint64_t _hostfs_readystate(oe_device_t* file_)
 
 static oe_fs_ops_t _ops = {
     .base.clone = _hostfs_clone,
+    .base.dup = _hostfs_dup,
     .base.release = _hostfs_release,
     .base.shutdown = _hostfs_shutdown,
     .base.ioctl = _hostfs_ioctl,

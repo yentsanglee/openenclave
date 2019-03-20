@@ -126,6 +126,21 @@ static long _syscall(
             ret = oe_close(fd);
             goto done;
         }
+        case OE_SYS_dup:
+        {
+            int fd = (int)arg1;
+
+            ret = oe_dup(fd);
+            goto done;
+        }
+        case OE_SYS_dup2:
+        {
+            int fd = (int)arg1;
+            int newfd = (int)arg2;
+
+            ret = oe_dup2(fd, newfd);
+            goto done;
+        }
         case OE_SYS_stat:
         {
             const char* pathname = (const char*)arg1;
