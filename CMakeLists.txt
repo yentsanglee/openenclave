@@ -199,7 +199,6 @@ include(add_enclave_test)
 # Recurse through subdirectories
 add_subdirectory(host)
 add_subdirectory(include)
-add_subdirectory(tests)
 add_subdirectory(tools)
 
 if (BUILD_ENCLAVES)
@@ -211,6 +210,7 @@ if (BUILD_ENCLAVES)
   add_subdirectory(enclave)
 endif()
 
+add_subdirectory(tests)
 if (UNIX)
   if (OE_SGX)
     add_subdirectory(debugger)

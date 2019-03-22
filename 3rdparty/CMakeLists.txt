@@ -7,6 +7,8 @@
 # details.
 set(LIBCXX_INCLUDES ${OE_INCDIR}/openenclave/libcxx)
 
+add_subdirectory(openssl)
+add_subdirectory(curl)
 add_subdirectory(libcxx)
 add_subdirectory(libcxxrt)
 add_subdirectory(libunwind)

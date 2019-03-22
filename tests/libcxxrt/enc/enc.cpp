@@ -40,14 +40,6 @@ extern "C" void exit(int status)
     abort();
 }
 
-typedef void (*Handler)(int signal);
-
-Handler signal(int signal, Handler)
-{
-    /* Ignore! */
-    return NULL;
-}
-
 extern "C" int close(int fd)
 {
     OE_TEST("close() panic" == NULL);

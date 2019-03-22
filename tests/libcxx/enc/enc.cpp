@@ -41,14 +41,6 @@ extern "C" void exit(int status)
     abort();
 }
 
-typedef void (*Handler)(int signal);
-
-Handler signal(int, Handler)
-{
-    /* Ignore! */
-    return NULL;
-}
-
 extern "C" int close(int fd)
 {
     OE_UNUSED(fd);

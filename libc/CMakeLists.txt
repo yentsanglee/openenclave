@@ -85,8 +85,13 @@ add_library(oelibc STATIC
     stat.c
     errno.c
     setjmp.c
+    ssl_stubs.c
     time.c
+    __memcpy_chk.c
+    __memset_chk.c
     __printf_chk.c
+    __strcat_chk.c
+    __strdup.c
     __vfprintf_chk.c
 
     ${MUSLSRC}/complex/cabs.c
@@ -204,6 +209,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/internal/floatscan.c
     ${MUSLSRC}/internal/intscan.c
     ${MUSLSRC}/internal/libc.c
+    ${MUSLSRC}/internal/procfdname.c
     ${MUSLSRC}/internal/shgetc.c
     ${MUSLSRC}/legacy/getpagesize.c
     ${MUSLSRC}/locale/bind_textdomain_codeset.c
@@ -461,6 +467,7 @@ add_library(oelibc STATIC
     ${MUSLSRC}/multibyte/wcstombs.c
     ${MUSLSRC}/multibyte/wctob.c
     ${MUSLSRC}/multibyte/wctomb.c
+#    ${MUSLSRC}/network/getifaddrs.c
     ${MUSLSRC}/network/getpeername.c
     ${MUSLSRC}/network/getsockname.c
     ${MUSLSRC}/network/getsockopt.c
@@ -507,6 +514,8 @@ add_library(oelibc STATIC
     ${MUSLSRC}/network/res_msend.c
     ${MUSLSRC}/network/lookup_serv.c
     ${MUSLSRC}/network/lookup_name.c
+    ${MUSLSRC}/termios/tcgetattr.c
+    ${MUSLSRC}/termios/tcsetattr.c
      ${MUSLSRC}/prng/drand48.c
      ${MUSLSRC}/prng/lcong48.c
      ${MUSLSRC}/prng/lrand48.c
@@ -535,7 +544,16 @@ add_library(oelibc STATIC
      ${MUSLSRC}/search/tfind.c
      ${MUSLSRC}/search/tsearch.c
      ${MUSLSRC}/search/twalk.c
+#     ${MUSLSRC}/signal/signal.c
+#     ${MUSLSRC}/signal/sigaction.c
+     ${MUSLSRC}/stat/fstat.c
+     ${MUSLSRC}/stat/fstatat.c
+     ${MUSLSRC}/stat/lstat.c
+     ${MUSLSRC}/stat/mknod.c
+     ${MUSLSRC}/stat/mknodat.c
      ${MUSLSRC}/stat/stat.c
+     ${MUSLSRC}/stat/__xstat.c
+     ${MUSLSRC}/stat/chmod.c
      ${MUSLSRC}/stdio/asprintf.c
      ${MUSLSRC}/stdio/asprintf.c
      ${MUSLSRC}/stdio/clearerr.c
@@ -844,6 +862,7 @@ target_link_libraries(oelibc
 
 if (OE_SGX)
 target_include_directories(oelibc PRIVATE
+  ${PROJECT_BINARY_DIR}/../enclave/include
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/include
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/internal
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/arch/x86_64)
