@@ -8,7 +8,7 @@
 #include <fstream>
 #include <vector>
 
-#include "../../common/tcbinfo.h"
+#include "../../common/sgx/tcbinfo.h"
 
 std::vector<uint8_t> FileToBytes(const char* path)
 {
