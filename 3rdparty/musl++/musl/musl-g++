@@ -1,0 +1,15 @@
+#!/bin/bash
+/usr/bin/g++ "$@" \
+    -fpermissive \
+    -std=c++14 \
+    -nostdinc \
+    -isystem /opt/musl++/include \
+    -I /opt/musl++/include/libcxx \
+    -L /opt/musl++/lib \
+    -nostartfiles \
+    /opt/musl++/lib/crt1.o \
+    -nodefaultlibs \
+    -lc++ \
+    -lc++abi \
+    -lunwind \
+    -lc
