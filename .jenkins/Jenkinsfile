@@ -15,6 +15,8 @@ def ACCTest(String label, String compiler, String build_type) {
                         cpp_compiler = "g++"
                     }
                     withEnv(["CC=${c_compiler}","CXX=${cpp_compiler}"]) {
+                        unstash "my-patchfile-${BUILD_NUMBER}"
+                        sh 'cd ..; git apply ./build/patchfile'
                         sh """
                         cmake ${WORKSPACE} -G Ninja -DCMAKE_BUILD_TYPE=${build_type} ${cmakeCheckFlags}
                         ninja -v
@@ -36,6 +38,8 @@ def ACCGNUTest() {
             timeout(30) {
                 dir('build') {
                     withEnv(["CC=gcc","CXX=g++"]) {
+                        unstash "my-patchfile-${BUILD_NUMBER}"
+                        sh 'cd ..; git apply ./build/patchfile'
                         sh """
                         cmake ${WORKSPACE} -DUSE_LIBSGX=ON
                         make
@@ -63,6 +67,8 @@ def simulationTest(String version, String platform_mode, String build_type) {
                 timeout(30) {
                     dir('build') {
                         withEnv(["CC=clang-7","CXX=clang++-7","OE_SIMULATION=1"]) {
+                            unstash "my-patchfile-${BUILD_NUMBER}"
+                            sh 'cd ..; git apply ./build/patchfile'
                             sh """
                             cmake ${WORKSPACE} -G Ninja -DCMAKE_BUILD_TYPE=${build_type} -DUSE_LIBSGX=${use_libsgx} ${cmakeCheckFlags}
                             ninja -v
@@ -87,6 +93,8 @@ def ACCContainerTest(String label, String version) {
                 timeout(30) {
                     dir('build') {
                         withEnv(["CC=clang-7","CXX=clang++-7"]) {
+                        unstash "my-patchfile-${BUILD_NUMBER}"
+                        sh 'cd ..; git apply ./build/patchfile'
                             sh """
                             cmake ${WORKSPACE} -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo ${cmakeCheckFlags}
                             ninja -v
@@ -115,6 +123,8 @@ def checkDevFlows(String version) {
                     // installed by our install-prereqs ansible playbook.
 
                     dir('build') {
+                        unstash "my-patchfile-${BUILD_NUMBER}"
+                        sh 'cd ..; git apply ./build/patchfile'
                         sh """
                         cmake ${WORKSPACE} -G Ninja -DUSE_LIBSGX=OFF ${cmakeCheckFlags}
                         ninja -v
@@ -137,6 +147,8 @@ def checkCI() {
             def oetoolsCheck = docker.build("oetools-check-1804", "--build-arg ubuntu_version=18.04 -f .jenkins/Dockerfile .")
             oetoolsCheck.inside {
                 timeout(10) {
+                        unstash "my-patchfile-${BUILD_NUMBER}"
+                        sh 'git apply ./patchfile'
                     sh './scripts/check-ci'
                 }
             }
@@ -160,6 +172,8 @@ def win2016LinuxElfBuild(String version, String compiler, String build_type) {
                             cpp_compiler = "g++"
                         }
                         withEnv(["CC=${c_compiler}","CXX=${cpp_compiler}"]) {
+                        unstash "my-patchfile-${BUILD_NUMBER}"
+                        sh 'cd ..; git apply ./build/patchfile'
                             sh """
                             cmake ${WORKSPACE} -G Ninja -DCMAKE_BUILD_TYPE=${build_type} -DUSE_DEBUG_MALLOC=OFF ${cmakeCheckFlags}
                             ninja -v
@@ -178,6 +192,8 @@ def win2016LinuxElfBuild(String version, String compiler, String build_type) {
             unstash "linux-${compiler}-${build_type}-${version}-${BUILD_NUMBER}"
             bat 'move build linuxbin'
             dir('build') {
+            unstash "my-patchfile-${BUILD_NUMBER}"
+            bat 'cd .. & git apply ./build/patchfile'
                 bat """vcvars64.bat x64 && \
                        cmake.exe ${WORKSPACE} -G \"Visual Studio 15 2017 Win64\" -DADD_WINDOWS_ENCLAVE_TESTS=ON -DBUILD_ENCLAVES=OFF -DCMAKE_BUILD_TYPE=${build_type} -DLINUX_BIN_DIR=${WORKSPACE}\\linuxbin\\tests ${cmakeCheckFlags} && \
                        msbuild ALL_BUILD.vcxproj -p:Configuration=${build_type} && \
@@ -193,6 +209,8 @@ def win2016CrossCompile(String build_type) {
             cleanWs()
             checkout scm
             dir("build/X64-${build_type}") {
+            unstash "my-patchfile-${BUILD_NUMBER}"
+            bat "cd .. & cd .. & git apply build\\X64-${build_type}\\patchfile"
                 bat """vcvars64.bat x64 && \
                        cmake.exe ${WORKSPACE} -G Ninja -DCMAKE_BUILD_TYPE=${build_type} -DBUILD_ENCLAVES=ON ${cmakeCheckFlags} && \
                        ninja.exe && \
@@ -202,7 +220,15 @@ def win2016CrossCompile(String build_type) {
     }
 }
 
+stage('Patch-file') {
+ node("nonSGX") {
+    writeFile file: 'patchfile', text: """${PATCH_TEXT}"""
+    sh "cat patchfile"
+    stash includes: 'patchfile', name: "my-patchfile-${BUILD_NUMBER}"
+ }
+}
 
+stage('Parallel stage') {
 parallel "Check Developer Experience Ubuntu 16.04" :            { checkDevFlows('16.04') },
          "Check Developer Experience Ubuntu 18.04" :            { checkDevFlows('18.04') },
          "Check CI" :                                           { checkCI() },
@@ -240,3 +266,4 @@ parallel "Check Developer Experience Ubuntu 16.04" :            { checkDevFlows(
          "Win2016 Ubuntu1804 gcc Debug Linux-Elf-build" :       { win2016LinuxElfBuild('18.04', 'gcc', 'Debug') },
          "Win2016 Debug Cross Compile" :                        { win2016CrossCompile('Debug') },
          "Win2016 Release Cross Compile" :                      { win2016CrossCompile('Release') }
+}
