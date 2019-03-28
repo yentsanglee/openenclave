@@ -1,18 +1,38 @@
-/usr/bin/g++ "$@" \
-    -fpermissive \
-    -std=c++14 \
-    -nostdinc \
-    -isystem /opt/musl++/include \
-    -I /opt/musl++/include/libcxx \
-    -isystem /opt/musl++/include \
-    -isystem /usr/include \
-    -isystem /usr/include/x86_64-linux-gnu \
-    -DHAVE_PTHREAD \
-    -L /opt/musl++/lib \
-    -nostartfiles \
-    /opt/musl++/lib/crt1.o \
-    -nodefaultlibs \
-    -lc++ \
-    -lc++abi \
-    -lunwind \
-    -lc
+#!/bin/bash
+
+args="-fPIE "
+link=1
+
+for i in "$@"
+do
+    if [ "${i}" != "-fPIC" ]; then
+        args+="${i} "
+    fi
+    if [ "${i}" == "-c" ]; then
+        link=0
+    fi
+done
+
+args+="-fpermissive "
+args+="-std=c++14 "
+args+="-nostdinc "
+args+="-isystem /opt/musl++/include "
+args+="-I/opt/musl++/include/libcxx "
+args+="-isystem /opt/musl++/include "
+args+="-isystem /usr/include "
+args+="-isystem /usr/include/x86_64-linux-gnu "
+args+="-DHAVE_PTHREAD "
+args+="-Wno-unused-variable"
+
+if [ "${link}" == "1" ]; then
+    args+="-L/opt/musl++/lib "
+    args+="-nostartfiles "
+    args+="/opt/musl++/lib/crt1.o "
+    args+="-nodefaultlibs "
+    args+="-lc++ "
+    args+="-lc++abi "
+    args+="-lunwind "
+    args+="-lc "
+fi
+
+/usr/bin/g++ ${args}

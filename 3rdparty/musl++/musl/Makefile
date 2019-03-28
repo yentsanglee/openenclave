@@ -62,5 +62,10 @@ clean:
 install:
 	( cd musl; $(MAKE) install )
 	( cp musl-g++ /opt/musl++/bin )
+	( rm -rf /opt/musl++/bin/extras )
+	( mkdir -p /opt/musl++/bin/extras )
+	( ln -s /opt/musl++/bin/musl-g++ /opt/musl++/bin/extras/c++ )
+	( ln -s /opt/musl++/bin/musl-gcc /opt/musl++/bin/extras/cc )
 	( mkdir -p /opt/musl++/include/linux )
 	( cp /usr/include/linux/version.h /opt/musl++/include/linux )
+

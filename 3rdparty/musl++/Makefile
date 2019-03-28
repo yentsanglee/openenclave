@@ -12,3 +12,7 @@ distclean:
 	$(MAKE) -C musl distclean
 	$(MAKE) -C libcxx distclean
 	$(MAKE) -C samples clean
+
+install:
+	$(MAKE) -C musl install
+	$(MAKE) -C libcxx install
