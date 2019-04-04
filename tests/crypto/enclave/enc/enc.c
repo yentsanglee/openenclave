@@ -42,7 +42,8 @@ char* oe_host_strdup(const char* str)
 
 void test()
 {
-    oe_mount("..", "/", "hostfs", OE_MS_RDONLY, NULL);
+    oe_enable_feature(OE_FEATURE_HOST_FILES);
+    OE_TEST(oe_mount("..", "/", "hostfs", OE_MS_RDONLY, NULL) == 0);
     TestAll();
 }
 
