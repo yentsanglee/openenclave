@@ -17,6 +17,8 @@ typedef struct _oe_aes_cmac
     uint64_t impl[4];
 } oe_aes_cmac_t;
 
+typedef struct _oe_aes_cmac_context oe_aes_cmac_context_t;
+
 /**
  * oe_secure_aes_cmac_equal does a secure constant time comparison of two
  * oe_aes_cmac_t instances. Returns 1 if equal and 0 otherwise.
@@ -44,6 +46,22 @@ oe_result_t oe_aes_cmac_sign(
     const uint8_t* message,
     size_t message_length,
     oe_aes_cmac_t* aes_cmac);
+
+oe_result_t oe_aes_cmac_init(
+    oe_aes_cmac_context_t** context,
+    const uint8_t* key,
+    size_t key_size);
+
+oe_result_t oe_aes_cmac_update(
+    oe_aes_cmac_context_t* context,
+    const uint8_t* message,
+    size_t message_length);
+
+oe_result_t oe_aes_cmac_final(
+    oe_aes_cmac_context_t* context,
+    oe_aes_cmac_t* aes_cmac);
+
+oe_result_t oe_aes_cmac_free(oe_aes_cmac_context_t* context);
 
 OE_EXTERNC_END
 

@@ -16,4 +16,5 @@ void TestAll()
     TestHMAC();
     TestKDF();
     TestSHA();
+    TestCMAC();
 }
