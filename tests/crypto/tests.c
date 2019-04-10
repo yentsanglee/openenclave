@@ -17,4 +17,6 @@ void TestAll()
     TestKDF();
     TestSHA();
     TestCMAC();
+    TestAES_CTR();
+    TestAES_GCM();
 }

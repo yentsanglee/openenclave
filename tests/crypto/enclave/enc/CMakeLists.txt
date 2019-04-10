@@ -8,6 +8,7 @@ add_enclave(TARGET cryptoenc
     enc.c
     ../../../../common/sgx/rand.S
     ../../read_file.c
+    ../../aes_tests.c
     ../../asn1_tests.c
     ../../cmac_tests.c
     ../../crl_tests.c

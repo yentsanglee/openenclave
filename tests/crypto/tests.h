@@ -14,6 +14,8 @@ void TestRSA(void);
 void TestSHA(void);
 void TestHMAC(void);
 void TestCMAC(void);
+void TestAES_CTR(void);
+void TestAES_GCM(void);
 void TestAll();
 
 #endif /* _TESTS_CRYPTO_TESTS_H */
