@@ -25,6 +25,18 @@ def oetoolsImage(String version, String compiler, String task, String runArgs=""
     }
 }
 
+def ContainerRun(String imageName, String compiler, String task, String runArgs="") {
+    docker.withRegistry("https://oejenkinscidockerregistry.azurecr.io", "oejenkinscidockerregistry") {
+        image = docker.image("${imageName}:latest")
+        image.pull()
+        image.inside(runArgs) {
+            dir("${WORKSPACE}/build") {
+                Run(compiler, task)
+            }
+        }
+    }
+}
+
 def azureEnvironment(String task) {
     String buildArgs = dockerBuildArgs("UID=\$(id -u)",
                                        "GID=\$(id -g)",
