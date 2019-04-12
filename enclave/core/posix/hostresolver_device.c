@@ -231,13 +231,26 @@ static resolv_t _hostresolv = {.base.type = OE_RESOLVER_HOST,
 oe_result_t oe_load_module_hostresolver(void)
 {
     oe_result_t result = OE_FAILURE;
-    oe_resolver_t* resolver = &_hostresolv.base;
+    static bool _loaded = false;
+    static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
 
-    if (!resolver)
-        goto done;
+    if (!_loaded)
+    {
+        oe_spin_lock(&_lock);
 
-    if (oe_register_resolver(2, resolver) != 0)
-        goto done;
+        if (!_loaded)
+        {
+            oe_resolver_t* resolver = &_hostresolv.base;
+
+            if (!resolver)
+                goto done;
+
+            if (oe_register_resolver(2, resolver) != 0)
+                goto done;
+        }
+
+        oe_spin_unlock(&_lock);
+    }
 
     result = OE_OK;
 

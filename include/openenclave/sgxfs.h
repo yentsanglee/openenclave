@@ -20,7 +20,7 @@ OE_EXTERNC_BEGIN
  * void example(void)
  * {
  *
- *     if (oe_register_sgxfs() != OE_OK)
+ *     if (oe_load_module_sgxfs() != OE_OK)
  *     {
  *         // error!
  *     }
@@ -37,7 +37,7 @@ OE_EXTERNC_BEGIN
  * }
  *
  */
-oe_result_t oe_register_sgxfs(void);
+oe_result_t oe_load_module_sgxfs(void);
 
 OE_EXTERNC_END
 

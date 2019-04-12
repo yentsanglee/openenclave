@@ -13,9 +13,9 @@ void test_sgxfs(const char* tmp_dir)
 {
     extern int run_main(const char* tmp_dir);
 
-    if (oe_register_sgxfs() != OE_OK)
+    if (oe_load_module_sgxfs() != OE_OK)
     {
-        fprintf(stderr, "oe_register_sgxfs() failed\n");
+        fprintf(stderr, "oe_load_module_sgxfs() failed\n");
         exit(1);
     }
 

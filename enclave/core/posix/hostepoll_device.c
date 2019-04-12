@@ -783,15 +783,28 @@ static epoll_dev_t _epoll = {
 oe_result_t oe_load_module_polling(void)
 {
     oe_result_t result = OE_FAILURE;
-    const uint64_t devid = OE_DEVID_EPOLL;
+    static bool _loaded = false;
+    static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
 
-    /* Allocate the device id. */
-    if (oe_allocate_devid(devid) != devid)
-        goto done;
+    if (!_loaded)
+    {
+        oe_spin_lock(&_lock);
 
-    /* Add to the device table. */
-    if (oe_set_devid_device(devid, &_epoll.base) != 0)
-        goto done;
+        if (!_loaded)
+        {
+            const uint64_t devid = OE_DEVID_EPOLL;
+
+            /* Allocate the device id. */
+            if (oe_allocate_devid(devid) != devid)
+                goto done;
+
+            /* Add to the device table. */
+            if (oe_set_devid_device(devid, &_epoll.base) != 0)
+                goto done;
+        }
+
+        oe_spin_unlock(&_lock);
+    }
 
     result = OE_OK;
 

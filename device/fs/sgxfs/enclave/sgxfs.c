@@ -1197,17 +1197,17 @@ oe_device_t* oe_fs_get_sgxfs(void)
     return &_sgxfs.base;
 }
 
-oe_result_t oe_register_sgxfs(void)
+oe_result_t oe_load_module_sgxfs(void)
 {
     oe_result_t result = OE_UNEXPECTED;
-    static bool _registered = false;
+    static bool _loaded = false;
     static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
 
-    if (!_registered)
+    if (!_loaded)
     {
         oe_spin_lock(&_lock);
 
-        if (!_registered)
+        if (!_loaded)
         {
             /* Allocate the device id. */
             if (oe_allocate_devid(OE_DEVID_SGXFS) != OE_DEVID_SGXFS)
@@ -1230,7 +1230,7 @@ oe_result_t oe_register_sgxfs(void)
                 goto done;
             }
 
-            _registered = true;
+            _loaded = true;
         }
 
         oe_spin_unlock(&_lock);
