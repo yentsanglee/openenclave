@@ -7,24 +7,31 @@
 #include "../client.h"
 #include "../server.h"
 
+static void _init(void)
+{
+    static bool _initialized = false;
+
+    if (!_initialized)
+    {
+        OE_TEST(oe_load_module_hostfs() == OE_OK);
+        OE_TEST(oe_load_module_hostsock() == OE_OK);
+        OE_TEST(oe_load_module_polling() == OE_OK);
+        OE_TEST(oe_load_module_eventfd() == OE_OK);
+
+        _initialized = true;
+    }
+}
+
 void run_enclave_server(uint16_t port)
 {
-    OE_TEST(oe_load_module_hostfs() == OE_OK);
-    OE_TEST(oe_load_module_hostsock() == OE_OK);
-    OE_TEST(oe_load_module_polling() == OE_OK);
-    OE_TEST(oe_load_module_eventfd() == OE_OK);
-
+    _init();
     oe_set_default_socket_devid(OE_DEVID_HOST_SOCKET);
     run_server(port);
 }
 
 void run_enclave_client(uint16_t port)
 {
-    OE_TEST(oe_load_module_hostfs() == OE_OK);
-    OE_TEST(oe_load_module_hostsock() == OE_OK);
-    OE_TEST(oe_load_module_polling() == OE_OK);
-    OE_TEST(oe_load_module_eventfd() == OE_OK);
-
+    _init();
     oe_set_default_socket_devid(OE_DEVID_HOST_SOCKET);
     run_client(port);
 }
