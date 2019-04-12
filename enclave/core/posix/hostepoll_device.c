@@ -109,6 +109,9 @@ static _epoll_event_data* add_event_data(
             sizeof(_epoll_event_data) * pepoll->max_event_data);
         if (pepoll->pevent_data == NULL)
         {
+            // ATTN:IO: use a temporary return value. If oe_realloc() fails,
+            // the the orignal value of pepoll->pevent_data is leaked.
+            // free the original value of the pointer on failure.
             return NULL;
         }
     }
@@ -512,6 +515,7 @@ static int _epoll_wait(
             (int)timeout,
             &oe_errno) != OE_OK)
     {
+        /* ATTN:IO: host_events is leaked here. */
         oe_errno = EINVAL;
         goto done;
     }

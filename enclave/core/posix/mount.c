@@ -360,6 +360,7 @@ int oe_mount(
     /* Notify the device that it has been mounted. */
     if (new_device->ops.fs->mount(new_device, source, target, mountflags) != 0)
     {
+        // ATTN:IO: consider creating new mount point after this if statement.
         oe_free(_mount_table[--_mount_table_size].path);
         goto done;
     }

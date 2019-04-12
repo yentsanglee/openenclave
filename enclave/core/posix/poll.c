@@ -27,6 +27,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
     epfd = oe_epoll_create1(0);
     if (epfd < 0)
     {
+        // ATTN:IO: rev is leaked here. Consider single-entry-single exit.
         return epfd;
     }
 
@@ -60,6 +61,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
     }
 
     has_host_wait = true; // false;
+    // ATTN:IO: is there still a to-do here?
     // 2do. We need to figure out how to wait
 
     if (!pepoll)

@@ -87,6 +87,7 @@ int oe_getaddrinfo(
                         &required_size);
                     if (rslt == 0 || rslt == OE_EAI_ALLDONE)
                     {
+                        /* ATTN:IO: retinfo is leaked if oe_realloc() fails. */
                         *res = retinfo;
                     }
                     return (int)rslt;

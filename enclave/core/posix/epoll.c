@@ -155,6 +155,7 @@ int oe_epoll_wait(
     return ret; // return the number of descriptors that have signalled
 }
 
+/* ATTN:IO: remove this. */
 #if MAYBE
 int oe_epoll_pwait(
     int epfd,
@@ -165,7 +166,6 @@ int oe_epoll_pwait(
 {
     return -1;
 }
-
 #endif
 
 static oe_cond_t poll_notification = OE_COND_INITIALIZER;
@@ -197,6 +197,7 @@ OE_INLINE struct _notification_node** _table(void)
     return (struct _notification_node**)_notify_arr.data;
 }
 
+/* ATTN:IO: remove all experimental code. */
 #if 0
 OE_INLINE size_t _table_size(void)
 {
@@ -245,6 +246,8 @@ static struct _notification_node_chunk* pdevice_notice_chunk_tail = NULL;
 static struct _notification_node* _new_notification()
 {
     struct _notification_node_chunk* pchunk;
+
+    // ATTN:IO: I suspect this function might leak memory on error.
 
     if (!pdevice_notice_chunk_tail)
     {
@@ -324,6 +327,7 @@ int oe_post_device_notifications(
         // complain and throw something as notices are not allowed be null
         return -1;
     }
+/* ATTN:IO: remove all experimental code. */
 #if 0
 int j = 0;
 for(; j < num_notifications; j++) {
@@ -490,7 +494,6 @@ void oe_signal_device_notification(oe_device_t* pdevice, uint32_t event_mask)
 
 void oe_broadcast_device_notification()
 {
-    //    oe_result_t rslt =
     oe_cond_broadcast(&poll_notification);
 }
 

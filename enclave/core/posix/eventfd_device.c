@@ -149,6 +149,7 @@ static ssize_t _eventfd_read(oe_device_t* eventfd_, void* buf, size_t count)
         }
         else
         {
+            /* ATTN:IO: is this complete? */
             // Block on condition variable
             // Then proceed
         }
@@ -191,6 +192,7 @@ static ssize_t _eventfd_write(
         goto done;
     }
 
+    /* ATTN:IO: use constant here. */
     if (eventfd->count >= 0xfffffffffffffffe)
     {
         if (eventfd->flags & OE_EFD_NONBLOCK)
