@@ -16,3 +16,9 @@
 #include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/corelibc/sys/utsname.h>
 #include <openenclave/internal/epoll.h>
+
+#include "oe_t.c"
+
+void public_root_ecall(void)
+{
+}

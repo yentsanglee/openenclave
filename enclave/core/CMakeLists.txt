@@ -69,8 +69,8 @@ elseif(OE_TRUSTZONE)
 endif()
 
 add_library(oecore STATIC
-    ${CMAKE_CURRENT_BINARY_DIR}/oe_t.c
     ../../common/safecrt.c
+    oe_t_wrapper.c
     ${MUSL_SRC_DIR}/prng/rand.c
     ${MUSL_SRC_DIR}/string/memcmp.c
     ${MUSL_SRC_DIR}/string/memcpy.c

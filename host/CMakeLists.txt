@@ -17,7 +17,7 @@ if (UNIX)
   set(PLATFORM_SRC
     ../common/asn1.c
     ../common/cert.c
-    ${CMAKE_CURRENT_BINARY_DIR}/oe_u.c # __feature_io__
+    oe_u_wrapper.c
     files.c # __feature_io__
     crypto/openssl/asn1.c
     crypto/openssl/cert.c
