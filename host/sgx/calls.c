@@ -10,7 +10,6 @@
 #include <linux/futex.h>
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/hostfs.h>
-#include <openenclave/internal/hostsock.h>
 #include <openenclave/internal/resolver.h>
 #include <setjmp.h>
 #include <sys/mman.h>

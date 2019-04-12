@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <libgen.h>
 #include <openenclave/enclave.h>
+#include <openenclave/internal/tests.h>
 #include <search.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -87,11 +88,12 @@ extern int run_tests(void);
 
 int test()
 {
-    oe_enable_feature(OE_FEATURE_HOST_FILES);
-    oe_enable_feature(OE_FEATURE_HOST_FILES);
-    oe_enable_feature(OE_FEATURE_HOST_SOCKETS);
-    oe_enable_feature(OE_FEATURE_HOST_RESOLVER);
-    oe_enable_feature(OE_FEATURE_POLLING);
+    OE_TEST(oe_load_module_hostfs() == OE_OK);
+    OE_TEST(oe_load_module_hostsock() == OE_OK);
+    OE_TEST(oe_load_module_hostresolver() == OE_OK);
+    OE_TEST(oe_load_module_polling() == OE_OK);
+    OE_TEST(oe_load_module_hostresolver() == OE_OK);
+    OE_TEST(oe_load_module_eventfd() == OE_OK);
 
     if (mount("/", "/", "hostfs", 0, NULL) != 0)
     {

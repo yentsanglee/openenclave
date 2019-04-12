@@ -209,8 +209,8 @@ int setup_tls_server(struct tls_control_args* config, char* server_port)
 
     // Explicitly enable socket and resolver features, which are required by
     // mbedtls' TLS feature
-    OE_CHECK(oe_enable_feature(OE_FEATURE_HOST_RESOLVER));
-    OE_CHECK(oe_enable_feature(OE_FEATURE_HOST_SOCKETS));
+    OE_CHECK(oe_load_module_hostresolver());
+    OE_CHECK(oe_load_module_hostsock());
 
     // init mbedtls objects
     mbedtls_net_init(&listen_fd);

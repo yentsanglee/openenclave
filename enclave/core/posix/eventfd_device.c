@@ -16,6 +16,7 @@
 #include <openenclave/internal/print.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
+#include <openenclave/bits/module.h>
 
 /*
 **==============================================================================
@@ -319,4 +320,23 @@ static eventfd_dev_t _eventfd = {
 oe_device_t* oe_get_eventfd_device(void)
 {
     return &_eventfd.base;
+}
+
+oe_result_t oe_load_module_eventfd(void)
+{
+    oe_result_t result = OE_FAILURE;
+    const uint64_t devid = OE_DEVID_EVENTFD;
+
+    /* Allocate the device id. */
+    if (oe_allocate_devid(devid) != devid)
+        goto done;
+
+    /* Add the hostfs device to the device table. */
+    if (oe_set_devid_device(devid, oe_get_eventfd_device()) != 0)
+        goto done;
+
+    result = OE_OK;
+
+done:
+    return result;
 }

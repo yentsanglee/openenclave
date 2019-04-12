@@ -18,10 +18,11 @@
 
 static void _initialize()
 {
-    oe_enable_feature(OE_FEATURE_HOST_FILES);
-    oe_enable_feature(OE_FEATURE_HOST_SOCKETS);
-    oe_enable_feature(OE_FEATURE_HOST_RESOLVER);
-    oe_enable_feature(OE_FEATURE_POLLING);
+    OE_TEST(oe_load_module_hostfs() == OE_OK);
+    OE_TEST(oe_load_module_hostsock() == OE_OK);
+    OE_TEST(oe_load_module_hostresolver() == OE_OK);
+    OE_TEST(oe_load_module_polling() == OE_OK);
+    OE_TEST(oe_load_module_eventfd() == OE_OK);
 
     {
         char buf[1024] = {0};

@@ -19,8 +19,6 @@ enum
 
 typedef uint64_t oe_eventfd_t;
 
-int oe_register_eventfd_device(void);
-
 oe_device_t* oe_get_eventfd_device(void);
 
 int oe_eventfd(unsigned int count, int flags);

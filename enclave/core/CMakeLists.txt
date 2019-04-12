@@ -99,7 +99,6 @@ add_library(oecore STATIC
     posix/socket.c
     posix/syscall.c
     posix/uname.c
-    posix/features.c
     __secs_to_tm.c
     __stack_chk_fail.c
     array.c

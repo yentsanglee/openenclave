@@ -15,7 +15,6 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/globals.h>
 #include <openenclave/internal/hostfs.h>
-#include <openenclave/internal/hostsock.h>
 #include <openenclave/internal/jump.h>
 #include <openenclave/internal/malloc.h>
 #include <openenclave/internal/print.h>

@@ -12,7 +12,11 @@ void test_hostfs(const char* tmp_dir)
 {
     extern int run_main(const char* tmp_dir);
 
-    oe_enable_feature(OE_FEATURE_HOST_FILES);
+    if (oe_load_module_hostfs() != OE_OK)
+    {
+        fprintf(stderr, "oe_load_module() failed\n");
+        exit(1);
+    }
 
     if (mount("/", "/", "hostfs", 0, NULL) != 0)
     {

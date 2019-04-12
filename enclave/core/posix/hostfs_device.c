@@ -17,6 +17,7 @@
 #include "oe_t.h"
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
+#include <openenclave/bits/module.h>
 
 /*
 **==============================================================================
@@ -1223,9 +1224,9 @@ oe_device_t* oe_fs_get_hostfs(void)
     return &_hostfs.base;
 }
 
-int oe_register_hostfs_device(void)
+oe_result_t oe_load_module_hostfs(void)
 {
-    int ret = -1;
+    oe_result_t result = OE_FAILURE;
     const uint64_t devid = OE_DEVID_HOSTFS;
 
     /* Allocate the device id. */
@@ -1236,8 +1237,8 @@ int oe_register_hostfs_device(void)
     if (oe_set_devid_device(devid, oe_fs_get_hostfs()) != 0)
         goto done;
 
-    ret = 0;
+    result = OE_OK;
 
 done:
-    return ret;
+    return result;
 }

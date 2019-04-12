@@ -30,8 +30,6 @@ enum OE_EPOLL_EVENTS
 
 oe_device_t* oe_epoll_get_epoll(void);
 
-int oe_register_epoll_device(void);
-
 OE_PACK_BEGIN
 typedef struct _oe_device_notifications
 {

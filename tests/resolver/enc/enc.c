@@ -23,10 +23,11 @@ struct addrinfo;
 
 int ecall_device_init()
 {
-    OE_TEST(oe_enable_feature(OE_FEATURE_HOST_FILES) == OE_OK);
-    OE_TEST(oe_enable_feature(OE_FEATURE_HOST_SOCKETS) == OE_OK);
-    OE_TEST(oe_enable_feature(OE_FEATURE_POLLING) == OE_OK);
-    OE_TEST(oe_enable_feature(OE_FEATURE_HOST_RESOLVER) == OE_OK);
+    OE_TEST(oe_load_module_hostfs() == OE_OK);
+    OE_TEST(oe_load_module_hostsock() == OE_OK);
+    OE_TEST(oe_load_module_polling() == OE_OK);
+    OE_TEST(oe_load_module_eventfd() == OE_OK);
+    OE_TEST(oe_load_module_hostresolver() == OE_OK);
     return 0;
 }
 

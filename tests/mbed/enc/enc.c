@@ -9,6 +9,7 @@
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/syscall.h>
+#include <openenclave/internal/tests.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,7 +57,7 @@ int test(const char* cwd, const char* in_testname, char out_testname[STRLEN])
 
     /* Enable host file system support. */
     {
-        oe_enable_feature(OE_FEATURE_HOST_FILES);
+        OE_TEST(oe_load_module_hostfs() == OE_OK);
 
         if (mount("/", "/", "hostfs", 0, NULL) != 0)
         {

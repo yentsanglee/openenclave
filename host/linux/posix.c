@@ -644,8 +644,10 @@ int oe_posix_getpeername_ocall(
     return ret;
 }
 
+/* ATTN:IO: why does this take a sockfd parameter? */
 int oe_posix_shutdown_sockets_device_ocall(int sockfd, int* err)
 {
+    OE_UNUSED(sockfd);
     /* No shutdown actions needed for this device. */
 
     if (err)

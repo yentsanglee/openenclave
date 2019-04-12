@@ -61,8 +61,6 @@ typedef struct _oe_resolver
 
 int oe_register_resolver(int resolver_priority, oe_resolver_t* presolver);
 
-oe_resolver_t* oe_get_hostresolver(void);
-
 OE_EXTERNC_END
 
 #endif /* _OE_RESOLVER_H */

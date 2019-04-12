@@ -7,6 +7,7 @@
 // enclave.h must come before socket.h
 #include <openenclave/corelibc/signal.h>
 #include <openenclave/internal/device.h>
+#include <openenclave/internal/tests.h>
 
 #include <assert.h>
 #include <signal_test_t.h>
@@ -22,7 +23,7 @@ void print_signal_success(int signum)
 
 int ecall_device_init()
 {
-    oe_enable_feature(OE_FEATURE_HOST_FILES);
+    OE_TEST(oe_load_module_hostfs() == OE_OK);
 
     oe_signal(OE_SIGUSR1, print_signal_success);
     return 0;

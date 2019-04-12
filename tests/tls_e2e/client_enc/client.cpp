@@ -223,8 +223,8 @@ int launch_tls_client(
 
     // Explicitly enable socket and resolver features, which are required by
     // mbedtls' TLS feature
-    OE_CHECK(oe_enable_feature(OE_FEATURE_HOST_RESOLVER));
-    OE_CHECK(oe_enable_feature(OE_FEATURE_HOST_SOCKETS));
+    OE_CHECK(oe_load_module_hostsock());
+    OE_CHECK(oe_load_module_hostresolver());
 
     mbedtls_debug_set_threshold(DEBUG_LEVEL);
 

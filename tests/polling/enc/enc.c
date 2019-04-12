@@ -13,6 +13,7 @@
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/fs.h>
+#include <openenclave/internal/tests.h>
 
 #include <assert.h>
 #include <epoll_test_t.h>
@@ -21,9 +22,9 @@
 
 int ecall_device_init()
 {
-    oe_enable_feature(OE_FEATURE_POLLING);
-    oe_enable_feature(OE_FEATURE_HOST_SOCKETS);
-    oe_enable_feature(OE_FEATURE_HOST_FILES);
+    OE_TEST(oe_load_module_hostsock() == OE_OK);
+    OE_TEST(oe_load_module_hostfs() == OE_OK);
+    OE_TEST(oe_load_module_polling() == OE_OK);
     return 0;
 }
 

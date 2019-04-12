@@ -13,8 +13,8 @@
 #include <sys/mount.h>
 #include <set>
 #include <string>
-#include "../../../fs/cpio/commands.h"
-#include "../../../fs/cpio/cpio.h"
+#include "../../../device/fs/cpio/commands.h"
+#include "../../../device/fs/cpio/cpio.h"
 #include "file_system.h"
 #include "fs_t.h"
 
@@ -476,7 +476,7 @@ void test_fs(const char* src_dir, const char* tmp_dir)
 {
     (void)src_dir;
 
-    OE_TEST(oe_enable_feature(OE_FEATURE_HOST_FILES) == OE_OK);
+    OE_TEST(oe_load_module_hostfs() == OE_OK);
 
     OE_TEST(oe_mkdir_d(OE_DEVID_HOSTFS, tmp_dir, 0777) == 0);
 

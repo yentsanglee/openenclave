@@ -192,8 +192,19 @@ int launch_tls_client(char* server_name, char* server_port)
     mbedtls_pk_context pkey;
 
     // Explicitly enabling features
-    oe_enable_feature(OE_FEATURE_HOST_RESOLVER);
-    oe_enable_feature(OE_FEATURE_HOST_SOCKETS);
+    {
+        if (oe_load_module("hostresolver") != OE_OK)
+        {
+            printf(" failed\n  ! oe_load_module: hostresolver\n");
+            goto exit;
+        }
+
+        if (oe_load_module("hostsock") != OE_OK)
+        {
+            printf(" failed\n  ! oe_load_module: hostsock\n");
+            goto exit;
+        }
+    }
 
     // Initialize mbedtls objects
     mbedtls_debug_set_threshold(DEBUG_LEVEL);

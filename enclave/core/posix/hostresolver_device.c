@@ -18,6 +18,7 @@
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
 #include <openenclave/internal/typeinfo.h>
+#include <openenclave/bits/module.h>
 #include "oe_t.h"
 
 /*
@@ -227,7 +228,19 @@ static resolv_t _hostresolv = {.base.type = OE_RESOLVER_HOST,
                                .base.ops = &_ops,
                                .magic = RESOLV_MAGIC};
 
-oe_resolver_t* oe_get_hostresolver(void)
+oe_result_t oe_load_module_hostresolver(void)
 {
-    return &_hostresolv.base;
+    oe_result_t result = OE_FAILURE;
+    oe_resolver_t* resolver = &_hostresolv.base;
+
+    if (!resolver)
+        goto done;
+
+    if (oe_register_resolver(2, resolver) != 0)
+        goto done;
+
+    result = OE_OK;
+
+done:
+    return result;
 }

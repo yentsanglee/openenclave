@@ -19,6 +19,7 @@
 #include <openenclave/corelibc/string.h>
 #include <openenclave/internal/epoll.h>
 #include <openenclave/corelibc/sys/poll.h>
+#include <openenclave/bits/module.h>
 #include "oe_t.h"
 
 /*
@@ -775,7 +776,21 @@ static epoll_dev_t _epoll = {
     .pevent_data = NULL,
 };
 
-oe_device_t* oe_epoll_get_epoll(void)
+oe_result_t oe_load_module_polling(void)
 {
-    return &_epoll.base;
+    oe_result_t result = OE_FAILURE;
+    const uint64_t devid = OE_DEVID_EPOLL;
+
+    /* Allocate the device id. */
+    if (oe_allocate_devid(devid) != devid)
+        goto done;
+
+    /* Add to the device table. */
+    if (oe_set_devid_device(devid, &_epoll.base) != 0)
+        goto done;
+
+    result = OE_OK;
+
+done:
+    return result;
 }

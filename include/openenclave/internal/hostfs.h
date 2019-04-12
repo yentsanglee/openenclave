@@ -20,8 +20,6 @@ OE_EXTERNC_BEGIN
 
 oe_device_t* oe_fs_get_hostfs(void);
 
-int oe_register_hostfs_device(void);
-
 OE_EXTERNC_END
 
 #endif /* _OE_INTERNAL_HOSTFS_H */

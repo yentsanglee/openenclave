@@ -105,7 +105,7 @@ void test_corelibc(const char* tmp_dir)
 {
     OE_TEST(tmp_dir != NULL);
 
-    oe_enable_feature(OE_FEATURE_HOST_FILES);
+    OE_TEST(oe_load_module_hostfs() == OE_OK);
 
     if (mount("/", "/", "hostfs", 0, NULL) != 0)
     {
