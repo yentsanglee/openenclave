@@ -140,6 +140,28 @@ oe_result_t oe_rsa_private_key_free(oe_rsa_private_key_t* private_key);
 oe_result_t oe_rsa_public_key_free(oe_rsa_public_key_t* public_key);
 
 /**
+ * Digitally encrypts a message with a public RSA key
+ *
+ * This function uses a public RSA key to encrypt a message using RSA OAEP
+ * SHA 256.
+ *
+ * @param public_key The public RSA key
+ * @param plain The plaintext buffer
+ * @param plain_size the plaintext buffer size
+ * @param cipher The ciphertext
+ * @param[in,out] cipher_size The buffer size (in); ciphertext size (out)
+ *
+ * @return OE_OK on success
+ * @return OE_BUFFER_TOO_SMALL signature buffer is too small
+ */
+oe_result_t oe_rsa_public_key_encrypt(
+    const oe_rsa_public_key_t* public_key,
+    const uint8_t* plain,
+    size_t plain_size,
+    uint8_t* cipher,
+    size_t* cipher_size);
+
+/**
  * Digitally signs a message with a private RSA key
  *
  * This function uses a private RSA key to sign a message with the given hash.
@@ -161,6 +183,28 @@ oe_result_t oe_rsa_private_key_sign(
     size_t hash_size,
     uint8_t* signature,
     size_t* signature_size);
+
+/**
+ * Digitally decrypts a message with a private RSA key
+ *
+ * This function uses a private RSA key to decrypt a message using RSA
+ * OAEP SHA256.
+ *
+ * @param private_key The private RSA key
+ * @param cipher The ciphertext
+ * @param cipher_size The size of the ciphertext buffer.
+ * @param plain The plaintext buffer.
+ * @param[in,out] plain_size The buffer size (in); plaintext size (out)
+ *
+ * @return OE_OK on success
+ * @return OE_BUFFER_TOO_SMALL signature buffer is too small
+ */
+oe_result_t oe_rsa_private_key_decrypt(
+    const oe_rsa_private_key_t* private_key,
+    const uint8_t* cipher,
+    size_t cipher_size,
+    uint8_t* plain,
+    size_t* plain_size);
 
 /**
  * Verifies that a message was signed by an RSA key
@@ -241,6 +285,117 @@ oe_result_t oe_rsa_public_key_get_exponent(
     const oe_rsa_public_key_t* public_key,
     uint8_t* buffer,
     size_t* buffer_size);
+
+/**
+ * Get the parameters from a private RSA key.
+ *
+ * This function gets the modulus, pq primes, the public exponent and the
+ * private exponent. These are written to the specified buffers.
+ *
+ * @param private_key The input private key
+ * @param m The modulus buffer
+ * @param m_size[in, out] The modulus buffer size on input; actual size on
+ * output.
+ * @param p The prime p buffer
+ * @param p_size[in, out] The prime p buffer size on input; actual size on
+ * output.
+ * @param q The prime q buffer
+ * @param q_size[in, out] The prime q buffer size on input; actual size on
+ * output.
+ * @param d The private exponent buffer
+ * @param d_size[in, out] The private exponent buffer size on input; actual size
+ * on output.
+ * @param e The public exponent buffer
+ * @param e_size[in, out] The public exponent buffer size on input; actual size
+ * on output.
+ *
+ * @return OE_OK upon success
+ * @return OE_BUFFER_TOO_SMALL a buffer is too small and the size parameters
+ * contain the required sizes.
+ */
+oe_result_t oe_rsa_private_key_get_parameters(
+    const oe_rsa_private_key_t* private_key,
+    uint8_t* m,
+    size_t* m_size,
+    uint8_t* p,
+    size_t* p_size,
+    uint8_t* q,
+    size_t* q_size,
+    uint8_t* d,
+    size_t* d_size,
+    uint8_t* e,
+    size_t* e_size);
+
+/**
+ * Get the parameters from a private RSA key.
+ *
+ * This function gets the parameters for RSA decryption and signing using the
+ * remainder theorem.
+ *
+ * @param private_key The input private key
+ * @param dp The buffer containing dp = d mod (p -1)
+ * @param dp_size[in, out] The dp buffer size on input; actual size on output.
+ * @param dq The buffer containing dq = d mod (q - 1)
+ * @param dq_size[in, out] The dq buffer size on input; actual size on output.
+ * @param qinv The buffer containing qinv = q^-1 mod p
+ * @param qinv_size[in, out] The qinv buffer size on input; actual size on
+ * output.
+ *
+ * @return OE_OK upon success
+ * @return OE_BUFFER_TOO_SMALL a buffer is too small and the size parameters
+ * contain the required sizes.
+ */
+oe_result_t oe_rsa_private_key_get_crt_parameters(
+    const oe_rsa_private_key_t* private_key,
+    uint8_t* dp,
+    size_t* dp_size,
+    uint8_t* dq,
+    size_t* dq_size,
+    uint8_t* qinv,
+    size_t* qinv_size);
+
+/**
+ * Load the parameters from a RSA public key.
+ *
+ * This function loads a RSA public key using the modulus and public expoent.
+ *
+ * @param public_key The output public key
+ * @param m The modulus buffer
+ * @param m_size The modulus buffer size
+ * @param e The exponent buffer
+ * @param e_size The exponent buffer size
+ * @return OE_OK upon success
+ */
+oe_result_t oe_rsa_public_key_load_parameters(
+    oe_rsa_public_key_t* public_key,
+    const uint8_t* m,
+    size_t m_size,
+    const uint8_t* e,
+    size_t e_size);
+
+/**
+ * Load the parameters from a RSA private key.
+ *
+ * This function loads a RSA private key using the pq primes and
+ * the public exponent.
+ *
+ * @param private_key The output private key
+ * @param p The p prime buffer
+ * @param p_size The p prime buffer size
+ * @param q The q prime buffer
+ * @param q_size The q prime buffer size
+ * @param e The public exponent buffer
+ * @param e_size The exponent buffer size
+ * @return OE_OK upon success
+ */
+oe_result_t oe_rsa_private_key_load_parameters(
+    oe_rsa_private_key_t* private_key,
+    const uint8_t* p,
+    size_t p_size,
+    const uint8_t* q,
+    size_t q_size,
+    const uint8_t* e,
+    size_t e_size);
 
 /**
  * Determine whether two RSA public keys are identical.

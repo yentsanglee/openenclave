@@ -14,6 +14,7 @@
 #include "hash.h"
 #include "readfile.h"
 #include "tests.h"
+#include "utils.h"
 
 /* _CERT1 use as a Leaf cert
  * CHAIN1 consists Intermediate & Root cert.
@@ -445,6 +446,127 @@ static void _test_cert_methods()
     printf("=== passed %s()\n", __FUNCTION__);
 }
 
+static void _test_key_params()
+{
+#ifdef OE_BUILD_ENCLAVE
+    printf("=== begin %s()\n", __FUNCTION__);
+
+    oe_result_t r;
+    oe_rsa_private_key_t key = {0};
+
+    r = oe_rsa_private_key_read_pem(
+        &key, (const uint8_t*)_PRIVATE_KEY, strlen(_PRIVATE_KEY) + 1);
+    OE_TEST(r == OE_OK);
+
+    uint8_t m[384];
+    uint8_t p[192];
+    uint8_t q[192];
+    uint8_t d[384];
+    uint8_t e[4];
+    size_t msz = sizeof(m);
+    size_t psz = sizeof(p);
+    size_t qsz = sizeof(q);
+    size_t dsz = sizeof(d);
+    size_t esz = sizeof(e);
+    r = oe_rsa_private_key_get_parameters(
+        &key, m, &msz, p, &psz, q, &qsz, d, &dsz, e, &esz);
+    OE_TEST(r == OE_OK);
+
+    uint8_t dp[192];
+    uint8_t dq[192];
+    uint8_t qinv[192];
+    size_t dpsz = sizeof(dp);
+    size_t dqsz = sizeof(dq);
+    size_t qinvsz = sizeof(qinv);
+    r = oe_rsa_private_key_get_crt_parameters(
+        &key, dp, &dpsz, dq, &dqsz, qinv, &qinvsz);
+    OE_TEST(r == OE_OK);
+
+    // The arrays are in big endian, so we need to give the correct array index.
+    oe_rsa_private_key_free(&key);
+    r = oe_rsa_private_key_load_parameters(
+        &key,
+        p + sizeof(p) - psz,
+        psz,
+        q + sizeof(q) - qsz,
+        qsz,
+        e + sizeof(e) - esz,
+        esz);
+    OE_TEST(r == OE_OK);
+
+    // Check if signing works
+    uint8_t signature[384];
+    size_t signature_size = sizeof(signature);
+    r = oe_rsa_private_key_sign(
+        &key,
+        OE_HASH_TYPE_SHA256,
+        &ALPHABET_HASH,
+        sizeof(ALPHABET_HASH),
+        signature,
+        &signature_size);
+    OE_TEST(r == OE_OK);
+
+    OE_TEST(signature_size == sign_size);
+    OE_TEST(memcmp(signature, &_SIGNATURE, sign_size) == 0);
+    oe_rsa_private_key_free(&key);
+
+    // Check if verification works loading the parameters.
+    oe_rsa_public_key_t pubkey = {0};
+    r = oe_rsa_public_key_load_parameters(
+        &pubkey, m + sizeof(m) - msz, msz, e + sizeof(e) - esz, esz);
+    OE_TEST(r == OE_OK);
+
+    r = oe_rsa_public_key_verify(
+        &pubkey,
+        OE_HASH_TYPE_SHA256,
+        &ALPHABET_HASH,
+        sizeof(ALPHABET_HASH),
+        signature,
+        signature_size);
+    OE_TEST(r == OE_OK);
+    oe_rsa_public_key_free(&pubkey);
+
+    printf("=== passed %s()\n", __FUNCTION__);
+#endif
+}
+
+static void _test_encrypt()
+{
+#ifdef OE_BUILD_ENCLAVE
+    printf("=== begin %s()\n", __FUNCTION__);
+
+    oe_rsa_private_key_t private_key = {0};
+    oe_rsa_public_key_t public_key = {0};
+    oe_result_t r;
+
+    r = oe_rsa_generate_key_pair(1024, 3, &private_key, &public_key);
+    OE_TEST(r == OE_OK);
+
+    // OAEP isn't deterministic so just check if msg = decrypt(encrypt(msg))
+    const char* msg = "Hello World!";
+    size_t msg_size = strlen(msg);
+    uint8_t cipher[128];
+    size_t cipher_size = sizeof(cipher);
+
+    r = oe_rsa_public_key_encrypt(
+        &public_key, (const uint8_t*)msg, msg_size, cipher, &cipher_size);
+    OE_TEST(r == OE_OK);
+
+    uint8_t plain[128];
+    size_t plain_size = sizeof(plain);
+    r = oe_rsa_private_key_decrypt(
+        &private_key, cipher, cipher_size, plain, &plain_size);
+    OE_TEST(r == OE_OK);
+    OE_TEST(plain_size == msg_size);
+    OE_TEST(memcmp(msg, plain, msg_size) == 0);
+
+    oe_rsa_public_key_free(&public_key);
+    oe_rsa_private_key_free(&private_key);
+
+    printf("=== passed %s()\n", __FUNCTION__);
+#endif
+}
+
 void TestRSA(void)
 {
     OE_TEST(read_cert("../data/Leaf.crt.pem", _CERT1) == OE_OK);
@@ -477,4 +599,6 @@ void TestRSA(void)
     _test_verify();
     _test_write_private();
     _test_write_public();
+    _test_key_params();
+    _test_encrypt();
 }

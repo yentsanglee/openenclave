@@ -399,3 +399,353 @@ oe_result_t oe_rsa_public_key_equal(
     return oe_public_key_equal(
         (oe_public_key_t*)public_key1, (oe_public_key_t*)public_key2, equal);
 }
+
+oe_result_t oe_rsa_public_key_encrypt(
+    const oe_rsa_public_key_t* public_key,
+    const uint8_t* plain,
+    size_t plain_size,
+    uint8_t* cipher,
+    size_t* cipher_size)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    mbedtls_rsa_context* rsa;
+    mbedtls_ctr_drbg_context* drbg = NULL;
+    int res;
+
+    /* Check valid parameters. */
+    if (!public_key || !plain || !cipher || !cipher_size)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    if (!oe_public_key_is_valid(
+            (oe_public_key_t*)public_key, _PUBLIC_KEY_MAGIC))
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Get the RSA context */
+    if (!(rsa = mbedtls_pk_rsa(((oe_public_key_t*)public_key)->pk)))
+        OE_RAISE(OE_FAILURE);
+
+    /* Check if cipher size is large enough, */
+    if (*cipher_size < rsa->len)
+    {
+        *cipher_size = rsa->len;
+        OE_RAISE(OE_BUFFER_TOO_SMALL);
+    }
+
+    /* Get the random number generator */
+    if (!(drbg = oe_mbedtls_get_drbg()))
+        OE_RAISE(OE_FAILURE);
+
+    /* Encypt the data. */
+    mbedtls_rsa_set_padding(rsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+    res = mbedtls_rsa_rsaes_oaep_encrypt(
+        rsa,
+        mbedtls_ctr_drbg_random,
+        drbg,
+        MBEDTLS_RSA_PUBLIC,
+        NULL,
+        0,
+        plain_size,
+        plain,
+        cipher);
+    if (res != 0)
+        OE_RAISE(OE_FAILURE);
+
+    mbedtls_rsa_set_padding(rsa, MBEDTLS_RSA_PKCS_V15, 0);
+    result = OE_OK;
+
+done:
+    return result;
+}
+
+oe_result_t oe_rsa_private_key_decrypt(
+    const oe_rsa_private_key_t* private_key,
+    const uint8_t* cipher,
+    size_t cipher_size,
+    uint8_t* plain,
+    size_t* plain_size)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    mbedtls_rsa_context* rsa;
+    mbedtls_ctr_drbg_context* drbg = NULL;
+    int res;
+
+    /* Check valid parameters. */
+    if (!private_key || !cipher || !plain || !plain_size)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    if (!oe_private_key_is_valid(
+            (oe_private_key_t*)private_key, _PRIVATE_KEY_MAGIC))
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Get the RSA context */
+    if (!(rsa = mbedtls_pk_rsa(((oe_private_key_t*)private_key)->pk)))
+        OE_RAISE(OE_FAILURE);
+
+    /* Check if the ciphertext size is the correct length. */
+    if (cipher_size != rsa->len)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Check if plaintext size is large enough, */
+    if (*plain_size < rsa->len)
+    {
+        *plain_size = rsa->len;
+        OE_RAISE(OE_BUFFER_TOO_SMALL);
+    }
+
+    /* Get the random number generator */
+    if (!(drbg = oe_mbedtls_get_drbg()))
+        OE_RAISE(OE_FAILURE);
+
+    /* Decrypt the data. */
+    mbedtls_rsa_set_padding(rsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+    res = mbedtls_rsa_rsaes_oaep_decrypt(
+        rsa,
+        mbedtls_ctr_drbg_random,
+        drbg,
+        MBEDTLS_RSA_PRIVATE,
+        NULL,
+        0,
+        plain_size,
+        cipher,
+        plain,
+        *plain_size);
+    if (res != 0)
+        OE_RAISE(OE_FAILURE);
+
+    mbedtls_rsa_set_padding(rsa, MBEDTLS_RSA_PKCS_V15, 0);
+    result = OE_OK;
+
+done:
+    return result;
+}
+
+oe_result_t oe_rsa_private_key_get_parameters(
+    const oe_rsa_private_key_t* private_key,
+    uint8_t* m,
+    size_t* m_size,
+    uint8_t* p,
+    size_t* p_size,
+    uint8_t* q,
+    size_t* q_size,
+    uint8_t* d,
+    size_t* d_size,
+    uint8_t* e,
+    size_t* e_size)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    mbedtls_rsa_context* rsa;
+    int res;
+
+    if (!private_key || !m_size || !p_size || !q_size || !d_size || !e_size)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    if (!oe_private_key_is_valid(
+            (oe_private_key_t*)private_key, _PRIVATE_KEY_MAGIC))
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Get the RSA context */
+    if (!(rsa = mbedtls_pk_rsa(((oe_private_key_t*)private_key)->pk)))
+        OE_RAISE(OE_FAILURE);
+
+    res = mbedtls_rsa_export_raw(
+        rsa, m, *m_size, p, *p_size, q, *q_size, d, *d_size, e, *e_size);
+    if (res != 0)
+        OE_RAISE(OE_FAILURE);
+
+    *m_size = rsa->len;
+    *p_size = mbedtls_mpi_size(&rsa->P);
+    *q_size = mbedtls_mpi_size(&rsa->Q);
+    *d_size = mbedtls_mpi_size(&rsa->D);
+    *e_size = mbedtls_mpi_size(&rsa->E);
+    result = OE_OK;
+
+done:
+    return result;
+}
+
+static oe_result_t _oe_export_mpi_param(
+    const mbedtls_mpi* num,
+    uint8_t* buf,
+    size_t* buf_size)
+{
+    oe_result_t result = OE_UNEXPECTED;
+
+    if (buf)
+    {
+        if (*buf_size < mbedtls_mpi_size(num))
+        {
+            *buf_size = mbedtls_mpi_size(num);
+            OE_RAISE(OE_BUFFER_TOO_SMALL);
+        }
+
+        if (mbedtls_mpi_write_binary(num, buf, *buf_size) != 0)
+            OE_RAISE(OE_FAILURE);
+
+        *buf_size = mbedtls_mpi_size(num);
+    }
+
+    result = OE_OK;
+
+done:
+    return result;
+}
+
+oe_result_t oe_rsa_private_key_get_crt_parameters(
+    const oe_rsa_private_key_t* private_key,
+    uint8_t* dp,
+    size_t* dp_size,
+    uint8_t* dq,
+    size_t* dq_size,
+    uint8_t* qinv,
+    size_t* qinv_size)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    mbedtls_rsa_context* rsa;
+    mbedtls_mpi dpm;
+    mbedtls_mpi dqm;
+    mbedtls_mpi qinvm;
+
+    mbedtls_mpi_init(&dpm);
+    mbedtls_mpi_init(&dqm);
+    mbedtls_mpi_init(&qinvm);
+
+    if (!private_key || !dp_size || !dq_size || !qinv_size)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    if (!oe_private_key_is_valid(
+            (oe_private_key_t*)private_key, _PRIVATE_KEY_MAGIC))
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Get the RSA context */
+    if (!(rsa = mbedtls_pk_rsa(((oe_private_key_t*)private_key)->pk)))
+        OE_RAISE(OE_FAILURE);
+
+    if (mbedtls_rsa_export_crt(rsa, &dpm, &dqm, &qinvm) != 0)
+        OE_RAISE(OE_FAILURE);
+
+    OE_CHECK(_oe_export_mpi_param(&dpm, dp, dp_size));
+    OE_CHECK(_oe_export_mpi_param(&dqm, dq, dq_size));
+    OE_CHECK(_oe_export_mpi_param(&qinvm, qinv, qinv_size));
+    result = OE_OK;
+
+done:
+    mbedtls_mpi_free(&dpm);
+    mbedtls_mpi_free(&dqm);
+    mbedtls_mpi_free(&qinvm);
+
+    if (result != OE_OK)
+    {
+        if (dp)
+            oe_memset_s(dp, *dp_size, 0, *dp_size);
+        if (dq)
+            oe_memset_s(dq, *dq_size, 0, *dq_size);
+        if (qinv)
+            oe_memset_s(qinv, *qinv_size, 0, *qinv_size);
+    }
+
+    return result;
+}
+
+oe_result_t oe_rsa_public_key_load_parameters(
+    oe_rsa_public_key_t* public_key,
+    const uint8_t* m,
+    size_t m_size,
+    const uint8_t* e,
+    size_t e_size)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    oe_public_key_t* key = (oe_public_key_t*)public_key;
+    const mbedtls_pk_info_t* info = NULL;
+    mbedtls_rsa_context* rsa;
+    int rc = 0;
+
+    if (!public_key)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Initialize structures */
+    oe_public_key_init(key, NULL, NULL, _PUBLIC_KEY_MAGIC);
+
+    /* Lookup the RSA info */
+    if (!(info = mbedtls_pk_info_from_type(MBEDTLS_PK_RSA)))
+        OE_RAISE(OE_UNSUPPORTED);
+
+    rc = mbedtls_pk_setup(&key->pk, info);
+    if (rc != 0)
+        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x\n", rc);
+
+    /* Setup RSA key. */
+    rsa = mbedtls_pk_rsa(key->pk);
+    mbedtls_rsa_init(rsa, MBEDTLS_RSA_PKCS_V15, 0);
+
+    rc = mbedtls_rsa_import_raw(
+        rsa, m, m_size, NULL, 0, NULL, 0, NULL, 0, e, e_size);
+    if (rc != 0)
+        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x\n", rc);
+
+    /* Sanity checks. */
+    rc = mbedtls_rsa_check_pubkey(rsa);
+    if (rc != 0)
+        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x\n", rc);
+
+    result = OE_OK;
+
+done:
+    if (public_key && result != OE_OK)
+        oe_public_key_release(key, _PUBLIC_KEY_MAGIC);
+    return result;
+}
+
+oe_result_t oe_rsa_private_key_load_parameters(
+    oe_rsa_private_key_t* private_key,
+    const uint8_t* p,
+    size_t p_size,
+    const uint8_t* q,
+    size_t q_size,
+    const uint8_t* e,
+    size_t e_size)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    oe_private_key_t* key = (oe_private_key_t*)private_key;
+    const mbedtls_pk_info_t* info = NULL;
+    mbedtls_rsa_context* rsa;
+    int rc = 0;
+
+    if (!private_key)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Initialize structures */
+    oe_private_key_init(key, NULL, NULL, _PRIVATE_KEY_MAGIC);
+
+    /* Lookup the RSA info */
+    if (!(info = mbedtls_pk_info_from_type(MBEDTLS_PK_RSA)))
+        OE_RAISE(OE_UNSUPPORTED);
+
+    rc = mbedtls_pk_setup(&key->pk, info);
+    if (rc != 0)
+        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x\n", rc);
+
+    /* Setup RSA key. */
+    rsa = mbedtls_pk_rsa(key->pk);
+    mbedtls_rsa_init(rsa, MBEDTLS_RSA_PKCS_V15, 0);
+
+    rc = mbedtls_rsa_import_raw(
+        rsa, NULL, 0, p, p_size, q, q_size, NULL, 0, e, e_size);
+    if (rc != 0)
+        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x\n", rc);
+
+    /* Sanity checks. */
+    rc = mbedtls_rsa_complete(rsa);
+    if (rc != 0)
+        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x\n", rc);
+
+    rc = mbedtls_rsa_check_privkey(rsa);
+    if (rc != 0)
+        OE_RAISE_MSG(OE_FAILURE, "rc = 0x%x\n", rc);
+
+    result = OE_OK;
+
+done:
+    if (private_key && result != OE_OK)
+        oe_private_key_release(key, _PRIVATE_KEY_MAGIC);
+    return result;
+}
