@@ -22,6 +22,7 @@ int oe_register_resolver(int resolver_priority, oe_resolver_t* presolver)
 }
 
 size_t oe_debug_malloc_check();
+
 int oe_getaddrinfo(
     const char* node,
     const char* service,

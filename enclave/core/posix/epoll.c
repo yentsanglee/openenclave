@@ -237,6 +237,7 @@ done:
 // Since the nodes are linked lists, we need to preserve addresses, so cannot
 // use oe_realloc on the actual list nodes. So we allocate chunks, invalidate
 // the
+// ATTN:IO: seems like the previous sentence is incomplete.
 
 static struct _notification_node_chunk* pdevice_notice_chunks = NULL;
 static struct _notification_node_chunk* pdevice_notice_chunk_tail = NULL;
@@ -245,13 +246,12 @@ static struct _notification_node* _new_notification()
 {
     struct _notification_node_chunk* pchunk;
 
-    // ATTN:IO: I suspect this function might leak memory on error.
-
     if (!pdevice_notice_chunk_tail)
     {
         // We never had a notice posted. Everything is null.
         pdevice_notice_chunks = (struct _notification_node_chunk*)oe_calloc(
             1, sizeof(struct _notification_node_chunk));
+        // ATTN:IO: check return value of oe_calloc() for null.
         pdevice_notice_chunk_tail = pdevice_notice_chunks;
         pdevice_notice_chunk_tail->maxnodes = NODE_CHUNK;
         pdevice_notice_chunk_tail->numnodes = 1; // Because we are returning one
