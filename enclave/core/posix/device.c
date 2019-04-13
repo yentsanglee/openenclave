@@ -56,7 +56,7 @@ static int _init_table()
     return 0;
 }
 
-uint64_t oe_release_devid(uint64_t devid)
+uint64_t oe_allocate_devid(uint64_t devid)
 {
     uint64_t ret = OE_DEVID_NULL;
     bool locked = false;
