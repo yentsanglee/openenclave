@@ -69,13 +69,6 @@ char* oe_realpath(const char* path, char resolved_path[OE_PATH_MAX])
             in[nin++] = p;
     }
 
-#if 0
-for (size_t i = 0; i < nin; i++)
-{
-    oe_printf("in{%s}\n", in[i]);
-}
-#endif
-
     /* Normalize the path. */
     for (size_t i = 0; i < nin; i++)
     {
@@ -93,13 +86,6 @@ for (size_t i = 0; i < nin; i++)
 
         out[nout++] = in[i];
     }
-
-#if 0
-for (size_t i = 0; i < nout; i++)
-{
-    oe_printf("out{%s}\n", out[i]);
-}
-#endif
 
     /* Build the resolved path. */
     {

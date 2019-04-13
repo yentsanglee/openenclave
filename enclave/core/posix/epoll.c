@@ -155,7 +155,7 @@ int oe_epoll_wait(
     return ret; // return the number of descriptors that have signalled
 }
 
-/* ATTN:IO: remove this. */
+/* ATTN:IO: please remove this if it really not used. */
 #if MAYBE
 int oe_epoll_pwait(
     int epfd,

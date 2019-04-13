@@ -31,6 +31,7 @@ static void _handle_ignore(int signum)
     (void)signum;
 }
 
+/* ATTN:IO: please remove any experimental code. */
 #if 0
 static void _handle_continue(int signum)
 {
@@ -38,6 +39,7 @@ static void _handle_continue(int signum)
 }
 #endif
 
+/* ATTN:IO: please remove any experimental code. */
 #if 0
 static void _handle_terminate(int signum)
 {
