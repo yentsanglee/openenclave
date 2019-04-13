@@ -182,6 +182,7 @@ int launch_tls_client(char* server_name, char* server_port)
     uint32_t flags;
     unsigned char buf[1024];
     const char* pers = "ssl_client";
+    oe_result_t result = OE_FAILURE;
 
     mbedtls_net_context server_fd;
     mbedtls_entropy_context entropy;
@@ -192,18 +193,19 @@ int launch_tls_client(char* server_name, char* server_port)
     mbedtls_pk_context pkey;
 
     // Explicitly enabling features
+    // Explicitly enabling features
+    if ((result = oe_load_module_hostresolver()) != OE_OK)
     {
-        if (oe_load_module("hostresolver") != OE_OK)
-        {
-            printf(" failed\n  ! oe_load_module: hostresolver\n");
-            goto exit;
-        }
-
-        if (oe_load_module("hostsock") != OE_OK)
-        {
-            printf(" failed\n  ! oe_load_module: hostsock\n");
-            goto exit;
-        }
+        printf(
+            "oe_load_module_hostresolver failed with %s\n",
+            oe_result_str(result));
+        goto exit;
+    }
+    if ((result = oe_load_module_hostsock()) != OE_OK)
+    {
+        printf(
+            "oe_load_module_hostsock failed with %s\n", oe_result_str(result));
+        goto exit;
     }
 
     // Initialize mbedtls objects

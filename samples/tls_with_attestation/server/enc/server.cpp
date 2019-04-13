@@ -171,18 +171,18 @@ int setup_tls_server(char* server_port)
     const char* pers = "tls_server";
 
     // Explicitly enabling features
+    if ((result = oe_load_module_hostresolver()) != OE_OK)
     {
-        if (oe_load_module("hostresolver") != OE_OK)
-        {
-            printf(" failed\n  ! oe_load_module: hostresolver\n");
-            goto exit;
-        }
-
-        if (oe_load_module("hostsock") != OE_OK)
-        {
-            printf(" failed\n  ! oe_load_module: hostsock\n");
-            goto exit;
-        }
+        printf(
+            "oe_load_module_hostresolver failed with %s\n",
+            oe_result_str(result));
+        goto exit;
+    }
+    if ((result = oe_load_module_hostsock()) != OE_OK)
+    {
+        printf(
+            "oe_load_module_hostsock failed with %s\n", oe_result_str(result));
+        goto exit;
     }
 
     // init mbedtls objects

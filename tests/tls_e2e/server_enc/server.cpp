@@ -196,6 +196,8 @@ int setup_tls_server(struct tls_control_args* config, char* server_port)
     int len = 0;
     uint32_t uret = 1;
     oe_result_t result = OE_FAILURE;
+    static bool oe_module_loaded = false;
+
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_ssl_context ssl;
@@ -209,8 +211,12 @@ int setup_tls_server(struct tls_control_args* config, char* server_port)
 
     // Explicitly enable socket and resolver features, which are required by
     // mbedtls' TLS feature
-    OE_CHECK(oe_load_module_hostresolver());
-    OE_CHECK(oe_load_module_hostsock());
+    if (!oe_module_loaded)
+    {
+        OE_CHECK(oe_load_module_hostsock());
+        OE_CHECK(oe_load_module_hostresolver());
+        oe_module_loaded = true;
+    }
 
     // init mbedtls objects
     mbedtls_net_init(&listen_fd);
