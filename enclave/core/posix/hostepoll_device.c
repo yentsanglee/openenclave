@@ -795,7 +795,7 @@ oe_result_t oe_load_module_polling(void)
             const uint64_t devid = OE_DEVID_EPOLL;
 
             /* Allocate the device id. */
-            if (oe_allocate_devid(devid) != devid)
+            if (oe_release_devid(devid) != devid)
                 goto done;
 
             /* Add to the device table. */

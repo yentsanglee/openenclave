@@ -1093,7 +1093,7 @@ oe_result_t oe_load_module_hostsock(void)
             const uint64_t devid = OE_DEVID_HOST_SOCKET;
 
             /* Allocate the device id. */
-            if (oe_allocate_devid(devid) != devid)
+            if (oe_release_devid(devid) != devid)
                 goto done;
 
             /* Add the hostfs device to the device table. */

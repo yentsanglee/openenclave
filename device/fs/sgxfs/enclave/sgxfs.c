@@ -1210,7 +1210,7 @@ oe_result_t oe_load_module_sgxfs(void)
         if (!_loaded)
         {
             /* Allocate the device id. */
-            if (oe_allocate_devid(OE_DEVID_SGXFS) != OE_DEVID_SGXFS)
+            if (oe_release_devid(OE_DEVID_SGXFS) != OE_DEVID_SGXFS)
             {
                 result = OE_FAILURE;
                 goto done;
