@@ -30,6 +30,12 @@ void test_sgxfs(const char* tmp_dir)
         assert("run_main() failed" == NULL);
         exit(1);
     }
+
+    if (umount("/") != 0)
+    {
+        fprintf(stderr, "umount() failed\n");
+        exit(1);
+    }
 }
 
 OE_SET_ENCLAVE_SGX(

@@ -32,7 +32,7 @@ void oe_array_free(oe_array_t* array)
     if (array)
     {
         oe_free(array->data);
-        memset(array->data, 0, sizeof(oe_array_t));
+        memset(array, 0, sizeof(oe_array_t));
     }
 }
 

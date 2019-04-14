@@ -97,6 +97,7 @@ int ecall_run_client(char* recv_buff, ssize_t* recv_buff_len)
     }
 
     oe_close(sockfd);
+    oe_close(sockdup);
     return OE_OK;
 }
 

@@ -12,92 +12,313 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/epoll.h>
+#include <openenclave/internal/list.h>
+#include <openenclave/corelibc/string.h>
+
+/* For synchronizing access to all static structures defined below. */
+static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
+
+/*
+**==============================================================================
+**
+** Define a list device notifications and methods for manipulating it.
+**
+**     _list_append() -- append a node to the end of the list.
+**     _list_remove() -- remove the given node from the list.
+**
+**==============================================================================
+*/
+
+typedef struct _list_node list_node_t;
+
+struct _list_node
+{
+    /* Overlays the same fields in oe_list_node_t */
+    list_node_t* prev;
+    list_node_t* next;
+
+    /* Extra field */
+    struct _oe_device_notifications notice;
+};
+
+typedef struct _list
+{
+    /* Overlays the same fields in oe_list_t */
+    list_node_t* head;
+    list_node_t* tail;
+    size_t size;
+} list_t;
+
+OE_INLINE void _list_append(list_t* list, list_node_t* node)
+{
+    oe_list_append((oe_list_t*)list, (oe_list_node_t*)node);
+}
+
+OE_INLINE void _list_remove(list_t* list, list_node_t* node)
+{
+    oe_list_remove((oe_list_t*)list, (oe_list_node_t*)node);
+}
+
+/*
+**==============================================================================
+**
+** Define an array of list_t elements (indexed by epoll file descriptor) and
+** the following functions for manipulating the array.
+**
+**     _array_data() -- obtain a pointer to the array.
+**     _array_size() -- get the size of the array.
+**     _array_resize() -- change the size of the array.
+**
+**==============================================================================
+*/
+
+static oe_array_t _array = OE_ARRAY_INITIALIZER(sizeof(list_t), 64);
+
+static list_t* _array_data(void)
+{
+    return (list_t*)_array.data;
+}
+
+static size_t _array_size(void)
+{
+    return _array.size;
+}
+
+static int _array_resize(size_t new_size)
+{
+    return oe_array_resize(&_array, new_size);
+}
+
+/*
+**==============================================================================
+**
+** Define functions for allocating and freeing list_node_t structures. Utilize
+** a free list to improve performance.
+**
+**     _alloc_node() -- allocate a list node.
+**     _free_node() -- free a list node.
+**
+**==============================================================================
+*/
+
+#define MAX_FREE_LIST_SIZE 64
+
+static list_node_t* _free_list;
+static size_t _free_list_size;
+
+static list_node_t* _alloc_node(void)
+{
+    list_node_t* ret = NULL;
+    list_node_t* p = NULL;
+
+    if (_free_list)
+    {
+        p = _free_list;
+        _free_list = p->next;
+        _free_list_size--;
+    }
+    else
+    {
+        if (!(p = oe_calloc(1, sizeof(list_node_t))))
+            goto done;
+    }
+
+    memset(p, 0, sizeof(list_node_t));
+
+    ret = p;
+
+done:
+    return ret;
+}
+
+static void _free_node(list_node_t* p)
+{
+    if (p && _free_list_size < MAX_FREE_LIST_SIZE)
+    {
+        p->next = _free_list;
+        _free_list = p;
+        _free_list_size++;
+    }
+    else
+    {
+        oe_free(p);
+    }
+}
+
+static void _free_free_list(void)
+{
+    list_node_t* p;
+
+    for (p = _free_list; p;)
+    {
+        list_node_t* next = p->next;
+        oe_free(p);
+        p = next;
+    }
+}
+
+/*
+**==============================================================================
+**
+** Define at-exit handler to free local heap memory.
+**
+**==============================================================================
+*/
+
+static void _atexit_function(void)
+{
+    for (size_t i = 0; i < _array_size(); i++)
+    {
+        list_t* list = _array_data() + i;
+        oe_list_free((oe_list_t*)list, (oe_list_free_func)_free_node);
+    }
+
+    _free_free_list();
+
+    oe_array_free(&_array);
+}
+
+static oe_once_t _once = OE_ONCE_INITIALIZER;
+
+static void _once_function(void)
+{
+    oe_atexit(_atexit_function);
+}
+
+/*
+**==============================================================================
+**
+** Define the epoll functions.
+**
+**==============================================================================
+*/
+
+static oe_cond_t poll_notification = OE_COND_INITIALIZER;
+static oe_mutex_t poll_lock = OE_MUTEX_INITIALIZER;
 
 int oe_epoll_create(int size)
 {
-    int ed = -1;
-    oe_device_t* pepoll = NULL;
-    oe_device_t* pdevice = NULL;
+    int ret = -1;
+    int epfd = -1;
+    oe_device_t* device = NULL;
+    oe_device_t* epoll = NULL;
 
-    pdevice = oe_get_devid_device(OE_DEVID_EPOLL);
-    if ((pepoll = (*pdevice->ops.epoll->create)(pdevice, size)) == NULL)
-    {
-        return -1;
-    }
-    ed = oe_assign_fd_device(pepoll);
-    if (ed == -1)
-    {
-        // Log error here
-        return -1; // erno is already set
-    }
+    oe_once(&_once, _once_function);
 
-    return ed;
+    if (!(device = oe_get_devid_device(OE_DEVID_EPOLL)))
+        goto done;
+
+    if (!(epoll = (*device->ops.epoll->create)(device, size)))
+        goto done;
+
+    if ((epfd = oe_assign_fd_device(epoll)) == -1)
+        goto done;
+
+    ret = 0;
+    epoll = NULL;
+
+done:
+
+    if (epoll)
+        (*device->ops.base->close)(epoll);
+
+    return ret;
 }
 
 int oe_epoll_create1(int flags)
 {
-    int ed = -1;
-    oe_device_t* pepoll = NULL;
-    oe_device_t* pdevice = NULL;
+    int ret = -1;
+    int epfd = -1;
+    oe_device_t* device = NULL;
+    oe_device_t* epoll = NULL;
 
-    pdevice = oe_get_devid_device(OE_DEVID_EPOLL);
-    if ((pepoll = (*pdevice->ops.epoll->create1)(pdevice, flags)) == NULL)
-    {
-        return -1;
-    }
-    ed = oe_assign_fd_device(pepoll);
-    if (ed == -1)
-    {
-        // Log error here
-        return -1; // erno is already set
-    }
+    oe_once(&_once, _once_function);
 
-    return ed;
+    if (!(device = oe_get_devid_device(OE_DEVID_EPOLL)))
+        goto done;
+
+    if (!(epoll = (*device->ops.epoll->create1)(device, flags)))
+        goto done;
+
+    if ((epfd = oe_assign_fd_device(epoll)) == -1)
+        goto done;
+
+    ret = 0;
+    epoll = NULL;
+
+done:
+
+    if (epoll)
+        (*device->ops.base->close)(epoll);
+
+    return epfd;
 }
 
 int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event)
 {
     int ret = -1;
-    oe_device_t* pepoll = oe_get_fd_device(epfd);
-    oe_device_t* pdevice = oe_get_fd_device(fd);
+    oe_device_t* epoll;
+    oe_device_t* device;
+
+    oe_once(&_once, _once_function);
 
     oe_errno = 0;
-    /* Check parameters. */
-    if (!pepoll || !pdevice)
+
+    if (!(epoll = oe_get_fd_device(epfd)))
     {
         oe_errno = EBADF;
-        return -1;
+        goto done;
+    }
+
+    if (!(device = oe_get_fd_device(fd)))
+    {
+        oe_errno = EBADF;
+        goto done;
     }
 
     switch (op)
     {
         case OE_EPOLL_CTL_ADD:
         {
-            if (pepoll->ops.epoll->ctl_add == NULL)
+            if (!epoll->ops.epoll->ctl_add)
             {
                 oe_errno = EINVAL;
-                return -1;
+                goto done;
             }
-            ret = (*pepoll->ops.epoll->ctl_add)(epfd, fd, event);
+
+            ret = (*epoll->ops.epoll->ctl_add)(epfd, fd, event);
             break;
         }
         case OE_EPOLL_CTL_DEL:
         {
-            ret = (*pepoll->ops.epoll->ctl_del)(epfd, fd);
+            if (!epoll->ops.epoll->ctl_del)
+            {
+                oe_errno = EINVAL;
+                goto done;
+            }
+
+            ret = (*epoll->ops.epoll->ctl_del)(epfd, fd);
             break;
         }
         case OE_EPOLL_CTL_MOD:
         {
-            ret = (*pepoll->ops.epoll->ctl_del)(epfd, fd);
+            if (!epoll->ops.epoll->ctl_mod)
+            {
+                oe_errno = EINVAL;
+                goto done;
+            }
+
+            ret = (*epoll->ops.epoll->ctl_mod)(epfd, fd, event);
             break;
         }
         default:
         {
             oe_errno = EINVAL;
-            return -1;
+            goto done;
         }
     }
 
+done:
     return ret;
 }
 
@@ -107,277 +328,108 @@ int oe_epoll_wait(
     int maxevents,
     int timeout)
 {
-    oe_device_t* pepoll = oe_get_fd_device(epfd);
     int ret = -1;
-    bool has_host_wait =
-        true; // false; // 2do. We need to figure out how to wait
+    oe_device_t* epoll;
+    int n;
 
-    if (!pepoll)
-    {
-        // Log error here
-        return -1; // erno is already set
-    }
+    oe_once(&_once, _once_function);
 
-    if (pepoll->ops.epoll->wait == NULL)
+    if (!(epoll = oe_get_fd_device(epfd)))
+        goto done;
+
+    if (!epoll->ops.epoll->wait)
     {
         oe_errno = EINVAL;
-        return -1;
+        goto done;
     }
 
-    // Start an outboard waiter if host involved
-    // search polled device list for host involved  2Do
-    if (has_host_wait)
+    /* Wait until there are events. */
+    if ((*epoll->ops.epoll->wait)(epfd, events, (size_t)maxevents, timeout) < 0)
     {
-        if ((ret = (*pepoll->ops.epoll->wait)(
-                 epfd, events, (size_t)maxevents, timeout)) < 0)
-        {
-            oe_errno = EINVAL;
-            return -1;
-        }
+        oe_errno = EINVAL;
+        goto done;
     }
 
-    // We check immedately because we might have gotten lucky and had stuff come
-    // in immediately. If so we skip the wait
-    ret = oe_get_epoll_events((uint64_t)epfd, (size_t)maxevents, events);
+    /* See if there are events waiting. */
+    n = oe_get_epoll_events((uint64_t)epfd, (size_t)maxevents, events);
 
-    if (ret == 0)
+    /* If no events polled, then wait again. */
+    if (n == 0)
     {
         if (oe_wait_device_notification(timeout) < 0)
         {
             oe_errno = EPROTO;
             return -1;
         }
-        ret = oe_get_epoll_events((uint64_t)epfd, (size_t)maxevents, events);
+
+        /* See how many events are waiting. */
+        n = oe_get_epoll_events((uint64_t)epfd, (size_t)maxevents, events);
     }
 
-    return ret; // return the number of descriptors that have signalled
-}
-
-/* ATTN:IO: please remove this if it really not used. */
-#if MAYBE
-int oe_epoll_pwait(
-    int epfd,
-    struct epoll_event* events,
-    int maxevents,
-    int timeout,
-    const sigset_t* ss)
-{
-    return -1;
-}
-#endif
-
-static oe_cond_t poll_notification = OE_COND_INITIALIZER;
-static oe_mutex_t poll_lock = OE_MUTEX_INITIALIZER;
-
-#define NODE_CHUNK 256
-
-struct _notification_node
-{
-    struct _oe_device_notifications notice;
-    struct _notification_node* pnext;
-};
-
-struct _notification_node_chunk
-{
-    size_t maxnodes;
-    size_t numnodes;
-    struct _notification_node nodes[NODE_CHUNK];
-    struct _notification_node_chunk* pnext;
-};
-
-#define ELEMENT_SIZE sizeof(struct _notification_node*)
-#define CHUNK_SIZE 8
-static oe_array_t _notify_arr = OE_ARRAY_INITIALIZER(ELEMENT_SIZE, CHUNK_SIZE);
-static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
-
-OE_INLINE struct _notification_node** _table(void)
-{
-    return (struct _notification_node**)_notify_arr.data;
-}
-
-/* ATTN:IO: remove all experimental code. */
-#if 0
-OE_INLINE size_t _table_size(void)
-{
-    return _notify_arr.size;
-}
-
-static void _free_table(void)
-{
-    oe_array_free(&_notify_arr);
-}
-
-#endif
-
-// This gets locked in outer levels
-
-static struct _notification_node** _notification_list(uint64_t epoll_id)
-{
-    struct _notification_node** ret = NULL;
-
-    if (epoll_id >= _notify_arr.size)
-    {
-        if (oe_array_resize(&_notify_arr, epoll_id + 1) != 0)
-        {
-            oe_errno = ENOMEM;
-            goto done;
-        }
-    }
-
-    ret = _table() + epoll_id;
+    ret = n;
 
 done:
 
+    /* Return the number of descriptors that were signalled. */
     return ret;
-}
-
-//
-// We allocate an array of notification_nodes whose roots are accessed by the
-// array _notify_arr indexed by the epoll fd We allocate the nodes from chunks.
-// Since the nodes are linked lists, we need to preserve addresses, so cannot
-// use oe_realloc on the actual list nodes. So we allocate chunks, invalidate
-// the
-// ATTN:IO: seems like the previous sentence is incomplete.
-
-static struct _notification_node_chunk* pdevice_notice_chunks = NULL;
-static struct _notification_node_chunk* pdevice_notice_chunk_tail = NULL;
-
-static struct _notification_node* _new_notification()
-{
-    struct _notification_node_chunk* pchunk;
-
-    if (!pdevice_notice_chunk_tail)
-    {
-        // We never had a notice posted. Everything is null.
-        pdevice_notice_chunks = (struct _notification_node_chunk*)oe_calloc(
-            1, sizeof(struct _notification_node_chunk));
-        // ATTN:IO: check return value of oe_calloc() for null.
-        pdevice_notice_chunk_tail = pdevice_notice_chunks;
-        pdevice_notice_chunk_tail->maxnodes = NODE_CHUNK;
-        pdevice_notice_chunk_tail->numnodes = 1; // Because we are returning one
-        pdevice_notice_chunk_tail->pnext = NULL;
-        return &pdevice_notice_chunk_tail->nodes[0];
-    }
-
-    // We look for a node chunk with some room
-    for (pchunk = pdevice_notice_chunks; pchunk != NULL; pchunk = pchunk->pnext)
-    {
-        if (pchunk->numnodes < pchunk->maxnodes)
-        {
-            break;
-        }
-    }
-
-    // If we went through the entire list and the chunks are all full, we need a
-    // new chunk. We expect this to happen very seldom we don't free chunks
-    // until atend
-    if (pchunk == NULL)
-    {
-        pdevice_notice_chunk_tail->pnext =
-            (struct _notification_node_chunk*)oe_calloc(
-                1, sizeof(struct _notification_node_chunk));
-        pdevice_notice_chunk_tail = pdevice_notice_chunk_tail->pnext;
-        pdevice_notice_chunk_tail->maxnodes = NODE_CHUNK;
-        pdevice_notice_chunk_tail->numnodes = 1; // Because we are returning one
-        pdevice_notice_chunk_tail->pnext = NULL;
-        return &pdevice_notice_chunk_tail->nodes[0];
-    }
-
-    // Find a node . First on the top as the cheapest guess
-    size_t nodeidx = pchunk->numnodes;
-    while (nodeidx < pchunk->maxnodes)
-    {
-        if (pchunk->nodes[nodeidx].notice.event_mask == 0)
-        {
-            // We found one. Now its taken
-            pchunk->numnodes++;
-            return &pchunk->nodes[nodeidx];
-        }
-        nodeidx++;
-    }
-
-    // Find a node . Next lower half. This should find it or something is broken
-    nodeidx = 0;
-    while (nodeidx < pchunk->numnodes)
-    {
-        if (pchunk->nodes[nodeidx].notice.event_mask == 0)
-        {
-            // We found one
-            pchunk->numnodes++;
-            return &pchunk->nodes[nodeidx];
-        }
-        nodeidx++;
-    }
-    return NULL; // Should be an assert. We can't get here unless there is a bug
 }
 
 int oe_post_device_notifications(
     int num_notifications,
     struct _oe_device_notifications* notices)
 {
-    struct _notification_node** pplist = NULL;
-    struct _notification_node* pnode = NULL;
-    struct _notification_node* ptail = NULL;
+    int ret = -1;
+    list_t* list;
     int locked = false;
+    int i;
+    size_t index;
+
+    oe_once(&_once, _once_function);
 
     if (!notices)
-    {
-        // complain and throw something as notices are not allowed be null
-        return -1;
-    }
-/* ATTN:IO: remove all experimental code. */
-#if 0
-int j = 0;
-for(; j < num_notifications; j++) {
-oe_host_printf("notices[%d] = events: %x data = %lx\n", j, notices[j].event_mask, notices[j].data);
-}
-#endif
+        goto done;
 
     oe_spin_lock(&_lock);
     locked = true;
 
-    // We believe that all of the notifications in the list are going to the
-    // same epoll.
-    pplist = _notification_list(notices[0].epoll_fd);
-    pnode = _new_notification();
-    pnode->notice = notices[0];
-    if (*pplist == NULL)
+    /* Save the epoll file descriptor (the array index). */
+    index = (size_t)(notices[0].epoll_fd);
+
+    /* Expand array if not already big enough. */
+    if (_array_resize(index + 1) != 0)
+        goto done;
+
+    /* Get the list for this epoll file descriptor. */
+    if (!(list = _array_data() + index))
+        goto done;
+
+    /* Add a new node for each notifiction. */
+    for (i = 0; i < num_notifications; i++)
     {
-        *pplist = pnode;
-        ptail = pnode;
-    }
-    else
-    {
-        // Find the end of the list. This will almost certainly not be hit, but
-        // it could be if we report more than once before epoll_wait returns.
-        for (ptail = *pplist; ptail->pnext;)
-        {
-            if (!ptail->pnext)
-            {
-                break;
-            }
-            ptail = ptail->pnext;
-        }
-        ptail->pnext = pnode;
-        ptail = pnode;
+        list_node_t* node;
+
+        /* Allocate a new node. */
+        if (!(node = _alloc_node()))
+            goto done;
+
+        /* Set the notifications field. */
+        node->notice = notices[i];
+
+        /* Append the new node to the end of the list. */
+        _list_append(list, node);
     }
 
-    int i = 1;
-    for (; i < num_notifications; i++)
-    {
-        pnode = _new_notification();
+    ret = 0;
 
-        pnode->notice = notices[i];
-        ptail->pnext = pnode;
-        ptail = ptail->pnext;
-    }
+done:
 
     if (locked)
         oe_spin_unlock(&_lock);
 
-    return 0;
+    return ret;
 }
 
+//
 // parms: epfd is the enclave fd of the epoll
 //        maxevents is the number of events in the buffer
 //        pevents is storage for <maxevents> events
@@ -386,77 +438,84 @@ oe_host_printf("notices[%d] = events: %x data = %lx\n", j, notices[j].event_mask
 //          >0 = returned length of the list
 //          <0 = something bad happened.
 //
-//
 int oe_get_epoll_events(
     uint64_t epfd,
     size_t maxevents,
-    struct oe_epoll_event* pevents)
-
+    struct oe_epoll_event* events)
 {
-    oe_device_t* pepoll = oe_get_fd_device((int)epfd); // this limit checks fd
-    struct _notification_node** pplist = NULL;
-    struct _notification_node* plist = NULL;
-    struct _notification_node* ptail = NULL;
-    size_t numevents = 0;
-    size_t i = 0;
+    int ret = -1;
+    oe_device_t* epoll;
+    list_t* list;
+    size_t numevents;
     int locked = false;
+    size_t i;
+    list_node_t* p;
 
-    if (epfd >= _notify_arr.size)
-    {
-        if (oe_array_resize(&_notify_arr, epfd + 1) != 0)
-        {
-            oe_errno = ENOMEM;
-            return -1;
-        }
-    }
+    oe_once(&_once, _once_function);
 
-    pplist = _table() + epfd;
-    if (!*pplist)
-    {
-        // Not having notifications isn't an error
-        return 0;
-    }
-
-    if (!pevents || maxevents < 1)
+    /* Check the function parameters. */
+    if (!events || maxevents < 1)
     {
         oe_errno = EINVAL;
-        return -1;
+        goto done;
+    }
+
+    if (!(epoll = oe_get_fd_device((int)epfd)))
+    {
+        ret = -1;
+        goto done;
+    }
+
+    /* Expand array if not already big enough. */
+    if (_array_resize(epfd + 1) != 0)
+        goto done;
+
+    /* Get the list for this epid file descriptor. */
+    list = _array_data() + epfd;
+
+    /* If the list is empty. */
+    if (list->size == 0)
+    {
+        /* Not having notifications isn't an error. */
+        ret = 0;
+        goto done;
     }
 
     oe_spin_lock(&_lock);
     locked = true;
-    plist = *pplist;
 
-    // Count the list.
-    for (ptail = plist; ptail; ptail = ptail->pnext)
-    {
-        numevents++;
-    }
+    /* Determine the number of events to be handled. */
+    numevents = (list->size > maxevents) ? maxevents : list->size;
 
-    if (numevents > maxevents)
+    /* Handle each event. */
+    for (p = list->head, i = 0; p && i < numevents; i++)
     {
-        numevents = maxevents;
-    }
+        events[i].events = p->notice.event_mask;
 
-    ptail = plist; // We take from the front and invalidate the nodes as we go.
-                   // Then we put whats left onto the _notify_arr array
-    for (i = 0; ptail && i < numevents; i++)
-    {
-        pevents[i].events = ptail->notice.event_mask;
-        if ((pevents[i].data.u64 = (*pepoll->ops.epoll->geteventdata)(
-                 pepoll, ptail->notice.list_idx)) == (uint64_t)-1)
+        if ((events[i].data.u64 = (*epoll->ops.epoll->geteventdata)(
+                 epoll, p->notice.list_idx)) == (uint64_t)-1)
         {
             oe_errno = EINVAL;
-            return -1;
+            goto done;
         }
-        ptail->notice.event_mask = 0; // Invalidate the node.
-        ptail = ptail->pnext;
+
+        /* Remove and release the current node. */
+        {
+            list_node_t* next = p->next;
+            _list_remove(list, p);
+            _free_node(p);
+            p = next;
+        }
     }
-    *pplist = ptail;
+
+    ret = (int)numevents;
+
+done:
+
     if (locked)
         oe_spin_unlock(&_lock);
 
-    return (int)numevents;
+    return ret;
 }
 
 //
@@ -469,6 +528,8 @@ int oe_posix_polling_notify_ecall(
     size_t num_notifications)
 {
     int ret = -1;
+
+    oe_once(&_once, _once_function);
 
     if (oe_post_device_notifications((int)num_notifications, notifications) < 0)
     {
@@ -484,20 +545,23 @@ done:
     return ret;
 }
 
-void oe_signal_device_notification(oe_device_t* pdevice, uint32_t event_mask)
+void oe_signal_device_notification(oe_device_t* device, uint32_t event_mask)
 {
-    (void)pdevice;
+    oe_once(&_once, _once_function);
+    (void)device;
     (void)event_mask;
 }
 
 void oe_broadcast_device_notification()
 {
+    oe_once(&_once, _once_function);
     oe_cond_broadcast(&poll_notification);
 }
 
 int oe_wait_device_notification(int timeout)
 {
     (void)timeout;
+    oe_once(&_once, _once_function);
 
     oe_mutex_lock(&poll_lock);
     oe_cond_wait(&poll_notification, &poll_lock);
@@ -508,4 +572,5 @@ int oe_wait_device_notification(int timeout)
 
 void oe_clear_device_notification()
 {
+    oe_once(&_once, _once_function);
 }

@@ -163,6 +163,8 @@ int oe_closedir(OE_DIR* dir)
         dir->magic = 0;
     }
 
+    oe_free(dir);
+
 done:
     return ret;
 }

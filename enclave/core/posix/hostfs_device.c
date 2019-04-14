@@ -817,6 +817,9 @@ static struct oe_dirent* _hostfs_readdir(oe_device_t* dir)
     dir_t* d = _cast_dir(dir);
     int retval = -1;
     struct oe_posix_dirent buf;
+    int err = 0;
+
+    oe_errno = 0;
 
     if (!d)
     {
@@ -824,11 +827,13 @@ static struct oe_dirent* _hostfs_readdir(oe_device_t* dir)
         goto done;
     }
 
-    if (oe_posix_readdir_ocall(&retval, d->host_dir, &buf, &oe_errno) != OE_OK)
+    if (oe_posix_readdir_ocall(&retval, d->host_dir, &buf, &err) != OE_OK)
     {
-        oe_errno = EINVAL;
+        oe_errno = err;
         goto done;
     }
+
+    oe_errno = err;
 
     if (retval == 0)
     {
@@ -1254,4 +1259,9 @@ oe_result_t oe_load_module_hostfs(void)
 
 done:
     return result;
+}
+
+size_t oe_get_hostfs_file_struct_size(void)
+{
+    return sizeof(file_t);
 }

@@ -81,7 +81,6 @@ typedef enum _oe_func
     OE_ECALL_LOG_INIT,
     OE_ECALL_GET_PUBLIC_KEY_BY_POLICY,
     OE_ECALL_GET_PUBLIC_KEY,
-
     /* Caution: always add new ECALL function numbers here */
 
     OE_OCALL_CALL_HOST_FUNCTION = OE_OCALL_BASE,
@@ -95,9 +94,7 @@ typedef enum _oe_func
     OE_OCALL_MALLOC,
     OE_OCALL_REALLOC,
     OE_OCALL_FREE,
-#if defined(WINDOWS_HOST) /* __feature_io__ */
     OE_OCALL_WRITE,
-#endif
     OE_OCALL_SLEEP,
     OE_OCALL_GET_TIME,
     OE_OCALL_BACKTRACE_SYMBOLS,

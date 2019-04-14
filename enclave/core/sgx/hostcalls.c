@@ -101,8 +101,6 @@ char* oe_host_strndup(const char* str, size_t n)
     return p;
 }
 
-#if defined(WINDOWS_HOST) /* __feature_io__ */
-
 int oe_host_write(int device, const char* str, size_t len)
 {
     int ret = -1;
@@ -145,7 +143,6 @@ done:
     oe_host_free(args);
     return ret;
 }
-#endif
 
 int oe_host_vfprintf(int device, const char* fmt, oe_va_list ap_)
 {

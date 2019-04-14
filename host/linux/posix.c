@@ -149,6 +149,9 @@ int oe_posix_readdir_ocall(void* dirp, struct oe_posix_dirent* buf, int* err)
     int ret = -1;
     struct dirent* ent = readdir((DIR*)dirp);
 
+    if (err)
+        *err = 0;
+
     if (!buf)
     {
         if (err)

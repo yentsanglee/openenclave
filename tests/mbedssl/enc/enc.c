@@ -9,25 +9,31 @@
 #include <stdlib.h>
 #include <sys/mount.h>
 
-static void _init(void)
+extern bool oe_disable_debug_malloc_check;
+
+void initialize_enclave(void)
 {
-    static bool _initialize = false;
+    oe_disable_debug_malloc_check = true;
 
-    if (!_initialize)
+    OE_TEST(oe_load_module_hostfs() == OE_OK);
+    OE_TEST(oe_load_module_hostsock() == OE_OK);
+    OE_TEST(oe_load_module_hostresolver() == OE_OK);
+    OE_TEST(oe_load_module_polling() == OE_OK);
+    OE_TEST(oe_load_module_eventfd() == OE_OK);
+
+    if (mount("/", "/", "hostfs", 0, NULL) != 0)
     {
-        OE_TEST(oe_load_module_hostfs() == OE_OK);
-        OE_TEST(oe_load_module_hostsock() == OE_OK);
-        OE_TEST(oe_load_module_hostresolver() == OE_OK);
-        OE_TEST(oe_load_module_polling() == OE_OK);
-        OE_TEST(oe_load_module_eventfd() == OE_OK);
+        fprintf(stderr, "mount() failed\n");
+        exit(1);
+    }
+}
 
-        if (mount("/", "/", "hostfs", 0, NULL) != 0)
-        {
-            fprintf(stderr, "mount() failed\n");
-            exit(1);
-        }
-
-        _initialize = true;
+void shutdown_enclave(void)
+{
+    if (umount("/") != 0)
+    {
+        fprintf(stderr, "umount() failed\n");
+        exit(1);
     }
 }
 
@@ -35,8 +41,6 @@ void run_client(void)
 {
     extern int client_main(int argc, const char* argv[]);
     int ret;
-
-    _init();
 
     const char* argv[] = {
         "/tmp/client",
@@ -52,8 +56,6 @@ void run_client(void)
 void run_server(void)
 {
     extern int server_main(int argc, const char* argv[]);
-
-    _init();
 
     const char* argv[] = {
         "/tmp/server",

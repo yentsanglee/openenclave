@@ -39,7 +39,6 @@ elseif (WIN32)
     ../3rdparty/mbedtls/mbedtls/library/bignum.c
     crypto/bcrypt/hmac.c
     crypto/bcrypt/rsa.c
-    ocalls.c # __feature_io__
     windows/hostthread.c
     windows/time.c
 #    windows/uname.c
@@ -127,6 +126,7 @@ add_library(oehost STATIC
   signkey.c
   strings.c
   tests.c
+  ocalls.c
   crypto/sha.c
   ${PLATFORM_SRC})
 

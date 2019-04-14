@@ -5,6 +5,10 @@ enclave {
 
     trusted {
 
+        public void initialize_enclave();
+
+        public void shutdown_enclave();
+
         public void run_client();
 
         public void run_server();

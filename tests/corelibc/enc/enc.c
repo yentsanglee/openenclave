@@ -125,6 +125,12 @@ void test_corelibc(const char* tmp_dir)
     _test_printf();
 
     _test_strtol();
+
+    if (umount("/") != 0)
+    {
+        fprintf(stderr, "mount() failed\n");
+        exit(1);
+    }
 }
 
 OE_SET_ENCLAVE_SGX(

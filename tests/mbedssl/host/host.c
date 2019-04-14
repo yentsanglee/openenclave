@@ -51,6 +51,10 @@ int main(int argc, const char* argv[])
     r = oe_create_mbedssl_enclave(enclave_path, type, flags, NULL, 0, &enclave);
     OE_TEST(r == OE_OK);
 
+    /* Initialize the enclave. */
+    r = initialize_enclave(enclave);
+    OE_TEST(r == OE_OK);
+
     /* Run the server thread. */
     if (pthread_create(&server_thread, NULL, _server_proc, enclave) != 0)
     {
@@ -70,6 +74,10 @@ int main(int argc, const char* argv[])
 
     /* Cancel the server thread now that client was successful. */
     pthread_cancel(server_thread);
+
+    /* Initialize the enclave. */
+    r = shutdown_enclave(enclave);
+    OE_TEST(r == OE_OK);
 
 #if 0
     printf("JOINING SERVER...\n");

@@ -95,6 +95,12 @@ int test(const char* cwd, const char* in_testname, char out_testname[STRLEN])
     strncpy(out_testname, __TEST__, STRLEN);
     out_testname[STRLEN - 1] = '\0';
 
+    if (umount("/") != 0)
+    {
+        fprintf(stderr, "umount() failed\n");
+        exit(1);
+    }
+
     return return_value;
 }
 

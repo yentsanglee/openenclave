@@ -135,6 +135,10 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
     }
 
 done:
+
+    if (epfd != -1)
+        oe_close(epfd);
+
     oe_free(rev);
     return retval;
 }

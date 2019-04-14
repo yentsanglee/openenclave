@@ -159,8 +159,12 @@ int ecall_epoll_test(size_t buff_len, char* recv_buff)
 
     } while (nfds >= 0);
 
-    oe_close(sockfd);
-    // oe_close(epoll_fd);
+    if (sockfd != -1)
+        oe_close(sockfd);
+
+    if (epoll_fd != -1)
+        oe_close(epoll_fd);
+
     oe_sleep_msec(3);
 
     printf("--------------- epoll done -------------\n");

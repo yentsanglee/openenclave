@@ -186,7 +186,8 @@ static oe_result_t _handle_init_enclave(uint64_t arg_in)
                 result = OE_FAILURE;
                 goto done;
             }
-#endif
+
+#endif /* !defined(WINDOWS_HOST) */
 
             /* Call all enclave state initialization functions */
             OE_CHECK(oe_initialize_cpuid(arg_in));
