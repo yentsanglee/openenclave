@@ -38,7 +38,6 @@
 #include "tls_e2e_t.h"
 #include "../common/utility.h"
 
-//#define printf oe_host_printf
 #define GET_REQUEST "GET / HTTP/1.0\r\n\r\n"
 
 extern "C"
@@ -213,6 +212,7 @@ int launch_tls_client(
     int exit_code = MBEDTLS_EXIT_FAILURE;
     unsigned char buf[1024];
     const char* pers = "ssl_client";
+    static bool oe_module_loaded = false;
     mbedtls_net_context server_fd;
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
@@ -223,8 +223,12 @@ int launch_tls_client(
 
     // Explicitly enable socket and resolver features, which are required by
     // mbedtls' TLS feature
-    OE_CHECK(oe_load_module_hostsock());
-    OE_CHECK(oe_load_module_hostresolver());
+    if (!oe_module_loaded)
+    {
+        OE_CHECK(oe_load_module_hostsock());
+        OE_CHECK(oe_load_module_hostresolver());
+        oe_module_loaded = true;
+    }
 
     mbedtls_debug_set_threshold(DEBUG_LEVEL);
 
