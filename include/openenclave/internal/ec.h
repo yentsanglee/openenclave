@@ -274,6 +274,36 @@ oe_result_t oe_ec_public_key_from_coordinates(
     const uint8_t* y_data,
     size_t y_size);
 
+oe_result_t oe_ec_private_key_from_buffer(
+    oe_ec_private_key_t* private_key,
+    oe_ec_type_t ec_type,
+    const uint8_t* buffer,
+    size_t buffer_size);
+
+oe_result_t oe_ec_public_key_to_coordinates(
+    const oe_ec_public_key_t* public_key,
+    oe_ec_type_t* ec_type,
+    uint8_t* x_data,
+    size_t* x_size,
+    uint8_t* y_data,
+    size_t* y_size);
+
+oe_result_t oe_ec_private_key_to_buffer(
+    const oe_ec_private_key_t* private_key,
+    oe_ec_type_t* ec_type,
+    uint8_t* buffer,
+    size_t* buffer_size);
+
+oe_result_t oe_ecdsa_signature_sign(
+    const oe_ec_private_key_t* key,
+    oe_hash_type_t hash_type,
+    const void* hash_data,
+    size_t hash_size,
+    uint8_t* r,
+    size_t* r_size,
+    uint8_t* s,
+    size_t* s_size);
+
 /**
  * Converts binary ECDSA signature values to an DER-encoded signature.
  *
@@ -318,6 +348,19 @@ bool oe_ec_valid_raw_private_key(
     oe_ec_type_t type,
     const uint8_t* key,
     size_t keysize);
+
+bool oe_ec_valid_raw_public_key(
+    oe_ec_type_t type,
+    const uint8_t* x_data,
+    size_t x_size,
+    const uint8_t* y_data,
+    size_t y_size);
+
+oe_result_t oe_ecdh_compute_shared_secret(
+    const oe_ec_private_key_t* private_key,
+    const oe_ec_public_key_t* public_key,
+    uint8_t* secret,
+    size_t* sercret_size);
 
 OE_EXTERNC_END
 

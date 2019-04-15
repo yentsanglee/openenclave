@@ -61,6 +61,15 @@ static const uint8_t _P256_GROUP_ORDER[] = {
     0x9E, 0x84, 0xF3, 0xB9, 0xCA, 0xC2, 0xFC, 0x63, 0x25, 0x51,
 };
 
+#define NIST_ECDH_CAVS_QX \
+    "700c48f77f56584c5cc632ca65640db91b6bacce3a4df6b42ce7cc838833d287"
+#define NIST_ECDH_CAVS_QY \
+    "db71e509e3fd9b060ddb20ba5c51dcc5948d46fbf640dfe0441782cab85fa4ac"
+#define NIST_ECDH_IUT_D \
+    "7d7dc5f71eb29ddaf80d6214632eeae03d9058af1fb6d22ed80badb62bc1a534"
+#define NIST_ECDH_IUT_Z \
+    "46fc62106420ff012e54a434fbdd2d25ccc5852060561e68040dd7778997bd7b"
+
 // Test EC signing operation over an ASCII alphabet string. Note that two
 // signatures over the same data produce different hex sequences, although
 // signature verification will still succeed.
@@ -383,6 +392,41 @@ static void _test_private_key_limits()
     OE_TEST(!valid);
 }
 
+static void _test_public_key_limits()
+{
+#ifdef OE_BUILD_ENCLAVE
+    printf("=== begin %s()()\n", __FUNCTION__);
+
+    oe_result_t r;
+    oe_ec_public_key_t public_key = {0};
+    oe_ec_type_t type;
+    uint8_t x[32];
+    size_t x_size = sizeof(x);
+    uint8_t y[32];
+    size_t y_size = sizeof(y);
+
+    /* Load public key */
+    r = oe_ec_public_key_read_pem(
+        &public_key, public_key_pem, public_key_size + 1);
+    OE_TEST(r == OE_OK);
+
+    r = oe_ec_public_key_to_coordinates(
+        &public_key, &type, x, &x_size, y, &y_size);
+    OE_TEST(r == OE_OK);
+
+    OE_TEST(
+        oe_ec_valid_raw_public_key(OE_EC_TYPE_SECP256R1, x, x_size, y, y_size));
+
+    /* Flip the y bit, so it becomes an invalid point. */
+    y[sizeof(y) - 1] ^= 0x1;
+    OE_TEST(!oe_ec_valid_raw_public_key(
+        OE_EC_TYPE_SECP256R1, x, x_size, y, y_size));
+
+    oe_ec_public_key_free(&public_key);
+    printf("=== passed %s()\n", __FUNCTION__);
+#endif
+}
+
 static void _test_write_private()
 {
     printf("=== begin %s()\n", __FUNCTION__);
@@ -610,7 +654,7 @@ static void _test_key_from_bytes()
         &public_key, public_key_pem, public_key_size + 1);
     OE_TEST(r == OE_OK);
 
-    /* Create a second public key from the key bytes */
+    /* Create a second private/public key from the key bytes */
     r = oe_ec_public_key_from_coordinates(
         &public_key2, ec_type, x_data, x_size, y_data, y_size);
     OE_TEST(r == OE_OK);
@@ -640,6 +684,120 @@ static void _test_key_from_bytes()
     oe_ec_public_key_free(&public_key2);
 
     printf("=== passed %s()\n", __FUNCTION__);
+}
+
+static void _test_key_from_bytes_all()
+{
+#ifdef OE_BUILD_ENCLAVE
+    printf("=== begin %s()()\n", __FUNCTION__);
+
+    oe_result_t r;
+    oe_ec_type_t ec_type = OE_EC_TYPE_SECP256R1;
+
+    /* Test generating a key and then re-creating it from its bytes */
+    oe_ec_private_key_t private_key = {0};
+    oe_ec_public_key_t public_key = {0};
+    oe_ec_private_key_t private_key2 = {0};
+    oe_ec_public_key_t public_key2 = {0};
+    uint8_t signature[1024];
+    size_t signature_size = sizeof(signature);
+    uint8_t pri_key_buf[32];
+    size_t pri_key_buf_size = sizeof(pri_key_buf);
+    uint8_t pub_key_buf_x[32];
+    size_t pub_key_buf_x_size = sizeof(pub_key_buf_x);
+    uint8_t pub_key_buf_y[32];
+    size_t pub_key_buf_y_size = sizeof(pub_key_buf_y);
+
+    /* Load private key */
+    r = oe_ec_private_key_read_pem(
+        &private_key, private_key_pem, private_key_size + 1);
+    OE_TEST(r == OE_OK);
+
+    /* Load public key */
+    r = oe_ec_public_key_read_pem(
+        &public_key, public_key_pem, public_key_size + 1);
+    OE_TEST(r == OE_OK);
+
+    /* Export the paramerters */
+    r = oe_ec_private_key_to_buffer(
+        &private_key, &ec_type, pri_key_buf, &pri_key_buf_size);
+    OE_TEST(r == OE_OK);
+    OE_TEST(
+        oe_ec_valid_raw_private_key(ec_type, pri_key_buf, pri_key_buf_size));
+
+    r = oe_ec_public_key_to_coordinates(
+        &public_key,
+        &ec_type,
+        pub_key_buf_x,
+        &pub_key_buf_x_size,
+        pub_key_buf_y,
+        &pub_key_buf_y_size);
+    OE_TEST(r == OE_OK);
+    OE_TEST(oe_ec_valid_raw_public_key(
+        ec_type,
+        pub_key_buf_x,
+        pub_key_buf_x_size,
+        pub_key_buf_y,
+        pub_key_buf_y_size));
+
+    /* Create a second private/public key from the key bytes */
+    r = oe_ec_private_key_from_buffer(
+        &private_key2, ec_type, pri_key_buf, pri_key_buf_size);
+    OE_TEST(r == OE_OK);
+
+    r = oe_ec_public_key_from_coordinates(
+        &public_key2, ec_type, x_data, x_size, y_data, y_size);
+    OE_TEST(r == OE_OK);
+    OE_TEST(x_size == pub_key_buf_x_size && y_size == pub_key_buf_y_size);
+    OE_TEST(memcmp(x_data, pub_key_buf_x, x_size) == 0);
+    OE_TEST(memcmp(y_data, pub_key_buf_y, y_size) == 0);
+
+    /* Sign data with private key */
+    r = oe_ec_private_key_sign(
+        &private_key,
+        OE_HASH_TYPE_SHA256,
+        &ALPHABET_HASH,
+        sizeof(ALPHABET_HASH),
+        signature,
+        &signature_size);
+    OE_TEST(r == OE_OK);
+
+    /* Verify data with key created from bytes of original public key */
+    r = oe_ec_public_key_verify(
+        &public_key2,
+        OE_HASH_TYPE_SHA256,
+        &ALPHABET_HASH,
+        sizeof(ALPHABET_HASH),
+        signature,
+        signature_size);
+    OE_TEST(r == OE_OK);
+
+    /* Sign data with the second private key and verify with the original. */
+    r = oe_ec_private_key_sign(
+        &private_key2,
+        OE_HASH_TYPE_SHA256,
+        &ALPHABET_HASH,
+        sizeof(ALPHABET_HASH),
+        signature,
+        &signature_size);
+    OE_TEST(r == OE_OK);
+
+    r = oe_ec_public_key_verify(
+        &public_key,
+        OE_HASH_TYPE_SHA256,
+        &ALPHABET_HASH,
+        sizeof(ALPHABET_HASH),
+        signature,
+        signature_size);
+    OE_TEST(r == OE_OK);
+
+    oe_ec_private_key_free(&private_key);
+    oe_ec_private_key_free(&private_key2);
+    oe_ec_public_key_free(&public_key);
+    oe_ec_public_key_free(&public_key2);
+
+    printf("=== passed %s()\n", __FUNCTION__);
+#endif
 }
 
 static void _test_cert_chain_read()
@@ -895,6 +1053,105 @@ static void _test_crl_distribution_points(void)
     printf("=== passed %s()\n", __FUNCTION__);
 }
 
+static void _test_ecdsa_sign()
+{
+#ifdef OE_BUILD_ENCLAVE
+    printf("=== begin %s()()\n", __FUNCTION__);
+
+    oe_result_t res;
+    oe_ec_private_key_t private_key = {0};
+    oe_ec_public_key_t public_key = {0};
+    uint8_t r[32];
+    size_t r_size = sizeof(r);
+    uint8_t s[32];
+    size_t s_size = sizeof(s);
+    uint8_t signature[128];
+    size_t signature_size = sizeof(signature);
+
+    /* Load private key */
+    res = oe_ec_private_key_read_pem(
+        &private_key, private_key_pem, private_key_size + 1);
+    OE_TEST(res == OE_OK);
+
+    /* Load public key */
+    res = oe_ec_public_key_read_pem(
+        &public_key, public_key_pem, public_key_size + 1);
+    OE_TEST(res == OE_OK);
+
+    /* Sign with ECDSA. */
+    res = oe_ecdsa_signature_sign(
+        &private_key,
+        OE_HASH_TYPE_SHA256,
+        &ALPHABET_HASH,
+        sizeof(ALPHABET_HASH),
+        r,
+        &r_size,
+        s,
+        &s_size);
+    OE_TEST(res == OE_OK);
+
+    /* Verify with the public key. */
+    res = oe_ecdsa_signature_write_der(
+        signature, &signature_size, r, r_size, s, s_size);
+    OE_TEST(res == OE_OK);
+
+    res = oe_ec_public_key_verify(
+        &public_key,
+        OE_HASH_TYPE_SHA256,
+        &ALPHABET_HASH,
+        sizeof(ALPHABET_HASH),
+        signature,
+        signature_size);
+    OE_TEST(res == OE_OK);
+
+    oe_ec_private_key_free(&private_key);
+    oe_ec_public_key_free(&public_key);
+
+    printf("=== passed %s()\n", __FUNCTION__);
+#endif
+}
+
+static void _test_ecdh()
+{
+#ifdef OE_BUILD_ENCLAVE
+    printf("=== begin %s()()\n", __FUNCTION__);
+
+    oe_result_t res;
+    oe_ec_private_key_t private_key = {0};
+    oe_ec_public_key_t public_key = {0};
+    uint8_t qx[32];
+    uint8_t qy[32];
+    uint8_t d[32];
+    uint8_t z[32];
+    uint8_t secret[32];
+    size_t secret_size = sizeof(secret);
+
+    hex_to_buf(NIST_ECDH_CAVS_QX, qx, sizeof(qx));
+    hex_to_buf(NIST_ECDH_CAVS_QY, qy, sizeof(qy));
+    hex_to_buf(NIST_ECDH_IUT_D, d, sizeof(d));
+    hex_to_buf(NIST_ECDH_IUT_Z, z, sizeof(z));
+
+    res = oe_ec_public_key_from_coordinates(
+        &public_key, OE_EC_TYPE_SECP256R1, qx, sizeof(qx), qy, sizeof(qy));
+    OE_TEST(res == OE_OK);
+
+    res = oe_ec_private_key_from_buffer(
+        &private_key, OE_EC_TYPE_SECP256R1, d, sizeof(d));
+    OE_TEST(res == OE_OK);
+
+    res = oe_ecdh_compute_shared_secret(
+        &private_key, &public_key, secret, &secret_size);
+    OE_TEST(res == OE_OK);
+    OE_TEST(secret_size == sizeof(z));
+    OE_TEST(memcmp(secret, z, secret_size) == 0);
+
+    oe_ec_private_key_free(&private_key);
+    oe_ec_public_key_free(&public_key);
+
+    printf("=== passed %s()\n", __FUNCTION__);
+#endif
+}
+
 void TestEC()
 {
     OE_TEST(read_cert("../data/ec_cert_with_ext.pem", _CERT) == OE_OK);
@@ -933,9 +1190,13 @@ void TestEC()
     _test_generate();
     _test_generate_from_private();
     _test_private_key_limits();
+    _test_public_key_limits();
     _test_write_private();
     _test_write_public();
     _test_cert_methods();
     _test_key_from_bytes();
+    _test_key_from_bytes_all();
     _test_cert_chain_read();
+    _test_ecdsa_sign();
+    _test_ecdh();
 }
