@@ -6,11 +6,10 @@
 #include <openenclave/internal/resolver.h>
 #include <openenclave/internal/trace.h>
 
-/* ATTN:IO: for SDK app to consume, oe_register_resolver needs to
- * be published, it cannot stay as internal */
 static size_t _resolver_table_len = 3;
 static oe_resolver_t* _resolver_table[3] = {0}; // At most 3
 
+/* Called by the public oe_load_module_hostresolver() function. */
 int oe_register_resolver(int resolver_priority, oe_resolver_t* presolver)
 {
     int ret = -1;
@@ -46,7 +45,6 @@ int oe_getaddrinfo(
     const char* service,
     const struct oe_addrinfo* hints,
     struct oe_addrinfo** res)
-
 {
     size_t resolver_idx = 0;
     ssize_t ret = -1;
@@ -55,10 +53,9 @@ int oe_getaddrinfo(
     size_t required_size = (size_t)(
         sizeof(struct oe_addrinfo) + sizeof(struct oe_sockaddr) +
         256); // 255+1 for canonname
-    struct oe_addrinfo* retinfo =
-        (struct oe_addrinfo*)oe_calloc(1, required_size);
+    struct oe_addrinfo* retinfo = NULL;
 
-    if (retinfo == NULL)
+    if (!(retinfo = oe_calloc(1, required_size)))
     {
         OE_TRACE_ERROR("oe_calloc failed required_size=%ld", required_size);
         goto done;
@@ -99,12 +96,17 @@ int oe_getaddrinfo(
 
                 case 0:
                 case OE_EAI_ALLDONE:
+                {
                     *res = retinfo;
+                    retinfo = NULL;
                     goto done;
+                }
 
                 case OE_EAI_OVERFLOW:
-                    retinfo = oe_realloc(retinfo, (size_t)required_size);
-                    if (retinfo == NULL)
+                {
+                    struct oe_addrinfo* ptr;
+
+                    if (!(ptr = oe_realloc(retinfo, (size_t)required_size)))
                     {
                         OE_TRACE_ERROR(
                             "oe_realloc failed required_size=%ld",
@@ -112,6 +114,9 @@ int oe_getaddrinfo(
                         oe_free(retinfo);
                         goto done;
                     }
+
+                    retinfo = ptr;
+
                     ret = (*_resolver_table[resolver_idx]->ops->getaddrinfo_r)(
                         _resolver_table[resolver_idx],
                         node,
@@ -121,16 +126,21 @@ int oe_getaddrinfo(
                         &required_size);
                     if (ret == 0 || ret == OE_EAI_ALLDONE)
                     {
-                        /* ATTN:IO: retinfo is leaked if oe_realloc() fails. */
                         *res = retinfo;
+                        retinfo = NULL;
                         goto done;
                     }
+                }
             }
         }
     }
     OE_TRACE_ERROR("oe_getaddrinfo failed");
-    oe_free(retinfo);
+
 done:
+
+    if (retinfo)
+        oe_free(retinfo);
+
     return (int)ret;
 }
 
