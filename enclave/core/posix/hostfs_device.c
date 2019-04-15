@@ -44,6 +44,7 @@ typedef struct _file
     struct _oe_device base;
     uint32_t magic;
     int host_fd;
+    /* ATTN:IO: does not seem to be used anywhere. */
     uint32_t ready_mask;
     oe_device_t* dir;
 } file_t;
