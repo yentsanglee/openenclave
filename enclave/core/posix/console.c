@@ -14,7 +14,6 @@ typedef struct _file
     struct _oe_device base;
     uint32_t magic;
     int host_fd;
-    uint32_t ready_mask;
 } file_t;
 
 static file_t* _cast_file(const oe_device_t* device)
@@ -188,23 +187,6 @@ done:
     return ret;
 }
 
-static uint64_t _consolefs_readystate(oe_device_t* file_)
-{
-    uint64_t ret = (uint64_t)-1;
-    file_t* file = _cast_file(file_);
-
-    if (!file)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
-
-    ret = file->ready_mask;
-
-done:
-    return ret;
-}
-
 static off_t _consolefs_lseek(oe_device_t* file_, off_t offset, int whence)
 {
     off_t ret = -1;
@@ -301,7 +283,6 @@ static oe_fs_ops_t _ops = {
     .base.read = _consolefs_read,
     .base.write = _consolefs_write,
     .base.get_host_fd = _consolefs_gethostfd,
-    .base.ready_state = _consolefs_readystate,
     .lseek = _consolefs_lseek,
     .base.close = _consolefs_close,
     .getdents = NULL,
@@ -321,7 +302,6 @@ static file_t _stdin_file = {
     .base.ops.fs = &_ops,
     .magic = MAGIC,
     .host_fd = OE_STDIN_FILENO,
-    .ready_mask = 0,
 };
 
 static file_t _stdout_file = {
@@ -330,7 +310,6 @@ static file_t _stdout_file = {
     .base.ops.fs = &_ops,
     .magic = MAGIC,
     .host_fd = OE_STDOUT_FILENO,
-    .ready_mask = 0,
 };
 
 static file_t _stderr_file = {
@@ -339,7 +318,6 @@ static file_t _stderr_file = {
     .base.ops.fs = &_ops,
     .magic = MAGIC,
     .host_fd = OE_STDERR_FILENO,
-    .ready_mask = 0,
 };
 
 int oe_initialize_console_devices(void)

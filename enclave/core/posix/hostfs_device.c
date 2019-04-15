@@ -1178,17 +1178,6 @@ static ssize_t _hostfs_gethostfd(oe_device_t* file_)
     return -1;
 }
 
-static uint64_t _hostfs_readystate(oe_device_t* file_)
-{
-    file_t* f = _cast_file(file_);
-
-    if (f->magic == FILE_MAGIC)
-    {
-        return f->ready_mask;
-    }
-    return (uint64_t)-1; // Invalid value
-}
-
 static oe_fs_ops_t _ops = {
     .base.clone = _hostfs_clone,
     .base.dup = _hostfs_dup,
@@ -1202,7 +1191,6 @@ static oe_fs_ops_t _ops = {
     .base.read = _hostfs_read,
     .base.write = _hostfs_write,
     .base.get_host_fd = _hostfs_gethostfd,
-    .base.ready_state = _hostfs_readystate,
     .lseek = _hostfs_lseek,
     .base.close = _hostfs_close,
     .getdents = _hostfs_getdents,
