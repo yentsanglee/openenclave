@@ -179,7 +179,7 @@ static int _hostresolv_getaddrinfo_r(
         else
             ret = OE_EAI_FAIL;
 
-        OE_TRACE_ERROR("%s (ret=%d)", oe_result_str(result), ret);
+        OE_TRACE_ERROR("%s ret=%d", oe_result_str(result), ret);
     }
 
 done:
@@ -188,7 +188,9 @@ done:
         /* Ask host to release the result buffer. */
         if ((result = oe_posix_freeaddrinfo_ocall((struct addrinfo*)res)) !=
             OE_OK)
+        {
             OE_TRACE_ERROR("%s", oe_result_str(result));
+        }
     }
 
     return ret;
@@ -209,7 +211,7 @@ static int _hostresolv_shutdown(oe_resolver_t* resolv_)
         OE_OK)
     {
         oe_errno = EINVAL;
-        OE_TRACE_ERROR("%s (oe_errno=%d)", oe_result_str(result), oe_errno);
+        OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
         goto done;
     }
 
@@ -246,7 +248,7 @@ oe_result_t oe_load_module_hostresolver(void)
 
             if ((ret = oe_register_resolver(2, resolver)) != 0)
             {
-                OE_TRACE_ERROR("ret = %d", ret);
+                OE_TRACE_ERROR("ret=%d", ret);
                 goto done;
             }
         }

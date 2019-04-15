@@ -148,7 +148,7 @@ int oe_remove_device(uint64_t devid)
     if (!(device = oe_get_devid_device(devid)))
     {
         oe_errno = EINVAL;
-        OE_TRACE_ERROR("no device found devid(%d)", devid);
+        OE_TRACE_ERROR("no device found: devid=%lu", devid);
         goto done;
     }
 
@@ -156,7 +156,7 @@ int oe_remove_device(uint64_t devid)
 
     if ((retval = (*device->ops.base->shutdown)(device)) != 0)
     {
-        OE_TRACE_ERROR("devid = %ld retval = %d", devid, retval);
+        OE_TRACE_ERROR("devid=%lu retval=%d", devid, retval);
         goto done;
     }
 
@@ -183,7 +183,7 @@ ssize_t oe_read(int fd, void* buf, size_t count)
     // The action routine sets errno
     if ((n = (*device->ops.base->read)(device, buf, count)) < 0)
     {
-        OE_TRACE_ERROR("fd = %d n = %d", fd, n);
+        OE_TRACE_ERROR("fd = %d n = %zd", fd, n);
         goto done;
     }
 

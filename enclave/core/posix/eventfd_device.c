@@ -283,7 +283,7 @@ oe_result_t oe_load_module_eventfd(void)
             /* Allocate the device id. */
             if (oe_allocate_devid(devid) != devid)
             {
-                OE_TRACE_ERROR("devid=%d", devid);
+                OE_TRACE_ERROR("devid=%lu", devid);
                 goto done;
             }
 
@@ -291,7 +291,7 @@ oe_result_t oe_load_module_eventfd(void)
             if ((ret = oe_set_devid_device(devid, oe_get_eventfd_device())) !=
                 0)
             {
-                OE_TRACE_ERROR("devid=%d ret=%d", devid, ret);
+                OE_TRACE_ERROR("devid=%lu ret=%d", devid, ret);
                 goto done;
             }
             _loaded = true;

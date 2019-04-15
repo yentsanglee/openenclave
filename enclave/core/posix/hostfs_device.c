@@ -1047,7 +1047,7 @@ static int _hostfs_truncate(oe_device_t* fs_, const char* path, off_t length)
     if (oe_posix_truncate_ocall(&ret, full_path, length, &oe_errno) != OE_OK)
     {
         OE_TRACE_ERROR(
-            "full_path=%s length=%d oe_errno =%d", full_path, length, oe_errno);
+            "full_path=%s length=%lu oe_errno=%d", full_path, length, oe_errno);
         goto done;
     }
 
@@ -1181,14 +1181,14 @@ oe_result_t oe_load_module_hostfs(void)
             /* Allocate the device id. */
             if (oe_allocate_devid(devid) != devid)
             {
-                OE_TRACE_ERROR("devid=%d", devid);
+                OE_TRACE_ERROR("devid=%lu", devid);
                 goto done;
             }
 
             /* Add the hostfs device to the device table. */
             if (oe_set_devid_device(devid, oe_fs_get_hostfs()) != 0)
             {
-                OE_TRACE_ERROR("devid=%d", devid);
+                OE_TRACE_ERROR("devid=%lu", devid);
                 goto done;
             }
         }

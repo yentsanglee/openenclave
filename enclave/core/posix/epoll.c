@@ -122,7 +122,7 @@ static list_node_t* _alloc_node(void)
     {
         if (!(p = oe_calloc(1, sizeof(list_node_t))))
         {
-            OE_TRACE_ERROR("oe_calloc with size = %d ", sizeof(list_node_t));
+            OE_TRACE_ERROR("oe_calloc with size = %zu", sizeof(list_node_t));
             goto done;
         }
     }
@@ -211,7 +211,7 @@ int oe_epoll_create(int size)
 
     if (!(device = oe_get_devid_device(OE_DEVID_EPOLL)))
     {
-        OE_TRACE_ERROR("devid = %d ", OE_DEVID_EPOLL);
+        OE_TRACE_ERROR("devid = %lu ", OE_DEVID_EPOLL);
         goto done;
     }
 
@@ -248,7 +248,7 @@ int oe_epoll_create1(int flags)
 
     if (!(device = oe_get_devid_device(OE_DEVID_EPOLL)))
     {
-        OE_TRACE_ERROR("devid = %d ", OE_DEVID_EPOLL);
+        OE_TRACE_ERROR("devid = %lu ", OE_DEVID_EPOLL);
         goto done;
     }
 
@@ -314,7 +314,7 @@ int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event)
         default:
         {
             oe_errno = EINVAL;
-            OE_TRACE_ERROR("op =  fd=%d oe_errno=%d", op, fd, oe_errno);
+            OE_TRACE_ERROR("op=%d  fd=%d oe_errno=%d", op, fd, oe_errno);
 
             goto done;
         }
@@ -404,7 +404,7 @@ int oe_post_device_notifications(
     /* Expand array if not already big enough. */
     if (_array_resize(index + 1) != 0)
     {
-        OE_TRACE_ERROR("index=%d", index);
+        OE_TRACE_ERROR("index=%zu", index);
         goto done;
     }
 
@@ -454,6 +454,7 @@ done:
 //          <0 = something bad happened.
 //
 int oe_get_epoll_events(
+    /* ATTN:IO: epfd should be int here. */
     uint64_t epfd,
     size_t maxevents,
     struct oe_epoll_event* events)
@@ -474,14 +475,14 @@ int oe_get_epoll_events(
     if (!(epoll = oe_get_fd_device((int)epfd)))
     {
         ret = -1;
-        OE_TRACE_ERROR("no device found epfd=%d", epfd);
+        OE_TRACE_ERROR("no device found epfd=%lu", epfd);
         goto done;
     }
 
     /* Expand array if not already big enough. */
     if (_array_resize(epfd + 1) != 0)
     {
-        OE_TRACE_ERROR("epfd=%d", epfd);
+        OE_TRACE_ERROR("epfd=%lu", epfd);
         goto done;
     }
 

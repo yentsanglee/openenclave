@@ -569,7 +569,7 @@ static long _syscall(
         default:
         {
             oe_errno = ENOSYS;
-            OE_TRACE_WARNING("syscall num =%d not handled", num);
+            OE_TRACE_WARNING("syscall num=%ld not handled", num);
             goto done;
         }
     }

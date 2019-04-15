@@ -54,14 +54,14 @@ static int _set_tls_device(uint64_t devid)
 
     if ((result = oe_once(&_tls_device_once, _create_tls_device_key)) != OE_OK)
     {
-        OE_TRACE_ERROR("devid=%d %s", devid, oe_result_str(result));
+        OE_TRACE_ERROR("devid=%lu result=%s", devid, oe_result_str(result));
         goto done;
     }
 
     if ((result = oe_thread_setspecific(_tls_device_key, (void*)devid)) !=
         OE_OK)
     {
-        OE_TRACE_ERROR("devid=%d %s", devid, oe_result_str(result));
+        OE_TRACE_ERROR("devid=%lu result=%s", devid, oe_result_str(result));
         goto done;
     }
 

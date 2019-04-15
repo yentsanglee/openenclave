@@ -161,7 +161,7 @@ static oe_device_t* _hostsock_socket(
     {
         oe_errno = EINVAL;
         OE_TRACE_ERROR(
-            "%s domain=%d type=%d protocol=%d",
+            "domain=%d type=%d protocol=%d %s",
             domain,
             type,
             protocol,
@@ -222,7 +222,7 @@ static ssize_t _hostsock_socketpair(
     {
         oe_errno = EINVAL;
         OE_TRACE_ERROR(
-            "%s domain=%d type=%d protocol=%d",
+            "domain=%d type=%d protocol=%d result=%s",
             domain,
             type,
             protocol,
@@ -332,7 +332,7 @@ static int _hostsock_accept(
         {
             oe_errno = EINVAL;
             OE_TRACE_ERROR(
-                "oe_errno =%d  : sizeof(buf)=%d *addrlen=%d",
+                "oe_errno=%d sizeof(buf)=%zu *addrlen=%u",
                 oe_errno,
                 sizeof(buf),
                 *addrlen);
@@ -359,7 +359,7 @@ static int _hostsock_accept(
 
     if (ret == -1)
     {
-        OE_TRACE_ERROR("ret = -1");
+        OE_TRACE_ERROR("ret=%d", ret);
         goto done;
     }
 
@@ -1031,14 +1031,14 @@ oe_result_t oe_load_module_hostsock(void)
             /* Allocate the device id. */
             if (oe_allocate_devid(devid) != devid)
             {
-                OE_TRACE_ERROR("devid=%d", devid);
+                OE_TRACE_ERROR("devid=%lu", devid);
                 goto done;
             }
 
             /* Add the hostfs device to the device table. */
             if (oe_set_devid_device(devid, &_hostsock.base) != 0)
             {
-                OE_TRACE_ERROR("devid=%d", devid);
+                OE_TRACE_ERROR("devid=%lu", devid);
                 goto done;
             }
         }

@@ -108,7 +108,7 @@ int oe_socketpair(int domain, int type, int protocol, int retfd[2])
               device, domain, type, protocol, socks)))
     {
         OE_TRACE_ERROR(
-            "ret=%d : socket(devid=%ld, domain=%d type=%d protocol=%d)",
+            "ret=%zd : socket(devid=%lu, domain=%d type=%d protocol=%d)",
             ret,
             devid,
             domain,
@@ -121,7 +121,7 @@ int oe_socketpair(int domain, int type, int protocol, int retfd[2])
     {
         (*device->ops.socket->base.close)(socks[0]);
         ret = -1;
-        OE_TRACE_ERROR("retfd[0]=%d ret=%d", retfd[0], ret);
+        OE_TRACE_ERROR("retfd[0]=%d ret=%zd", retfd[0], ret);
         goto done;
     }
 
@@ -129,7 +129,7 @@ int oe_socketpair(int domain, int type, int protocol, int retfd[2])
     {
         (*device->ops.socket->base.close)(socks[1]);
         ret = -1;
-        OE_TRACE_ERROR("retfd[1]=%d ret=%d", retfd[1], ret);
+        OE_TRACE_ERROR("retfd[1]=%d ret=%zd", retfd[1], ret);
         goto done;
     }
 done:

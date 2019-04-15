@@ -35,7 +35,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
     pepoll = oe_get_fd_device(epfd);
     if (!pepoll)
     {
-        OE_TRACE_ERROR("pepoll is null, epfd=%d", epfd);
+        OE_TRACE_ERROR("pepoll=%p, epfd=%d", pepoll, epfd);
         goto done;
     }
 
@@ -53,7 +53,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
                 epfd, fds[i].fd, ev.events, ev.data.u64);
             if (retval < 0)
             {
-                OE_TRACE_ERROR("nfds=%d retval=%d", nfds, retval);
+                OE_TRACE_ERROR("nfds=%lu retval=%d", nfds, retval);
                 goto done;
             }
         }
@@ -65,7 +65,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
 
     if (!pepoll)
     {
-        OE_TRACE_ERROR("pepoll is null, nfds=%d", nfds);
+        OE_TRACE_ERROR("pepoll=%p nfds=%lu", pepoll, nfds);
         retval = -1; // errno is already set
         goto done;
     }
@@ -73,7 +73,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
     if (pepoll->ops.epoll->poll == NULL)
     {
         oe_errno = EINVAL;
-        OE_TRACE_ERROR("poll is null oe_errno=%d", oe_errno);
+        OE_TRACE_ERROR("poll=%p oe_errno=%d", pepoll, oe_errno);
         retval = -1;
         goto done;
     }
@@ -85,7 +85,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
         if ((retval = (*pepoll->ops.epoll->poll)(
                  epfd, fds, (size_t)nfds, timeout_ms)) < 0)
         {
-            OE_TRACE_ERROR("retval = %d", retval);
+            OE_TRACE_ERROR("retval=%d", retval);
             oe_errno = EINVAL;
             goto done;
         }
@@ -104,7 +104,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
 
     if (retval < 0)
     {
-        OE_TRACE_ERROR("retval=%d nfds=%d", retval, nfds);
+        OE_TRACE_ERROR("retval=%d nfds=%lu", retval, nfds);
         goto done;
     }
 

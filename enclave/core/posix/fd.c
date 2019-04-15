@@ -213,7 +213,7 @@ int oe_dup2(int oldfd, int newfd)
     {
         oe_errno = EBADF;
         OE_TRACE_ERROR(
-            "newfd=%d new_dev=%d oe_errno=%d", newfd, new_dev, oe_errno);
+            "newfd=%d new_dev=%p oe_errno=%d", newfd, new_dev, oe_errno);
         (*new_dev->ops.base->close)(new_dev);
         newfd = -1;
         goto done;

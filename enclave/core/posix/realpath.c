@@ -29,7 +29,7 @@ char* oe_realpath(const char* path, char resolved_path[OE_PATH_MAX])
         if (oe_strlcpy(buf, path, sizeof(buf)) >= sizeof(buf))
         {
             oe_errno = ENAMETOOLONG;
-            OE_TRACE_ERROR("oe_errno =%d path=%s", oe_errno, path);
+            OE_TRACE_ERROR("oe_errno=%d path=%s", oe_errno, path);
             return NULL;
         }
     }
@@ -46,21 +46,21 @@ char* oe_realpath(const char* path, char resolved_path[OE_PATH_MAX])
         if (oe_strlcpy(buf, cwd, sizeof(buf)) >= sizeof(buf))
         {
             oe_errno = ENAMETOOLONG;
-            OE_TRACE_ERROR("oe_errno =%d path=%s", oe_errno, path);
+            OE_TRACE_ERROR("oe_errno=%d path=%s", oe_errno, path);
             return NULL;
         }
 
         if (oe_strlcat(buf, "/", sizeof(buf)) >= sizeof(buf))
         {
             oe_errno = ENAMETOOLONG;
-            OE_TRACE_ERROR("oe_errno =%d path=%s", oe_errno, path);
+            OE_TRACE_ERROR("oe_errno=%d path=%s", oe_errno, path);
             return NULL;
         }
 
         if (oe_strlcat(buf, path, sizeof(buf)) >= sizeof(buf))
         {
             oe_errno = ENAMETOOLONG;
-            OE_TRACE_ERROR("oe_errno =%d path=%s", oe_errno, path);
+            OE_TRACE_ERROR("oe_errno=%d path=%s", oe_errno, path);
             return NULL;
         }
     }
@@ -104,7 +104,7 @@ char* oe_realpath(const char* path, char resolved_path[OE_PATH_MAX])
             if (oe_strlcat(resolved, out[i], OE_PATH_MAX) >= OE_PATH_MAX)
             {
                 oe_errno = ENAMETOOLONG;
-                OE_TRACE_ERROR("oe_errno =%d out[i]=%s", oe_errno, out[i]);
+                OE_TRACE_ERROR("oe_errno=%d out[i]=%s", oe_errno, out[i]);
                 return NULL;
             }
 
@@ -114,7 +114,7 @@ char* oe_realpath(const char* path, char resolved_path[OE_PATH_MAX])
                 {
                     oe_errno = ENAMETOOLONG;
                     OE_TRACE_ERROR(
-                        "oe_errno =%d resolved=%s", oe_errno, resolved);
+                        "oe_errno=%d resolved=%s", oe_errno, resolved);
                     return NULL;
                 }
             }
@@ -126,7 +126,7 @@ char* oe_realpath(const char* path, char resolved_path[OE_PATH_MAX])
         if (oe_strlcpy(resolved_path, resolved, OE_PATH_MAX) >= OE_PATH_MAX)
         {
             oe_errno = ENAMETOOLONG;
-            OE_TRACE_ERROR("oe_errno =%d resolved=%s", oe_errno, resolved);
+            OE_TRACE_ERROR("oe_errno=%d resolved=%s", oe_errno, resolved);
             return NULL;
         }
 
@@ -139,7 +139,7 @@ char* oe_realpath(const char* path, char resolved_path[OE_PATH_MAX])
         if (!p)
         {
             oe_errno = ENOMEM;
-            OE_TRACE_ERROR("oe_errno =%d resolved=%s", oe_errno, resolved);
+            OE_TRACE_ERROR("oe_errno=%d resolved=%s", oe_errno, resolved);
         }
 
         return p;

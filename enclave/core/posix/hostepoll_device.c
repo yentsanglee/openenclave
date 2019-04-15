@@ -609,7 +609,7 @@ static int _epoll_poll(
     if (result != OE_OK)
     {
         OE_TRACE_ERROR(
-            "epoll_fd=%ld host_fd=%ld %s oe_errno =%d ",
+            "epoll_fd=%d host_fds=%p result=%s oe_errno=%d",
             epoll_fd,
             host_fds,
             oe_result_str(result),
@@ -735,14 +735,14 @@ oe_result_t oe_load_module_polling(void)
             /* Allocate the device id. */
             if (oe_allocate_devid(devid) != devid)
             {
-                OE_TRACE_ERROR("devid=%d", devid);
+                OE_TRACE_ERROR("devid=%lu", devid);
                 goto done;
             }
 
             /* Add to the device table. */
             if (oe_set_devid_device(devid, &_epoll.base) != 0)
             {
-                OE_TRACE_ERROR("devid=%d", devid);
+                OE_TRACE_ERROR("devid=%lu", devid);
                 goto done;
             }
         }

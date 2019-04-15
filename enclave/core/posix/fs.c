@@ -85,7 +85,7 @@ int oe_open_d(uint64_t devid, const char* pathname, int flags, mode_t mode)
         if (!(file = (*dev->ops.fs->open)(dev, pathname, flags, mode)))
         {
             OE_TRACE_ERROR(
-                "devid=%d pathname=%s flags=%d mode=%d",
+                "devid=%lu pathname=%s flags=%d mode=%d",
                 devid,
                 pathname,
                 flags,
@@ -95,7 +95,7 @@ int oe_open_d(uint64_t devid, const char* pathname, int flags, mode_t mode)
 
         if ((ret = oe_assign_fd_device(file)) == -1)
         {
-            OE_TRACE_ERROR("oe_assign_fd_device devid=%d", devid);
+            OE_TRACE_ERROR("oe_assign_fd_device devid=%lu", devid);
             (*dev->ops.fs->base.close)(file);
             goto done;
         }
@@ -115,7 +115,7 @@ OE_DIR* oe_opendir_d(uint64_t devid, const char* pathname)
 
     if ((fd = oe_open_d(devid, pathname, OE_O_RDONLY | OE_O_DIRECTORY, 0)) < 0)
     {
-        OE_TRACE_ERROR("devid=%d pathname=%s", devid, pathname);
+        OE_TRACE_ERROR("devid=%lu pathname=%s", devid, pathname);
         goto done;
     }
 
@@ -432,8 +432,10 @@ int oe_unlink_d(uint64_t devid, const char* pathname)
 
         ret = dev->ops.fs->unlink(dev, pathname);
         if (ret != 0)
+        {
             OE_TRACE_ERROR(
-                "devid=%d pathname=%s ret = %d", devid, pathname, ret);
+                "devid=%lu pathname=%s ret=%d", devid, pathname, ret);
+        }
     }
 
 done:
@@ -457,12 +459,14 @@ int oe_link_d(uint64_t devid, const char* oldpath, const char* newpath)
 
         ret = dev->ops.fs->link(dev, oldpath, newpath);
         if (ret != 0)
+        {
             OE_TRACE_ERROR(
-                "devid=%d oldpath=%s newpath=%s ret = %d",
+                "devid=%lu oldpath=%s newpath=%s ret=%d",
                 devid,
                 oldpath,
                 newpath,
                 ret);
+        }
     }
 
 done:
@@ -486,12 +490,14 @@ int oe_rename_d(uint64_t devid, const char* oldpath, const char* newpath)
 
         ret = dev->ops.fs->rename(dev, oldpath, newpath);
         if (ret != 0)
+        {
             OE_TRACE_ERROR(
-                "devid=%d oldpath=%s newpath=%s ret = %d",
+                "devid=%lu oldpath=%s newpath=%s ret=%d",
                 devid,
                 oldpath,
                 newpath,
                 ret);
+        }
     }
 
 done:
@@ -515,12 +521,14 @@ int oe_mkdir_d(uint64_t devid, const char* pathname, mode_t mode)
 
         ret = dev->ops.fs->mkdir(dev, pathname, mode);
         if (ret != 0)
+        {
             OE_TRACE_ERROR(
-                "devid=%d pathname=%s mode=%d ret = %d",
+                "devid=%lu pathname=%s mode=%d ret=%d",
                 devid,
                 pathname,
                 (int)mode,
                 ret);
+        }
     }
 
 done:
@@ -544,8 +552,10 @@ int oe_rmdir_d(uint64_t devid, const char* pathname)
 
         ret = dev->ops.fs->rmdir(dev, pathname);
         if (ret != 0)
+        {
             OE_TRACE_ERROR(
-                "devid=%d pathname=%s ret = %d", devid, pathname, ret);
+                "devid=%lu pathname=%s ret=%d", devid, pathname, ret);
+        }
     }
 
 done:
@@ -569,8 +579,10 @@ int oe_stat_d(uint64_t devid, const char* pathname, struct oe_stat* buf)
 
         ret = dev->ops.fs->stat(dev, pathname, buf);
         if (ret != 0)
+        {
             OE_TRACE_ERROR(
-                "devid=%d pathname=%s ret = %d", devid, pathname, ret);
+                "devid=%lu pathname=%s ret=%d", devid, pathname, ret);
+        }
     }
 
 done:
@@ -594,7 +606,9 @@ int oe_truncate_d(uint64_t devid, const char* path, off_t length)
 
         ret = dev->ops.fs->truncate(dev, path, length);
         if (ret != 0)
-            OE_TRACE_ERROR("devid=%d path=%s ret = %d", devid, path, ret);
+        {
+            OE_TRACE_ERROR("devid=%lu path=%s ret=%d", devid, path, ret);
+        }
     }
 
 done:
