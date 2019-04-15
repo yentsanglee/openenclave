@@ -19,23 +19,26 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
 {
     oe_device_t* pepoll = NULL;
     int retval = -1;
-    int epfd = -1;
+    int epollfd = -1;
     nfds_t i = 0;
-    struct oe_epoll_event* rev =
-        oe_malloc(sizeof(struct oe_epoll_event) * nfds);
+    struct oe_epoll_event* rev = NULL;
     bool has_host_wait;
 
-    epfd = oe_epoll_create1(0);
-    if (epfd < 0)
+    if ((epollfd = oe_epoll_create1(0)) < 0)
     {
-        // ATTN:IO: rev is leaked here. Consider single-entry-single exit.
-        return epfd;
+        oe_errno = EBADF;
+        goto done;
     }
 
-    pepoll = oe_get_fd_device(epfd);
-    if (!pepoll)
+    if (!(rev = oe_malloc(sizeof(struct oe_epoll_event) * nfds)))
     {
-        OE_TRACE_ERROR("pepoll=%p, epfd=%d", pepoll, epfd);
+        oe_errno = ENOMEM;
+        goto done;
+    }
+
+    if (!(pepoll = oe_get_fd_device(epollfd)))
+    {
+        OE_TRACE_ERROR("pepoll=%p, epollfd=%d", pepoll, epollfd);
         goto done;
     }
 
@@ -54,7 +57,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
                                         .events = (uint32_t)fds[i].events};
 
             retval = (*pepoll->ops.epoll->addeventdata)(
-                epfd, fds[i].fd, ev.events, ev.data.u64);
+                epollfd, fds[i].fd, ev.events, ev.data.u64);
             if (retval < 0)
             {
                 OE_TRACE_ERROR("nfds=%lu retval=%d", nfds, retval);
@@ -63,9 +66,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
         }
     }
 
-    has_host_wait = true; // false;
-    // ATTN:IO: is there still a to-do here?
-    // 2do. We need to figure out how to wait
+    has_host_wait = true;
 
     if (!pepoll)
     {
@@ -87,7 +88,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
     if (has_host_wait)
     {
         if ((retval = (*pepoll->ops.epoll->poll)(
-                 epfd, fds, (size_t)nfds, timeout_ms)) < 0)
+                 epollfd, fds, (size_t)nfds, timeout_ms)) < 0)
         {
             OE_TRACE_ERROR("retval=%d", retval);
             oe_errno = EINVAL;
@@ -97,7 +98,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
 
     // We check immedately because we might have gotten lucky and had stuff come
     // in immediately. If so we skip the wait
-    retval = oe_get_epoll_events(epfd, (size_t)nfds, rev);
+    retval = oe_get_epoll_events(epollfd, (size_t)nfds, rev);
 
     if (retval == 0)
     {
@@ -108,7 +109,7 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
             goto done;
         }
 
-        retval = oe_get_epoll_events(epfd, (size_t)nfds, rev);
+        retval = oe_get_epoll_events(epollfd, (size_t)nfds, rev);
     }
 
     if (retval < 0)
@@ -144,9 +145,11 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
 
 done:
 
-    if (epfd != -1)
-        oe_close(epfd);
+    if (epollfd != -1)
+        oe_close(epollfd);
 
-    oe_free(rev);
+    if (rev)
+        oe_free(rev);
+
     return retval;
 }

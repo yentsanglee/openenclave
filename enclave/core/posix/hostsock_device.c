@@ -389,8 +389,8 @@ static int _hostsock_accept(
         goto done;
     }
 
-    /* ATTN: is this right (overwritting the original host_fd? */
     sock->host_fd = ret;
+
 done:
     return ret;
 }
@@ -1065,7 +1065,6 @@ static int _hostsock_socket_shutdown(oe_device_t* sock_, int how)
         goto done;
     }
 
-    /* ATTN: Release the sock_ object. */
     // shutdown call could be followed by a close call on a socket
     // to avoid double-free, no need  to free it here
 done:
