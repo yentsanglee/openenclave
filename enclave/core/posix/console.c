@@ -5,6 +5,7 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/fs.h>
+#include "common_macros.h"
 #include "oe_t.h"
 
 #define MAGIC 0x0b292bab
@@ -32,44 +33,34 @@ static int _consolefs_dup(oe_device_t* file_, oe_device_t** new_file_out)
     int ret = -1;
     file_t* file = _cast_file(file_);
     int retval = -1;
+    oe_result_t result = OE_FAILURE;
 
     if (new_file_out)
         *new_file_out = NULL;
 
-    if (!file || !new_file_out)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
+    IF_TRUE_SET_ERRNO_JUMP(!file || !new_file_out, EINVAL, done);
 
     /* Ask the host to perform this operation. */
     {
         int err = 0;
-
         oe_errno = 0;
 
-        if (oe_posix_dup_ocall(&retval, file->host_fd, &err) != OE_OK)
+        if ((result = oe_posix_dup_ocall(&retval, file->host_fd, &err)) !=
+            OE_OK)
         {
             oe_errno = EINVAL;
+            OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
             goto done;
         }
-
-        if (retval == -1)
-        {
-            oe_errno = err;
-            goto done;
-        }
+        IF_TRUE_SET_ERRNO_JUMP(retval == -1, err, done);
     }
 
     /* Allocation and initialize a new file structure. */
     {
         file_t* new_file;
 
-        if (!(new_file = oe_calloc(1, sizeof(file_t))))
-        {
-            oe_errno = ENOMEM;
-            goto done;
-        }
+        new_file = oe_calloc(1, sizeof(file_t));
+        IF_TRUE_SET_ERRNO_JUMP(!new_file, ENOMEM, done);
 
         memcpy(new_file, file, sizeof(file_t));
         new_file->host_fd = retval;
@@ -109,27 +100,24 @@ static ssize_t _consolefs_read(oe_device_t* file_, void* buf, size_t count)
 {
     ssize_t ret = -1;
     file_t* file = _cast_file(file_);
+    oe_result_t result = OE_FAILURE;
 
     oe_errno = 0;
 
-    if (!file)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
+    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
 
     /* Ask the host to perform this operation. */
     {
         int err = 0;
 
-        if (oe_posix_read_ocall(&ret, file->host_fd, buf, count, &err) != OE_OK)
+        if ((result = oe_posix_read_ocall(
+                 &ret, file->host_fd, buf, count, &err)) != OE_OK)
         {
             oe_errno = EINVAL;
+            OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
             goto done;
         }
-
-        if (ret == -1)
-            err = oe_errno;
+        IF_TRUE_SET_ERRNO_JUMP(ret == -1, err, done);
     }
 
 done:
@@ -143,28 +131,24 @@ static ssize_t _consolefs_write(
 {
     ssize_t ret = -1;
     file_t* file = _cast_file(file_);
+    oe_result_t result = OE_FAILURE;
 
     oe_errno = 0;
 
-    if (!file)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
+    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
 
     /* Ask the host to perform this operation. */
     {
         int err = 0;
 
-        if (oe_posix_write_ocall(&ret, file->host_fd, buf, count, &err) !=
-            OE_OK)
+        if ((result = oe_posix_write_ocall(
+                 &ret, file->host_fd, buf, count, &err)) != OE_OK)
         {
             oe_errno = EINVAL;
+            OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
             goto done;
         }
-
-        if (ret == -1)
-            oe_errno = err;
+        IF_TRUE_SET_ERRNO_JUMP(ret == -1, err, done);
     }
 
 done:
@@ -176,11 +160,7 @@ static ssize_t _consolefs_gethostfd(oe_device_t* file_)
     ssize_t ret = -1;
     file_t* file = _cast_file(file_);
 
-    if (!file)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
+    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
 
     ret = file->host_fd;
 
@@ -193,11 +173,7 @@ static uint64_t _consolefs_readystate(oe_device_t* file_)
     uint64_t ret = (uint64_t)-1;
     file_t* file = _cast_file(file_);
 
-    if (!file)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
+    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
 
     ret = file->ready_mask;
 
@@ -209,28 +185,24 @@ static off_t _consolefs_lseek(oe_device_t* file_, off_t offset, int whence)
 {
     off_t ret = -1;
     file_t* file = _cast_file(file_);
+    oe_result_t result = OE_FAILURE;
 
     oe_errno = 0;
 
-    if (!file)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
+    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
 
     /* Ask the host to perform this operation. */
     {
         int err = 0;
 
-        if (oe_posix_lseek_ocall(&ret, file->host_fd, offset, whence, &err) !=
-            OE_OK)
+        if ((result = oe_posix_lseek_ocall(
+                 &ret, file->host_fd, offset, whence, &err)) != OE_OK)
         {
             oe_errno = EINVAL;
+            OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
             goto done;
         }
-
-        if (ret == (off_t)-1)
-            oe_errno = err;
+        IF_TRUE_SET_ERRNO_JUMP(ret == (off_t)-1, err, done);
     }
 
 done:
@@ -241,30 +213,22 @@ static int _consolefs_close(oe_device_t* file_)
 {
     int ret = -1;
     file_t* file = _cast_file(file_);
-
+    oe_result_t result = OE_FAILURE;
     oe_errno = 0;
 
-    if (!file)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
+    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
 
     /* Ask the host to perform this operation. */
     {
         int err = 0;
 
-        if (oe_posix_close_ocall(&ret, file->host_fd, &err) != OE_OK)
+        if ((result = oe_posix_close_ocall(&ret, file->host_fd, &err)) != OE_OK)
         {
             oe_errno = EINVAL;
+            OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
             goto done;
         }
-
-        if (ret == -1)
-        {
-            oe_errno = err;
-            goto done;
-        }
+        IF_TRUE_SET_ERRNO_JUMP(ret == -1, err, done);
     }
 
     switch (file->host_fd)
@@ -347,13 +311,22 @@ int oe_initialize_console_devices(void)
     int ret = -1;
 
     if (!oe_set_fd_device(OE_STDIN_FILENO, &_stdin_file.base))
+    {
+        OE_TRACE_ERROR("Set the stdin device");
         goto done;
+    }
 
     if (!oe_set_fd_device(OE_STDOUT_FILENO, &_stdout_file.base))
+    {
+        OE_TRACE_ERROR("Set the stdout device");
         goto done;
+    }
 
     if (!oe_set_fd_device(OE_STDERR_FILENO, &_stderr_file.base))
+    {
+        OE_TRACE_ERROR("Set the stderr device");
         goto done;
+    }
 
     ret = 0;
 

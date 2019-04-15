@@ -14,6 +14,7 @@
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/list.h>
 #include <openenclave/corelibc/string.h>
+#include "common_macros.h"
 
 /* For synchronizing access to all static structures defined below. */
 static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
@@ -120,7 +121,10 @@ static list_node_t* _alloc_node(void)
     else
     {
         if (!(p = oe_calloc(1, sizeof(list_node_t))))
+        {
+            OE_TRACE_ERROR("oe_calloc with size = %d ", sizeof(list_node_t));
             goto done;
+        }
     }
 
     memset(p, 0, sizeof(list_node_t));
@@ -206,14 +210,22 @@ int oe_epoll_create(int size)
     oe_once(&_once, _once_function);
 
     if (!(device = oe_get_devid_device(OE_DEVID_EPOLL)))
+    {
+        OE_TRACE_ERROR("devid = %d ", OE_DEVID_EPOLL);
         goto done;
+    }
 
     if (!(epoll = (*device->ops.epoll->create)(device, size)))
+    {
+        OE_TRACE_ERROR("size = %d ", size);
         goto done;
+    }
 
     if ((epfd = oe_assign_fd_device(epoll)) == -1)
+    {
+        OE_TRACE_ERROR("oe_assign_fd_device failed");
         goto done;
-
+    }
     ret = 0;
     epoll = NULL;
 
@@ -235,13 +247,22 @@ int oe_epoll_create1(int flags)
     oe_once(&_once, _once_function);
 
     if (!(device = oe_get_devid_device(OE_DEVID_EPOLL)))
+    {
+        OE_TRACE_ERROR("devid = %d ", OE_DEVID_EPOLL);
         goto done;
+    }
 
     if (!(epoll = (*device->ops.epoll->create1)(device, flags)))
+    {
+        OE_TRACE_ERROR("flags=%d", flags);
         goto done;
+    }
 
     if ((epfd = oe_assign_fd_device(epoll)) == -1)
+    {
+        OE_TRACE_ERROR("oe_assign_fd_device failed");
         goto done;
+    }
 
     ret = 0;
     epoll = NULL;
@@ -264,56 +285,37 @@ int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event)
 
     oe_errno = 0;
 
-    if (!(epoll = oe_get_fd_device(epfd)))
-    {
-        oe_errno = EBADF;
-        goto done;
-    }
+    epoll = oe_get_fd_device(epfd);
+    IF_TRUE_SET_ERRNO_JUMP(!epoll, EBADF, done);
 
-    if (!(device = oe_get_fd_device(fd)))
-    {
-        oe_errno = EBADF;
-        goto done;
-    }
+    device = oe_get_fd_device(fd);
+    IF_TRUE_SET_ERRNO_JUMP(!device, EBADF, done);
 
     switch (op)
     {
         case OE_EPOLL_CTL_ADD:
         {
-            if (!epoll->ops.epoll->ctl_add)
-            {
-                oe_errno = EINVAL;
-                goto done;
-            }
-
+            IF_TRUE_SET_ERRNO_JUMP(!epoll->ops.epoll->ctl_add, EINVAL, done);
             ret = (*epoll->ops.epoll->ctl_add)(epfd, fd, event);
             break;
         }
         case OE_EPOLL_CTL_DEL:
         {
-            if (!epoll->ops.epoll->ctl_del)
-            {
-                oe_errno = EINVAL;
-                goto done;
-            }
-
+            IF_TRUE_SET_ERRNO_JUMP(!epoll->ops.epoll->ctl_del, EINVAL, done);
             ret = (*epoll->ops.epoll->ctl_del)(epfd, fd);
             break;
         }
         case OE_EPOLL_CTL_MOD:
         {
-            if (!epoll->ops.epoll->ctl_mod)
-            {
-                oe_errno = EINVAL;
-                goto done;
-            }
-
+            IF_TRUE_SET_ERRNO_JUMP(!epoll->ops.epoll->ctl_mod, EINVAL, done);
             ret = (*epoll->ops.epoll->ctl_mod)(epfd, fd, event);
             break;
         }
         default:
         {
             oe_errno = EINVAL;
+            OE_TRACE_ERROR("op =  fd=%d oe_errno=%d", op, fd, oe_errno);
+
             goto done;
         }
     }
@@ -335,18 +337,18 @@ int oe_epoll_wait(
     oe_once(&_once, _once_function);
 
     if (!(epoll = oe_get_fd_device(epfd)))
-        goto done;
-
-    if (!epoll->ops.epoll->wait)
     {
-        oe_errno = EINVAL;
+        OE_TRACE_ERROR("no device found epfd=%d", epfd);
         goto done;
     }
+
+    IF_TRUE_SET_ERRNO_JUMP(!epoll->ops.epoll->wait, EINVAL, done);
 
     /* Wait until there are events. */
     if ((*epoll->ops.epoll->wait)(epfd, events, (size_t)maxevents, timeout) < 0)
     {
         oe_errno = EINVAL;
+        OE_TRACE_ERROR("epfd=%d", epfd);
         goto done;
     }
 
@@ -359,6 +361,7 @@ int oe_epoll_wait(
         if (oe_wait_device_notification(timeout) < 0)
         {
             oe_errno = EPROTO;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
             return -1;
         }
 
@@ -387,7 +390,10 @@ int oe_post_device_notifications(
     oe_once(&_once, _once_function);
 
     if (!notices)
+    {
+        OE_TRACE_ERROR("notices is null");
         goto done;
+    }
 
     oe_spin_lock(&_lock);
     locked = true;
@@ -397,11 +403,17 @@ int oe_post_device_notifications(
 
     /* Expand array if not already big enough. */
     if (_array_resize(index + 1) != 0)
+    {
+        OE_TRACE_ERROR("index=%d", index);
         goto done;
+    }
 
     /* Get the list for this epoll file descriptor. */
     if (!(list = _array_data() + index))
+    {
+        OE_TRACE_ERROR("list is null");
         goto done;
+    }
 
     /* Add a new node for each notifiction. */
     for (i = 0; i < num_notifications; i++)
@@ -410,7 +422,10 @@ int oe_post_device_notifications(
 
         /* Allocate a new node. */
         if (!(node = _alloc_node()))
+        {
+            OE_TRACE_ERROR("_alloc_node failed");
             goto done;
+        }
 
         /* Set the notifications field. */
         node->notice = notices[i];
@@ -454,21 +469,21 @@ int oe_get_epoll_events(
     oe_once(&_once, _once_function);
 
     /* Check the function parameters. */
-    if (!events || maxevents < 1)
-    {
-        oe_errno = EINVAL;
-        goto done;
-    }
+    IF_TRUE_SET_ERRNO_JUMP(!events || maxevents < 1, EINVAL, done);
 
     if (!(epoll = oe_get_fd_device((int)epfd)))
     {
         ret = -1;
+        OE_TRACE_ERROR("no device found epfd=%d", epfd);
         goto done;
     }
 
     /* Expand array if not already big enough. */
     if (_array_resize(epfd + 1) != 0)
+    {
+        OE_TRACE_ERROR("epfd=%d", epfd);
         goto done;
+    }
 
     /* Get the list for this epid file descriptor. */
     list = _array_data() + epfd;
@@ -477,6 +492,7 @@ int oe_get_epoll_events(
     if (list->size == 0)
     {
         /* Not having notifications isn't an error. */
+        OE_TRACE_WARNING("no notifications");
         ret = 0;
         goto done;
     }
@@ -496,6 +512,7 @@ int oe_get_epoll_events(
                  epoll, p->notice.list_idx)) == (uint64_t)-1)
         {
             oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno = %d", oe_errno);
             goto done;
         }
 
@@ -520,8 +537,8 @@ done:
 
 //
 // We accept a list of notifications so we don't get large number
-// of handle notification calls in rapid succesion. This could raise needless
-// synchronisaion issues. Instead, we send the list and notify the list, the
+// of handle notification calls in rapid succession. This could raise needless
+// synchronization issues. Instead, we send the list and notify the list, the
 // push the doorbell
 int oe_posix_polling_notify_ecall(
     oe_device_notifications_t* notifications,
@@ -533,6 +550,7 @@ int oe_posix_polling_notify_ecall(
 
     if (oe_post_device_notifications((int)num_notifications, notifications) < 0)
     {
+        OE_TRACE_ERROR("oe_post_device_notifications failed");
         goto done;
     }
 
