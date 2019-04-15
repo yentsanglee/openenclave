@@ -155,12 +155,6 @@ static ssize_t _eventfd_read(oe_device_t* eventfd_, void* buf, size_t count)
             OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
             goto done;
         }
-
-        {
-            /* ATTN:IO: is this complete? */
-            // Block on condition variable
-            // Then proceed
-        }
     }
 
     if (eventfd->flags & OE_EFD_SEMAPHORE)
