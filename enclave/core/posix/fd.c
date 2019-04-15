@@ -9,7 +9,7 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/thread.h>
-#include "common_macros.h"
+#include <openenclave/internal/trace.h>
 
 typedef struct _entry
 {
@@ -88,7 +88,13 @@ int oe_assign_fd_device(oe_device_t* device)
     {
         int retval = -1;
         retval = oe_array_resize(&_fd_arr, _table_size() + CHUNK_SIZE);
-        IF_TRUE_SET_ERRNO_JUMP(retval != 0, ENOMEM, done);
+
+        if (retval != 0)
+        {
+            oe_errno = ENOMEM;
+            OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+            goto done;
+        }
     }
 
     _table()[index].device = device;
@@ -129,8 +135,19 @@ oe_device_t* oe_set_fd_device(int fd, oe_device_t* device)
     oe_spin_lock(&_lock);
     locked = true;
 
-    IF_TRUE_SET_ERRNO_JUMP(fd < 0 || (size_t)fd >= _table_size(), EBADF, done);
-    IF_TRUE_SET_ERRNO_JUMP(_table()[fd].device != NULL, EADDRINUSE, done);
+    if (fd < 0 || (size_t)fd >= _table_size())
+    {
+        oe_errno = EBADF;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
+
+    if (_table()[fd].device != NULL)
+    {
+        oe_errno = EADDRINUSE;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     _table()[fd].device = device; // We don't clone
 
@@ -152,12 +169,22 @@ oe_device_t* oe_get_fd_device(int fd)
     oe_spin_unlock(&_lock);
     locked = true;
 
-    OE_TRACE_INFO("fd = %d", fd);
-    IF_TRUE_SET_ERRNO_JUMP(fd < 0 || fd >= (int)_table_size(), EINVAL, done);
+    OE_TRACE_INFO("fd=%d", fd);
+
+    if (fd < 0 || fd >= (int)_table_size())
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
+
     if (_table()[fd].device == NULL)
     {
-        IF_TRUE_SET_ERRNO_JUMP(_table()[fd].device == NULL, EBADF, done);
+        oe_errno = EBADF;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
     }
+
     ret = _table()[fd].device;
 
 done:

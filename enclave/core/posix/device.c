@@ -10,7 +10,7 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/thread.h>
-#include "common_macros.h"
+#include <openenclave/internal/trace.h>
 
 #define ELEMENT_SIZE (sizeof(oe_device_t*))
 #define CHUNK_SIZE ((size_t)8)
@@ -63,18 +63,32 @@ uint64_t oe_allocate_devid(uint64_t devid)
     uint64_t ret = OE_DEVID_NULL;
     bool locked = false;
 
-    IF_TRUE_SET_ERRNO_JUMP((!_initialized && _init_table() != 0), ENOMEM, done);
+    if (!_initialized && _init_table() != 0)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     oe_spin_lock(&_lock);
     locked = true;
 
     if (devid >= _dev_arr.size)
     {
-        IF_TRUE_SET_ERRNO_JUMP(
-            (oe_array_resize(&_dev_arr, devid + 1) != 0), ENOMEM, done);
+        if (oe_array_resize(&_dev_arr, devid + 1) != 0)
+        {
+            oe_errno = ENOMEM;
+            OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+            goto done;
+        }
     }
 
-    IF_TRUE_SET_ERRNO_JUMP(_table()[devid] != NULL, EADDRINUSE, done);
+    if (_table()[devid] != NULL)
+    {
+        oe_errno = EADDRINUSE;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     ret = devid;
 
@@ -91,14 +105,22 @@ int oe_release_devid(uint64_t devid)
     int ret = -1;
     bool locked = false;
 
-    IF_TRUE_SET_ERRNO_JUMP(!_initialized && _init_table() != 0, ENOMEM, done);
+    if (!_initialized && _init_table() != 0)
+    {
+        oe_errno = ENOMEM;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     oe_spin_lock(&_lock);
     locked = true;
 
-    IF_TRUE_SET_ERRNO_JUMP((devid >= _dev_arr.size), EINVAL, done);
-
-    IF_TRUE_SET_ERRNO_JUMP((_table()[devid] == NULL), EINVAL, done);
+    if (devid >= _dev_arr.size || _table()[devid] == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     _table()[devid] = NULL;
 
@@ -116,8 +138,19 @@ int oe_set_devid_device(uint64_t devid, oe_device_t* device)
 {
     int ret = -1;
 
-    IF_TRUE_SET_ERRNO_JUMP(devid > _table_size(), EINVAL, done);
-    IF_TRUE_SET_ERRNO_JUMP(_table()[devid] != NULL, EADDRINUSE, done);
+    if (devid > _table_size())
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
+
+    if (_table()[devid] != NULL)
+    {
+        oe_errno = EADDRINUSE;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     _table()[devid] = device;
 
@@ -131,7 +164,12 @@ oe_device_t* oe_get_devid_device(uint64_t devid)
 {
     oe_device_t* ret = NULL;
 
-    IF_TRUE_SET_ERRNO_JUMP(devid >= _table_size(), EINVAL, done);
+    if (devid >= _table_size())
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     ret = _table()[devid];
 
@@ -152,7 +190,12 @@ int oe_remove_device(uint64_t devid)
         goto done;
     }
 
-    IF_TRUE_SET_ERRNO_JUMP(device->ops.base->shutdown == NULL, EINVAL, done);
+    if (device->ops.base->shutdown == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     if ((retval = (*device->ops.base->shutdown)(device)) != 0)
     {
@@ -178,7 +221,12 @@ ssize_t oe_read(int fd, void* buf, size_t count)
         goto done;
     }
 
-    IF_TRUE_SET_ERRNO_JUMP(device->ops.base->read == NULL, EINVAL, done);
+    if (device->ops.base->read == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     // The action routine sets errno
     if ((n = (*device->ops.base->read)(device, buf, count)) < 0)
@@ -200,9 +248,19 @@ ssize_t oe_write(int fd, const void* buf, size_t count)
 
     OE_TRACE_VERBOSE("fd =%d device=%p", fd, device);
 
-    IF_TRUE_SET_ERRNO_JUMP(!device, EBADF, done);
+    if (!device)
+    {
+        oe_errno = EBADF;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(device->ops.base->write == NULL, EINVAL, done);
+    if (device->ops.base->write == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     // The action routine sets errno
     ret = (*device->ops.base->write)(device, buf, count);
@@ -223,7 +281,12 @@ int oe_close(int fd)
         goto done;
     }
 
-    IF_TRUE_SET_ERRNO_JUMP(device->ops.base->close == NULL, EINVAL, done);
+    if (device->ops.base->close == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     if ((retval = (*device->ops.base->close)(device)) != 0)
     {
@@ -251,7 +314,12 @@ int __oe_fcntl_va(int fd, int cmd, oe_va_list ap)
         goto done;
     }
 
-    IF_TRUE_SET_ERRNO_JUMP(device->ops.base->fcntl == NULL, EINVAL, done);
+    if (device->ops.base->fcntl == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     arg = oe_va_arg(ap, int);
 

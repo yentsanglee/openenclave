@@ -14,7 +14,7 @@
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/list.h>
 #include <openenclave/corelibc/string.h>
-#include "common_macros.h"
+#include <openenclave/internal/trace.h>
 
 /* For synchronizing access to all static structures defined below. */
 static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
@@ -285,29 +285,55 @@ int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event)
 
     oe_errno = 0;
 
-    epoll = oe_get_fd_device(epfd);
-    IF_TRUE_SET_ERRNO_JUMP(!epoll, EBADF, done);
+    if (!(epoll = oe_get_fd_device(epfd)))
+    {
+        oe_errno = EBADF;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
-    device = oe_get_fd_device(fd);
-    IF_TRUE_SET_ERRNO_JUMP(!device, EBADF, done);
+    if (!(device = oe_get_fd_device(fd)))
+    {
+        oe_errno = EBADF;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     switch (op)
     {
         case OE_EPOLL_CTL_ADD:
         {
-            IF_TRUE_SET_ERRNO_JUMP(!epoll->ops.epoll->ctl_add, EINVAL, done);
+            if (!epoll->ops.epoll->ctl_add)
+            {
+                oe_errno = EINVAL;
+                OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+                goto done;
+            }
+
             ret = (*epoll->ops.epoll->ctl_add)(epfd, fd, event);
             break;
         }
         case OE_EPOLL_CTL_DEL:
         {
-            IF_TRUE_SET_ERRNO_JUMP(!epoll->ops.epoll->ctl_del, EINVAL, done);
+            if (!epoll->ops.epoll->ctl_del)
+            {
+                oe_errno = EINVAL;
+                OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+                goto done;
+            }
+
             ret = (*epoll->ops.epoll->ctl_del)(epfd, fd);
             break;
         }
         case OE_EPOLL_CTL_MOD:
         {
-            IF_TRUE_SET_ERRNO_JUMP(!epoll->ops.epoll->ctl_mod, EINVAL, done);
+            if (!epoll->ops.epoll->ctl_mod)
+            {
+                oe_errno = EINVAL;
+                OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+                goto done;
+            }
+
             ret = (*epoll->ops.epoll->ctl_mod)(epfd, fd, event);
             break;
         }
@@ -342,7 +368,12 @@ int oe_epoll_wait(
         goto done;
     }
 
-    IF_TRUE_SET_ERRNO_JUMP(!epoll->ops.epoll->wait, EINVAL, done);
+    if (!epoll->ops.epoll->wait)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     /* Wait until there are events. */
     if ((*epoll->ops.epoll->wait)(epfd, events, (size_t)maxevents, timeout) < 0)
@@ -353,7 +384,7 @@ int oe_epoll_wait(
     }
 
     /* See if there are events waiting. */
-    n = oe_get_epoll_events((uint64_t)epfd, (size_t)maxevents, events);
+    n = oe_get_epoll_events(epfd, (size_t)maxevents, events);
 
     /* If no events polled, then wait again. */
     if (n == 0)
@@ -366,7 +397,7 @@ int oe_epoll_wait(
         }
 
         /* See how many events are waiting. */
-        n = oe_get_epoll_events((uint64_t)epfd, (size_t)maxevents, events);
+        n = oe_get_epoll_events(epfd, (size_t)maxevents, events);
     }
 
     ret = n;
@@ -454,8 +485,7 @@ done:
 //          <0 = something bad happened.
 //
 int oe_get_epoll_events(
-    /* ATTN:IO: epfd should be int here. */
-    uint64_t epfd,
+    int epfd,
     size_t maxevents,
     struct oe_epoll_event* events)
 {
@@ -470,19 +500,24 @@ int oe_get_epoll_events(
     oe_once(&_once, _once_function);
 
     /* Check the function parameters. */
-    IF_TRUE_SET_ERRNO_JUMP(!events || maxevents < 1, EINVAL, done);
+    if (!events || maxevents < 1)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
-    if (!(epoll = oe_get_fd_device((int)epfd)))
+    if (!(epoll = oe_get_fd_device(epfd)))
     {
         ret = -1;
-        OE_TRACE_ERROR("no device found epfd=%lu", epfd);
+        OE_TRACE_ERROR("no device found epfd=%d", epfd);
         goto done;
     }
 
     /* Expand array if not already big enough. */
-    if (_array_resize(epfd + 1) != 0)
+    if (_array_resize((size_t)epfd + 1) != 0)
     {
-        OE_TRACE_ERROR("epfd=%lu", epfd);
+        OE_TRACE_ERROR("epfd=%d", epfd);
         goto done;
     }
 

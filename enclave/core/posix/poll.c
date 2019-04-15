@@ -10,7 +10,7 @@
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/print.h>
-#include "common_macros.h"
+#include <openenclave/internal/trace.h>
 // clang-format on
 
 // Poll uses much of the infrastructure from epoll.
@@ -39,8 +39,12 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
         goto done;
     }
 
-    IF_TRUE_SET_ERRNO_JUMP(
-        pepoll->ops.epoll->addeventdata == NULL, EINVAL, done);
+    if (pepoll->ops.epoll->addeventdata == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     for (i = 0; i < nfds; i++)
     {
@@ -93,13 +97,18 @@ int oe_poll(struct oe_pollfd* fds, nfds_t nfds, int timeout_ms)
 
     // We check immedately because we might have gotten lucky and had stuff come
     // in immediately. If so we skip the wait
-    retval = oe_get_epoll_events((uint64_t)epfd, (size_t)nfds, rev);
+    retval = oe_get_epoll_events(epfd, (size_t)nfds, rev);
 
     if (retval == 0)
     {
-        IF_TRUE_SET_ERRNO_JUMP(
-            oe_wait_device_notification(timeout_ms) < 0, EPROTO, done);
-        retval = oe_get_epoll_events((uint64_t)epfd, (size_t)nfds, rev);
+        if (oe_wait_device_notification(timeout_ms) < 0)
+        {
+            oe_errno = EPROTO;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
+
+        retval = oe_get_epoll_events(epfd, (size_t)nfds, rev);
     }
 
     if (retval < 0)

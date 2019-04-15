@@ -22,9 +22,8 @@
 #include <openenclave/internal/epoll.h>
 #include <openenclave/internal/eventfd.h>
 #include <openenclave/internal/print.h>
+#include <openenclave/internal/trace.h>
 #include <openenclave/internal/uid.h>
-
-#include "common_macros.h"
 
 typedef int (*ioctl_proc)(
     int fd,

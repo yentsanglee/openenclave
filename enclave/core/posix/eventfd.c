@@ -10,7 +10,7 @@
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/eventfd.h>
-#include "common_macros.h"
+#include <openenclave/internal/trace.h>
 
 int oe_eventfd(unsigned int initval, int flags)
 {
@@ -18,18 +18,21 @@ int oe_eventfd(unsigned int initval, int flags)
     oe_device_t* peventfd = NULL;
     oe_device_t* pdevice = NULL;
 
-    pdevice = oe_get_devid_device(OE_DEVID_EVENTFD);
+    if (!(pdevice = oe_get_devid_device(OE_DEVID_EVENTFD)))
+    {
+        return -1;
+    }
+
     if ((peventfd = (*pdevice->ops.eventfd->eventfd)(
              pdevice, (uint64_t)initval, flags)) == NULL)
     {
         return -1;
     }
-    ed = oe_assign_fd_device(peventfd);
-    if (ed == -1)
+
+    if ((ed = oe_assign_fd_device(peventfd)) == -1)
     {
-        // ATTN:IO: release peventfd here.
-        // Log error here
-        return -1; // erno is already set
+        /* Release peventfd here? */
+        return -1;
     }
 
     return ed;

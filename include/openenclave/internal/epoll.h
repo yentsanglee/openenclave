@@ -89,23 +89,23 @@ struct oe_epoll_event
 OE_PACK_END
 
 int oe_epoll_create(int size);
+
 int oe_epoll_create1(int flags);
-int oe_epoll_ctl(int epfd, int op, int fd, struct oe_epoll_event* event);
+
+int oe_epoll_ctl(int epollfd, int op, int fd, struct oe_epoll_event* event);
+
 int oe_epoll_wait(
-    int epfd,
+    int epollfd,
     struct oe_epoll_event* events,
     int maxevents,
     int timeout);
 
 int oe_get_epoll_events(
-    uint64_t epfd,
+    int epollfd,
     size_t maxevents,
     struct oe_epoll_event* pevents);
 
-// int oe_epoll_pwait (int epfd, struct epoll_event *events, int maxevents,
-// int timeout, const sigset_t *ss);
-
-void oe_handle_hostepoll_ocall(void* args_);
+void oe_handle_hostepoll_ocall(void* args);
 
 OE_EXTERNC_END
 

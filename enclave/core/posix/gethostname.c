@@ -5,7 +5,7 @@
 #include <openenclave/corelibc/string.h>
 #include <openenclave/corelibc/sys/utsname.h>
 #include <openenclave/corelibc/unistd.h>
-#include "common_macros.h"
+#include <openenclave/internal/trace.h>
 
 int oe_gethostname(char* name, size_t len)
 {

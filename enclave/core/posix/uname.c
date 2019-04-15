@@ -3,7 +3,7 @@
 
 #include <openenclave/corelibc/errno.h>
 #include <openenclave/corelibc/sys/utsname.h>
-#include "common_macros.h"
+#include <openenclave/internal/trace.h>
 #include "oe_t.h"
 
 int oe_uname(struct oe_utsname* buf)

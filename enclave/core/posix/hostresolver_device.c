@@ -19,8 +19,8 @@
 #include <openenclave/corelibc/string.h>
 #include <openenclave/internal/typeinfo.h>
 #include <openenclave/bits/module.h>
+#include <openenclave/internal/trace.h>
 #include "oe_t.h"
-#include "common_macros.h"
 
 /*
 **==============================================================================
@@ -204,8 +204,12 @@ static int _hostresolv_shutdown(oe_resolver_t* resolv_)
 
     oe_errno = 0;
 
-    /* Check parameters. */
-    IF_TRUE_SET_ERRNO_JUMP(!resolv_, EINVAL, done);
+    if (!resolv)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     if ((result = oe_posix_shutdown_resolver_device_ocall(&ret, &oe_errno)) !=
         OE_OK)

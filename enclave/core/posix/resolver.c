@@ -4,7 +4,7 @@
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/sys/socket.h>
 #include <openenclave/internal/resolver.h>
-#include "common_macros.h"
+#include <openenclave/internal/trace.h>
 
 /* ATTN:IO: for SDK app to consume, oe_register_resolver needs to
  * be published, it cannot stay as internal */

@@ -5,7 +5,7 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/device.h>
 #include <openenclave/internal/fs.h>
-#include "common_macros.h"
+#include <openenclave/internal/trace.h>
 #include "oe_t.h"
 
 #define MAGIC 0x0b292bab
@@ -37,7 +37,12 @@ static int _consolefs_dup(oe_device_t* file_, oe_device_t** new_file_out)
     if (new_file_out)
         *new_file_out = NULL;
 
-    IF_TRUE_SET_ERRNO_JUMP(!file || !new_file_out, EINVAL, done);
+    if (!file || !new_file_out)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     /* Ask the host to perform this operation. */
     {
@@ -51,7 +56,13 @@ static int _consolefs_dup(oe_device_t* file_, oe_device_t** new_file_out)
             OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
             goto done;
         }
-        IF_TRUE_SET_ERRNO_JUMP(retval == -1, err, done);
+
+        if (retval == -1)
+        {
+            oe_errno = err;
+            OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+            goto done;
+        }
     }
 
     /* Allocation and initialize a new file structure. */
@@ -59,7 +70,13 @@ static int _consolefs_dup(oe_device_t* file_, oe_device_t** new_file_out)
         file_t* new_file;
 
         new_file = oe_calloc(1, sizeof(file_t));
-        IF_TRUE_SET_ERRNO_JUMP(!new_file, ENOMEM, done);
+
+        if (!new_file)
+        {
+            oe_errno = ENOMEM;
+            OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+            goto done;
+        }
 
         memcpy(new_file, file, sizeof(file_t));
         new_file->host_fd = retval;
@@ -103,7 +120,12 @@ static ssize_t _consolefs_read(oe_device_t* file_, void* buf, size_t count)
 
     oe_errno = 0;
 
-    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
+    if (!file)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     /* Ask the host to perform this operation. */
     {
@@ -116,7 +138,13 @@ static ssize_t _consolefs_read(oe_device_t* file_, void* buf, size_t count)
             OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
             goto done;
         }
-        IF_TRUE_SET_ERRNO_JUMP(ret == -1, err, done);
+
+        if (ret == -1)
+        {
+            oe_errno = err;
+            OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+            goto done;
+        }
     }
 
 done:
@@ -134,7 +162,12 @@ static ssize_t _consolefs_write(
 
     oe_errno = 0;
 
-    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
+    if (!file)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     /* Ask the host to perform this operation. */
     {
@@ -147,7 +180,13 @@ static ssize_t _consolefs_write(
             OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
             goto done;
         }
-        IF_TRUE_SET_ERRNO_JUMP(ret == -1, err, done);
+
+        if (ret == -1)
+        {
+            oe_errno = err;
+            OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+            goto done;
+        }
     }
 
 done:
@@ -159,7 +198,12 @@ static ssize_t _consolefs_gethostfd(oe_device_t* file_)
     ssize_t ret = -1;
     file_t* file = _cast_file(file_);
 
-    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
+    if (!file)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     ret = file->host_fd;
 
@@ -175,7 +219,12 @@ static off_t _consolefs_lseek(oe_device_t* file_, off_t offset, int whence)
 
     oe_errno = 0;
 
-    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
+    if (!file)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     /* Ask the host to perform this operation. */
     {
@@ -188,7 +237,13 @@ static off_t _consolefs_lseek(oe_device_t* file_, off_t offset, int whence)
             OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
             goto done;
         }
-        IF_TRUE_SET_ERRNO_JUMP(ret == (off_t)-1, err, done);
+
+        if (ret == (off_t)-1)
+        {
+            oe_errno = err;
+            OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+            goto done;
+        }
     }
 
 done:
@@ -202,7 +257,12 @@ static int _consolefs_close(oe_device_t* file_)
     oe_result_t result = OE_FAILURE;
     oe_errno = 0;
 
-    IF_TRUE_SET_ERRNO_JUMP(!file, EINVAL, done);
+    if (!file)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+        goto done;
+    }
 
     /* Ask the host to perform this operation. */
     {
@@ -214,7 +274,13 @@ static int _consolefs_close(oe_device_t* file_)
             OE_TRACE_ERROR("%s oe_errno=%d", oe_result_str(result), oe_errno);
             goto done;
         }
-        IF_TRUE_SET_ERRNO_JUMP(ret == -1, err, done);
+
+        if (ret == -1)
+        {
+            oe_errno = err;
+            OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+            goto done;
+        }
     }
 
     switch (file->host_fd)

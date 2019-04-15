@@ -5,7 +5,7 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/fs.h>
 #include <openenclave/internal/print.h>
-#include "common_macros.h"
+#include <openenclave/internal/trace.h>
 
 #define DIR_MAGIC 0x09180827
 
@@ -21,8 +21,13 @@ static oe_device_t* _get_fs_device(uint64_t devid)
     oe_device_t* ret = NULL;
     oe_device_t* device = oe_get_devid_device(devid);
 
-    IF_TRUE_SET_ERRNO_JUMP(
-        (!device || device->type != OE_DEVICETYPE_FILESYSTEM), EINVAL, done);
+    if (!device || device->type != OE_DEVICETYPE_FILESYSTEM)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
+
     ret = device;
 
 done:
@@ -80,7 +85,12 @@ int oe_open_d(uint64_t devid, const char* pathname, int flags, mode_t mode)
         oe_device_t* dev = _get_fs_device(devid);
         oe_device_t* file;
 
-        IF_TRUE_SET_ERRNO_JUMP(!dev, EINVAL, done);
+        if (!dev)
+        {
+            oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
         if (!(file = (*dev->ops.fs->open)(dev, pathname, flags, mode)))
         {
@@ -111,7 +121,12 @@ OE_DIR* oe_opendir_d(uint64_t devid, const char* pathname)
     OE_DIR* dir = oe_calloc(1, sizeof(OE_DIR));
     int fd = -1;
 
-    IF_TRUE_SET_ERRNO_JUMP(!dir, EINVAL, done);
+    if (!dir)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     if ((fd = oe_open_d(devid, pathname, OE_O_RDONLY | OE_O_DIRECTORY, 0)) < 0)
     {
@@ -147,7 +162,12 @@ struct oe_dirent* oe_readdir(OE_DIR* dir)
     struct oe_dirent* ret = NULL;
     unsigned int count = (unsigned int)sizeof(struct oe_dirent);
 
-    IF_TRUE_SET_ERRNO_JUMP(!dir || dir->magic != DIR_MAGIC, EINVAL, done);
+    if (!dir || dir->magic != DIR_MAGIC)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     if (oe_getdents((unsigned int)dir->fd, &dir->buf, count) != (int)count)
     {
@@ -165,7 +185,12 @@ int oe_closedir(OE_DIR* dir)
 {
     int ret = -1;
 
-    IF_TRUE_SET_ERRNO_JUMP(!dir || dir->magic != DIR_MAGIC, EINVAL, done);
+    if (!dir || dir->magic != DIR_MAGIC)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     if ((ret = oe_close(dir->fd)) == 0)
     {
@@ -190,10 +215,19 @@ int oe_rmdir(const char* pathname)
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    fs = oe_mount_resolve(pathname, filepath);
-    IF_TRUE_SET_ERRNO_JUMP(!fs, EINVAL, done);
+    if (!(fs = oe_mount_resolve(pathname, filepath)))
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(fs->ops.fs->rmdir == NULL, EINVAL, done);
+    if (fs->ops.fs->rmdir == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     ret = (*fs->ops.fs->rmdir)(fs, filepath);
 
@@ -207,10 +241,19 @@ int oe_stat(const char* pathname, struct oe_stat* buf)
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    fs = oe_mount_resolve(pathname, filepath);
-    IF_TRUE_SET_ERRNO_JUMP(!fs, EINVAL, done);
+    if (!(fs = oe_mount_resolve(pathname, filepath)))
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(fs->ops.fs->stat == NULL, EINVAL, done);
+    if (fs->ops.fs->stat == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     ret = (*fs->ops.fs->stat)(fs, filepath, buf);
 
@@ -226,15 +269,34 @@ int oe_link(const char* oldpath, const char* newpath)
     char filepath[OE_PATH_MAX] = {0};
     char newfilepath[OE_PATH_MAX] = {0};
 
-    fs = oe_mount_resolve(oldpath, filepath);
-    IF_TRUE_SET_ERRNO_JUMP(!fs, EINVAL, done);
+    if (!(fs = oe_mount_resolve(oldpath, filepath)))
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    newfs = oe_mount_resolve(newpath, newfilepath);
-    IF_TRUE_SET_ERRNO_JUMP(!newfs, EINVAL, done);
+    if (!(newfs = oe_mount_resolve(newpath, newfilepath)))
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(fs != newfs, EXDEV, done);
+    if (fs != newfs)
+    {
+        oe_errno = EXDEV;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(fs->ops.fs->link == NULL, EPERM, done);
+    if (fs->ops.fs->link == NULL)
+    {
+        oe_errno = EPERM;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
+
     ret = (*fs->ops.fs->link)(fs, filepath, newfilepath);
 
 done:
@@ -247,10 +309,19 @@ int oe_unlink(const char* pathname)
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    fs = oe_mount_resolve(pathname, filepath);
-    IF_TRUE_SET_ERRNO_JUMP(!fs, EINVAL, done);
+    if (!(fs = oe_mount_resolve(pathname, filepath)))
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(fs->ops.fs->unlink == NULL, EINVAL, done);
+    if (fs->ops.fs->unlink == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     ret = (*fs->ops.fs->unlink)(fs, filepath);
 
@@ -266,14 +337,33 @@ int oe_rename(const char* oldpath, const char* newpath)
     char filepath[OE_PATH_MAX];
     char newfilepath[OE_PATH_MAX];
 
-    fs = oe_mount_resolve(oldpath, filepath);
-    IF_TRUE_SET_ERRNO_JUMP(!fs, EINVAL, done);
+    if (!(fs = oe_mount_resolve(oldpath, filepath)))
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    newfs = oe_mount_resolve(newpath, newfilepath);
-    IF_TRUE_SET_ERRNO_JUMP(!newfs, EINVAL, done);
+    if (!(newfs = oe_mount_resolve(newpath, newfilepath)))
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(fs != newfs, EXDEV, done);
-    IF_TRUE_SET_ERRNO_JUMP(fs->ops.fs->rename == NULL, EPERM, done);
+    if (fs != newfs)
+    {
+        oe_errno = EXDEV;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
+
+    if (fs->ops.fs->rename == NULL)
+    {
+        oe_errno = EPERM;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     ret = (*fs->ops.fs->rename)(fs, filepath, newfilepath);
 
@@ -287,10 +377,19 @@ int oe_truncate(const char* pathname, off_t length)
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    fs = oe_mount_resolve(pathname, filepath);
-    IF_TRUE_SET_ERRNO_JUMP(!fs, EINVAL, done);
+    if (!(fs = oe_mount_resolve(pathname, filepath)))
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(fs->ops.fs->truncate == NULL, EINVAL, done);
+    if (fs->ops.fs->truncate == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     ret = (*fs->ops.fs->truncate)(fs, filepath, length);
 
@@ -304,10 +403,20 @@ int oe_mkdir(const char* pathname, mode_t mode)
     oe_device_t* fs = NULL;
     char filepath[OE_PATH_MAX] = {0};
 
-    fs = oe_mount_resolve(pathname, filepath);
-    IF_TRUE_SET_ERRNO_JUMP(!fs, EINVAL, done);
+    if (!(fs = oe_mount_resolve(pathname, filepath)))
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(fs->ops.fs->mkdir == NULL, EINVAL, done);
+    if (fs->ops.fs->mkdir == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
+
     ret = (*fs->ops.fs->mkdir)(fs, filepath, mode);
 
 done:
@@ -319,10 +428,20 @@ off_t oe_lseek(int fd, off_t offset, int whence)
     off_t ret = -1;
     oe_device_t* file;
 
-    file = oe_get_fd_device(fd);
-    IF_TRUE_SET_ERRNO_JUMP(!file, EBADF, done);
+    if (!(file = oe_get_fd_device(fd)))
+    {
+        oe_errno = EBADF;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(file->ops.fs->lseek == NULL, EINVAL, done);
+    if (file->ops.fs->lseek == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
+
     ret = (*file->ops.fs->lseek)(file, offset, whence);
 
 done:
@@ -334,10 +453,20 @@ int oe_getdents(unsigned int fd, struct oe_dirent* dirp, unsigned int count)
     int ret = -1;
     oe_device_t* file;
 
-    file = oe_get_fd_device((int)fd);
-    IF_TRUE_SET_ERRNO_JUMP(!file, EBADF, done);
+    if (!(file = oe_get_fd_device((int)fd)))
+    {
+        oe_errno = EBADF;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(file->ops.fs->getdents == NULL, EINVAL, done);
+    if (file->ops.fs->getdents == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
+
     ret = (*file->ops.fs->getdents)(file, dirp, count);
 
 done:
@@ -349,7 +478,12 @@ ssize_t oe_readv(int fd, const struct oe_iovec* iov, int iovcnt)
     ssize_t ret = -1;
     ssize_t nread = 0;
 
-    IF_TRUE_SET_ERRNO_JUMP(fd < 0 || !iov, EINVAL, done);
+    if (fd < 0 || !iov)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     for (int i = 0; i < iovcnt; i++)
     {
@@ -380,7 +514,12 @@ ssize_t oe_writev(int fd, const struct oe_iovec* iov, int iovcnt)
     ssize_t ret = -1;
     ssize_t nwritten = 0;
 
-    IF_TRUE_SET_ERRNO_JUMP(fd < 0 || !iov, EINVAL, done);
+    if (fd < 0 || !iov)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     for (int i = 0; i < iovcnt; i++)
     {
@@ -388,7 +527,14 @@ ssize_t oe_writev(int fd, const struct oe_iovec* iov, int iovcnt)
         ssize_t n;
 
         n = oe_write(fd, p->iov_base, p->iov_len);
-        IF_TRUE_SET_ERRNO_JUMP((size_t)n != p->iov_len, EIO, done);
+
+        if ((size_t)n != p->iov_len)
+        {
+            oe_errno = EIO;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
+
         nwritten += n;
     }
 
@@ -404,10 +550,19 @@ int oe_access(const char* pathname, int mode)
     oe_device_t* fs = NULL;
     char suffix[OE_PATH_MAX];
 
-    fs = oe_mount_resolve(pathname, suffix);
-    IF_TRUE_SET_ERRNO_JUMP(!fs, EINVAL, done);
+    if (!(fs = oe_mount_resolve(pathname, suffix)))
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
-    IF_TRUE_SET_ERRNO_JUMP(fs->ops.fs->access == NULL, EINVAL, done);
+    if (fs->ops.fs->access == NULL)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     ret = (*fs->ops.fs->access)(fs, suffix, mode);
 
@@ -427,11 +582,14 @@ int oe_unlink_d(uint64_t devid, const char* pathname)
     {
         oe_device_t* dev;
 
-        dev = _get_fs_device(devid);
-        IF_TRUE_SET_ERRNO_JUMP(!dev, EINVAL, done);
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
-        ret = dev->ops.fs->unlink(dev, pathname);
-        if (ret != 0)
+        if ((ret = dev->ops.fs->unlink(dev, pathname)) != 0)
         {
             OE_TRACE_ERROR(
                 "devid=%lu pathname=%s ret=%d", devid, pathname, ret);
@@ -454,8 +612,12 @@ int oe_link_d(uint64_t devid, const char* oldpath, const char* newpath)
     {
         oe_device_t* dev;
 
-        dev = _get_fs_device(devid);
-        IF_TRUE_SET_ERRNO_JUMP(!dev, EINVAL, done);
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
         ret = dev->ops.fs->link(dev, oldpath, newpath);
         if (ret != 0)
@@ -485,11 +647,14 @@ int oe_rename_d(uint64_t devid, const char* oldpath, const char* newpath)
     {
         oe_device_t* dev;
 
-        dev = _get_fs_device(devid);
-        IF_TRUE_SET_ERRNO_JUMP(!dev, EINVAL, done);
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
-        ret = dev->ops.fs->rename(dev, oldpath, newpath);
-        if (ret != 0)
+        if ((ret = dev->ops.fs->rename(dev, oldpath, newpath)) != 0)
         {
             OE_TRACE_ERROR(
                 "devid=%lu oldpath=%s newpath=%s ret=%d",
@@ -516,11 +681,14 @@ int oe_mkdir_d(uint64_t devid, const char* pathname, mode_t mode)
     {
         oe_device_t* dev;
 
-        dev = _get_fs_device(devid);
-        IF_TRUE_SET_ERRNO_JUMP(!dev, EINVAL, done);
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
-        ret = dev->ops.fs->mkdir(dev, pathname, mode);
-        if (ret != 0)
+        if ((ret = dev->ops.fs->mkdir(dev, pathname, mode)) != 0)
         {
             OE_TRACE_ERROR(
                 "devid=%lu pathname=%s mode=%d ret=%d",
@@ -547,11 +715,14 @@ int oe_rmdir_d(uint64_t devid, const char* pathname)
     {
         oe_device_t* dev;
 
-        dev = _get_fs_device(devid);
-        IF_TRUE_SET_ERRNO_JUMP(!dev, EINVAL, done);
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
-        ret = dev->ops.fs->rmdir(dev, pathname);
-        if (ret != 0)
+        if ((ret = dev->ops.fs->rmdir(dev, pathname)) != 0)
         {
             OE_TRACE_ERROR(
                 "devid=%lu pathname=%s ret=%d", devid, pathname, ret);
@@ -574,11 +745,14 @@ int oe_stat_d(uint64_t devid, const char* pathname, struct oe_stat* buf)
     {
         oe_device_t* dev;
 
-        dev = _get_fs_device(devid);
-        IF_TRUE_SET_ERRNO_JUMP(!dev, EINVAL, done);
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
-        ret = dev->ops.fs->stat(dev, pathname, buf);
-        if (ret != 0)
+        if ((ret = dev->ops.fs->stat(dev, pathname, buf)) != 0)
         {
             OE_TRACE_ERROR(
                 "devid=%lu pathname=%s ret=%d", devid, pathname, ret);
@@ -601,11 +775,14 @@ int oe_truncate_d(uint64_t devid, const char* path, off_t length)
     {
         oe_device_t* dev;
 
-        dev = _get_fs_device(devid);
-        IF_TRUE_SET_ERRNO_JUMP(!dev, EINVAL, done);
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
-        ret = dev->ops.fs->truncate(dev, path, length);
-        if (ret != 0)
+        if ((ret = dev->ops.fs->truncate(dev, path, length)) != 0)
         {
             OE_TRACE_ERROR("devid=%lu path=%s ret=%d", devid, path, ret);
         }
@@ -628,15 +805,30 @@ int oe_access_d(uint64_t devid, const char* pathname, int mode)
         oe_device_t* dev;
         struct oe_stat buf;
 
-        dev = _get_fs_device(devid);
-        IF_TRUE_SET_ERRNO_JUMP(!dev, EINVAL, done);
+        if (!(dev = _get_fs_device(devid)))
+        {
+            oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
-        IF_TRUE_SET_ERRNO_JUMP(!pathname, EINVAL, done);
+        if (!pathname)
+        {
+            oe_errno = EINVAL;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
-        IF_TRUE_SET_ERRNO_JUMP(oe_stat(pathname, &buf) != 0, ENOENT, done);
+        if (oe_stat(pathname, &buf) != 0)
+        {
+            oe_errno = ENOENT;
+            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+            goto done;
+        }
 
         ret = 0;
     }
+
 done:
     return ret;
 }

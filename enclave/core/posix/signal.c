@@ -8,8 +8,8 @@
 #include <openenclave/internal/thread.h>
 #include <openenclave/corelibc/errno.h>
 #include <openenclave/internal/print.h>
+#include <openenclave/internal/trace.h>
 #include "oe_t.h"
-#include "common_macros.h"
 // clang-format on
 
 // Poll uses much of the infrastructure from epoll.
@@ -64,7 +64,12 @@ int oe_sigaction(
 {
     int retval = -1;
 
-    IF_TRUE_SET_ERRNO_JUMP(signum >= __OE_NSIG, EINVAL, done)
+    if (signum >= __OE_NSIG)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     if (oldact)
     {
@@ -85,7 +90,12 @@ oe_sighandler_t oe_signal(int signum, oe_sighandler_t handler)
 {
     oe_sighandler_t retval = OE_SIG_ERR;
 
-    IF_TRUE_SET_ERRNO_JUMP(signum >= __OE_NSIG, EINVAL, done)
+    if (signum >= __OE_NSIG)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     _actions[signum].__sigaction_handler.sa_handler = handler;
 
@@ -97,7 +107,12 @@ int oe_posix_signal_notify_ecall(int signum)
 {
     int ret = -1;
 
-    IF_TRUE_SET_ERRNO_JUMP(signum >= __OE_NSIG, EINVAL, done)
+    if (signum >= __OE_NSIG)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
 
     if (_actions[signum].sa_flags & SA_SIGINFO)
     {
