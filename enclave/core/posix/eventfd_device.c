@@ -34,7 +34,6 @@ typedef struct _eventfd
 {
     struct _oe_device base;
     uint32_t magic;
-    uint64_t ready_mask;
     uint64_t count;
     uint32_t flags;
     oe_cond_t waitfor; // blocked on by read and set by write
@@ -233,28 +232,10 @@ done:
     return ret;
 }
 
-static int _eventfd_notify(oe_device_t* eventfd_, uint64_t notification_mask)
-{
-    eventfd_dev_t* eventfd = _cast_eventfd(eventfd_);
-
-    if (eventfd->ready_mask != notification_mask)
-    {
-        // We notify any eventfds in progress.
-    }
-    eventfd->ready_mask = notification_mask;
-    return 0;
-}
-
 static ssize_t _eventfd_gethostfd(oe_device_t* eventfd_)
 {
     (void)eventfd_;
     return -1;
-}
-
-static uint64_t _eventfd_readystate(oe_device_t* eventfd_)
-{
-    eventfd_dev_t* eventfd = _cast_eventfd(eventfd_);
-    return eventfd->ready_mask;
 }
 
 static oe_eventfd_ops_t _ops = {
@@ -264,9 +245,7 @@ static oe_eventfd_ops_t _ops = {
     .base.read = _eventfd_read,
     .base.write = _eventfd_write,
     .base.close = _eventfd_close,
-    .base.notify = _eventfd_notify,
     .base.get_host_fd = _eventfd_gethostfd,
-    .base.ready_state = _eventfd_readystate,
     .base.shutdown = _eventfd_shutdown_device,
     .eventfd = _eventfd_eventfd,
 };
@@ -276,7 +255,6 @@ static eventfd_dev_t _eventfd = {
     .base.size = sizeof(eventfd_dev_t),
     .base.ops.eventfd = &_ops,
     .magic = EVENTFD_MAGIC,
-    .ready_mask = 0,
     .count = 0,
     .flags = 0,
     .waitfor = OE_COND_INITIALIZER,

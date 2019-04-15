@@ -967,28 +967,10 @@ done:
     return ret;
 }
 
-static int _hostsock_notify(oe_device_t* sock_, uint64_t notification_mask)
-{
-    sock_t* sock = _cast_sock(sock_);
-
-    if (sock->ready_mask != notification_mask)
-    {
-        // We notify any epolls in progress.
-    }
-    sock->ready_mask = notification_mask;
-    return 0;
-}
-
 static ssize_t _hostsock_gethostfd(oe_device_t* sock_)
 {
     sock_t* sock = _cast_sock(sock_);
     return sock->host_fd;
-}
-
-static uint64_t _hostsock_readystate(oe_device_t* sock_)
-{
-    sock_t* sock = _cast_sock(sock_);
-    return sock->ready_mask;
 }
 
 static oe_sock_ops_t _ops = {
@@ -1000,9 +982,7 @@ static oe_sock_ops_t _ops = {
     .base.write = _hostsock_write,
     .base.close = _hostsock_close,
     .base.dup = _hostsock_dup,
-    .base.notify = _hostsock_notify,
     .base.get_host_fd = _hostsock_gethostfd,
-    .base.ready_state = _hostsock_readystate,
     .base.shutdown = _hostsock_shutdown_device,
     .socket = _hostsock_socket,
     .socketpair = _hostsock_socketpair,

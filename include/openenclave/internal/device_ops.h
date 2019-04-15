@@ -23,11 +23,8 @@ typedef struct _oe_device_ops
 
     int (*release)(oe_device_t* device);
 
-    int (*notify)(oe_device_t* device, uint64_t notfication_mask);
-
+    /* ATTN:IO: this exposes the host implementation through the interface. */
     ssize_t (*get_host_fd)(oe_device_t* device);
-
-    uint64_t (*ready_state)(oe_device_t* device);
 
     ssize_t (*read)(oe_device_t* file, void* buf, size_t count);
 

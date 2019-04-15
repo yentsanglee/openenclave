@@ -324,6 +324,10 @@ static int _epoll_ctl_add(
     oe_errno = 0;
     if (pdev->ops.base->get_host_fd != NULL)
     {
+        // ATTN:IO: rather than exposing the host-fd concept through the
+        // generic interface, could this be turned around so that the device
+        // performs this ocall or whatever call? Maybe consider adding a
+        // ctl_add() method to file and socket devices.
         host_fd = (*pdev->ops.base->get_host_fd)(pdev);
     }
 
@@ -677,28 +681,10 @@ done:
     return ret;
 }
 
-static int _epoll_notify(oe_device_t* epoll_, uint64_t notification_mask)
-{
-    epoll_dev_t* epoll = _cast_epoll(epoll_);
-
-    if (epoll->ready_mask != notification_mask)
-    {
-        // We notify any epolls in progress.
-    }
-    epoll->ready_mask = notification_mask;
-    return 0;
-}
-
 static ssize_t _epoll_gethostfd(oe_device_t* epoll_)
 {
     epoll_dev_t* epoll = _cast_epoll(epoll_);
     return epoll->host_fd;
-}
-
-static uint64_t _epoll_readystate(oe_device_t* epoll_)
-{
-    epoll_dev_t* epoll = _cast_epoll(epoll_);
-    return epoll->ready_mask;
 }
 
 static oe_epoll_ops_t _ops = {
@@ -708,9 +694,7 @@ static oe_epoll_ops_t _ops = {
     .base.read = NULL,
     .base.write = NULL,
     .base.close = _epoll_close,
-    .base.notify = _epoll_notify,
     .base.get_host_fd = _epoll_gethostfd,
-    .base.ready_state = _epoll_readystate,
     .base.shutdown = _epoll_shutdown_device,
     .create = _epoll_create,
     .create1 = _epoll_create1,
