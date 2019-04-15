@@ -546,9 +546,12 @@ int oe_posix_shutdown_ocall(int sockfd, int how, int* err)
 
 int oe_posix_fcntl_ocall(int fd, int cmd, int arg, int* err)
 {
-    int ret = fcntl(fd, cmd, arg);
+    int ret;
 
-    if (ret == -1)
+    if (err)
+        *err = 0;
+
+    if ((ret = fcntl(fd, cmd, arg)) == -1)
     {
         if (err)
             *err = errno;
@@ -1014,7 +1017,6 @@ int oe_posix_epoll_poll_ocall(
     size_t nfds,
     int timeout,
     int* err)
-
 {
     int ret = -1;
     size_t fdsize = 0;

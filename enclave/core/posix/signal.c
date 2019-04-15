@@ -97,7 +97,7 @@ oe_sighandler_t oe_signal(int signum, oe_sighandler_t handler)
         goto done;
     }
 
-    _actions[signum].__sigaction_handler.sa_handler = handler;
+    _actions[signum].__oe_sigaction_handler.oe_sa_handler = handler;
 
 done:
     return retval;
@@ -114,25 +114,26 @@ int oe_posix_signal_notify_ecall(int signum)
         goto done;
     }
 
-    if (_actions[signum].sa_flags & SA_SIGINFO)
+    if (_actions[signum].oe_sa_flags & OE_SA_SIGINFO)
     {
         // Get some siginfo and populate: This only lasts to the end of the call
 
         oe_siginfo_t info = {0};
-        info.si_signo = signum;
-        info.si_errno = oe_errno;
-        info.si_code = 0;
-        info.__si_fields.__si_kill.si_pid = oe_getpid();
-        info.__si_fields.__si_kill.si_uid = oe_getuid();
+        info.oe_si_signo = signum;
+        info.oe_si_errno = oe_errno;
+        info.oe_si_code = 0;
+        info.__oe_si_fields.__oe_si_kill.oe_si_pid = oe_getpid();
+        info.__oe_si_fields.__oe_si_kill.oe_si_uid = oe_getuid();
 
         /* we don't do a ucontext, and only a minimal info */
-        (*_actions[signum].__sigaction_handler.sa_sigaction)(
+        (*_actions[signum].__oe_sigaction_handler.oe_sa_sigaction)(
             signum, &info, NULL);
         ret = 0;
     }
     else
     {
-        oe_sighandler_t h = _actions[signum].__sigaction_handler.sa_handler;
+        oe_sighandler_t h;
+        h = _actions[signum].__oe_sigaction_handler.oe_sa_handler;
 
         if (h == OE_SIG_DFL)
         {
@@ -148,7 +149,7 @@ int oe_posix_signal_notify_ecall(int signum)
         }
         else
         {
-            (*_actions[signum].__sigaction_handler.sa_handler)(signum);
+            (*_actions[signum].__oe_sigaction_handler.oe_sa_handler)(signum);
         }
 
         ret = 0;

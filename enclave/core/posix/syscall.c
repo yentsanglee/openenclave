@@ -452,6 +452,7 @@ static long _syscall(
             goto done;
         }
         case OE_SYS_epoll_wait:
+        case OE_SYS_epoll_wait_old:
         {
             int epfd = (int)arg1;
             struct oe_epoll_event* events = (struct oe_epoll_event*)arg2;
@@ -466,34 +467,11 @@ static long _syscall(
             struct oe_epoll_event* events = (struct oe_epoll_event*)arg2;
             int maxevents = (int)arg3;
             int timeout = (int)arg4;
-#if defined(SUPPORT_ENCLAVE_SIGNALS)
-            /* ATTN:IO: support this? */
-            const sigset_t* sigmask = (const sigset_t*)arg5;
+            const oe_sigset_t* sigmask = (const oe_sigset_t*)arg5;
             ret = oe_epoll_pwait(epfd, events, maxevents, timeout, sigmask);
-#else
-            ret = oe_epoll_wait(epfd, events, maxevents, timeout);
-#endif
-            goto done;
-        }
-            /* ATTN:IO: remove this? */
-        case OE_SYS_epoll_wait_old:
-        {
-            int epfd = (int)arg1;
-            struct oe_epoll_event* events = (struct oe_epoll_event*)arg2;
-            int maxevents = (int)arg3;
-            int timeout = (int)arg4;
-            ret = oe_epoll_wait(epfd, events, maxevents, timeout);
             goto done;
         }
         case OE_SYS_epoll_ctl:
-        {
-            int epfd = (int)arg1;
-            int op = (int)arg2;
-            int fd = (int)arg3;
-            struct oe_epoll_event* event = (struct oe_epoll_event*)arg4;
-            ret = oe_epoll_ctl(epfd, op, fd, event);
-            goto done;
-        }
         case OE_SYS_epoll_ctl_old:
         {
             int epfd = (int)arg1;

@@ -173,7 +173,7 @@ oe_device_t* oe_get_fd_device(int fd)
 
     if (fd < 0 || fd >= (int)_table_size())
     {
-        oe_errno = EINVAL;
+        oe_errno = EBADF;
         OE_TRACE_ERROR("oe_errno=%d", oe_errno);
         goto done;
     }
@@ -192,6 +192,23 @@ done:
     if (locked)
         oe_spin_unlock(&_lock);
 
+    return ret;
+}
+
+oe_device_t* oe_get_fd_device_by_type(int fd, oe_device_type_t type)
+{
+    oe_device_t* ret = NULL;
+    oe_device_t* device;
+
+    if (!(device = oe_get_fd_device(fd)))
+        goto done;
+
+    if (device->type != type)
+        oe_errno = EINVAL;
+
+    ret = device;
+
+done:
     return ret;
 }
 

@@ -98,7 +98,9 @@ static int _consolefs_ioctl(
     OE_UNUSED(request);
     OE_UNUSED(ap);
 
-    oe_errno = ENOTTY;
+    oe_errno = ENOTSUP;
+    OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+
     return -1;
 }
 

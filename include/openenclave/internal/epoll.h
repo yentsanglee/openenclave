@@ -5,6 +5,7 @@
 #ifndef _OE_EPOLL_H
 #define _OE_EPOLL_H
 
+#include <openenclave/corelibc/signal.h>
 #include <openenclave/internal/device.h>
 
 OE_EXTERNC_BEGIN
@@ -99,6 +100,13 @@ int oe_epoll_wait(
     struct oe_epoll_event* events,
     int maxevents,
     int timeout);
+
+int oe_epoll_pwait(
+    int epollfd,
+    struct oe_epoll_event* events,
+    int maxevents,
+    int timeout,
+    const oe_sigset_t* sigmask);
 
 int oe_get_epoll_events(
     int epollfd,

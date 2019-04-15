@@ -935,15 +935,17 @@ done:
 }
 
 static int _hostsock_ioctl(
-    oe_device_t* sock_,
+    oe_device_t* sock,
     unsigned long request,
     oe_va_list ap)
 {
-    /* Unsupported */
-    oe_errno = ENOTTY;
-    (void)sock_;
-    (void)request;
-    (void)ap;
+    OE_UNUSED(sock);
+    OE_UNUSED(request);
+    OE_UNUSED(ap);
+
+    oe_errno = ENOTSUP;
+    OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+
     return -1;
 }
 

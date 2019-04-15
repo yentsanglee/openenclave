@@ -804,23 +804,52 @@ static int _hostfs_ioctl(
     unsigned long request,
     oe_va_list ap)
 {
-    /* Unsupported */
-    oe_errno = ENOTTY;
-    (void)file;
-    (void)request;
-    (void)ap;
+    OE_UNUSED(file);
+    OE_UNUSED(request);
+    OE_UNUSED(ap);
+
+    oe_errno = ENOTSUP;
+    OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
+
     return -1;
 }
 
-static int _hostfs_fcntl(oe_device_t* file, int cmd, int arg)
+static int _hostfs_fcntl(oe_device_t* file_, int cmd, int arg)
 {
-    // ATTN:IO: need to add this for fs
-    /* Unsupported */
-    oe_errno = ENOTTY;
-    (void)file;
-    (void)cmd;
-    (void)arg;
-    return -1;
+    int ret = -1;
+    file_t* file = _cast_file(file_);
+    int err = 0;
+
+    oe_errno = 0;
+
+    if (!file)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
+    }
+
+    /* Call the host. */
+    if (oe_posix_fcntl_ocall(&ret, file->host_fd, cmd, arg, &err) != OE_OK)
+    {
+        oe_errno = EINVAL;
+        OE_TRACE_ERROR(
+            "host_fd=%d cmd=%d arg=%d oe_errno=%d",
+            file->host_fd,
+            cmd,
+            arg,
+            oe_errno);
+        goto done;
+    }
+
+    if (ret == -1)
+    {
+        oe_errno = err;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+    }
+
+done:
+    return ret;
 }
 
 static oe_device_t* _hostfs_opendir(oe_device_t* fs_, const char* name)

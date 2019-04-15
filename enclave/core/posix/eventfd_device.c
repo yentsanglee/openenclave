@@ -201,7 +201,6 @@ static ssize_t _eventfd_write(
         goto done;
     }
 
-    /* ATTN:IO: use constant here. */
     if (eventfd->count >= MAX_EVENTFD_COUNT)
     {
         if (eventfd->flags & OE_EFD_NONBLOCK)

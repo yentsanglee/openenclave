@@ -53,7 +53,7 @@
 #define OE_SIGCLD OE_SIGCHLD
 
 // Only flag supported. 3 args for the sighandler rather than 1
-#define SA_SIGINFO 0x00000004
+#define OE_SA_SIGINFO 0x00000004
 
 #define __OE_SIGSET_NWORDS (1024 / (8 * sizeof(unsigned long int)))
 
@@ -149,6 +149,24 @@ union sigval {
 #define __OE_SIGACTION sigaction
 #include <openenclave/corelibc/bits/sigaction.h>
 #undef __OE_SIGACTION
+
+#define sa_handler oe_sa_handler
+#define sa_sigaction oe_sa_sigaction
+#define sa_mask oe_sa_mask
+#define sa_flags oe_sa_flags
+#define sa_restorer oe_sa_restorer
+#define si_signo oe_si_signo
+#define si_errno oe_si_errno
+#define si_code oe_si_code
+#define si_pid oe_si_pid
+#define si_uid oe_si_uid
+#define si_tid oe_si_tid
+#define si_overrun oe_si_overrun
+#define si_sigval oe_si_sigval
+#define si_sys_private oe_si_sys_private
+#define si_pid oe_si_pid
+#define si_uid oe_si_uid
+#define sigval oe_sigval
 
 OE_INLINE sighandler_t signal(int signum, sighandler_t handler)
 {

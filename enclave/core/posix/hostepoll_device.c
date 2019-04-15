@@ -37,7 +37,7 @@ typedef struct _epoll_event_data
 {
     int64_t enclave_fd;
     uint64_t enclave_data;
-} _epoll_event_data;
+} epoll_event_data_t;
 
 typedef struct _epoll
 {
@@ -47,7 +47,7 @@ typedef struct _epoll
     uint64_t ready_mask;
     size_t max_event_data;
     size_t num_event_data;
-    _epoll_event_data* pevent_data;
+    epoll_event_data_t* pevent_data;
 } epoll_dev_t;
 
 #define EVENT_DATA_LIST_BUMP 16
@@ -62,9 +62,9 @@ static epoll_dev_t* _cast_epoll(const oe_device_t* device)
     return epoll;
 }
 
-static _epoll_event_data* add_event_data(
+static epoll_event_data_t* add_event_data(
     struct _epoll* pepoll,
-    _epoll_event_data* pevent,
+    epoll_event_data_t* pevent,
     int* list_idx)
 {
     size_t idx = 0;
@@ -78,7 +78,7 @@ static _epoll_event_data* add_event_data(
         pepoll->max_event_data = EVENT_DATA_LIST_BUMP;
         pepoll->num_event_data = 0;
         pepoll->pevent_data =
-            oe_calloc(1, sizeof(_epoll_event_data) * pepoll->max_event_data);
+            oe_calloc(1, sizeof(epoll_event_data_t) * pepoll->max_event_data);
         if (pepoll->pevent_data == NULL)
         {
             return NULL;
@@ -101,20 +101,21 @@ static _epoll_event_data* add_event_data(
     // assert that idx <= num_event_data
     if (idx >= pepoll->max_event_data)
     {
+        epoll_event_data_t* ptr;
+
         // If we passed into here, idx == num_event_data indicating no empty
         // slots and num_event_data. so open a slot
         idx = pepoll->num_event_data++;
         pepoll->max_event_data += EVENT_DATA_LIST_BUMP;
-        pepoll->pevent_data = oe_realloc(
+
+        ptr = oe_realloc(
             pepoll->pevent_data,
-            sizeof(_epoll_event_data) * pepoll->max_event_data);
-        if (pepoll->pevent_data == NULL)
-        {
-            // ATTN:IO: use a temporary return value. If oe_realloc() fails,
-            // the the orignal value of pepoll->pevent_data is leaked.
-            // free the original value of the pointer on failure.
+            sizeof(epoll_event_data_t) * pepoll->max_event_data);
+
+        if (!ptr)
             return NULL;
-        }
+
+        pepoll->pevent_data = ptr;
     }
     else
     {
@@ -130,7 +131,7 @@ static _epoll_event_data* add_event_data(
     return pepoll->pevent_data;
 }
 
-static _epoll_event_data* delete_event_data(
+static epoll_event_data_t* delete_event_data(
     struct _epoll* pepoll,
     int enclave_fd)
 {
@@ -164,9 +165,9 @@ static _epoll_event_data* delete_event_data(
     return pepoll->pevent_data;
 }
 
-static _epoll_event_data* modify_event_data(
+static epoll_event_data_t* modify_event_data(
     struct _epoll* pepoll,
-    _epoll_event_data* pevent)
+    epoll_event_data_t* pevent)
 {
     size_t idx = 0;
 
@@ -257,8 +258,7 @@ static oe_device_t* _epoll_create(oe_device_t* epoll_, int size)
     epoll_dev_t* epoll = NULL;
     oe_result_t result = OE_FAILURE;
 
-    /* ATTN:IO: why is size ignored? */
-    (void)size;
+    OE_UNUSED(size);
 
     oe_errno = 0;
 
@@ -339,10 +339,6 @@ static int _epoll_ctl_add(
     oe_errno = 0;
     if (pdev->ops.base->get_host_fd != NULL)
     {
-        // ATTN:IO: rather than exposing the host-fd concept through the
-        // generic interface, could this be turned around so that the device
-        // performs this ocall or whatever call? Maybe consider adding a
-        // ctl_add() method to file and socket devices.
         host_fd = (*pdev->ops.base->get_host_fd)(pdev);
     }
 
@@ -353,7 +349,7 @@ static int _epoll_ctl_add(
     }
 
     int list_idx = -1;
-    _epoll_event_data ev_data = {
+    epoll_event_data_t ev_data = {
         .enclave_fd = enclave_fd,
         .enclave_data = event->data.u64,
     };
@@ -383,6 +379,7 @@ done:
     return ret;
 }
 
+/* ATTN:IO: there seems to be no test for the 'mod' case. */
 static int _epoll_ctl_mod(
     int epoll_fd,
     int enclave_fd,
@@ -413,7 +410,7 @@ static int _epoll_ctl_mod(
         return 0;
     }
 
-    _epoll_event_data ev_data = {
+    epoll_event_data_t ev_data = {
         .enclave_fd = enclave_fd,
         .enclave_data = event->data.u64,
     };
@@ -448,6 +445,7 @@ done:
     return ret;
 }
 
+/* ATTN:IO: there seems to be no test case for this. */
 static int _epoll_ctl_del(int epoll_fd, int enclave_fd)
 {
     int ret = -1;
@@ -602,8 +600,8 @@ static int _epoll_add_event_data(
     oe_errno = 0;
     int list_idx = -1;
 
-    _epoll_event_data ev_data = {.enclave_fd = enclave_fd,
-                                 .enclave_data = data};
+    epoll_event_data_t ev_data = {.enclave_fd = enclave_fd,
+                                  .enclave_data = data};
 
     if (add_event_data(epoll, &ev_data, &list_idx) == NULL)
     {
