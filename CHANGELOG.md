@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased]
 ------------
 
+### Changed
+
+- Rename `oe-gdb` to `oegdb` for consistency with other tools, such as `oesign`.
+- Update pkg-config and CMake exports to include the following hardening build
+  flags by default:
+    - Enclaves will:
+       - Compile with `-fPIE` instead of `-fPIC`.
+       - Link with `-Wl,-z,noexecstack`, `-Wl,-z,now`.
+    - Host apps will:
+       - Compile with `-D_FORTIFY_SOURCE=2` (only effective if compiling under
+         GCC with `-O2` specified) and `-fstack-protector-strong`.
+       - Link with `-Wl,-z,noexecstack`.
+       - Note that `-Wl,-z,now` is _not_ enabled by default, but app authors
+         should enable it themselves after assessing its startup impact.
+
+[v0.5.0] - 2019-4-9
+-------------------
+
 ### Added
 
 - Open Enclave SDK works in Windows
@@ -59,9 +77,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   revocation check that is performed during quote verification. Remote reports
   that were generated with a QE ISVSVN version of 1 will fail during report
   verification now. To resolve this issue, please install the latest version
-  of the Intel SGX DCAP packages on the system that generates the remote report,
-  which as of the time of this change is version 1.0.1 and can be found here:
-  https://download.01.org/intel-sgx/dcap-1.0.1/dcap_installer/ubuntuServer1604/
+  of the [Intel SGX DCAP packages](https://01.org/intel-software-guard-extensions/downloads)
+  (1.0.1 or newer) on the system that generates the remote report.
 - Revamped `oesign` CLI tool arguments parsing. Instead of relying on the arguments
   order and name, named parameters are used as such:
    - The `sign` subcommand accepts the following mandatory flags:
@@ -78,9 +95,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Check support for AVX in platform/OS before setting SECS.ATTRIBUTES.XFRM in enclave.
+- Fix CVE-2019-0876
+   - `_handle_sgx_get_report` will now write to the supplied argument if it lies in host memory.
+   - Added check for missing null terminator in oeedger8r generated code.
 
-[v0.4.1] - 2018-12-21
----------------------
+[v0.4.1] - 2018-12-21 (DEPRECATED)
+----------------------------------
 
 v0.4.1 contains a small fix to work with Intel's new ISV version bump.
 
@@ -90,8 +110,8 @@ v0.4.1 contains a small fix to work with Intel's new ISV version bump.
   and at the same time also allow a newer QE SVN (greater than 1) during the
   oe_verify_report process.
 
-[v0.4.0] - 2018-10-08
----------------------
+[v0.4.0] - 2018-10-08 (DEPRECATED)
+----------------------------------
 
 v0.4.0 is the first public preview release, with numerous breaking changes from v0.1.0
 as listed below.
@@ -161,6 +181,8 @@ as listed below.
 
 Initial private preview release, no longer supported.
 
-[Unreleased]: https://github.com/microsoft/openenclave/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/microsoft/openenclave/compare/v0.5.0...HEAD
+[v0.5.0]: https://github.com/microsoft/openenclave/compare/v0.4.1...v0.5.0
+[v0.4.1]: https://github.com/microsoft/openenclave/compare/v0.4.0...v0.4.1
 [v0.4.0]: https://github.com/microsoft/openenclave/compare/v0.1.0...v0.4.0
 [v0.1.0]: https://github.com/microsoft/openenclave/compare/beb546f...v0.1.0

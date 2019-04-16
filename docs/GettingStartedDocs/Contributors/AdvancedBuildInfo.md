@@ -2,7 +2,7 @@
 
 ## Installing CMake
 
-This project requires at least [CMake 3.13.1](https://cmake.org/download/). This
+This project requires at least [CMake 3.12](https://cmake.org/download/). This
 is probably not available in your package manager's repositories, but we use the
 `OBJECT` library feature extensively, so you need to install it either manually
 from their website, or with our Ansible scripts:
@@ -57,7 +57,7 @@ This builds the entire Open Enclave SDK, creating the following files in your bu
 
 | Filename                          | Description                                           |
 |-----------------------------------|-------------------------------------------------------|
-| output/bin/oe-gdb                 | Utility for debugging enclaves                        |
+| output/bin/oegdb                  | Utility for debugging enclaves                        |
 | output/bin/oesgx                  | Utility for determining the level of SGX support for the given platform |
 | output/bin/oesign                 | Utility for signing enclaves                          |
 | output/lib/enclave/liboecore.a    | Core library for building enclave applications (defines enclave intrinsics) |
