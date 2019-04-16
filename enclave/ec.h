@@ -1,29 +1,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _OE_ENCLAVE_EC_H
-#define _OE_ENCLAVE_EC_H
-
-/* Nest mbedtls header includes with required corelibc defines */
-// clang-format off
-#include "mbedtls_corelibc_defs.h"
-#include <mbedtls/pk.h>
-#include "mbedtls_corelibc_undef.h"
-// clang-format on
+#ifndef _OE_HOST_CRYPTO_EC_H
+#define _OE_HOST_CRYPTO_EC_H
 
 #include <openenclave/internal/ec.h>
+#include <openssl/evp.h>
 
-OE_INLINE bool oe_is_ec_key(const mbedtls_pk_context* pk)
-{
-    return (pk->pk_info == mbedtls_pk_info_from_type(MBEDTLS_PK_ECKEY));
-}
+/* Caller is responsible for validating parameters */
+void oe_ec_public_key_init(oe_ec_public_key_t* public_key, EVP_PKEY* pkey);
 
-oe_result_t oe_ec_public_key_init(
-    oe_ec_public_key_t* public_key,
-    const mbedtls_pk_context* pk);
+void oe_ec_private_key_init(oe_ec_private_key_t* private_key, EVP_PKEY* pkey);
 
-oe_result_t oe_ec_private_key_init(
-    oe_ec_private_key_t* private_key,
-    const mbedtls_pk_context* pk);
-
-#endif /* _OE_ENCLAVE_EC_H */
+#endif /* _OE_HOST_CRYPTO_EC_H */
