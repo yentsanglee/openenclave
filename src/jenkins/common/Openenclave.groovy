@@ -18,7 +18,7 @@ String dockerImage(String tag, String dockerfile = ".jenkins/Dockerfile", String
 
 def ContainerRun(String imageName, String compiler, String task, String runArgs="") {
     docker.withRegistry("https://oejenkinscidockerregistry.azurecr.io", "oejenkinscidockerregistry") {
-        def image = docker.image("${imageName}:latest")
+        def image = docker.image("${imageName}:0.7")
         image.pull()
         image.inside(runArgs) {
             dir("${WORKSPACE}/build") {
@@ -70,8 +70,8 @@ def Run(String compiler, String task, Integer timeoutMinutes = 30) {
         // such, it is not necessary to specify anything in the environment.
         runTask(task, timeoutMinutes);
     } else {
-        def c_compiler = "clang-7"
-        def cpp_compiler = "clang++-7"
+        def c_compiler = "clang-8"
+        def cpp_compiler = "clang++-8"
         if (compiler == "gcc") {
             c_compiler = "gcc"
             cpp_compiler = "g++"
