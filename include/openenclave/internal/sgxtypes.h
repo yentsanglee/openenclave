@@ -42,8 +42,10 @@ OE_EXTERNC_BEGIN
 
 #define SGX_QUOTE_IV_SIZE 12
 
+#if __x86_64__ || _M_X64
 OE_STATIC_ASSERT(SGX_FLAGS_DEBUG == OE_SGX_FLAGS_DEBUG);
 OE_STATIC_ASSERT(SGX_FLAGS_MODE64BIT == OE_SGX_FLAGS_MODE64BIT);
+#endif
 
 /* Rename OE_? types to SGX_? to make SGX types more explicit */
 
@@ -206,7 +208,10 @@ typedef struct _sgx_sigstruct
 OE_PACK_END
 
 OE_CHECK_SIZE(sizeof(sgx_sigstruct_t), 1808);
+
+#if __x86_64__ || _M_X64
 OE_CHECK_SIZE(sizeof(sgx_sigstruct_t), OE_SGX_SIGSTRUCT_SIZE);
+#endif
 
 OE_CHECK_SIZE(
     sizeof((sgx_sigstruct_t*)NULL)->header,
@@ -549,7 +554,7 @@ oe_thread_data_t* oe_get_thread_data(void);
 
 #define TD_MAGIC 0xc90afe906c5d19a3
 
-#define OE_THREAD_LOCAL_SPACE (3304)
+#define OE_THREAD_LOCAL_SPACE (3840)
 
 typedef struct _callsite Callsite;
 
@@ -589,19 +594,6 @@ typedef struct _td
 
     /* Simulation mode is active if non-zero */
     uint64_t simulate;
-
-    /* Linux error number: from <errno.h> */
-    int linux_errno;
-    int padding1;
-
-    // The pthread implementation structure is overlaid here. This is only
-    // used by oelibc to implement the pthread functions (see libc/pthread.c
-    // for details).
-    uint64_t pthread[64];
-
-    // List of functions to call when the thread exits.
-    oe_tls_atexit_t* tls_atexit_functions;
-    uint64_t num_tls_atexit_functions;
 
     /* Reserved for thread-local variables. */
     uint8_t thread_local_data[OE_THREAD_LOCAL_SPACE];
@@ -1016,33 +1008,6 @@ typedef struct _sgx_nonce
 {
     uint8_t rand[16];
 } sgx_nonce_t;
-
-/*
-**==============================================================================
-**
-** oe_ecall_pages_t
-**
-**     The enclave image has ECALL address pages that keep the virtual
-**     addresses of all ECALL functions. When the host performs an OCALL, it
-**     passes a function number that the enclave uses as an index into this
-**     table to obtain the virtual address of the corresponding function.
-**
-**==============================================================================
-*/
-
-#define OE_ECALL_PAGES_MAGIC 0x927ccf78a3de9f9d
-
-typedef struct _oe_ecall_pages
-{
-    /* Should be OE_ECALL_PAGES_MAGIC if page is valid */
-    uint64_t magic;
-
-    /* Number of ECALL virtual addresses */
-    uint64_t num_vaddrs;
-
-    /* ECALL virtual addresses (index by function number) */
-    OE_ZERO_SIZED_ARRAY uint64_t vaddrs[];
-} oe_ecall_pages_t;
 
 /*
 **==============================================================================

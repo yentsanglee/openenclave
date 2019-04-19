@@ -63,7 +63,6 @@ if (OE_SGX)
     list(APPEND PLATFORM_SRC
       sgx/linux/aep.S
       sgx/linux/aesm.c
-      sgx/linux/cpuid.c
       sgx/linux/enter.S
       sgx/linux/entersim.S
       sgx/linux/exception.c
@@ -73,7 +72,6 @@ if (OE_SGX)
     list(APPEND PLATFORM_SRC
       sgx/windows/aep.asm
       sgx/windows/aesm.c
-      sgx/windows/cpuid.c
       sgx/windows/enter.asm
       sgx/windows/entersim.asm
       sgx/windows/exception.c)
@@ -154,7 +152,11 @@ endif ()
 
 # Compile definitions and options
 target_compile_definitions(oehost
-  PUBLIC -DOE_API_VERSION=2
+  PUBLIC
+  # NOTE: This definition is public to the rest of our project's
+  # targets, but should not yet be exposed to consumers of our
+  # package.
+  $<BUILD_INTERFACE:OE_API_VERSION=2>
   PRIVATE
   OE_BUILD_UNTRUSTED
   OE_REPO_BRANCH_NAME="${GIT_BRANCH}"
