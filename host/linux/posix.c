@@ -1115,6 +1115,8 @@ int oe_posix_epollv2_ctl_ocall(
 
     _clear_err(err);
 
+printf("epfd=%d op=%d fd=%d event=%p\n", epfd, op, fd, event);
+
     ret = epoll_ctl(epfd, op, fd, event);
 
     if (ret == -1)

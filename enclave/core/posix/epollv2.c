@@ -37,10 +37,6 @@ static int _get_host_fd(oe_device_t* dev)
         goto done;
     }
 
-    oe_printf("HOSTFD=%d\n", ret);
-
-    ret = 0;
-
 done:
     return ret;
 }
