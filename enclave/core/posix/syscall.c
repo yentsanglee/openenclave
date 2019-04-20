@@ -431,6 +431,7 @@ static long _syscall(
             ret = oe_select(nfds, readfds, writefds, exceptfds, tmo);
             goto done;
         }
+#if 0
         case OE_SYS_poll:
         {
             struct oe_pollfd* fds = (struct oe_pollfd*)arg1;
@@ -439,6 +440,7 @@ static long _syscall(
             ret = oe_poll(fds, nfds, millis);
             goto done;
         }
+#endif
         case OE_SYS_epoll_create:
         {
             int size = (int)arg1;

@@ -10,11 +10,6 @@ enclave {
     trusted {
 
         public int oe_posix_signal_notify_ecall(int signum);
-
-        public int oe_posix_polling_notify_ecall(
-            [in, count=num_notifications]
-            struct _oe_device_notifications* notifications,
-            size_t num_notifications);
     };
 
     untrusted {
@@ -315,49 +310,34 @@ enclave {
             int flags,
             [out, count=1] int* err);
 
-        // Initiate waiting for epoll events. This function creates a new
-        // thread and delivers the events via oe_posix_polling_notify_ecall().
-        int oe_posix_epoll_wait_async_ocall(
-            int64_t enclaveid,
-            int epfd,
-            size_t maxevents,
-            [out, count=1] int* err);
-
-        int oe_posix_epoll_poll_ocall(
-            int64_t enclaveid,
-            int epfd,
-            [in,out, count=nfds] struct pollfd* fds,
-            size_t nfds,
-            int timeout,
-            [out, count=1] int* err);
-
-        int oe_posix_epoll_ctl_add_ocall(
-            int epfd,
-            int fd,
-            unsigned int event_mask,
-            int list_idx,
-            int epoll_enclave_fd,
-            [out, count=1] int* err);
-
-        int oe_posix_epoll_ctl_del_ocall(
-            int epfd,
-            int fd,
-            [out, count=1] int* err);
-
-        int oe_posix_epoll_ctl_mod_ocall(
-            int epfd,
-            int fd,
-            unsigned int event_mask,
-            int list_idx,
-            int epoll_enclave_fd,
-            [out, count=1] int* err);
-
         int oe_posix_epoll_close_ocall(
             int fd,
             [out, count=1] int* err);
 
         int oe_posix_shutdown_polling_device_ocall(
             int fd,
+            [out, count=1] int* err);
+
+        int oe_posix_epollv2_create_ocall(
+            int size,
+            [out, count=1] int* err);
+
+        int oe_posix_epollv2_create1_ocall(
+            int flags,
+            [out, count=1] int* err);
+
+        int oe_posix_epollv2_wait_ocall(
+            int epfd,
+            [out, count=maxevents] struct epoll_event* events,
+            unsigned int maxevents,
+            int timeout,
+            [out, count=1] int* err);
+
+        int oe_posix_epollv2_ctl_ocall(
+            int epfd,
+            int  op,
+            int fd,
+            [in, count=1] struct epoll_event* event,
             [out, count=1] int* err);
     };
 };

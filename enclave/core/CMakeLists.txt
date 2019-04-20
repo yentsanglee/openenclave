@@ -83,19 +83,20 @@ add_library(oecore STATIC
     posix/console.c
     posix/cwd.c
     posix/device.c
-    posix/epoll.c
+    #posix/epoll.c
+    posix/epollv2.c
     posix/eventfd.c
     posix/eventfd_device.c
     posix/fd.c
     posix/fs.c
     posix/getdomainname.c
     posix/gethostname.c
-    posix/hostepoll_device.c
+    #posix/hostepoll_device.c
     posix/hostfs_device.c
     posix/hostresolver_device.c
     posix/hostsock_device.c
     posix/mount.c
-    posix/poll.c
+    #posix/poll.c
     posix/realpath.c
     posix/resolver.c
     posix/select.c

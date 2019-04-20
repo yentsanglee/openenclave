@@ -8,6 +8,7 @@
 #include <openenclave/corelibc/arpa/inet.h>
 #include <openenclave/corelibc/limits.h>
 #include <openenclave/corelibc/netinet/in.h>
+#include <openenclave/corelibc/sys/epoll.h>
 #include <openenclave/corelibc/sys/poll.h>
 #include <openenclave/corelibc/sys/select.h>
 #include <openenclave/corelibc/sys/socket.h>
@@ -21,6 +22,7 @@
 #include <string.h>
 #include <sys/mount.h>
 #include "epoll_test_t.h"
+
 #include "interface.h"
 
 static char _path[OE_PATH_MAX];
@@ -30,7 +32,7 @@ extern "C" int ecall_device_init(const char* tmp_dir)
     OE_TEST(tmp_dir != NULL);
     OE_TEST(oe_load_module_hostfs() == OE_OK);
     OE_TEST(oe_load_module_hostsock() == OE_OK);
-    OE_TEST(oe_load_module_polling() == OE_OK);
+    // OE_TEST(oe_load_module_polling() == OE_OK);
 
     strlcpy(_path, tmp_dir, sizeof(_path));
     strlcat(_path, "/test", sizeof(_path));
@@ -464,6 +466,10 @@ static int _ecall_poll_test(INTERFACE& x, size_t buff_len, char* recv_buff)
 
 int ecall_poll_test(size_t buff_len, char* recv_buff, bool use_libc)
 {
+    OE_UNUSED(buff_len);
+    OE_UNUSED(recv_buff);
+    OE_UNUSED(use_libc);
+#if 0
     if (use_libc)
     {
         libc x;
@@ -474,6 +480,9 @@ int ecall_poll_test(size_t buff_len, char* recv_buff, bool use_libc)
         corelibc x;
         return _ecall_poll_test(x, buff_len, recv_buff);
     }
+#else
+    return 0;
+#endif
 }
 
 OE_SET_ENCLAVE_SGX(

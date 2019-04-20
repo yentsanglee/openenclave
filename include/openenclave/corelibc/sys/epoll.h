@@ -151,10 +151,10 @@ OE_INLINE int epoll_wait(
 
 OE_INLINE int epoll_pwait(
     int epfd,
-    struct oe_epoll_event* events,
+    struct epoll_event* events,
     int maxevents,
     int timeout,
-    const oe_sigset_t* sigmask)
+    const sigset_t* sigmask)
 {
     return oe_epoll_pwait(
         epfd, (struct oe_epoll_event*)events, maxevents, timeout, sigmask);

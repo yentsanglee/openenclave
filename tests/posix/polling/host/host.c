@@ -135,6 +135,7 @@ int main(int argc, const char* argv[])
 
     OE_TEST(ecall_device_init(enclave, &ret, tmp_dir) == OE_OK);
 
+#if 0
     test_data_len = 1024;
     OE_TEST(
         ecall_poll_test(
@@ -144,6 +145,7 @@ int main(int argc, const char* argv[])
 
     printf("poll: host received: %s\n", test_data_rtn);
     OE_TEST(strncmp(TESTDATA, test_data_rtn, strlen(TESTDATA)) == 0);
+#endif
 
     test_data_len = 1024;
     OE_TEST(

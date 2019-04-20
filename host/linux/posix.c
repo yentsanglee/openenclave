@@ -558,16 +558,6 @@ ssize_t oe_posix_sendmsg_ocall(
     return ret;
 }
 
-#if 0
-ssize_t oe_posix_sendmsg_ocall(
-    int sockfd,
-    const struct msghdr* msg,
-    int flags,
-    int* err)
-{
-}
-#endif
-
 ssize_t oe_posix_recv_ocall(
     int sockfd,
     void* buf,
@@ -1027,41 +1017,6 @@ typedef struct _wait_args
     struct epoll_event events[];
 } wait_args_t;
 
-static void* epoll_wait_thread(void* arg_)
-{
-    int ret = 0;
-    wait_args_t* args = (wait_args_t*)arg_;
-    int retval;
-
-    ret = epoll_wait(args->epfd, args->events, args->maxevents, -1);
-
-    if (ret >= 0)
-    {
-        size_t num_notifications = (size_t)ret;
-        struct epoll_event* ev = args->events;
-        oe_device_notifications_t* notifications =
-            (oe_device_notifications_t*)ev;
-
-        OE_STATIC_ASSERT(sizeof(notifications[0]) == sizeof(ev[0]));
-
-        if (oe_posix_polling_notify_ecall(
-                (oe_enclave_t*)args->enclaveid,
-                &retval,
-                notifications,
-                num_notifications) != OE_OK)
-        {
-            goto done;
-        }
-
-        if (retval != 0)
-            goto done;
-    }
-
-done:
-    free(args);
-    return NULL;
-}
-
 typedef struct _poll_args
 {
     int64_t enclaveid;
@@ -1070,157 +1025,9 @@ typedef struct _poll_args
     struct pollfd fds[];
 } poll_args_t;
 
-static void* poll_wait_thread(void* arg_)
-{
-    int ret = 0;
-    poll_args_t* args = (poll_args_t*)arg_;
-    int retval;
-
-    ret = poll(args->fds, args->nfds, -1);
-    if (ret >= 0)
-    {
-        size_t num_notifications = (size_t)ret;
-        struct pollfd* ev = args->fds;
-        oe_device_notifications_t* notifications =
-            (oe_device_notifications_t*)ev;
-
-        size_t ev_idx = 0;
-        size_t notify_idx = 0;
-        for (ev_idx = 0; ev_idx < (size_t)args->nfds; ev_idx++)
-        {
-            if (ev[ev_idx].revents)
-            {
-                notifications[notify_idx].event_mask =
-                    (uint32_t)ev[ev_idx].revents;
-                notifications[notify_idx].list_idx = (uint32_t)ev_idx;
-                notifications[notify_idx].epoll_fd = (uint32_t)args->epfd;
-            }
-        }
-
-        if (oe_posix_polling_notify_ecall(
-                (oe_enclave_t*)args->enclaveid,
-                &retval,
-                notifications,
-                num_notifications) != OE_OK)
-        {
-            goto done;
-        }
-
-        if (retval != 0)
-            goto done;
-    }
-
-done:
-    free(args);
-    return NULL;
-}
-
 int oe_posix_epoll_create1_ocall(int flags, int* err)
 {
     int ret = epoll_create1(flags);
-
-    if (ret == -1)
-        _set_err(err, errno);
-
-    return ret;
-}
-
-int oe_posix_epoll_wait_async_ocall(
-    int64_t enclaveid,
-    int epfd,
-    size_t maxevents,
-    int* err)
-{
-    int ret = -1;
-    size_t eventsize;
-    pthread_t thread = 0;
-    wait_args_t* args = NULL;
-
-    eventsize = sizeof(struct oe_epoll_event) * maxevents;
-
-    if (!(args = calloc(1, sizeof(wait_args_t) + eventsize)))
-    {
-        _set_err(err, ENOMEM);
-        goto done;
-    }
-
-    args->enclaveid = enclaveid;
-    args->epfd = epfd;
-    args->maxevents = (int)maxevents;
-
-    // We lose the wait thread when we exit the func, but the thread will die
-    // on its own copy args then spawn pthread to do the waiting. That way we
-    // can ecall with notification. the thread args are freed by the thread
-    // func.
-    if (pthread_create(&thread, NULL, epoll_wait_thread, args) < 0)
-    {
-        _set_err(err, EINVAL);
-        goto done;
-    }
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
-int oe_posix_epoll_ctl_add_ocall(
-    int epfd,
-    int fd,
-    unsigned int event_mask,
-    int list_idx,
-    int epoll_enclave_fd,
-    int* err)
-{
-    int ret = -1;
-
-    oe_ev_data_t ev_data = {
-        .event_list_idx = (uint32_t)list_idx,
-        .epoll_enclave_fd = (uint32_t)epoll_enclave_fd,
-    };
-
-    struct epoll_event ev = {
-        .events = event_mask,
-        .data.u64 = ev_data.data,
-    };
-
-    ret = epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
-
-    if (ret == -1)
-        _set_err(err, errno);
-
-    return ret;
-}
-
-int oe_posix_epoll_ctl_del_ocall(int epfd, int fd, int* err)
-{
-    int ret = epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);
-
-    if (ret == -1)
-        _set_err(err, errno);
-
-    return ret;
-}
-
-int oe_posix_epoll_ctl_mod_ocall(
-    int epfd,
-    int fd,
-    unsigned int event_mask,
-    int list_idx,
-    int enclave_fd,
-    int* err)
-{
-    oe_ev_data_t ev_data = {
-        .event_list_idx = (uint32_t)list_idx,
-        .epoll_enclave_fd = (uint32_t)enclave_fd,
-    };
-
-    struct epoll_event ev = {
-        .events = event_mask,
-        .data.u64 = ev_data.data,
-    };
-
-    int ret = epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
 
     if (ret == -1)
         _set_err(err, errno);
@@ -1250,52 +1057,71 @@ int oe_posix_shutdown_polling_device_ocall(int fd, int* err)
     return 0;
 }
 
-int oe_posix_epoll_poll_ocall(
-    int64_t enclaveid,
+/*
+**==============================================================================
+**
+** epollv2:
+**
+**==============================================================================
+*/
+
+int oe_posix_epollv2_create_ocall(int size, int* err)
+{
+    int ret = epoll_create(size);
+
+    if (ret == -1)
+        _set_err(err, errno);
+
+    return ret;
+}
+
+int oe_posix_epollv2_create1_ocall(int flags, int* err)
+{
+    int ret = epoll_create1(flags);
+
+    if (ret == -1)
+        _set_err(err, errno);
+
+    return ret;
+}
+
+int oe_posix_epollv2_wait_ocall(
     int epfd,
-    struct pollfd* fds,
-    size_t nfds,
+    struct epoll_event* events,
+    unsigned int maxevents,
     int timeout,
     int* err)
 {
     int ret = -1;
-    size_t fdsize = 0;
-    pthread_t thread = 0;
-    poll_args_t* args = NULL;
-    nfds_t fd_idx = 0;
 
-    (void)timeout;
+    _clear_err(err);
 
-    /* ATTN:IO: how does this work without using the events parameter. */
+    ret = epoll_wait(epfd, events, (int)maxevents, timeout);
 
-    fdsize = sizeof(struct pollfd) * nfds;
+    if (ret == -1)
+        _set_err(err, errno);
 
-    if (!(args = (poll_args_t*)calloc(1, sizeof(*args) + fdsize)))
-    {
-        _set_err(err, ENOMEM);
-        goto done;
-    }
+    return ret;
+}
 
-    args->enclaveid = enclaveid;
-    args->epfd = epfd;
-    args->nfds = nfds;
-    for (; fd_idx < nfds; fd_idx++)
-    {
-        args->fds[fd_idx] = fds[fd_idx];
-    }
+int oe_posix_epollv2_ctl_ocall(
+    int epfd,
+    int op,
+    int fd,
+    struct epoll_event* event,
+    int* err)
+{
+    int ret = -1;
 
-    // We lose the wait thread when we exit the func, but the thread will die
-    // on its own copy args then spawn pthread to do the waiting. That way we
-    // can ecall with notification. the thread args are freed by the thread
-    // func.
-    if (pthread_create(&thread, NULL, poll_wait_thread, args) < 0)
-    {
-        _set_err(err, EINVAL);
-        goto done;
-    }
+    _clear_err(err);
 
-    ret = 0;
+    ret = epoll_ctl(epfd, op, fd, event);
 
-done:
+    if (ret == -1)
+        _set_err(err, errno);
+
+    if (errno == EEXIST)
+        ret = 0;
+
     return ret;
 }
