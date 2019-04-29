@@ -51,8 +51,9 @@ target_include_directories(oeenclave PRIVATE
     ${CMAKE_BINARY_DIR}/output/include/openenclave/libc
     ${PROJECT_SOURCE_DIR}/include/openenclave/corelibc)
 
+
 target_link_libraries(oeenclave PUBLIC
-    -L/home/johnkord/openssl_111b_test/openssl-OpenSSL_1_1_1b/ -lcrypto
+    -L${CMAKE_BINARY_DIR}/3rdparty/openssl_install/lib/ -lssl -lcrypto
     oe_includes
     -L${CMAKE_BINARY_DIR}/output/lib/openenclave/enclave/ -loecore -loelibc
     mbedcrypto)
