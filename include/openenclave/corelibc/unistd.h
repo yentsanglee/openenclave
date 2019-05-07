@@ -47,15 +47,11 @@ ssize_t oe_read(int fd, void* buf, size_t count);
 
 ssize_t oe_write(int fd, const void* buf, size_t count);
 
-#if !defined(WIN32) /* __feature_io__ */
-
 oe_off_t oe_lseek(int fd, oe_off_t offset, int whence);
 
 int oe_truncate(const char* path, oe_off_t length);
 
 int oe_truncate_d(uint64_t devid, const char* path, oe_off_t length);
-
-#endif /* !defined(WIN32) */
 
 int oe_link(const char* oldpath, const char* newpath);
 

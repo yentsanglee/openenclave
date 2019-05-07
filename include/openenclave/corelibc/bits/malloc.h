@@ -3,27 +3,32 @@
 
 #ifndef _OE_BITS_MALLOC_H
 #define _OE_BITS_MALLOC_H
+#if defined(_MSC_VER)
+#define CDECL __cdecl
+#else
+#define CDECL
+#endif
 
 OE_INLINE
-void* malloc(size_t size)
+void* CDECL malloc(size_t size)
 {
     return oe_malloc(size);
 }
 
 OE_INLINE
-void free(void* ptr)
+void CDECL free(void* ptr)
 {
     oe_free(ptr);
 }
 
 OE_INLINE
-void* calloc(size_t nmemb, size_t size)
+void* CDECL calloc(size_t nmemb, size_t size)
 {
     return oe_calloc(nmemb, size);
 }
 
 OE_INLINE
-void* realloc(void* ptr, size_t size)
+void* CDECL realloc(void* ptr, size_t size)
 {
     return oe_realloc(ptr, size);
 }

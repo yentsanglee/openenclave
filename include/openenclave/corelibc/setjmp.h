@@ -48,7 +48,7 @@ OE_INLINE int setjmp(jmp_buf* env)
 
 OE_INLINE void longjmp(jmp_buf* env, int val)
 {
-    return oe_longjmp((oe_jmp_buf*)env, val);
+    oe_longjmp((oe_jmp_buf*)env, val);
 }
 
 #endif /* defined(OE_NEED_STDC_NAMES) */

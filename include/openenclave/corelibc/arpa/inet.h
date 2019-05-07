@@ -9,6 +9,10 @@
 #include <openenclave/corelibc/netinet/in.h>
 
 OE_EXTERNC_BEGIN
+#if defined(_MSC_VER)
+unsigned short   _byteswap_ushort( unsigned short   _Number);
+unsigned long    _byteswap_ulong ( unsigned long    _Number);
+#endif
 
 /*
 **==============================================================================
@@ -34,7 +38,11 @@ OE_INLINE uint32_t oe_ntohl(uint32_t x)
 #if __OE_BYTE_ORDER == __OE_BIG_ENDIAN
     return x;
 #else
+#if defined(_MSC_VER)
+    return _byteswap_ulong(x);
+#else
     return __builtin_bswap32(x);
+#endif
 #endif
 }
 
@@ -43,7 +51,11 @@ OE_INLINE uint16_t oe_ntohs(uint16_t x)
 #if __OE_BYTE_ORDER == __OE_BIG_ENDIAN
     return x;
 #else
+#if defined(_MSC_VER)
+    return _byteswap_ushort(x);
+#else
     return __builtin_bswap16(x);
+#endif
 #endif
 }
 
@@ -52,7 +64,11 @@ OE_INLINE uint32_t oe_htonl(uint32_t x)
 #if __OE_BYTE_ORDER == __OE_BIG_ENDIAN
     return x;
 #else
+#if defined(_MSC_VER)
+    return _byteswap_ulong(x);
+#else
     return __builtin_bswap32(x);
+#endif
 #endif
 }
 
@@ -61,7 +77,11 @@ OE_INLINE uint16_t oe_htons(uint16_t x)
 #if __OE_BYTE_ORDER == __OE_BIG_ENDIAN
     return x;
 #else
+#if defined(_MSC_VER)
+    return _byteswap_ushort(x);
+#else
     return __builtin_bswap16(x);
+#endif
 #endif
 }
 

@@ -74,7 +74,7 @@ OE_INLINE void abort(void)
 
 OE_INLINE void exit(int status)
 {
-    return oe_exit(status);
+    oe_exit(status);
 }
 
 OE_INLINE int atoi(const char* nptr)

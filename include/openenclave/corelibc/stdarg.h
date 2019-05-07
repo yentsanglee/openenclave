@@ -10,7 +10,7 @@ typedef char* oe_va_list;
 #define oe_va_start(ap, x) __va_start(&ap, x)
 #define oe_va_arg(ap, type) \
     *((type*)((ap += sizeof(__int64)) - sizeof(__int64)))
-#define oe_va_end(ap) (ap = (va_list)0)
+#define oe_va_end(ap) (ap = (oe_va_list)0)
 #define oe_va_copy(ap1, ap2) (ap1 = ap2)
 
 #elif defined(__linux__)
@@ -23,7 +23,7 @@ typedef char* oe_va_list;
 
 #endif
 
-#if defined(OE_NEED_STDC_NAMES) && !defined(_MSC_VER)
+#if defined(OE_NEED_STDC_NAMES)
 
 #define va_list oe_va_list
 #define va_start oe_va_start
