@@ -222,20 +222,11 @@ static int _epoll_ctl_add(epoll_t* epoll, int fd, struct oe_epoll_event* event)
     host_epfd = epoll->host_fd;
 
     /* Get the host fd for the device. */
+    if ((host_fd = OE_CALL_BASE(get_host_fd, dev)) == -1)
     {
-        if (!dev->ops.base->get_host_fd)
-        {
-            oe_errno = OE_EINVAL;
-            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
-            goto done;
-        }
-
-        if ((host_fd = (*dev->ops.base->get_host_fd)(dev)) == -1)
-        {
-            oe_errno = OE_EINVAL;
-            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
-            goto done;
-        }
+        oe_errno = OE_EINVAL;
+        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
+        goto done;
     }
 
     /* Initialize the host event. */
@@ -294,14 +285,7 @@ static int _epoll_ctl_mod(epoll_t* epoll, int fd, struct oe_epoll_event* event)
 
     /* Get the host fd for the device. */
     {
-        if (!dev->ops.base->get_host_fd)
-        {
-            oe_errno = OE_EINVAL;
-            OE_TRACE_ERROR("oe_errno=%d", oe_errno);
-            goto done;
-        }
-
-        if ((host_fd = (*dev->ops.base->get_host_fd)(dev)) == -1)
+        if ((host_fd = OE_CALL_BASE(get_host_fd, dev)) == -1)
         {
             oe_errno = OE_EINVAL;
             OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
@@ -376,14 +360,7 @@ static int _epoll_ctl_del(epoll_t* epoll, int fd)
 
     /* Get the host fd for the device. */
     {
-        if (!dev->ops.base->get_host_fd)
-        {
-            oe_errno = OE_EINVAL;
-            OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
-            goto done;
-        }
-
-        if ((host_fd = (*dev->ops.base->get_host_fd)(dev)) == -1)
+        if ((host_fd = OE_CALL_BASE(get_host_fd, dev)) == -1)
         {
             oe_errno = OE_EINVAL;
             OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
@@ -489,14 +466,7 @@ static int _epoll_wait(
 
     oe_errno = 0;
 
-    if (!epoll->base.ops.base->get_host_fd)
-    {
-        oe_errno = OE_EINVAL;
-        OE_TRACE_ERROR("oe_errno=%d", oe_errno);
-        goto done;
-    }
-
-    host_epfd = (*epoll->base.ops.base->get_host_fd)((oe_device_t*)epoll);
+    host_epfd = OE_CALL_BASE(get_host_fd, (oe_device_t*)epoll);
     if (host_epfd == -1)
     {
         oe_errno = OE_EINVAL;

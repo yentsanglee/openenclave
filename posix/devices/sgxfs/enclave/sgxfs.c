@@ -474,7 +474,7 @@ static oe_device_t* _sgxfs_open_directory(
         if (_expand_path(fs, pathname, full_path) != 0)
             goto done;
 
-        if ((ret = hostfs->ops.fs->open(hostfs, full_path, flags, mode)) != 0)
+        if ((ret = OE_CALL_FS(open, hostfs, full_path, flags, mode)) != 0)
             goto done;
     }
 
@@ -625,7 +625,7 @@ static int _sgxfs_close(oe_device_t* file_)
     }
     else
     {
-        if ((*hostfs->ops.fs->base.close)(file_) != 0)
+        if (OE_CALL_BASE(close, file_) != 0)
             goto done;
     }
 
@@ -672,7 +672,7 @@ static int _sgxfs_getdents(
     }
 
     /* Delegate the request to HOSTFS. */
-    if ((n = hostfs->ops.fs->getdents(file, dirp, count)) == -1)
+    if ((n = OE_CALL_FS(getdents, file, dirp, count)) == -1)
         goto done;
 
     ret = n;
@@ -707,7 +707,7 @@ static int _sgxfs_stat(
         if (_expand_path(fs, pathname, full_path) != 0)
             goto done;
 
-        if (hostfs->ops.fs->stat(hostfs, full_path, buf) != 0)
+        if (OE_CALL_FS(stat, hostfs, full_path, buf) != 0)
             goto done;
     }
 
@@ -763,7 +763,7 @@ static int _sgxfs_access(oe_device_t* fs_, const char* pathname, int mode)
         if (_expand_path(fs, pathname, full_path) != 0)
             goto done;
 
-        if ((ret = hostfs->ops.fs->access(hostfs, full_path, mode)) != 0)
+        if ((ret = OE_CALL_FS(access, hostfs, full_path, mode)) != 0)
             goto done;
     }
 
@@ -876,7 +876,7 @@ static int _sgxfs_unlink(oe_device_t* fs_, const char* pathname)
         if (_expand_path(fs, pathname, full_path) != 0)
             goto done;
 
-        ret = hostfs->ops.fs->unlink(hostfs, full_path);
+        ret = OE_CALL_FS(unlink, hostfs, full_path);
     }
 
 done:
@@ -954,7 +954,7 @@ static int _sgxfs_rename(
         if (_expand_path(fs, oldpath, full_path) != 0)
             goto done;
 
-        if (hostfs->ops.fs->unlink(hostfs, full_path) != 0)
+        if (OE_CALL_FS(unlink, hostfs, full_path) != 0)
         {
             goto done;
         }
@@ -1127,7 +1127,7 @@ static int _sgxfs_mkdir(oe_device_t* fs_, const char* pathname, oe_mode_t mode)
         if (_expand_path(fs, pathname, full_path) != 0)
             goto done;
 
-        if (hostfs->ops.fs->mkdir(hostfs, full_path, mode) != 0)
+        if (OE_CALL_FS(mkdir, hostfs, full_path, mode) != 0)
             goto done;
     }
 
@@ -1163,7 +1163,7 @@ static int _sgxfs_rmdir(oe_device_t* fs_, const char* pathname)
         if (_expand_path(fs, pathname, full_path) != 0)
             goto done;
 
-        if (hostfs->ops.fs->rmdir(hostfs, full_path) != 0)
+        if (OE_CALL_FS(rmdir, hostfs, full_path) != 0)
             goto done;
     }
 
