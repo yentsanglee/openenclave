@@ -11,8 +11,8 @@
 #include <openenclave/internal/trace.h>
 #include <openenclave/corelibc/limits.h>
 #include <openenclave/corelibc/stdio.h>
-#include <openenclave/internal/device/device.h>
-#include <openenclave/internal/device/raise.h>
+#include <openenclave/internal/posix/device.h>
+#include <openenclave/internal/posix/raise.h>
 
 #define MAX_MOUNT_TABLE_SIZE 64
 

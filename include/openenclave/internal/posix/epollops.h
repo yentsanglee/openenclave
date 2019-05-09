@@ -8,7 +8,7 @@
 #include <openenclave/bits/types.h>
 #include <openenclave/corelibc/sys/epoll.h>
 #include <openenclave/internal/defs.h>
-#include <openenclave/internal/device/deviceops.h>
+#include <openenclave/internal/posix/deviceops.h>
 
 OE_EXTERNC_BEGIN
 

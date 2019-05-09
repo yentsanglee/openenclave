@@ -12,10 +12,10 @@
 #include <openenclave/corelibc/string.h>
 #include <openenclave/corelibc/stdio.h>
 #include <openenclave/internal/trace.h>
-#include <openenclave/internal/device/raise.h>
-#include "epoll.h"
+#include <openenclave/internal/posix/raise.h>
+#include <openenclave/internal/posix/fdtable.h>
+
 #include "list.h"
-#include <openenclave/internal/device/fdtable.h>
 #include "posix_t.h"
 
 int oe_epoll_create(int size)

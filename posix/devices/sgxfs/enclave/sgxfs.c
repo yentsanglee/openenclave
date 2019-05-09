@@ -17,7 +17,7 @@
 #include <openenclave/internal/thread.h>
 #include <openenclave/corelibc/limits.h>
 #include <openenclave/internal/trace.h>
-#include <openenclave/internal/device/device.h>
+#include <openenclave/internal/posix/device.h>
 
 #define DEVICE_NAME "sgxfs"
 #define FS_MAGIC 0x4a335f60

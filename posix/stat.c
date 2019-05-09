@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include <openenclave/corelibc/sys/stat.h>
-#include <openenclave/internal/device/device.h>
-#include <openenclave/internal/device/raise.h>
+#include <openenclave/internal/posix/device.h>
+#include <openenclave/internal/posix/raise.h>
 #include <openenclave/internal/trace.h>
 #include "mount.h"
 

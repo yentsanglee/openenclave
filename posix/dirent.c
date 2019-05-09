@@ -6,9 +6,9 @@
 #include <openenclave/corelibc/limits.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/unistd.h>
-#include <openenclave/internal/device/device.h>
-#include <openenclave/internal/device/fdtable.h>
-#include <openenclave/internal/device/raise.h>
+#include <openenclave/internal/posix/device.h>
+#include <openenclave/internal/posix/fdtable.h>
+#include <openenclave/internal/posix/raise.h>
 #include <openenclave/internal/trace.h>
 
 #define DIR_MAGIC 0x09180827
