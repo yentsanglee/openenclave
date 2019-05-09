@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #define OE_SYS_restart_syscall 0
 #define OE_SYS_exit 1
 #define OE_SYS_fork 2
