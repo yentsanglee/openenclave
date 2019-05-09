@@ -3,15 +3,10 @@
 
 #include <openenclave/enclave.h>
 
-#include <openenclave/bits/device.h>
 #include <openenclave/corelibc/errno.h>
-#include <openenclave/corelibc/stdio.h>
-#include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
-#include <openenclave/internal/calls.h>
 #include <openenclave/internal/posix/device.h>
 #include <openenclave/internal/posix/raise.h>
-#include <openenclave/internal/print.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/trace.h>
@@ -20,30 +15,6 @@
 
 static oe_device_t* _table[MAX_TABLE_SIZE];
 static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
-
-int oe_allocate_devid(uint64_t devid)
-{
-    int ret = -1;
-    bool locked = false;
-
-    oe_spin_lock(&_lock);
-    locked = true;
-
-    if (devid >= MAX_TABLE_SIZE)
-        OE_RAISE_ERRNO(OE_ENOMEM);
-
-    if (_table[devid] != NULL)
-        OE_RAISE_ERRNO(OE_EADDRINUSE);
-
-    ret = 0;
-
-done:
-
-    if (locked)
-        oe_spin_unlock(&_lock);
-
-    return ret;
-}
 
 int oe_clear_devid(uint64_t devid)
 {

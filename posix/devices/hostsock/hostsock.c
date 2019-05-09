@@ -1166,14 +1166,6 @@ static void _load_once(void)
     oe_result_t result = OE_FAILURE;
     const uint64_t devid = OE_DEVID_HOSTSOCK;
 
-    /* Allocate the device id. */
-    if (oe_allocate_devid(devid) != 0)
-    {
-        OE_TRACE_ERROR("devid=%lu ", devid);
-        goto done;
-    }
-
-    /* Add the hostfs device to the device table. */
     if (oe_set_device(devid, &_hostsock.base) != 0)
     {
         OE_TRACE_ERROR("devid=%lu ", devid);

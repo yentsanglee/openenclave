@@ -46,8 +46,6 @@ struct _oe_device
     } ops;
 };
 
-int oe_allocate_devid(uint64_t devid);
-
 int oe_clear_devid(uint64_t devid);
 
 int oe_set_device(uint64_t devid, oe_device_t* pdevice);

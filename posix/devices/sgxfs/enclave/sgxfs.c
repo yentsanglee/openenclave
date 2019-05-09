@@ -1217,12 +1217,6 @@ static void _load_once()
     oe_result_t result = OE_FAILURE;
     const uint64_t devid = OE_DEVID_SGXFS;
 
-    if (oe_allocate_devid(devid) != 0)
-    {
-        OE_TRACE_ERROR("devid=%lu ", devid);
-        goto done;
-    }
-
     if (oe_set_device(devid, _get_sgxfs_device()) != 0)
     {
         OE_TRACE_ERROR("devid=%lu ", devid);
