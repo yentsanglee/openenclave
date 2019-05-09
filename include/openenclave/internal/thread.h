@@ -132,12 +132,6 @@ typedef uint32_t oe_once_t;
  */
 oe_result_t oe_once(oe_once_t* once, void (*func)(void));
 
-/**
- * This function has the same semantics as **oe_once()**, except that it passes
- * an argument (**arg**) to the caller's function (**func**).
- */
-oe_result_t oe_once_with_arg(oe_once_t* once, void (*func)(void*), void* arg);
-
 #define OE_SPINLOCK_INITIALIZER 0
 
 typedef volatile uint32_t oe_spinlock_t;
