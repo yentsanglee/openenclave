@@ -10,12 +10,14 @@
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/device/epollops.h>
 #include <openenclave/internal/device/fdtable.h>
+#include <openenclave/internal/reserve.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/trace.h>
 #include "posix_t.h"
 
 #define DEVICE_NAME "hostepoll"
 #define EPOLL_MAGIC 0x4504f4c
+#define MIN_MAP_SIZE 64
 
 /* epoll_ctl(OE_EPOLL_CTL_ADD) establishes this pair. */
 typedef struct _pair
@@ -40,47 +42,17 @@ typedef struct _epoll
 
 } epoll_t;
 
-static epoll_t* _cast_epoll(const oe_device_t* device)
-{
-    epoll_t* epoll = (epoll_t*)device;
-
-    if (epoll == NULL || epoll->magic != EPOLL_MAGIC)
-        return NULL;
-
-    return epoll;
-}
-
 static int _map_reserve(epoll_t* epoll, size_t new_capacity)
 {
-    int ret = -1;
+    if (new_capacity < MIN_MAP_SIZE)
+        new_capacity = MIN_MAP_SIZE;
 
-    if (new_capacity > epoll->map_capacity)
-    {
-        pair_t* p;
-        size_t cap = epoll->map_capacity * 2;
-
-        if (cap < new_capacity)
-            cap = new_capacity;
-
-        if (!(p = oe_realloc(epoll->map, cap * sizeof(pair_t))))
-        {
-            oe_errno = OE_ENOMEM;
-            OE_TRACE_ERROR("oe_errno=%d ", oe_errno);
-            goto done;
-        }
-
-        size_t n = (cap - epoll->map_capacity) * sizeof(pair_t);
-        memset(p + epoll->map_capacity, 0, n);
-
-        epoll->map = p;
-        epoll->map_capacity = new_capacity;
-    }
-
-    ret = 0;
-
-done:
-
-    return ret;
+    return oe_reserve(
+        (void**)&epoll->map,
+        epoll->map_size,
+        sizeof(pair_t),
+        &epoll->map_capacity,
+        new_capacity);
 }
 
 static const pair_t* _map_find(epoll_t* epoll, int fd)
@@ -95,6 +67,16 @@ static const pair_t* _map_find(epoll_t* epoll, int fd)
 
     /* Not found */
     return NULL;
+}
+
+static epoll_t* _cast_epoll(const oe_device_t* device)
+{
+    epoll_t* epoll = (epoll_t*)device;
+
+    if (epoll == NULL || epoll->magic != EPOLL_MAGIC)
+        return NULL;
+
+    return epoll;
 }
 
 static epoll_t _epoll;
