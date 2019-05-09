@@ -1217,7 +1217,7 @@ static void _load_once()
     oe_result_t result = OE_FAILURE;
     const uint64_t devid = OE_DEVID_SGXFS;
 
-    if (oe_allocate_devid(devid) != devid)
+    if (oe_allocate_devid(devid) != 0)
     {
         OE_TRACE_ERROR("devid=%lu ", devid);
         goto done;

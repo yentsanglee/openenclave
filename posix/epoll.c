@@ -15,7 +15,6 @@
 #include <openenclave/internal/posix/raise.h>
 #include <openenclave/internal/posix/fdtable.h>
 
-#include "list.h"
 #include "posix_t.h"
 
 int oe_epoll_create(int size)

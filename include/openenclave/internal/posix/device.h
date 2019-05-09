@@ -46,10 +46,9 @@ struct _oe_device
     } ops;
 };
 
-uint64_t oe_allocate_devid(uint64_t devid);
+int oe_allocate_devid(uint64_t devid);
 
-/* ATTN: Rename or remove this! */
-int oe_release_devid(uint64_t devid);
+int oe_clear_devid(uint64_t devid);
 
 int oe_set_device(uint64_t devid, oe_device_t* pdevice);
 

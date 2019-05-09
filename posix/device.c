@@ -21,9 +21,9 @@
 static oe_device_t* _table[MAX_TABLE_SIZE];
 static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
 
-uint64_t oe_allocate_devid(uint64_t devid)
+int oe_allocate_devid(uint64_t devid)
 {
-    uint64_t ret = OE_DEVID_NONE;
+    int ret = -1;
     bool locked = false;
 
     oe_spin_lock(&_lock);
@@ -35,7 +35,7 @@ uint64_t oe_allocate_devid(uint64_t devid)
     if (_table[devid] != NULL)
         OE_RAISE_ERRNO(OE_EADDRINUSE);
 
-    ret = devid;
+    ret = 0;
 
 done:
 
@@ -45,7 +45,7 @@ done:
     return ret;
 }
 
-int oe_release_devid(uint64_t devid)
+int oe_clear_devid(uint64_t devid)
 {
     int ret = -1;
     bool locked = false;
@@ -161,7 +161,7 @@ int oe_remove_device(uint64_t devid)
     if ((retval = (*device->ops.base->shutdown)(device)) != 0)
         OE_RAISE_ERRNO(oe_errno);
 
-    if (oe_set_device(devid, NULL) != 0)
+    if (oe_clear_devid(devid) != 0)
         OE_RAISE_ERRNO(oe_errno);
 
     ret = 0;

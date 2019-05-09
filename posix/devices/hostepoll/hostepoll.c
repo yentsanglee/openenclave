@@ -645,7 +645,7 @@ static void _load_once(void)
     const uint64_t devid = OE_DEVID_HOSTEPOLL;
 
     /* Allocate the device id. */
-    if (oe_allocate_devid(devid) != devid)
+    if (oe_allocate_devid(devid) != 0)
     {
         OE_TRACE_ERROR("devid=%lu ", devid);
         goto done;
