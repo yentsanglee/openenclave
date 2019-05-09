@@ -636,40 +636,40 @@ static epoll_t _epoll = {
     .magic = EPOLL_MAGIC,
 };
 
-oe_result_t oe_load_module_hostepoll(void)
+static oe_once_t _once = OE_ONCE_INITIALIZER;
+static bool _loaded;
+
+static void _load_once(void)
 {
     oe_result_t result = OE_FAILURE;
-    static bool _loaded = false;
-    static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
+    const uint64_t devid = OE_DEVID_HOSTEPOLL;
 
-    if (!_loaded)
+    /* Allocate the device id. */
+    if (oe_allocate_devid(devid) != devid)
     {
-        oe_spin_lock(&_lock);
+        OE_TRACE_ERROR("devid=%lu ", devid);
+        goto done;
+    }
 
-        if (!_loaded)
-        {
-            const uint64_t devid = OE_DEVID_HOSTEPOLL;
-
-            /* Allocate the device id. */
-            if (oe_allocate_devid(devid) != devid)
-            {
-                OE_TRACE_ERROR("devid=%lu", devid);
-                goto done;
-            }
-
-            /* Add to the device table. */
-            if (oe_set_device(devid, &_epoll.base) != 0)
-            {
-                OE_TRACE_ERROR("devid=%lu", devid);
-                goto done;
-            }
-        }
-
-        oe_spin_unlock(&_lock);
+    /* Add the hostfs device to the device table. */
+    if (oe_set_device(devid, &_epoll.base) != 0)
+    {
+        OE_TRACE_ERROR("devid=%lu ", devid);
+        goto done;
     }
 
     result = OE_OK;
 
 done:
-    return result;
+
+    if (result == OE_OK)
+        _loaded = true;
+}
+
+oe_result_t oe_load_module_hostepoll(void)
+{
+    if (oe_once(&_once, _load_once) != OE_OK || !_loaded)
+        return OE_FAILURE;
+
+    return OE_OK;
 }

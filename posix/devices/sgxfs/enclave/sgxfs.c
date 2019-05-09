@@ -16,6 +16,7 @@
 #include <openenclave/corelibc/fcntl.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/corelibc/limits.h>
+#include <openenclave/internal/trace.h>
 #include <openenclave/internal/device/device.h>
 
 #define DEVICE_NAME "sgxfs"
@@ -1208,40 +1209,38 @@ static oe_device_t* _get_sgxfs_device(void)
     return &_sgxfs.base;
 }
 
-oe_result_t oe_load_module_sgxfs(void)
+static oe_once_t _once = OE_ONCE_INITIALIZER;
+static bool _loaded;
+
+static void _load_once()
 {
-    oe_result_t result = OE_UNEXPECTED;
-    static bool _loaded = false;
-    static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
+    oe_result_t result = OE_FAILURE;
+    const uint64_t devid = OE_DEVID_SGXFS;
 
-    if (!_loaded)
+    if (oe_allocate_devid(devid) != devid)
     {
-        oe_spin_lock(&_lock);
+        OE_TRACE_ERROR("devid=%lu ", devid);
+        goto done;
+    }
 
-        if (!_loaded)
-        {
-            /* Allocate the device id. */
-            if (oe_allocate_devid(OE_DEVID_SGXFS) != OE_DEVID_SGXFS)
-            {
-                result = OE_FAILURE;
-                goto done;
-            }
-
-            /* Add the sgxfs device to the device table. */
-            if (oe_set_device(OE_DEVID_SGXFS, _get_sgxfs_device()) != 0)
-            {
-                result = OE_FAILURE;
-                goto done;
-            }
-
-            _loaded = true;
-        }
-
-        oe_spin_unlock(&_lock);
+    if (oe_set_device(devid, _get_sgxfs_device()) != 0)
+    {
+        OE_TRACE_ERROR("devid=%lu ", devid);
+        goto done;
     }
 
     result = OE_OK;
 
 done:
-    return result;
+
+    if (result == OE_OK)
+        _loaded = true;
+}
+
+oe_result_t oe_load_module_sgxfs(void)
+{
+    if (oe_once(&_once, _load_once) != OE_OK || !_loaded)
+        return OE_FAILURE;
+
+    return OE_OK;
 }

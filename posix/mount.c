@@ -206,11 +206,11 @@ int oe_mount(
 
 done:
 
-    if (new_device)
-        new_device->ops.fs->base.release(new_device);
-
     if (locked)
         oe_spin_unlock(&_lock);
+
+    if (new_device)
+        new_device->ops.fs->base.release(new_device);
 
     return ret;
 }

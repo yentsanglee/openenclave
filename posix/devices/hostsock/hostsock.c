@@ -1158,40 +1158,40 @@ static sock_t _hostsock = {
     // oe_event_device_t *event_fds;
 };
 
-oe_result_t oe_load_module_hostsock(void)
+static oe_once_t _once = OE_ONCE_INITIALIZER;
+static bool _loaded;
+
+static void _load_once(void)
 {
     oe_result_t result = OE_FAILURE;
-    static bool _loaded = false;
-    static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
+    const uint64_t devid = OE_DEVID_HOSTSOCK;
 
-    if (!_loaded)
+    /* Allocate the device id. */
+    if (oe_allocate_devid(devid) != devid)
     {
-        oe_spin_lock(&_lock);
+        OE_TRACE_ERROR("devid=%lu ", devid);
+        goto done;
+    }
 
-        if (!_loaded)
-        {
-            const uint64_t devid = OE_DEVID_HOSTSOCK;
-
-            /* Allocate the device id. */
-            if (oe_allocate_devid(devid) != devid)
-            {
-                OE_TRACE_ERROR("devid=%lu", devid);
-                goto done;
-            }
-
-            /* Add the hostfs device to the device table. */
-            if (oe_set_device(devid, &_hostsock.base) != 0)
-            {
-                OE_TRACE_ERROR("devid=%lu", devid);
-                goto done;
-            }
-        }
-
-        oe_spin_unlock(&_lock);
+    /* Add the hostfs device to the device table. */
+    if (oe_set_device(devid, &_hostsock.base) != 0)
+    {
+        OE_TRACE_ERROR("devid=%lu ", devid);
+        goto done;
     }
 
     result = OE_OK;
 
 done:
-    return result;
+
+    if (result == OE_OK)
+        _loaded = true;
+}
+
+oe_result_t oe_load_module_hostsock(void)
+{
+    if (oe_once(&_once, _load_once) != OE_OK || !_loaded)
+        return OE_FAILURE;
+
+    return OE_OK;
 }
