@@ -11,7 +11,7 @@
 #include "mbedtls_corelibc_undef.h"
 // clang-format on
 
-#include <openenclave/internal/rsa.h>
+#include <openenclave/internal/crypto/rsa.h>
 
 OE_INLINE bool oe_is_rsa_key(const mbedtls_pk_context* pk)
 {

@@ -11,7 +11,7 @@
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/raise.h>
-#include <openenclave/internal/sha.h>
+#include <openenclave/internal/crypto/sha.h>
 
 typedef struct _oe_sha256_context_impl
 {

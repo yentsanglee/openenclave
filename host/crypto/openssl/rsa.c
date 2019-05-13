@@ -3,9 +3,9 @@
 
 #include "../rsa.h"
 #include <openenclave/bits/safecrt.h>
+#include <openenclave/internal/crypto/rsa.h>
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/raise.h>
-#include <openenclave/internal/rsa.h>
 #include <openenclave/internal/utils.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>

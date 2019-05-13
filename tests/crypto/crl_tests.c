@@ -5,8 +5,8 @@
 #include <openenclave/enclave.h>
 #endif
 
-#include <openenclave/internal/cert.h>
-#include <openenclave/internal/crl.h>
+#include <openenclave/internal/crypto/cert.h>
+#include <openenclave/internal/crypto/crl.h>
 #include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/tests.h>
 #include <stdarg.h>

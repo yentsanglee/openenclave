@@ -5,7 +5,7 @@
 #include <openenclave/enclave.h>
 #endif
 
-#include <openenclave/internal/random.h>
+#include <openenclave/internal/crypto/random.h>
 #include <openenclave/internal/tests.h>
 #include <stdio.h>
 #include <string.h>

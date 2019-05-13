@@ -4,11 +4,11 @@
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/host.h>
 #include <openenclave/internal/aesm.h>
+#include <openenclave/internal/crypto/rsa.h>
 #include <openenclave/internal/elf.h>
 #include <openenclave/internal/error.h>
 #include <openenclave/internal/mem.h>
 #include <openenclave/internal/raise.h>
-#include <openenclave/internal/rsa.h>
 #include <openenclave/internal/sgxsign.h>
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/str.h>

@@ -14,7 +14,7 @@
 #include <openenclave/corelibc/string.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/atomic.h>
-#include <openenclave/internal/cert.h>
+#include <openenclave/internal/crypto/cert.h>
 #include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/pem.h>
 #include <openenclave/internal/print.h>

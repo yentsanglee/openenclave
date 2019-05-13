@@ -3,7 +3,7 @@
 
 #include "../common/asn1.h"
 #include <openenclave/bits/safecrt.h>
-#include <openenclave/internal/asn1.h>
+#include <openenclave/internal/crypto/asn1.h>
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>

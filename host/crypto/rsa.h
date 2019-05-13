@@ -4,7 +4,7 @@
 #ifndef _OE_HOST_CRYPTO_RSA_H
 #define _OE_HOST_CRYPTO_RSA_H
 
-#include <openenclave/internal/rsa.h>
+#include <openenclave/internal/crypto/rsa.h>
 
 /* Caller is responsible for freeing public key. */
 oe_result_t oe_rsa_get_public_key_from_private(

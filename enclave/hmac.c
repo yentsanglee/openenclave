@@ -9,7 +9,7 @@
 // clang-format on
 
 #include <openenclave/internal/defs.h>
-#include <openenclave/internal/hmac.h>
+#include <openenclave/internal/crypto/hmac.h>
 #include <openenclave/internal/raise.h>
 
 typedef struct _oe_hmac_sha256_context_impl

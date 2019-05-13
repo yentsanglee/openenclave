@@ -3,7 +3,7 @@
 
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/enclave.h>
-#include <openenclave/internal/random.h>
+#include <openenclave/internal/crypto/random.h>
 
 /*
  * MBEDTLS links this function definition when MBEDTLS_ENTROPY_HARDWARE_ALT

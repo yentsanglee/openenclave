@@ -11,7 +11,7 @@
 #include "mbedtls_corelibc_undef.h"
 // clang-format on
 
-#include <openenclave/internal/crl.h>
+#include <openenclave/internal/crypto/crl.h>
 
 typedef struct _crl
 {

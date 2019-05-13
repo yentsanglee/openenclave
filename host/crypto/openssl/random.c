@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <openenclave/internal/random.h>
+#include <openenclave/internal/crypto/random.h>
 #include <openssl/rand.h>
 
 oe_result_t oe_random_internal(void* data, size_t size)

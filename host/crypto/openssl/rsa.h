@@ -4,7 +4,7 @@
 #ifndef _OE_HOST_CRYPTO_OPENSSL_RSA_H
 #define _OE_HOST_CRYPTO_OPENSSL_RSA_H
 
-#include <openenclave/internal/rsa.h>
+#include <openenclave/internal/crypto/rsa.h>
 #include <openssl/evp.h>
 
 /* Caller is responsible for validating parameters */

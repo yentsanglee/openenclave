@@ -8,9 +8,9 @@
 #endif
 
 #include <openenclave/host.h>
+#include <openenclave/internal/crypto/sha.h>
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/raise.h>
-#include <openenclave/internal/sha.h>
 #include <stdio.h>
 #include <string.h>
 
