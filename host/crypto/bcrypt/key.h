@@ -29,18 +29,25 @@ bool oe_bcrypt_key_is_valid(const oe_bcrypt_key_t* impl, uint64_t magic);
 
 oe_result_t oe_bcrypt_key_free(oe_bcrypt_key_t* key, uint64_t magic);
 
+oe_result_t oe_bcrypt_key_get_blob(
+    oe_bcrypt_key_t* key,
+    uint64_t magic,
+    LPCWSTR blob_type,
+    ULONG** blob_data,
+    ULONG* blob_size);
+
 oe_result_t oe_bcrypt_read_key_pem(
     const uint8_t* pem_data,
     size_t pem_size,
     oe_bcrypt_key_t* key,
     oe_bcrypt_read_key_args_t key_args,
     uint64_t magic);
-//
-// void oe_public_key_init(
-//    oe_public_key_t* public_key,
-//    EVP_PKEY* pkey,
-//    uint64_t magic);
-//
+
+void oe_public_key_init(
+    oe_public_key_t* public_key,
+    BCRYPT_KEY_HANDLE* pkey,
+    uint64_t magic);
+
 // void oe_private_key_init(
 //    oe_private_key_t* private_key,
 //    EVP_PKEY* pkey,
