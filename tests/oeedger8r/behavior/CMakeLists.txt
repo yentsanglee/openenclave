@@ -77,3 +77,8 @@ set_tests_properties(edger8r_size_and_count_warning PROPERTIES
 add_test(NAME edger8r_deepcopy_value_warning COMMAND edger8r ${EDGER8R_ARGS} deepcopy_value.edl)
 set_tests_properties(edger8r_deepcopy_value_warning PROPERTIES
   PASS_REGULAR_EXPRESSION "error: the structure declaration \"MyStruct\" specifies a deep copy is expected. Referenced by value in function \"deepcopy_value\" detected.")
+
+# TODO: This test won't pass until support is added.
+add_test(NAME edger8r_deepcopy_oddsize_warning COMMAND edger8r ${EDGER8R_ARGS} deepcopy_oddsize.edl)
+set_tests_properties(edger8r_deepcopy_oddsize_warning PROPERTIES
+  PASS_REGULAR_EXPRESSION "TODO: Choose an appropriate error message.")

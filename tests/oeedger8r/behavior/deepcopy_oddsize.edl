@@ -1,0 +1,14 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
+enclave {
+  struct MyStruct {
+    [size=13] int* ptr;
+  };
+
+  trusted {
+    // This should error because the size parameter attached to
+    // `s.ptr` is not a multiple of the size of `int`.
+    public void deepcopy_oddsize([in, count=1] struct MyStruct* s);
+  };
+};
