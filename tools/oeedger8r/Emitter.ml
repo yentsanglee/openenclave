@@ -73,6 +73,16 @@ let conv_array_to_ptr (pd : pdecl) : pdecl =
 
 (** ----- End code borrowed and tweaked from {!CodeGen.ml} ----- *)
 
+(* Borrowed from upstream OCaml implementation in
+   https://github.com/ocaml/ocaml/pull/2185 *)
+let filter_map f =
+  let rec aux accu = function
+    | [] -> List.rev accu
+    | x :: l -> (
+      match f x with None -> aux accu l | Some v -> aux (v :: accu) l )
+  in
+  aux []
+
 let is_in_ptr (ptype : parameter_type) =
   match ptype with
   | PTVal _ -> false
@@ -318,13 +328,6 @@ let emit_untrusted_function_ids (ufs : untrusted_func list) (name : string) =
   ; sprintf "    %s_fcn_id_untrusted_call_max = OE_ENUM_MAX" name
   ; "};" ]
 
-let get_structs cts =
-  (* Where is List.filter_map?! Transform the [struct_def list] into
-     an [assoc] list. *)
-  List.map
-    (function StructDef s -> (s.sname, s.smlist) | _ -> ("", []))
-    (List.filter (function StructDef _ -> true | _ -> false) cts)
-
 (** Generate [args.h] which contains [struct]s for ecalls and ocalls *)
 let oe_gen_args_header (ec : enclave_content) (dir : string) =
   let oe_gen_user_includes (includes : string list) =
@@ -336,7 +339,11 @@ let oe_gen_args_header (ec : enclave_content) (dir : string) =
     if cts <> [] then List.flatten (List.map emit_composite_type cts)
     else ["/* There were no user defined types. */"; ""]
   in
-  let structs = get_structs ec.comp_defs in
+  let structs =
+    filter_map
+      (function StructDef s -> Some (s.sname, s.smlist) | _ -> None)
+      ec.comp_defs
+  in
   let oe_gen_ecall_marshal_structs (tfs : trusted_func list) =
     if tfs <> [] then
       List.flatten
