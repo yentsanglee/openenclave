@@ -11,7 +11,7 @@
 
 #include "memory_t.h"
 
-#define ITERS 1000
+#define ITERS 100
 
 /* We have two frees so that the number of frees is balanced with the ones
  * that allocate memory (malloc and calloc). */

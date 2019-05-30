@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#define MAX_LOOP_SIZE 100000000
+#define MAX_LOOP_SIZE 10000
 #include <openenclave/enclave.h>
 #include <openenclave/internal/rdrand.h>
 #include <openenclave/internal/tests.h>
