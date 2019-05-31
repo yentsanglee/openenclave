@@ -41,12 +41,10 @@ add_custom_command(
     COMMAND ocamlopt -c -bin-annot -I . -o Parser.cmx       ${CMAKE_CURRENT_BINARY_DIR}/Parser.ml
     COMMAND ocamlopt -c -bin-annot -I . -o Lexer.cmx        ${CMAKE_CURRENT_BINARY_DIR}/Lexer.ml
     COMMAND ocamlopt -c -bin-annot -I . -o CodeGen.cmx      ${CMAKE_CURRENT_SOURCE_DIR}/intel/CodeGen.ml
-    COMMAND ocamlopt -c -bin-annot -I . -o Emitter.cmx      ${CMAKE_CURRENT_SOURCE_DIR}/Emitter.ml
+    COMMAND ocamlfind ocamlopt -package base -open Base -c -bin-annot -I . -o Emitter.cmx ${CMAKE_CURRENT_SOURCE_DIR}/Emitter.ml
     COMMAND ocamlopt -c -bin-annot -I . -o main.cmx         ${CMAKE_CURRENT_SOURCE_DIR}/main.ml
-    COMMAND ocamlopt str.cmxa unix.cmxa Ast.cmx Util.cmx SimpleStack.cmx Plugin.cmx
-                     Preprocessor.cmx Parser.cmx Lexer.cmx CodeGen.cmx Emitter.cmx main.cmx
-                     -o ${BINARY}
-
+    COMMAND ocamlfind ocamlopt -linkpkg -package base str.cmxa unix.cmxa Ast.cmx Util.cmx SimpleStack.cmx Plugin.cmx
+                     Preprocessor.cmx Parser.cmx Lexer.cmx CodeGen.cmx Emitter.cmx main.cmx -o ${BINARY}
     # Add dependency to generated Lexer and Parser, and all of the sources.
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Lexer.ml
             ${CMAKE_CURRENT_BINARY_DIR}/Parser.ml
