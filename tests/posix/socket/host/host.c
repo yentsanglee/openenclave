@@ -164,7 +164,7 @@ static void _run_host_server_test(const char* path)
     OE_TEST(thread_create(&thread, host_server_thread, NULL) == 0);
 
     // Give the server time to launch
-    sleep_msec(250);
+    sleep_msec(3000);
 
     r = oe_create_socket_test_enclave(path, type, flags, NULL, 0, &enclave);
     OE_TEST(r == OE_OK);
