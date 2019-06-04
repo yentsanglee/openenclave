@@ -39,9 +39,11 @@ void* host_server_thread(void* arg)
     socket_t connfd = 0;
     struct sockaddr_in serv_addr = {0};
 
-    (void)arg;
+    OE_UNUSED(arg);
+
     const int optVal = 1;
     const socklen_t optLen = sizeof(optVal);
+    const in_port_t PORT = 1492;
 
     int rtn =
         setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, optLen);
@@ -51,7 +53,7 @@ void* host_server_thread(void* arg)
     }
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    serv_addr.sin_port = htons(1492);
+    serv_addr.sin_port = htons(PORT);
 
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 
@@ -164,7 +166,7 @@ static void _run_host_server_test(const char* path)
     OE_TEST(thread_create(&thread, host_server_thread, NULL) == 0);
 
     // Give the server time to launch
-    sleep_msec(250);
+    sleep_msec(3000);
 
     r = oe_create_socket_test_enclave(path, type, flags, NULL, 0, &enclave);
     OE_TEST(r == OE_OK);
@@ -193,7 +195,7 @@ static void _run_enclave_server_test(const char* path)
     OE_TEST(thread_create(&thread, enclave_server_thread, (void*)path) == 0);
 
     // Give the server time to launch
-    sleep_msec(250);
+    sleep_msec(3000);
 
     char* test_data = host_client(PORT);
 
