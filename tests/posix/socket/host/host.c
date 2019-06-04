@@ -39,9 +39,11 @@ void* host_server_thread(void* arg)
     socket_t connfd = 0;
     struct sockaddr_in serv_addr = {0};
 
-    (void)arg;
+    OE_UNUSED(arg);
+
     const int optVal = 1;
     const socklen_t optLen = sizeof(optVal);
+    const in_port_t PORT = 1492;
 
     int rtn =
         setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, optLen);
@@ -51,8 +53,9 @@ void* host_server_thread(void* arg)
     }
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    serv_addr.sin_port = htons(1492);
+    serv_addr.sin_port = htons(PORT);
 
+printf("listenfd=%lld\n", OE_LLD(listenfd));
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 
     listen(listenfd, 10);
