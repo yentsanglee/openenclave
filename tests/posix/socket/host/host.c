@@ -55,7 +55,6 @@ void* host_server_thread(void* arg)
     serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     serv_addr.sin_port = htons(PORT);
 
-printf("listenfd=%lld\n", OE_LLD(listenfd));
     bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 
     listen(listenfd, 10);
@@ -196,7 +195,7 @@ static void _run_enclave_server_test(const char* path)
     OE_TEST(thread_create(&thread, enclave_server_thread, (void*)path) == 0);
 
     // Give the server time to launch
-    sleep_msec(250);
+    sleep_msec(3000);
 
     char* test_data = host_client(PORT);
 
