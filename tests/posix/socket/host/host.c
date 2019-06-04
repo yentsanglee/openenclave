@@ -37,13 +37,13 @@ void* host_server_thread(void* arg)
     static const char TESTDATA[] = "This is TEST DATA\n";
     socket_t listenfd = socket(AF_INET, SOCK_STREAM, 0);
     socket_t connfd = 0;
-    struct sockaddr_in serv_addr = {0};
+    struct sockaddr_in addr = {0};
 
     OE_UNUSED(arg);
 
     const int optVal = 1;
     const socklen_t optLen = sizeof(optVal);
-    const in_port_t PORT = 1492;
+    const unsigned short PORT = 1492;
 
     int rtn =
         setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (void*)&optVal, optLen);
@@ -51,11 +51,11 @@ void* host_server_thread(void* arg)
     {
         printf("setsockopt failed errno = %d\n", errno);
     }
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    serv_addr.sin_port = htons(PORT);
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = htons(PORT);
 
-    bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    bind(listenfd, (struct sockaddr*)&addr, sizeof(addr));
 
     listen(listenfd, 10);
 
@@ -87,7 +87,7 @@ char* host_client(unsigned short port)
     socket_t sockfd = 0;
     ssize_t n = 0;
     static char recvBuff[1024];
-    struct sockaddr_in serv_addr = {0};
+    struct sockaddr_in addr = {0};
 
     memset(recvBuff, '0', sizeof(recvBuff));
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -98,26 +98,33 @@ char* host_client(unsigned short port)
 
     sock_set_blocking(sockfd, false);
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    serv_addr.sin_port = htons(port);
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = htons(port);
 
     int retries = 0;
     static const int max_retries = 400;
     printf("host client:socket fd = %lld\n", OE_LLD((int64_t)sockfd));
-    printf("host client:Connecting...\n");
+    printf("host client:Connecting on port %u...\n", port);
 
-    while (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+fflush(stdout);
+
+    int r = connect(sockfd, (struct sockaddr*)&addr, sizeof(addr));
+
+    printf("rrrrrr=%d %d\n", r, get_error());
+
+    if (r < 0)
     {
         if (retries++ > max_retries)
         {
-            printf("\n Error : Connect Failed errno = %d\n", errno);
+            printf("\n Error : Connect Failed errno = %d\n", get_error());
             sock_close(sockfd);
             return NULL;
         }
         else
         {
-            printf("Connect Failed. errno = %d Retrying \n", errno);
+            printf("Connect Failed. errno = %d Retrying \n", get_error());
             sleep_msec(100);
         }
     }
@@ -190,6 +197,9 @@ static void _run_enclave_server_test(const char* path)
     static char TESTDATA[] = "This is TEST DATA\n";
     thread_t thread;
     const unsigned short PORT = 1493;
+
+
+printf("XXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
 
     // enclave server to host client
     OE_TEST(thread_create(&thread, enclave_server_thread, (void*)path) == 0);

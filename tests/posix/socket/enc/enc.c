@@ -46,6 +46,7 @@ int ecall_run_client(char* recv_buff, ssize_t* recv_buff_len)
     ssize_t n = 0;
     size_t buff_len = (size_t)*recv_buff_len;
     struct oe_sockaddr_in serv_addr = {0};
+    const unsigned short PORT = 1492;
 
     memset(recv_buff, '0', buff_len);
     printf("create socket\n");
@@ -56,10 +57,10 @@ int ecall_run_client(char* recv_buff, ssize_t* recv_buff_len)
     }
     serv_addr.sin_family = OE_AF_INET;
     serv_addr.sin_addr.s_addr = oe_htonl(OE_INADDR_LOOPBACK);
-    serv_addr.sin_port = oe_htons(1492);
+    serv_addr.sin_port = oe_htons(PORT);
 
     printf("socket fd = %d\n", sockfd);
-    printf("Connecting...\n");
+    printf("Connecting on port %u...\n", PORT);
     int retries = 0;
     static const int max_retries = 4;
 
@@ -113,6 +114,7 @@ int ecall_run_server()
     int listenfd = oe_socket(OE_AF_INET, OE_SOCK_STREAM, 0);
     int connfd = 0;
     struct oe_sockaddr_in serv_addr = {0};
+    const unsigned short PORT = 1493;
 
     const int optVal = 1;
     const oe_socklen_t optLen = sizeof(optVal);
@@ -125,9 +127,9 @@ int ecall_run_server()
 
     serv_addr.sin_family = OE_AF_INET;
     serv_addr.sin_addr.s_addr = oe_htonl(OE_INADDR_LOOPBACK);
-    serv_addr.sin_port = oe_htons(1493);
+    serv_addr.sin_port = oe_htons(PORT);
 
-    printf("enclave: binding\n");
+    printf("enclave: binding on port {%u}\n", PORT);
     rtn = oe_bind(listenfd, (struct oe_sockaddr*)&serv_addr, sizeof(serv_addr));
     if (rtn < 0)
     {
@@ -143,11 +145,11 @@ int ecall_run_server()
     while (1)
     {
         oe_sleep_msec(1);
-        printf("enc: accepting\n");
+        printf("enclave: accepting\n");
         connfd = oe_accept(listenfd, (struct oe_sockaddr*)NULL, NULL);
         if (connfd >= 0)
         {
-            printf("enc: accepted fd = %d\n", connfd);
+            printf("enclave: accepted fd = %d\n", connfd);
             do
             {
                 oe_host_printf("enclave: accepted\n");
