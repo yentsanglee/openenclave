@@ -13,7 +13,6 @@
 #include <poll.h>
 #include <pthread.h>
 #include <stdio.h>
-#include <sys/epoll.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -88,8 +87,8 @@ OE_INLINE void sleep_msec(uint32_t msec)
 #else
     struct timespec ts;
 
-    ts.tv_sec = (uint8_t)msec / 1000UL;
-    ts.tv_nsec = ((uint8_t)msec % 1000UL) * 1000000UL;
+    ts.tv_sec = (uint64_t)msec / 1000UL;
+    ts.tv_nsec = ((uint64_t)msec % 1000UL) * 1000000UL;
 
     nanosleep(&ts, NULL);
 #endif
