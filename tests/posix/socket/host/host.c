@@ -80,7 +80,7 @@ void* host_server_thread(void* arg)
     return NULL;
 }
 
-char* host_client(in_port_t port)
+char* host_client(unsigned short port)
 {
     socket_t sockfd = 0;
     ssize_t n = 0;
@@ -125,7 +125,7 @@ char* host_client(in_port_t port)
         if ((n = sock_recv(sockfd, recvBuff, sizeof(recvBuff), 0)) > 0)
         {
             recvBuff[n] = '\0';
-            printf("host finished reading: %ld bytes...\n", n);
+            printf("host finished reading: %lld bytes...\n", OE_LLD(n));
             break;
         }
         else
@@ -187,7 +187,7 @@ static void _run_enclave_server_test(const char* path)
 {
     static char TESTDATA[] = "This is TEST DATA\n";
     thread_t thread;
-    const in_port_t PORT = 1493;
+    const unsigned short PORT = 1493;
 
     // enclave server to host client
     OE_TEST(thread_create(&thread, enclave_server_thread, (void*)path) == 0);
