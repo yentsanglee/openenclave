@@ -3186,6 +3186,30 @@ static short _poll_events_to_posix(short events, short revents)
     return ret;
 }
 
+/*
+**==============================================================================
+**
+**  poll() and WSAPoll() events comparision.
+**
+**  ---------------------------------------------------------------------
+**  EVENTS      IN              OUT             WSAPoll()
+**              (poll/WSAPoll) (poll/WSAPoll)   Notes
+**  ---------------------------------------------------------------------
+**  POLLIN      yes/yes         yes/yes         (POLLRDNORM | POLLRDBAND)
+**  POLLOUT     yes/yes         yes/yes         (POLLWRNORM)
+**  POLLRDNORM  yes/yes         yes/yes
+**  POLLRDBAND  yes/yes         yes/yes
+**  POLLRDHUP   yes/*           yes/*           *unsupported
+**  POLLWRNORM  yes/yes         yes/yes
+**  POLLWRBAND  yes/*           yes/*           *unsupported
+**  POLLPRI     yes/yes         yes/yes
+**  POLLERR     no/no           yes
+**  POLLHUP     no/no           yes
+**  POLLNVAL    no/no           yes
+**
+**==============================================================================
+*/
+
 int oe_posix_poll_ocall(
     struct oe_host_pollfd* host_fds,
     oe_nfds_t nfds,
