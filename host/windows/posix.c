@@ -3192,20 +3192,19 @@ static short _poll_events_to_posix(short events, short revents)
 **  poll() and WSAPoll() events comparision.
 **
 **  ---------------------------------------------------------------------
-**  EVENTS      IN              OUT             WSAPoll()
-**              (poll/WSAPoll) (poll/WSAPoll)   Notes
+**  EVENTS      IN              OUT             WSAPoll() notes
 **  ---------------------------------------------------------------------
-**  POLLIN      yes/yes         yes/yes         (POLLRDNORM | POLLRDBAND)
-**  POLLOUT     yes/yes         yes/yes         (POLLWRNORM)
-**  POLLRDNORM  yes/yes         yes/yes
-**  POLLRDBAND  yes/yes         yes/yes
-**  POLLRDHUP   yes/-           yes/-           Unsupported
-**  POLLWRNORM  yes/yes         yes/yes
-**  POLLWRBAND  yes/-           yes/-           Unsupported
-**  POLLPRI     yes/yes         yes/yes
-**  POLLERR     no/no           yes/yes
-**  POLLHUP     no/no           yes/yes
-**  POLLNVAL    no/no           yes/yes
+**  POLLIN      yes             yes             (POLLRDNORM | POLLRDBAND)
+**  POLLOUT     yes             yes             (POLLWRNORM)
+**  POLLRDNORM  yes             yes
+**  POLLRDBAND  yes             yes
+**  POLLRDHUP   yes             yes             Unsupported
+**  POLLWRNORM  yes             yes
+**  POLLWRBAND  yes             yes             Unsupported
+**  POLLPRI     yes             yes
+**  POLLERR     no              yes
+**  POLLHUP     no              yes
+**  POLLNVAL    no              yes
 **
 **==============================================================================
 */
