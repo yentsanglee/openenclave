@@ -806,11 +806,11 @@ static long _win_poll_event_to_epoll(long events, short poll_revents)
     {
         if ((events & OE_EPOLLRDHUP))
         {
-            ret |= (OE_EPOLLRDHUP | OE_EPOLLHUP | OE_EPOLLIN) ;
+            ret |= (OE_EPOLLRDHUP | OE_EPOLLHUP | OE_EPOLLIN);
         }
         else
         {
-            ret |= (OE_EPOLLHUP | OE_EPOLLIN)
+            ret |= (OE_EPOLLHUP | OE_EPOLLIN);
         }
     }
     return ret;
