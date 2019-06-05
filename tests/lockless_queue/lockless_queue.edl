@@ -3,10 +3,11 @@
 
 enclave {
     include "openenclave/internal/lockless_queue.h"
+    include "lfds_queue.h"
 
     enum constants {
-        TEST_COUNT = 1024,
-        THREAD_COUNT = 5
+        TEST_COUNT = 8192,
+        THREAD_COUNT = 10
     };
 
     struct test_node{
@@ -16,20 +17,36 @@ enclave {
     };
 
     trusted {
-        public void enc_push_nodes(
-            [user_check] oe_lockless_queue* p_queue,
-            [user_check] test_node* p_nodes,
-            size_t count);
-
         public void enc_writer_thread(
             [user_check] oe_lockless_queue* p_queue,
             [user_check] test_node* p_nodes,
+            size_t node_count,
+            [user_check] size_t* p_barrier,
+            size_t barrier_count);
+
+        public void enc_lfds_writer_thread(
+            [user_check] lfds_queue* p_queue,
+            [user_check] lfds_test_node* p_nodes,
+            size_t node_count,
+            [user_check] size_t* p_barrier,
+            size_t barrier_count);
+
+        public void enc_reader_thread(
+            [user_check] oe_lockless_queue* p_queue,
+            size_t count,
+            [user_check] size_t* p_barrier,
+            size_t barrier_count);
+
+        public void enc_lfds_reader_thread(
+            [user_check] lfds_queue* p_queue,
+            size_t count,
+            [user_check] size_t* p_barrier,
+            size_t barrier_count);
+
+        public void enc_test_queue_single_threaded(
             [user_check] size_t* p_barrier);
 
-        public void enc_pop_nodes(
-            [user_check] oe_lockless_queue* p_queue,
-            size_t count);
-
-        public void enc_test_queue_single_threaded();
+        public void enc_lfds_test_queue_single_threaded(
+            [user_check] size_t* p_barrier);
     };
 };
