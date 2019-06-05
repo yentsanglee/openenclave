@@ -804,13 +804,13 @@ static long _win_poll_event_to_epoll(long events, short poll_revents)
     }
     if (POLLHUP & poll_revents)
     {
-        if (!(events&OE_EPOLLRDHUP))
+        if ((events & OE_EPOLLRDHUP))
         {
-            ret |= (OE_EPOLLRDHUP | OE_EPOLLIN) ;
+            ret |= (OE_EPOLLRDHUP | OE_EPOLLHUP | OE_EPOLLIN);
         }
-        else 
+        else
         {
-            ret |= OE_EPOLLIN;
+            ret |= (OE_EPOLLHUP | OE_EPOLLIN);
         }
     }
     return ret;
@@ -3087,6 +3087,12 @@ static short _poll_events_to_windows(short events)
         ret |= POLLIN;
     }
 
+    if (events & OE_POLLOUT)
+    {
+        events &= ~OE_POLLOUT;
+        ret |= POLLOUT;
+    }
+
     if (events & OE_POLLRDNORM)
     {
         events &= ~OE_POLLRDNORM;
@@ -3099,17 +3105,15 @@ static short _poll_events_to_windows(short events)
         ret |= POLLRDBAND;
     }
 
-    if (events & OE_POLLOUT)
-    {
-        events &= ~OE_POLLOUT;
-        ret |= POLLOUT;
-    }
+    /* Note: POLLRDHUP unsupported according toe WSAPoll documentation. */
 
     if (events & OE_POLLWRNORM)
     {
         events &= ~OE_POLLWRNORM;
         ret |= POLLWRNORM;
     }
+
+    /* Note: POLLWRBAND unsupported according toe WSAPoll documentation. */
 
     if (events & OE_POLLPRI)
     {
@@ -3130,6 +3134,12 @@ static short _poll_events_to_posix(short events, short revents)
         ret |= OE_POLLIN;
     }
 
+    if (revents & POLLOUT)
+    {
+        revents &= ~POLLOUT;
+        ret |= OE_POLLOUT;
+    }
+
     if (revents & POLLRDNORM)
     {
         revents &= ~POLLRDNORM;
@@ -3142,16 +3152,20 @@ static short _poll_events_to_posix(short events, short revents)
         ret |= OE_POLLRDBAND;
     }
 
-    if (revents & POLLOUT)
-    {
-        revents &= ~POLLOUT;
-        ret |= OE_POLLOUT;
-    }
+    /* Note: POLLRDHUP unsupported according toe WSAPoll documentation. */
 
     if (revents & POLLWRNORM)
     {
         revents &= ~POLLWRNORM;
         ret |= OE_POLLWRNORM;
+    }
+
+    /* Note: POLLWRBAND unsupported according toe WSAPoll documentation. */
+
+    if (revents & POLLPRI)
+    {
+        revents &= ~POLLPRI;
+        ret |= OE_POLLPRI;
     }
 
     if (revents & POLLERR)
@@ -3162,19 +3176,22 @@ static short _poll_events_to_posix(short events, short revents)
 
     if (revents & POLLHUP)
     {
-        /* If not requeted by caller, change to OE_POLLIN. */
-        if (!(events & POLLHUP))
-            ret |= OE_POLLIN;
+        if (events & OE_POLLRDHUP)
+        {
+            ret |= (OE_POLLRDHUP | OE_POLLHUP | OE_POLLIN);
+        }
         else
-            ret |= OE_POLLHUP;
+        {
+            ret |= (OE_POLLHUP | OE_POLLIN);
+        }
 
         revents &= ~POLLHUP;
     }
 
-    if (revents & POLLPRI)
+    if (revents & POLLNVAL)
     {
-        revents &= ~POLLPRI;
-        ret |= OE_POLLPRI;
+        revents &= ~POLLNVAL;
+        ret |= OE_POLLNVAL;
     }
 
     return ret;
