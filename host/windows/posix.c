@@ -3111,16 +3111,10 @@ static short _poll_events_to_windows(short events)
         ret |= POLLWRNORM;
     }
 
-    if (events & OE_POLLERR)
+    if (events & OE_POLLPRI)
     {
-        events &= ~OE_POLLERR;
-        ret |= POLLERR;
-    }
-
-    if (events & OE_POLLHUP)
-    {
-        events &= ~OE_POLLHUP;
-        ret |= POLLHUP;
+        events &= ~OE_POLLPRI;
+        ret |= POLLPRI;
     }
 
     return ret;
@@ -3191,20 +3185,21 @@ static short _poll_events_to_posix(short events, short revents)
 **
 **  poll() and WSAPoll() events comparision.
 **
-**  ---------------------------------------------------------------------
-**  EVENTS      IN              OUT             WSAPoll() notes
-**  ---------------------------------------------------------------------
-**  POLLIN      yes             yes             (POLLRDNORM | POLLRDBAND)
-**  POLLOUT     yes             yes             (POLLWRNORM)
-**  POLLRDNORM  yes             yes
-**  POLLRDBAND  yes             yes
-**  POLLRDHUP   yes             yes             Unsupported
-**  POLLWRNORM  yes             yes
-**  POLLWRBAND  yes             yes             Unsupported
-**  POLLPRI     yes             yes
-**  POLLERR     no              yes
-**  POLLHUP     no              yes
-**  POLLNVAL    no              yes
+**  -----------------------------------------------------
+**  EVENTS      IN      OUT     WSAPoll() notes
+**  -----------------------------------------------------
+**  POLLIN      yes     yes     (POLLRDNORM | POLLRDBAND)
+**  POLLOUT     yes     yes     (POLLWRNORM)
+**  POLLRDNORM  yes     yes
+**  POLLRDBAND  yes     yes
+**  POLLRDHUP   yes     yes     Unsupported
+**  POLLWRNORM  yes     yes
+**  POLLWRBAND  yes     yes     Unsupported
+**  POLLPRI     yes     yes
+**  POLLERR     no      yes
+**  POLLHUP     no      yes
+**  POLLNVAL    no      yes
+**  -----------------------------------------------------
 **
 **==============================================================================
 */
