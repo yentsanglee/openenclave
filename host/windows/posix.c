@@ -3199,9 +3199,9 @@ static short _poll_events_to_posix(short events, short revents)
 **  POLLOUT     yes/yes         yes/yes         (POLLWRNORM)
 **  POLLRDNORM  yes/yes         yes/yes
 **  POLLRDBAND  yes/yes         yes/yes
-**  POLLRDHUP   yes/*           yes/*           *unsupported
+**  POLLRDHUP   yes/-           yes/-           Unsupported
 **  POLLWRNORM  yes/yes         yes/yes
-**  POLLWRBAND  yes/*           yes/*           *unsupported
+**  POLLWRBAND  yes/-           yes/-           Unsupported
 **  POLLPRI     yes/yes         yes/yes
 **  POLLERR     no/no           yes
 **  POLLHUP     no/no           yes
