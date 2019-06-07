@@ -64,6 +64,7 @@ endif()
 # SGX specific files.
 if (OE_SGX)
   set(NEW_HOSTVERIFY_SRC
+    ../common/sgx/tlsverifier.c
     ../common/sgx/qeidentity.c
     ../common/sgx/quote.c
     ../common/sgx/report.c
@@ -76,7 +77,6 @@ if (OE_SGX)
   list(APPEND PLATFORM_HOSTVERIFY_SRC ${NEW_HOSTVERIFY_SRC})
 
   list(APPEND PLATFORM_SRC
-    ../common/sgx/tlsverifier.c
     sgx/calls.c
     sgx/create.c
     sgx/elf.c
@@ -103,7 +103,7 @@ if (OE_SGX)
     set(NEW_HOSTVERIFY_SRC
         sgx/linux/sgxquoteprovider.c)
 
-    list(APPEND PLATFORM_HOSTVERIFY_SRC ${NEW_HOSTEVERIFY_SRC})
+    list(APPEND PLATFORM_HOSTVERIFY_SRC ${NEW_HOSTVERIFY_SRC})
 
     list(APPEND PLATFORM_SRC
       sgx/linux/aep.S
