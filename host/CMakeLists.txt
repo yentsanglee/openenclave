@@ -27,23 +27,26 @@ add_custom_target(posix_untrusted_edl
 
 # OS specific but arch agnostic files.
 if (UNIX)
-  set(PLATFORM_SRC
-    ../common/asn1.c
+  set(PLATFORM_HOSTVERIFY_SRC
     ../common/cert.c
     crypto/openssl/asn1.c
     crypto/openssl/cert.c
     crypto/openssl/crl.c
     crypto/openssl/ec.c
-    crypto/openssl/hmac.c
     crypto/openssl/init.c
     crypto/openssl/key.c
-    crypto/openssl/random.c
     crypto/openssl/rsa.c
     crypto/openssl/sha.c
-    linux/hostthread.c
+    linux/hostthread.c)
+
+  set(PLATFORM_SRC
+    ../common/asn1.c
+    crypto/openssl/hmac.c
+    crypto/openssl/random.c
     linux/posix.c
     linux/time.c
-    linux/windows.c)
+    linux/windows.c
+    ${PLATFORM_HOSTVERIFY_SRC})
 elseif (WIN32)
   set(PLATFORM_SRC
     ../3rdparty/mbedtls/mbedtls/library/bignum.c
@@ -58,15 +61,21 @@ else()
   message(FATAL_ERROR "Unknown OS. Only supported OSes are Linux and Windows")
 endif()
 
-# SGX specific files
+# SGX specific files.
 if (OE_SGX)
-  list(APPEND PLATFORM_SRC
+  set(NEW_HOSTVERIFY_SRC
     ../common/sgx/qeidentity.c
     ../common/sgx/quote.c
     ../common/sgx/report.c
     ../common/sgx/revocation.c
     ../common/sgx/sgxcertextensions.c
     ../common/sgx/tcbinfo.c
+    sgx/hostverify_report.c
+    sgx/traceh.c)
+
+  list(APPEND PLATFORM_HOSTVERIFY_SRC ${NEW_HOSTVERIFY_SRC})
+
+  list(APPEND PLATFORM_SRC
     ../common/sgx/tlsverifier.c
     sgx/calls.c
     sgx/create.c
@@ -86,10 +95,16 @@ if (OE_SGX)
     sgx/sgxquote.c
     sgx/sgxsign.c
     sgx/sgxtypes.c
-    sgx/traceh.c)
+    sgx/traceh_enclave.c
+    ${NEW_HOSTVERIFY_SRC})
 
   # OS specific as well.
   if (UNIX)
+    set(NEW_HOSTVERIFY_SRC
+        sgx/linux/sgxquoteprovider.c)
+
+    list(APPEND PLATFORM_HOSTVERIFY_SRC ${NEW_HOSTEVERIFY_SRC})
+
     list(APPEND PLATFORM_SRC
       sgx/linux/aep.S
       sgx/linux/aesm.c
@@ -98,7 +113,8 @@ if (OE_SGX)
       sgx/linux/exception.c
       sgx/linux/sgxioctl.c
       sgx/linux/sgxquoteprovider.c
-      sgx/linux/xstate.c)
+      sgx/linux/xstate.c
+      ${NEW_HOSTVERIFY_SRC})
   else()
     list(APPEND PLATFORM_SRC
       sgx/windows/aep.asm
@@ -117,26 +133,39 @@ elseif(OE_TRUSTZONE)
   set(PLATFORM_FLAGS "")
 endif()
 
-# Combine with all other non platform dependent files.
-add_library(oehost STATIC
+# Common host verification files that work on any OS/architecture.
+set(NEW_HOSTVERIFY_SRC
   ../common/datetime.c
-  ../common/kdf.c
   ../common/safecrt.c
+  hexdump.c
+  result.c)
+
+# Make host verification library for Linux only.
+if (UNIX)
+  add_library(oehostverify STATIC
+    ${PLATFORM_HOSTVERIFY_SRC}
+    ${NEW_HOSTVERIFY_SRC})
+endif()
+
+# Combine the following common code along with the platform specific code and
+# host verification code to get the full oehost target provided by the OE SDK.
+add_library(oehost STATIC
+  ../common/kdf.c
   asym_keys.c
   dupenv.c
   error.c
   files.c
   fopen.c
-  hexdump.c
   posix_u_wrapper.c
   memalign.c
   ocalls.c
-  result.c
   signkey.c
   strings.c
   tests.c
-  ${PLATFORM_SRC})
+  ${PLATFORM_SRC}
+  ${NEW_HOSTVERIFY_SRC})
 
+target_link_libraries(oehostverify PUBLIC oe_includes)
 target_link_libraries(oehost PUBLIC oe_includes)
 
 if(WIN32)
@@ -170,6 +199,7 @@ endif ()
 find_package(Threads REQUIRED)
 
 if (UNIX)
+  target_link_libraries(oehostverify PRIVATE crypto dl Threads::Threads)
   target_link_libraries(oehost PRIVATE crypto dl Threads::Threads)
 elseif (WIN32)
   target_include_directories(oehost PRIVATE
@@ -204,6 +234,17 @@ if (USE_LIBSGX)
 endif ()
 
 # Compile definitions and options
+target_compile_definitions(oehostverify
+  PUBLIC
+  # NOTE: This definition is public to the rest of our project's
+  # targets, but should not yet be exposed to consumers of our
+  # package.
+  $<BUILD_INTERFACE:OE_API_VERSION=2>
+  PRIVATE
+  OE_BUILD_UNTRUSTED
+  OE_REPO_BRANCH_NAME="${GIT_BRANCH}"
+  OE_REPO_LAST_COMMIT="${GIT_COMMIT}")
+
 target_compile_definitions(oehost
   PUBLIC
   # NOTE: This definition is public to the rest of our project's
@@ -215,11 +256,19 @@ target_compile_definitions(oehost
   OE_REPO_BRANCH_NAME="${GIT_BRANCH}"
   OE_REPO_LAST_COMMIT="${GIT_COMMIT}")
 
+
 if (USE_DEBUG_MALLOC)
+  target_compile_definitions(oehostverify PRIVATE OE_USE_DEBUG_MALLOC)
   target_compile_definitions(oehost PRIVATE OE_USE_DEBUG_MALLOC)
 endif ()
 
 if (UNIX)
+  target_compile_options(oehostverify
+     PRIVATE -Wno-attributes -Wmissing-prototypes -fPIC ${PLATFORM_FLAGS}
+     PUBLIC -fstack-protector-strong)
+  target_compile_definitions(oehostverify
+     PRIVATE _GNU_SOURCE
+     PUBLIC $<$<NOT:$<CONFIG:debug>>:_FORTIFY_SOURCE=2>)
   target_compile_options(oehost
      PRIVATE -Wno-attributes -Wmissing-prototypes -fPIC ${PLATFORM_FLAGS}
      PUBLIC -fstack-protector-strong)
@@ -229,11 +278,16 @@ if (UNIX)
 endif ()
 
 if (CMAKE_C_COMPILER_ID MATCHES GNU)
+  target_compile_options(oehostverify PRIVATE -Wjump-misses-init)
   target_compile_options(oehost PRIVATE -Wjump-misses-init)
 endif ()
 
 # TODO: Remove this hard coded output directory.
 set_property(TARGET oehost PROPERTY
+  ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/host)
+
+# TODO: Remove this hard coded output directory.
+set_property(TARGET oehostverify PROPERTY
   ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/host)
 
 # Convenience library for creating a host-app (that needs the
@@ -248,8 +302,24 @@ if (UNIX)
       -Wl,-z,noexecstack)
 endif ()
 
+add_library(oehostverifyapp INTERFACE)
+
+target_link_libraries(oehostverifyapp INTERFACE oehostverify)
+
+if (UNIX)
+  target_link_libraries(oehostverifyapp INTERFACE
+      -rdynamic
+      -Wl,-z,noexecstack)
+endif ()
+
 # Install targets
 install(TARGETS oehost EXPORT openenclave-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/host)
 
 install(TARGETS oehostapp EXPORT openenclave-targets)
+
+install(TARGETS oehostverify EXPORT openenclave-targets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/host
+  COMPONENT OEHOSTVERIFY)
+
+install(TARGETS oehostapp EXPORT openenclave-targets COMPONENT OEHOSTVERIFY)
