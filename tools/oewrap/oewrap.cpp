@@ -16,6 +16,28 @@ using namespace std;
 
 static const char* arg0;
 
+struct option
+{
+    option(const string& keyword_, const string& value_)
+        : keyword(keyword_), value(value_)
+    {
+    }
+
+    string keyword;
+    string value;
+};
+
+static vector<option> _options;
+
+void get_options(const string& keyword, vector<string>& values)
+{
+    for (size_t i = 0; i < _options.size(); i++)
+    {
+        if (_options[i].keyword == keyword)
+            values.push_back(_options[i].value);
+    }
+}
+
 int split(const char* str, const char* delim, vector<string>& v)
 {
     int ret = -1;
@@ -48,6 +70,17 @@ void dump_args(const vector<string>& args)
         printf("args[%zu]=%s\n", i, args[i].c_str());
 
     printf("\n");
+}
+
+bool has_arg(const vector<string>& args, const string& arg)
+{
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        if (args[i] == arg)
+            return true;
+    }
+
+    return false;
 }
 
 void argv_to_args(const int argc, const char* argv[], vector<string>& args)
@@ -225,6 +258,38 @@ int handle_gcc(const vector<string>& args)
 {
     int exit_status;
 
+    // Execute the shadow command:
+    if (has_arg(args, "-c"))
+    {
+        vector<string> sargs = args;
+
+        // Prepend the CFLAGS:
+        {
+            vector<string> cflags;
+            get_options("gcc_cflag", cflags);
+
+            sargs.insert(sargs.begin() + 1, cflags.begin(), cflags.end());
+        }
+
+        // Replace ".o" suffixes with ".enc.o":
+        for (size_t i = 0; i < sargs.size(); i++)
+        {
+            string tmp = sargs[i];
+
+            size_t pos = tmp.find(".o");
+
+            if (pos != string::npos && pos + 2 == tmp.size())
+                sargs[i] = tmp.substr(0, pos) + ".enc.o";
+        }
+
+        if (exec(sargs, &exit_status) != 0)
+        {
+            fprintf(stderr, "%s: shadow exec() failed\n", arg0);
+            exit(1);
+        }
+    }
+
+    // Execute the default command:
     if (exec(args, &exit_status) != 0)
     {
         fprintf(stderr, "%s: exec() failed\n", arg0);
@@ -234,25 +299,189 @@ int handle_gcc(const vector<string>& args)
     return exit_status;
 }
 
+int handle_ar(const vector<string>& args)
+{
+    int exit_status;
+
+    // Execute the shadow command first:
+    {
+        vector<string> sargs = args;
+
+        // Replace ".o" suffixes with ".enc.o":
+        for (size_t i = 0; i < sargs.size(); i++)
+        {
+            string tmp = sargs[i];
+
+            size_t pos = tmp.find(".o");
+
+            if (pos != string::npos && pos + 2 == tmp.size())
+                sargs[i] = tmp.substr(0, pos) + ".enc.o";
+
+            pos = tmp.find(".a");
+
+            if (pos != string::npos && pos + 2 == tmp.size())
+                sargs[i] = tmp.substr(0, pos) + ".enc.a";
+        }
+
+        if (exec(sargs, &exit_status) != 0)
+        {
+            fprintf(stderr, "%s: shadow exec() failed\n", arg0);
+            exit(1);
+        }
+    }
+
+    // Execute the default command:
+    if (exec(args, &exit_status) != 0)
+    {
+        fprintf(stderr, "%s: exec() failed\n", arg0);
+        exit(1);
+    }
+
+    return exit_status;
+}
+
+int load_config(vector<option>& options)
+{
+    int ret = -1;
+    const char* home;
+    FILE* is = NULL;
+    string path;
+    char buf[1024];
+    unsigned int line = 0;
+
+    options.clear();
+
+    if (!(home = getenv("HOME")))
+        goto done;
+
+    path = string(home) + "/.oewraprc";
+
+    if (!(is = fopen(path.c_str(), "r")))
+        goto done;
+
+    while (fgets(buf, sizeof(buf), is) != NULL)
+    {
+        char* p = buf;
+
+        line++;
+
+        // Remove leading whitespace:
+        while (isspace(*p))
+            p++;
+
+        // Skip comments:
+        if (p[0] == '#')
+            continue;
+
+        // Remove trailing whitespace:
+        {
+            char* end = p + strlen(p);
+
+            while (end != p && isspace(end[-1]))
+                *--end = '\0';
+        }
+
+        // Skip blank lines:
+        if (!*p)
+            continue;
+
+        // Get the keyword:
+        string keyword;
+        {
+            const char* start = p;
+
+            while (isalpha(*p) || *p == '_')
+                p++;
+
+            while (isalpha(*p) || isalnum(*p) || *p == '_')
+                p++;
+
+            if (p == start)
+            {
+                fprintf(
+                    stderr,
+                    "%s: %s(%u): syntax error\n",
+                    arg0,
+                    path.c_str(),
+                    line);
+                exit(1);
+            }
+
+            keyword.assign(start, (size_t)(p - start));
+        }
+
+        // Expect '=':
+        {
+            while (isspace(*p))
+                p++;
+
+            if (*p++ != '=')
+            {
+                fprintf(
+                    stderr,
+                    "%s: %s(%u): syntax error\n",
+                    arg0,
+                    path.c_str(),
+                    line);
+                exit(1);
+            }
+
+            while (isspace(*p))
+                p++;
+        }
+
+        // Get the value:
+        string value;
+        {
+            const char* start = p;
+
+            while (*p)
+                p++;
+
+            value.assign(start, (size_t)(p - start));
+        }
+
+        options.push_back(option(keyword, value));
+    }
+
+    ret = 0;
+
+done:
+
+    if (is)
+        fclose(is);
+
+    return ret;
+}
+
 int main(int argc, const char* argv[])
 {
     arg0 = argv[0];
     vector<string> args;
 
-    if (argc < 2)
+    if (argc < 3)
     {
-        fprintf(stderr, "Usage: %s command-name args...\n", arg0);
+        fprintf(stderr, "Usage: %s command command-args...\n", arg0);
         exit(1);
     }
 
-    argv_to_args(argc - 1, argv + 1, args);
-    dump_args(args);
+    // Load the configuration file:
+    if (load_config(_options) != 0)
+    {
+        fprintf(stderr, "%s: cannot open ${HOME}/.oewraprc\n", arg0);
+        exit(1);
+    }
 
+    argv_to_args(argc - 2, argv + 2, args);
     string cmd = base_name(args[0].c_str());
 
     if (cmd == "gcc")
     {
         return handle_gcc(args);
+    }
+    else if (cmd == "ar")
+    {
+        return handle_ar(args);
     }
     else
     {
