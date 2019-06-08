@@ -4,6 +4,7 @@
 add_subdirectory(oeedger8r)
 
 if (OE_SGX)
+add_subdirectory(oewrap)
 add_subdirectory(oesgx)
 add_subdirectory(oesign)
 endif()
