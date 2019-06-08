@@ -132,6 +132,74 @@ char** args_to_argv(const vector<string>& args)
     return ret;
 }
 
+int serialize_argv(
+    int argc,
+    const char* argv[],
+    void** argv_buf,
+    size_t* argv_buf_size)
+{
+    int ret = -1;
+    char** new_argv = NULL;
+    size_t array_size;
+    size_t alloc_size;
+
+    if (argv_buf)
+        *argv_buf = NULL;
+
+    if (argv_buf_size)
+        *argv_buf_size = 0;
+
+    if (argc < 0 || !argv || !argv_buf || !argv_buf_size)
+        goto done;
+
+    /* Calculate the total allocation size. */
+    {
+        /* Calculate the size of the null-terminated array of pointers. */
+        array_size = ((size_t)argc + 1) * sizeof(char*);
+
+        alloc_size = array_size;
+
+        /* Calculate the sizeo of the individual zero-terminated strings. */
+        for (int i = 0; i < argc; i++)
+            alloc_size += strlen(argv[i]) + 1;
+    }
+
+    /* Allocate space for the array followed by strings. */
+    if (!(new_argv = (char**)malloc(alloc_size)))
+        goto done;
+
+    /* Copy each string. */
+    {
+        char* p = (char*)&new_argv[argc + 1];
+        size_t offset = array_size;
+
+        for (int i = 0; i < argc; i++)
+        {
+            size_t size = strlen(argv[i]) + 1;
+
+            memcpy(p, argv[i], size);
+            new_argv[i] = (char*)offset;
+            p += size;
+            offset += size;
+        }
+
+        new_argv[argc] = NULL;
+    }
+
+    *argv_buf = new_argv;
+    *argv_buf_size = alloc_size;
+    new_argv = NULL;
+
+    ret = 0;
+
+done:
+
+    if (new_argv)
+        free(new_argv);
+
+    return ret;
+}
+
 int which(const char* filename, string& full_path)
 {
     int ret = -1;
