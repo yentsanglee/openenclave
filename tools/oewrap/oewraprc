@@ -54,3 +54,16 @@ extra_define=-DOPENSSL_NO_UI_CONSOLE
 delete_arg=-fPIC
 delete_arg=-pthread
 delete_arg=-ldl
+
+##==============================================================================
+##
+## libc-test:
+##
+##==============================================================================
+
+delete_arg=-lpthread
+delete_arg=-lm
+delete_arg=-lrt
+delete_arg=-lcrypt
+delete_arg=-lresolv
+delete_arg=-lutil
