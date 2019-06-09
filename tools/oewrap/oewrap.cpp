@@ -62,17 +62,17 @@ done:
     return ret;
 }
 
-void dump_args(const vector<string>& args)
+void print_args(const vector<string>& args)
 {
-    printf("=== dump_args()\n");
+    printf("Command:\n");
 
     for (size_t i = 0; i < args.size(); i++)
-        printf("args[%zu]=%s\n", i, args[i].c_str());
+        printf("    %s\n", args[i].c_str());
 
     printf("\n");
 }
 
-bool has_arg(const vector<string>& args, const string& arg)
+bool contains(const vector<string>& args, const string& arg)
 {
     for (size_t i = 0; i < args.size(); i++)
     {
@@ -83,14 +83,16 @@ bool has_arg(const vector<string>& args, const string& arg)
     return false;
 }
 
-void delete_arg(vector<string>& args, const char* arg)
+void delete_arg(vector<string>& args, const string& arg)
 {
     vector<string> new_args;
 
     for (size_t i = 0; i < args.size(); i++)
     {
         if (args[i] != arg)
+        {
             new_args.push_back(args[i]);
+        }
     }
 
     args = new_args;
@@ -335,22 +337,65 @@ string base_name(const char* path)
         return string(path);
 }
 
-int handle_gcc(const vector<string>& args)
+void delete_args(vector<string>& args)
+{
+    vector<string> delete_args;
+    vector<string> new_args;
+
+    get_options("delete_arg", delete_args);
+
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        if (!contains(delete_args, args[i]))
+            new_args.push_back(args[i]);
+    }
+
+    args = new_args;
+}
+
+int handle_shadow_cc(const vector<string>& args, const string& compiler)
 {
     int exit_status;
 
-    // Execute the shadow command:
-    if (has_arg(args, "-c"))
-    {
-        vector<string> sargs = args;
+    string cc_cflag = compiler + "_cflag";
+    string cc_include = compiler + "_include";
+    string cc_lib = compiler + "_lib";
+    string cc_ldflag = compiler + "_ldflag";
 
-        // Prepend the CFLAGS:
+    // Execute the shadow command:
+    if (contains(args, "-c"))
+    {
+        vector<string> sargs;
+
+        // Append the program name:
+        sargs.push_back(args[0]);
+
+        // Append the cflags:
         {
             vector<string> cflags;
-            get_options("gcc_cflag", cflags);
+            get_options(cc_cflag, cflags);
 
-            sargs.insert(sargs.begin() + 1, cflags.begin(), cflags.end());
+            sargs.insert(sargs.end(), cflags.begin(), cflags.end());
         }
+
+        // Append the extra includes:
+        {
+            vector<string> includes;
+            get_options("extra_include", includes);
+
+            sargs.insert(sargs.end(), includes.begin(), includes.end());
+        }
+
+        // Append the includes:
+        {
+            vector<string> includes;
+            get_options(cc_include, includes);
+
+            sargs.insert(sargs.end(), includes.begin(), includes.end());
+        }
+
+        // Append remaining arguments:
+        sargs.insert(sargs.end(), args.begin() + 1, args.end());
 
         // Replace ".o" suffixes with ".enc.o":
         for (size_t i = 0; i < sargs.size(); i++)
@@ -362,6 +407,8 @@ int handle_gcc(const vector<string>& args)
             if (pos != string::npos && pos + 2 == tmp.size())
                 sargs[i] = tmp.substr(0, pos) + ".enc.o";
         }
+
+        delete_args(sargs);
 
         if (exec(sargs, &exit_status) != 0)
         {
@@ -370,9 +417,12 @@ int handle_gcc(const vector<string>& args)
         }
 
         if (exit_status != 0)
+        {
+            print_args(sargs);
             exit(exit_status);
+        }
     }
-    else if (has_arg(args, "-o") && !has_arg(args, "-shared"))
+    else if (contains(args, "-o") && !contains(args, "-shared"))
     {
         vector<string> sargs = args;
 
@@ -386,11 +436,6 @@ int handle_gcc(const vector<string>& args)
             if (pos != string::npos && pos + 2 == tmp.size())
                 sargs[i] = tmp.substr(0, pos) + ".enc.o";
         }
-
-        // Delete uneeded arguments.
-        delete_arg(sargs, "-pthread");
-        delete_arg(sargs, "-Wa,--noexecstack");
-        delete_arg(sargs, "-ldl");
 
         // Rename the executable.
         for (size_t i = 0; i < sargs.size(); i++)
@@ -413,17 +458,34 @@ int handle_gcc(const vector<string>& args)
                 sargs[i] = sargs[i] + ".enc";
         }
 
-        // Append the LDFLAGS:
+        // Append the ldflags:
         {
             vector<string> ldflags;
-            get_options("gcc_ldflag", ldflags);
+            get_options(cc_ldflag, ldflags);
 
             sargs.insert(sargs.end(), ldflags.begin(), ldflags.end());
         }
 
-#if 0
-        dump_args(sargs);
-#endif
+        // Append liboewrapenclave:
+        {
+            vector<string> libs;
+
+            libs.push_back("-Wl,--whole-archive");
+            libs.push_back("-loewrapenclave");
+            libs.push_back("-Wl,--no-whole-archive");
+
+            sargs.insert(sargs.end(), libs.begin(), libs.end());
+        }
+
+        // Append the libs:
+        {
+            vector<string> libs;
+            get_options(cc_lib, libs);
+
+            sargs.insert(sargs.end(), libs.begin(), libs.end());
+        }
+
+        delete_args(sargs);
 
         if (exec(sargs, &exit_status) != 0)
         {
@@ -431,8 +493,10 @@ int handle_gcc(const vector<string>& args)
             exit(1);
         }
 
+#if 1
         if (exit_status != 0)
             exit(exit_status);
+#endif
     }
 
     // Execute the default command:
@@ -445,7 +509,7 @@ int handle_gcc(const vector<string>& args)
     return exit_status;
 }
 
-int handle_ar(const vector<string>& args)
+int handle_shadow_ar(const vector<string>& args)
 {
     int exit_status;
 
@@ -621,16 +685,17 @@ int main(int argc, const char* argv[])
         exit(1);
     }
 
-    argv_to_args(argc - 2, argv + 2, args);
-    string cmd = base_name(args[0].c_str());
+    string cmd = base_name(argv[1]);
 
-    if (cmd == "gcc")
+    argv_to_args(argc - 2, argv + 2, args);
+
+    if (cmd == "shadow-gcc")
     {
-        return handle_gcc(args);
+        return handle_shadow_cc(args, "gcc");
     }
-    else if (cmd == "ar")
+    else if (cmd == "shadow-ar")
     {
-        return handle_ar(args);
+        return handle_shadow_ar(args);
     }
     else
     {
