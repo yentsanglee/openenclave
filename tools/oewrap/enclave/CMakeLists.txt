@@ -10,5 +10,7 @@ maybe_build_using_clangw(oewrapenclave)
 target_include_directories(oewrapenclave
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(oewrapenclave
-    PRIVATE oeenclave ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(oewrapenclave oeenclave)
+
+install(TARGETS oewrapenclave EXPORT openenclave-targets ARCHIVE
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)

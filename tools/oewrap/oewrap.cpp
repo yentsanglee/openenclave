@@ -83,6 +83,19 @@ bool has_arg(const vector<string>& args, const string& arg)
     return false;
 }
 
+void delete_arg(vector<string>& args, const char* arg)
+{
+    vector<string> new_args;
+
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        if (args[i] != arg)
+            new_args.push_back(args[i]);
+    }
+
+    args = new_args;
+}
+
 void argv_to_args(const int argc, const char* argv[], vector<string>& args)
 {
     args.clear();
@@ -355,6 +368,71 @@ int handle_gcc(const vector<string>& args)
             fprintf(stderr, "%s: shadow exec() failed\n", arg0);
             exit(1);
         }
+
+        if (exit_status != 0)
+            exit(exit_status);
+    }
+    else if (has_arg(args, "-o") && !has_arg(args, "-shared"))
+    {
+        vector<string> sargs = args;
+
+        // Replace ".o" suffixes with ".enc.o":
+        for (size_t i = 0; i < sargs.size(); i++)
+        {
+            string tmp = sargs[i];
+
+            size_t pos = tmp.find(".o");
+
+            if (pos != string::npos && pos + 2 == tmp.size())
+                sargs[i] = tmp.substr(0, pos) + ".enc.o";
+        }
+
+        // Delete uneeded arguments.
+        delete_arg(sargs, "-pthread");
+        delete_arg(sargs, "-Wa,--noexecstack");
+        delete_arg(sargs, "-ldl");
+
+        // Rename the executable.
+        for (size_t i = 0; i < sargs.size(); i++)
+        {
+            string tmp = sargs[i];
+
+            if (tmp == "-o" && (i + 1) != sargs.size())
+            {
+                sargs[i + 1] = sargs[i + 1] + ".enc";
+                break;
+            }
+        }
+
+        // Translate -lxyz to -lxyz.enc:
+        for (size_t i = 0; i < sargs.size(); i++)
+        {
+            string tmp = sargs[i];
+
+            if (tmp[0] == '-' && tmp[1] == 'l')
+                sargs[i] = sargs[i] + ".enc";
+        }
+
+        // Append the LDFLAGS:
+        {
+            vector<string> ldflags;
+            get_options("gcc_ldflag", ldflags);
+
+            sargs.insert(sargs.end(), ldflags.begin(), ldflags.end());
+        }
+
+#if 0
+        dump_args(sargs);
+#endif
+
+        if (exec(sargs, &exit_status) != 0)
+        {
+            fprintf(stderr, "%s: shadow exec() failed\n", arg0);
+            exit(1);
+        }
+
+        if (exit_status != 0)
+            exit(exit_status);
     }
 
     // Execute the default command:
@@ -396,6 +474,9 @@ int handle_ar(const vector<string>& args)
             fprintf(stderr, "%s: shadow exec() failed\n", arg0);
             exit(1);
         }
+
+        if (exit_status != 0)
+            exit(exit_status);
     }
 
     // Execute the default command:

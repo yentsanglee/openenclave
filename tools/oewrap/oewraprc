@@ -1,0 +1,41 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+##==============================================================================
+##
+## gcc options:
+##
+##==============================================================================
+
+gcc_cflag=-nostdinc
+gcc_cflag=-m64
+gcc_cflag=-fPIE
+gcc_cflag=-ftls-model=local-exec
+gcc_cflag=-fvisibility=hidden
+gcc_cflag=-fno-stack-protector
+gcc_cflag=-I/opt/openenclave/include/openenclave/3rdparty/libc
+gcc_cflag=-I/opt/openenclave/include/openenclave/3rdparty
+gcc_cflag=-I/opt/openenclave/include
+gcc_cflag=-I/root/openssl/extra_includes
+
+gcc_ldflag=-L/opt/openenclave/lib/openenclave/enclave
+gcc_ldflag=-nostdlib
+gcc_ldflag=-nodefaultlibs
+gcc_ldflag=-nostartfiles
+gcc_ldflag=-Wl,--no-undefined
+gcc_ldflag=-Wl,-Bstatic
+gcc_ldflag=-Wl,-Bsymbolic
+gcc_ldflag=-Wl,--export-dynamic
+gcc_ldflag=-Wl,-pie
+gcc_ldflag=-Wl,--build-id
+gcc_ldflag=-Wl,-z,noexecstack
+gcc_ldflag=-Wl,-z,now
+gcc_ldflag=-Wl,--whole-archive
+gcc_ldflag=-loewrapenclave
+gcc_ldflag=-loeenclave
+gcc_ldflag=-loecryptombed
+gcc_ldflag=-lmbedx509
+gcc_ldflag=-lmbedcrypto
+gcc_ldflag=-loelibc
+gcc_ldflag=-loeposix
+gcc_ldflag=-loecore
