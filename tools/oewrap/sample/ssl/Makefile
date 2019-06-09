@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
 
 INCLUDES=-I/root/openssl/include
 LIBRARIES=-L/root/openssl -lcrypto.enc
