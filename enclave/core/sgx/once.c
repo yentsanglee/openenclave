@@ -17,9 +17,9 @@ oe_result_t oe_once(oe_once_t* once, void (*func)(void))
     OE_ATOMIC_MEMORY_BARRIER_ACQUIRE();
     if (o == 0)
     {
-        static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
+        static oe_mutex_t _lock = OE_MUTEX_INITIALIZER;
 
-        oe_spin_lock(&_lock);
+        oe_mutex_lock(&_lock);
 
         if (*once == 0)
         {
@@ -31,7 +31,7 @@ oe_result_t oe_once(oe_once_t* once, void (*func)(void))
             *once = 1;
         }
 
-        oe_spin_unlock(&_lock);
+        oe_mutex_unlock(&_lock);
     }
 
     return OE_OK;

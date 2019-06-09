@@ -62,13 +62,25 @@ done:
     return ret;
 }
 
-void print_args(const vector<string>& args)
+void dump_args(const vector<string>& args)
 {
     printf("Command:\n");
 
     for (size_t i = 0; i < args.size(); i++)
         printf("    %s\n", args[i].c_str());
 
+    printf("\n");
+}
+
+void print_args(const vector<string>& args)
+{
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        printf("%s", args[i].c_str());
+
+        if (i + 1 != args.size())
+            printf(" ");
+    }
     printf("\n");
 }
 
@@ -418,6 +430,12 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
 
         delete_args(sargs);
 
+#if 0
+        printf("\n[SHADOW]: ");
+        print_args(sargs);
+        printf("\n");
+#endif
+
         if (exec(sargs, &exit_status) != 0)
         {
             fprintf(stderr, "%s: shadow exec() failed\n", arg0);
@@ -426,7 +444,7 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
 
         if (exit_status != 0)
         {
-            print_args(sargs);
+            dump_args(sargs);
             exit(exit_status);
         }
     }
@@ -495,6 +513,133 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
             libs.push_back("-loewrapenclave");
             libs.push_back("-Wl,--no-whole-archive");
 
+            libs.push_back("-loehostfs");
+            libs.push_back("-loehostsock");
+            libs.push_back("-loehostresolver");
+
+            sargs.insert(sargs.end(), libs.begin(), libs.end());
+        }
+
+        // Append the libs:
+        {
+            vector<string> libs;
+            get_options(cc_lib, libs);
+
+            sargs.insert(sargs.end(), libs.begin(), libs.end());
+        }
+
+#if 0
+        printf("\n[SHADOW]: ");
+        printf("[SHADOW]: ");
+        print_args(sargs);
+        printf("\n");
+#endif
+
+        if (exec(sargs, &exit_status) != 0)
+        {
+            fprintf(stderr, "%s: shadow exec() failed\n", arg0);
+            exit(1);
+        }
+
+        if (exit_status != 0)
+        {
+            fprintf(stderr, "SHADOW_LINK_ERROR_IGNORED\n");
+            dump_args(sargs);
+        }
+    }
+
+    // Execute the default command:
+    if (exec(args, &exit_status) != 0)
+    {
+        fprintf(stderr, "%s: exec() failed\n", arg0);
+        exit(1);
+    }
+
+    return exit_status;
+}
+
+int handle_cc(const vector<string>& args, const string& compiler)
+{
+    int exit_status = 1;
+
+    string cc_cflag = compiler + "_cflag";
+    string cc_include = compiler + "_include";
+    string cc_lib = compiler + "_lib";
+    string cc_ldflag = compiler + "_ldflag";
+
+    // Execute the shadow command:
+    if (contains(args, "-c"))
+    {
+        vector<string> sargs;
+
+        // Append the program name:
+        sargs.push_back(args[0]);
+
+        // Append the cflags:
+        {
+            vector<string> cflags;
+            get_options(cc_cflag, cflags);
+
+            sargs.insert(sargs.end(), cflags.begin(), cflags.end());
+        }
+
+        // Append the extra defines:
+        {
+            vector<string> defines;
+            get_options("extra_define", defines);
+
+            sargs.insert(sargs.end(), defines.begin(), defines.end());
+        }
+
+        // Append the includes:
+        {
+            vector<string> includes;
+            get_options(cc_include, includes);
+
+            sargs.insert(sargs.end(), includes.begin(), includes.end());
+        }
+
+        // Append remaining arguments:
+        sargs.insert(sargs.end(), args.begin() + 1, args.end());
+
+        if (exec(sargs, &exit_status) != 0)
+        {
+            fprintf(stderr, "%s: shadow exec() failed\n", arg0);
+            exit(1);
+        }
+
+        if (exit_status != 0)
+        {
+            // dump_args(sargs);
+            exit(exit_status);
+        }
+    }
+    else if (contains(args, "-o") && !contains(args, "-shared"))
+    {
+        vector<string> sargs = args;
+
+        delete_args(sargs);
+
+        // Append the ldflags:
+        {
+            vector<string> ldflags;
+            get_options(cc_ldflag, ldflags);
+
+            sargs.insert(sargs.end(), ldflags.begin(), ldflags.end());
+        }
+
+        // Append liboewrapenclave:
+        {
+            vector<string> libs;
+
+            libs.push_back("-Wl,--whole-archive");
+            libs.push_back("-loewrapenclave");
+            libs.push_back("-Wl,--no-whole-archive");
+
+            libs.push_back("-loehostfs");
+            libs.push_back("-loehostsock");
+            libs.push_back("-loehostresolver");
+
             sargs.insert(sargs.end(), libs.begin(), libs.end());
         }
 
@@ -512,19 +657,11 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
             exit(1);
         }
 
-        print_args(sargs);
         if (exit_status != 0)
         {
-            fprintf(stderr, "SHADOW_LINK_ERROR_IGNORED\n");
-            print_args(sargs);
+            // dump_args(sargs);
+            exit(exit_status);
         }
-    }
-
-    // Execute the default command:
-    if (exec(args, &exit_status) != 0)
-    {
-        fprintf(stderr, "%s: exec() failed\n", arg0);
-        exit(1);
     }
 
     return exit_status;
@@ -557,7 +694,7 @@ int handle_shadow_ar(const vector<string>& args)
         if (exec(sargs, &exit_status) != 0)
         {
             fprintf(stderr, "%s: shadow exec() failed\n", arg0);
-            print_args(sargs);
+            dump_args(sargs);
             exit(1);
         }
 
@@ -714,6 +851,10 @@ int main(int argc, const char* argv[])
     if (cmd == "shadow-gcc")
     {
         return handle_shadow_cc(args, "gcc");
+    }
+    else if (cmd == "gcc")
+    {
+        return handle_cc(args, "gcc");
     }
     else if (cmd == "shadow-ar")
     {

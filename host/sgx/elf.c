@@ -1918,6 +1918,7 @@ oe_result_t elf64_load_relocations(
                 OE_UNSUPPORTED_ENCLAVE_IMAGE,
                 "Unsupported elf relocation type %d\n",
                 (int)reloc_type);
+            continue;
         }
     }
 

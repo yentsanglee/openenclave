@@ -46,14 +46,11 @@ gcc_lib=-loecore
 ##
 ##==============================================================================
 
-extra_include=-I/root/openssl/extras
+extra_include=-I/root/openssl_extras
 
 extra_define=-DOPENSSL_NO_SECURE_MEMORY
 extra_define=-DOPENSSL_NO_UI_CONSOLE
-extra_define=-DOPENSSL_NO_ASM
 
 delete_arg=-fPIC
 delete_arg=-pthread
-delete_arg=-Wa,--noexecstack
 delete_arg=-ldl
-delete_arg=-Wl,--no-undefined
