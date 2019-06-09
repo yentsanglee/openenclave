@@ -378,6 +378,14 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
             sargs.insert(sargs.end(), cflags.begin(), cflags.end());
         }
 
+        // Append the extra defines:
+        {
+            vector<string> defines;
+            get_options("extra_define", defines);
+
+            sargs.insert(sargs.end(), defines.begin(), defines.end());
+        }
+
         // Append the extra includes:
         {
             vector<string> includes;
@@ -426,6 +434,8 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
     {
         vector<string> sargs = args;
 
+        delete_args(sargs);
+
         // Replace ".o" suffixes with ".enc.o":
         for (size_t i = 0; i < sargs.size(); i++)
         {
@@ -435,6 +445,17 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
 
             if (pos != string::npos && pos + 2 == tmp.size())
                 sargs[i] = tmp.substr(0, pos) + ".enc.o";
+        }
+
+        // Replace ".a" suffixes with ".enc.a":
+        for (size_t i = 0; i < sargs.size(); i++)
+        {
+            string tmp = sargs[i];
+
+            size_t pos = tmp.find(".a");
+
+            if (pos != string::npos && pos + 2 == tmp.size())
+                sargs[i] = tmp.substr(0, pos) + ".enc.a";
         }
 
         // Rename the executable.
@@ -485,18 +506,18 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
             sargs.insert(sargs.end(), libs.begin(), libs.end());
         }
 
-        delete_args(sargs);
-
         if (exec(sargs, &exit_status) != 0)
         {
             fprintf(stderr, "%s: shadow exec() failed\n", arg0);
             exit(1);
         }
 
-#if 1
+        print_args(sargs);
         if (exit_status != 0)
-            exit(exit_status);
-#endif
+        {
+            fprintf(stderr, "SHADOW_LINK_ERROR_IGNORED\n");
+            print_args(sargs);
+        }
     }
 
     // Execute the default command:
@@ -536,6 +557,7 @@ int handle_shadow_ar(const vector<string>& args)
         if (exec(sargs, &exit_status) != 0)
         {
             fprintf(stderr, "%s: shadow exec() failed\n", arg0);
+            print_args(sargs);
             exit(1);
         }
 

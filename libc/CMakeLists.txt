@@ -79,6 +79,7 @@ add_library(oelibc STATIC
     signal.c
     stdlib.c
     strerror.c
+    stubs.c
     sysconf.c
     time.c
     __printf_chk.c

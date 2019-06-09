@@ -2,8 +2,8 @@
 # Licensed under the MIT License.
 
 all:
-	my-gcc -o main.o -c main.c
-	my-gcc -o main main.o
+	shadow-gcc -o main.o -c main.c
+	shadow-gcc -o main main.o
 
 run:
 	oerun main.enc

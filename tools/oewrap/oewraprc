@@ -22,6 +22,7 @@ gcc_ldflag=-L/opt/openenclave/lib/openenclave/enclave
 gcc_ldflag=-nostdlib
 gcc_ldflag=-nodefaultlibs
 gcc_ldflag=-nostartfiles
+gcc_ldflag=-Wl,--warn-once
 gcc_ldflag=-Wl,--no-undefined
 gcc_ldflag=-Wl,-Bstatic
 gcc_ldflag=-Wl,-Bsymbolic
@@ -47,7 +48,12 @@ gcc_lib=-loecore
 
 extra_include=-I/root/openssl/extras
 
+extra_define=-DOPENSSL_NO_SECURE_MEMORY
+extra_define=-DOPENSSL_NO_UI_CONSOLE
+extra_define=-DOPENSSL_NO_ASM
+
 delete_arg=-fPIC
 delete_arg=-pthread
 delete_arg=-Wa,--noexecstack
 delete_arg=-ldl
+delete_arg=-Wl,--no-undefined
