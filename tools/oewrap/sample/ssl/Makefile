@@ -9,9 +9,6 @@ all:
 	oe-gcc -g -Wall -Werror $(INCLUDES) -c load_file.c
 	oe-gcc -g -o main main.o load_file.o $(LIBRARIES)
 
-reloc:
-	readelf -r main | grep R_X86_64_GLOB_DAT
-
 run:
 	oerun main $(CURDIR)/cert.pem
 
