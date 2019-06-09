@@ -42,6 +42,46 @@ gcc_lib=-loecore
 
 ##==============================================================================
 ##
+## clang options:
+##
+##==============================================================================
+
+clang_cflag=-nostdinc
+clang_cflag=-m64
+clang_cflag=-fPIE
+clang_cflag=-ftls-model=local-exec
+clang_cflag=-fvisibility=hidden
+clang_cflag=-fno-stack-protector
+clang_cflag=-mllvm
+clang_cflag=-x86-speculative-load-hardening
+
+clang_include=-I/opt/openenclave/include/openenclave/3rdparty/libc
+clang_include=-I/opt/openenclave/include/openenclave/3rdparty
+clang_include=-I/opt/openenclave/include
+
+clang_ldflag=-L/opt/openenclave/lib/openenclave/enclave
+clang_ldflag=-nostdlib
+clang_ldflag=-nodefaultlibs
+clang_ldflag=-nostartfiles
+clang_ldflag=-Wl,--no-undefined
+clang_ldflag=-Wl,-Bstatic
+clang_ldflag=-Wl,-Bsymbolic
+clang_ldflag=-Wl,--export-dynamic
+clang_ldflag=-Wl,-pie
+clang_ldflag=-Wl,--build-id
+clang_ldflag=-Wl,-z,noexecstack
+clang_ldflag=-Wl,-z,now
+
+clang_lib=-loeenclave
+clang_lib=-loecryptombed
+clang_lib=-lmbedx509
+clang_lib=-lmbedcrypto
+clang_lib=-loelibc
+clang_lib=-loeposix
+clang_lib=-loecore
+
+##==============================================================================
+##
 ## openssl:
 ##
 ##==============================================================================

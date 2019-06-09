@@ -558,6 +558,31 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
     return exit_status;
 }
 
+bool has_sources(const vector<string>& args)
+{
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        const string& tmp = args[i];
+
+        size_t pos = tmp.find(".c");
+
+        if (pos != string::npos && pos + 2 == tmp.size())
+            return true;
+
+        pos = tmp.find(".cpp");
+
+        if (pos != string::npos && pos + 4 == tmp.size())
+            return true;
+
+        pos = tmp.find(".cc");
+
+        if (pos != string::npos && pos + 3 == tmp.size())
+            return true;
+    }
+
+    return false;
+}
+
 int handle_cc(const vector<string>& args, const string& compiler)
 {
     int exit_status = 1;
@@ -566,15 +591,17 @@ int handle_cc(const vector<string>& args, const string& compiler)
     string cc_include = compiler + "_include";
     string cc_lib = compiler + "_lib";
     string cc_ldflag = compiler + "_ldflag";
+    vector<string> sargs;
+    bool found = false;
 
-    // Execute the shadow command:
-    if (contains(args, "-c"))
+    // Append the program name:
+    sargs.push_back(args[0]);
+
+    delete_args(sargs);
+
+    // If there are any source files:
+    if (has_sources(args))
     {
-        vector<string> sargs;
-
-        // Append the program name:
-        sargs.push_back(args[0]);
-
         // Append the cflags:
         {
             vector<string> cflags;
@@ -599,27 +626,16 @@ int handle_cc(const vector<string>& args, const string& compiler)
             sargs.insert(sargs.end(), includes.begin(), includes.end());
         }
 
-        // Append remaining arguments:
-        sargs.insert(sargs.end(), args.begin() + 1, args.end());
-
-        if (exec(sargs, &exit_status) != 0)
-        {
-            fprintf(stderr, "%s: shadow exec() failed\n", arg0);
-            exit(1);
-        }
-
-        if (exit_status != 0)
-        {
-            // dump_args(sargs);
-            exit(exit_status);
-        }
+        found = true;
     }
-    else if (contains(args, "-o") && !contains(args, "-shared"))
+
+    // Append caller arguments:
+    sargs.insert(sargs.end(), args.begin() + 1, args.end());
+
+    // If program being linked:
+    if (contains(args, "-o") && !contains(args, "-c") &&
+        !contains(args, "-shared"))
     {
-        vector<string> sargs = args;
-
-        delete_args(sargs);
-
         // Append the ldflags:
         {
             vector<string> ldflags;
@@ -651,17 +667,29 @@ int handle_cc(const vector<string>& args, const string& compiler)
             sargs.insert(sargs.end(), libs.begin(), libs.end());
         }
 
-        if (exec(sargs, &exit_status) != 0)
-        {
-            fprintf(stderr, "%s: shadow exec() failed\n", arg0);
-            exit(1);
-        }
+        found = true;
+    }
 
-        if (exit_status != 0)
-        {
-            // dump_args(sargs);
-            exit(exit_status);
-        }
+    if (!found)
+    {
+        fprintf(stderr, "%s: invalid input\n", arg0);
+        exit(1);
+    }
+
+#if 0
+    print_args(sargs);
+#endif
+
+    if (exec(sargs, &exit_status) != 0)
+    {
+        fprintf(stderr, "%s: shadow exec() failed\n", arg0);
+        exit(1);
+    }
+
+    if (exit_status != 0)
+    {
+        // dump_args(sargs);
+        exit(exit_status);
     }
 
     return exit_status;
@@ -848,13 +876,21 @@ int main(int argc, const char* argv[])
 
     argv_to_args(argc - 2, argv + 2, args);
 
-    if (cmd == "shadow-gcc")
+    if (cmd == "gcc")
+    {
+        return handle_cc(args, "gcc");
+    }
+    else if (cmd == "shadow-gcc")
     {
         return handle_shadow_cc(args, "gcc");
     }
-    else if (cmd == "gcc")
+    else if (cmd == "clang")
     {
-        return handle_cc(args, "gcc");
+        return handle_cc(args, "clang");
+    }
+    else if (cmd == "shadow-clang")
+    {
+        return handle_shadow_cc(args, "clang");
     }
     else if (cmd == "shadow-ar")
     {
