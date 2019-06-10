@@ -53,6 +53,8 @@ void run_server(uint16_t port)
             assert("bind() failed" == NULL);
         }
 
+        printf("Listening on port %u\n", port);
+
         if (listen(listen_sd, backlog) != 0)
         {
             assert("listen() failed" == NULL);
