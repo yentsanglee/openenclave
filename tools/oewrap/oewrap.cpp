@@ -72,8 +72,16 @@ void dump_args(const vector<string>& args)
     printf("\n");
 }
 
-void print_args(const vector<string>& args)
+char COLOR_RED[] = "\033[0;31m";
+char COLOR_VIOLET[] = "\033[0;35m";
+char COLOR_GREEN[] = "\033[0;32m";
+char COLOR_CYAN[] = "\033[0;36m";
+char COLOR_NONE[] = "\033[0m";
+
+void print_args(const vector<string>& args, const char* color)
 {
+    printf("%s", color);
+
     for (size_t i = 0; i < args.size(); i++)
     {
         printf("%s", args[i].c_str());
@@ -81,7 +89,8 @@ void print_args(const vector<string>& args)
         if (i + 1 != args.size())
             printf(" ");
     }
-    printf("\n");
+
+    printf("%s\n", COLOR_NONE);
 }
 
 bool contains(const vector<string>& args, const string& arg)
@@ -430,11 +439,7 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
 
         delete_args(sargs);
 
-#if 0
-        printf("\n[SHADOW]: ");
-        print_args(sargs);
-        printf("\n");
-#endif
+        print_args(sargs, COLOR_CYAN);
 
         if (exec(sargs, &exit_status) != 0)
         {
@@ -528,12 +533,7 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
             sargs.insert(sargs.end(), libs.begin(), libs.end());
         }
 
-#if 0
-        printf("\n[SHADOW]: ");
-        printf("[SHADOW]: ");
-        print_args(sargs);
-        printf("\n");
-#endif
+        print_args(sargs, COLOR_CYAN);
 
         if (exec(sargs, &exit_status) != 0)
         {
@@ -543,10 +543,14 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
 
         if (exit_status != 0)
         {
-            fprintf(stderr, "SHADOW_LINK_ERROR_IGNORED\n");
-            dump_args(sargs);
+            fprintf(stderr, "%s", COLOR_RED);
+            fprintf(
+                stderr, "%s: %s: shadow link failed\n", arg0, args[0].c_str());
+            fprintf(stderr, "%s\n", COLOR_NONE);
         }
     }
+
+    print_args(args, COLOR_GREEN);
 
     // Execute the default command:
     if (exec(args, &exit_status) != 0)
