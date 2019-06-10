@@ -74,9 +74,8 @@ done:
     return ret;
 }
 
-int main(int argc, const char* argv[])
+int run_enclave(const char* path, int argc, const char* argv[])
 {
-    const char* arg0 = argv[0];
     oe_result_t r;
     oe_enclave_t* enc = NULL;
     const uint32_t flags = OE_ENCLAVE_FLAG_DEBUG;
@@ -84,33 +83,22 @@ int main(int argc, const char* argv[])
     int retval;
     void* argv_buf = NULL;
     size_t argv_buf_size = 0;
-    const char* path = NULL;
-
-    if (argc < 2)
-    {
-        fprintf(stderr, "Usage: %s enclave args...\n", argv[0]);
-        exit(1);
-    }
 
     /* Create the enclave. */
     {
-        r = oe_create_wrap_enclave(argv[1], type, flags, NULL, 0, &enc);
+        r = oe_create_wrap_enclave(path, type, flags, NULL, 0, &enc);
 
         if (r != OE_OK)
         {
-            fprintf(stderr, "%s: oe_create_test_hostfs_enclave()\n", argv[0]);
+            fprintf(stderr, "%s: oe_create_wrap_enclave()\n", path);
             exit(1);
         }
     }
 
-    /* Remove the first argument. */
-    argc--;
-    argv++;
-
     /* Serialize the arguments. */
     if (_serialize_argv(argc, argv, &argv_buf, &argv_buf_size) != 0)
     {
-        fprintf(stderr, "%s: _serialize_argv()\n", arg0);
+        fprintf(stderr, "%s: _serialize_argv()\n", argv[0]);
         exit(1);
     }
 
@@ -120,7 +108,7 @@ int main(int argc, const char* argv[])
 
         if (r != OE_OK)
         {
-            fprintf(stderr, "%s: oe_wrap_main_ecall()\n", arg0);
+            fprintf(stderr, "%s: oe_wrap_main_ecall()\n", argv[0]);
             exit(1);
         }
     }
@@ -131,15 +119,46 @@ int main(int argc, const char* argv[])
 
         if (r != OE_OK)
         {
-            fprintf(stderr, "%s: oe_terminate_enclave()\n", arg0);
+            fprintf(stderr, "%s: oe_terminate_enclave()\n", argv[0]);
             exit(1);
         }
     }
 
-    /* Remove the file. */
-    remove(path);
-
     free(argv_buf);
 
     return retval;
+}
+
+static const char* _basename(const char* path)
+{
+    char* slash = strrchr(path, '/');
+    return slash ? (slash + 1) : path;
+}
+
+int main(int argc, const char* argv[])
+{
+    char path[PATH_MAX];
+
+    const char* bn = _basename(argv[0]);
+
+    if (strcmp(bn, "oerun") == 0)
+    {
+        if (argc < 2)
+        {
+            fprintf(stderr, "Usage: %s enclave args...\n", argv[0]);
+            exit(1);
+        }
+
+        snprintf(path, sizeof(path), "%s", argv[1]);
+
+        argc--;
+        argv++;
+    }
+    else
+    {
+        ptrdiff_t n = bn - argv[0];
+        snprintf(path, sizeof(path), "%.*s.%s.enc", (int)n, argv[0], bn);
+    }
+
+    return run_enclave(path, argc, argv);
 }

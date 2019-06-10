@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -586,6 +587,112 @@ bool has_sources(const vector<string>& args)
     return false;
 }
 
+int get_out_file(const vector<string>& args, string& path)
+{
+    path.clear();
+
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        const string& arg = args[i];
+
+        if (arg.substr(0, 2) == "-o")
+        {
+            if (arg == "-o")
+            {
+                if (i + 1 != args.size())
+                {
+                    path = args[i + 1];
+                    return 0;
+                }
+            }
+            else
+            {
+                path = arg.substr(2);
+                return 0;
+            }
+        }
+    }
+
+    return -1;
+}
+
+int change_output_file_name(vector<string>& args, const string& path)
+{
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        const string& arg = args[i];
+
+        if (arg.substr(0, 2) == "-o")
+        {
+            if (arg == "-o")
+            {
+                if (i + 1 != args.size())
+                {
+                    args[i + 1] = path;
+                    return 0;
+                }
+            }
+            else
+            {
+                args[i] = "-o" + path;
+                return 0;
+            }
+        }
+    }
+
+    return -1;
+}
+
+string basename(const string& path)
+{
+    size_t pos = path.rfind('/');
+    return (pos == string::npos) ? path : path.substr(pos + 1);
+}
+
+string dirname(const string& path)
+{
+    size_t pos = path.rfind('/');
+    return (pos == string::npos) ? "." : path.substr(pos);
+}
+
+int copy_file(const string& old_path, const string& new_path)
+{
+    int ret = -1;
+    FILE* is = NULL;
+    FILE* os = NULL;
+    int c;
+
+    if (!(is = fopen(old_path.c_str(), "r")))
+        goto done;
+
+    if (!(os = fopen(new_path.c_str(), "w")))
+        goto done;
+
+    while ((c = fgetc(is)) != EOF)
+    {
+        if (fputc(c, os) == EOF)
+            goto done;
+    }
+
+    if (ferror(is))
+        goto done;
+
+    if (!feof(is))
+        goto done;
+
+    ret = 0;
+
+done:
+
+    if (is)
+        fclose(is);
+
+    if (os)
+        fclose(os);
+
+    return ret;
+}
+
 int handle_cc(const vector<string>& args_, const string& compiler)
 {
     int exit_status = 1;
@@ -595,6 +702,8 @@ int handle_cc(const vector<string>& args_, const string& compiler)
     string cc_lib = compiler + "_lib";
     string cc_ldflag = compiler + "_ldflag";
     vector<string> sargs;
+    string old_out_file;
+    string new_out_file;
     bool found = false;
     vector<string> args = args_;
 
@@ -655,6 +764,26 @@ int handle_cc(const vector<string>& args_, const string& compiler)
     if (contains(args, "-o") && !contains(args, "-c") &&
         !contains(args, "-shared"))
     {
+        string path;
+
+        if (get_out_file(args, path) != 0)
+        {
+            fprintf(stderr, "%s: output file not found\n", arg0);
+            exit(1);
+        }
+
+        old_out_file = path;
+        new_out_file = dirname(path) + "/." + basename(path) + ".enc";
+
+        remove(old_out_file.c_str());
+        remove(new_out_file.c_str());
+
+        if (change_output_file_name(sargs, new_out_file) != 0)
+        {
+            fprintf(stderr, "%s: failed to change output file name\n", arg0);
+            exit(1);
+        }
+
         // Append liboewrapenclave:
         {
             vector<string> libs;
@@ -701,6 +830,39 @@ int handle_cc(const vector<string>& args_, const string& compiler)
         fprintf(stderr, "%s: error\n", args[0].c_str());
         fprintf(stderr, "%s\n", COLOR_NONE);
         exit(exit_status);
+    }
+
+    if (access(new_out_file.c_str(), X_OK) == 0)
+    {
+        string oerun;
+
+        if (which("oerun", oerun) != 0)
+        {
+            fprintf(stderr, "%s: no on path: oerun\n", arg0);
+            exit(1);
+        }
+
+        if (copy_file(oerun, old_out_file) != 0)
+        {
+            fprintf(
+                stderr,
+                "%s: failed to create: %s\n",
+                arg0,
+                old_out_file.c_str());
+            exit(1);
+        }
+
+        mode_t mode = 0;
+        mode |= (S_IRUSR | S_IWUSR | S_IXUSR);
+        mode |= (S_IRGRP | S_IXGRP);
+        mode |= (S_IROTH | S_IXOTH);
+
+        if (chmod(old_out_file.c_str(), mode) != 0)
+        {
+            fprintf(
+                stderr, "%s: chmod failed: %s\n", arg0, old_out_file.c_str());
+            exit(1);
+        }
     }
 
     return exit_status;

@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include "wrap_u.h"
 
-extern uint8_t oe_wrap_enclave_data[];
-extern size_t oe_wrap_enclave_size;
+extern uint8_t __enc_data[];
+extern size_t __enc_size;
 
 static int _serialize_argv(
     int argc,
@@ -92,7 +92,7 @@ int main(int argc, const char* argv[])
 
     /* Create a temporary enclave file. */
     {
-        size_t n = oe_wrap_enclave_size;
+        size_t n = __enc_size;
 
         if (!(path = tmpnam(buf)))
         {
@@ -106,7 +106,7 @@ int main(int argc, const char* argv[])
             exit(1);
         }
 
-        if (fwrite(oe_wrap_enclave_data, 1, n, os) != n)
+        if (fwrite(__enc_data, 1, n, os) != n)
         {
             fprintf(stderr, "%s: fwrite():\n", argv[0]);
             exit(1);
