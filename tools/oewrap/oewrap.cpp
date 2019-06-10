@@ -544,13 +544,12 @@ int handle_shadow_cc(const vector<string>& args, const string& compiler)
         if (exit_status != 0)
         {
             fprintf(stderr, "%s", COLOR_RED);
-            fprintf(
-                stderr, "%s: %s: shadow link failed\n", arg0, args[0].c_str());
+            fprintf(stderr, "%s: error: shadow link failed\n", args[0].c_str());
             fprintf(stderr, "%s\n", COLOR_NONE);
         }
     }
 
-    print_args(args, COLOR_GREEN);
+    // print_args(args, COLOR_GREEN);
 
     // Execute the default command:
     if (exec(args, &exit_status) != 0)
