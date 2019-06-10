@@ -8,12 +8,16 @@
 
 extern int main(int argc, const char* argv[]);
 
+extern bool oe_disable_debug_malloc_check;
+
 int oe_wrap_main_ecall(int argc, const void* argv_buf, size_t argv_buf_size)
 {
     char** argv = (char**)argv_buf;
     int ret;
 
     (void)argv_buf_size;
+
+    oe_disable_debug_malloc_check = true;
 
     /* Translate offsets to pointers. */
     for (int i = 0; i < argc; i++)

@@ -586,7 +586,7 @@ bool has_sources(const vector<string>& args)
     return false;
 }
 
-int handle_cc(const vector<string>& args, const string& compiler)
+int handle_cc(const vector<string>& args_, const string& compiler)
 {
     int exit_status = 1;
 
@@ -596,6 +596,9 @@ int handle_cc(const vector<string>& args, const string& compiler)
     string cc_ldflag = compiler + "_ldflag";
     vector<string> sargs;
     bool found = false;
+    vector<string> args = args_;
+
+    delete_args(args);
 
     // Append the program name:
     sargs.push_back(args[0]);
@@ -632,10 +635,7 @@ int handle_cc(const vector<string>& args, const string& compiler)
         found = true;
     }
 
-    // Append caller arguments:
-    sargs.insert(sargs.end(), args.begin() + 1, args.end());
-
-    // If program being linked:
+    // Append the ldflags:
     if (contains(args, "-o") && !contains(args, "-c") &&
         !contains(args, "-shared"))
     {
@@ -646,7 +646,15 @@ int handle_cc(const vector<string>& args, const string& compiler)
 
             sargs.insert(sargs.end(), ldflags.begin(), ldflags.end());
         }
+    }
 
+    // Append caller arguments:
+    sargs.insert(sargs.end(), args.begin() + 1, args.end());
+
+    // Append the libs
+    if (contains(args, "-o") && !contains(args, "-c") &&
+        !contains(args, "-shared"))
+    {
         // Append liboewrapenclave:
         {
             vector<string> libs;
@@ -679,9 +687,7 @@ int handle_cc(const vector<string>& args, const string& compiler)
         exit(1);
     }
 
-#if 0
-    print_args(sargs);
-#endif
+    print_args(sargs, COLOR_CYAN);
 
     if (exec(sargs, &exit_status) != 0)
     {
@@ -691,7 +697,9 @@ int handle_cc(const vector<string>& args, const string& compiler)
 
     if (exit_status != 0)
     {
-        // dump_args(sargs);
+        fprintf(stderr, "%s", COLOR_RED);
+        fprintf(stderr, "%s: error\n", args[0].c_str());
+        fprintf(stderr, "%s\n", COLOR_NONE);
         exit(exit_status);
     }
 
