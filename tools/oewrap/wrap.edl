@@ -3,6 +3,11 @@
 
 enclave {
     trusted {
+
+        public int oe_wrap_init(
+            [in, string] const char* path,
+            [in, string] const char* cwd);
+
         public int oe_wrap_main_ecall(
             int argc,
             [in, size=argv_buf_size] const void* argv_buf,

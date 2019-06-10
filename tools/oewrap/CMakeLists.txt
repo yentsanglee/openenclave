@@ -9,6 +9,5 @@ set_property(TARGET oewrap PROPERTY RUNTIME_OUTPUT_DIRECTORY ${OE_BINDIR})
 
 install (TARGETS oewrap DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-add_subdirectory(host)
-add_subdirectory(enclave)
+add_subdirectory(enc)
 add_subdirectory(run)

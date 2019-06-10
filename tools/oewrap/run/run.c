@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <openenclave/host.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "wrap_u.h"
 
 static int _serialize_argv(
@@ -100,6 +101,25 @@ int run_enclave(const char* path, int argc, const char* argv[])
     {
         fprintf(stderr, "%s: _serialize_argv()\n", argv[0]);
         exit(1);
+    }
+
+    /* Initialize the enclave. */
+    {
+        char cwd[1024];
+
+        if (!getcwd(cwd, sizeof(cwd)))
+        {
+            fprintf(stderr, "%s: oe_wrap_main_ecall()\n", argv[0]);
+            exit(1);
+        }
+
+        r = oe_wrap_init(enc, &retval, path, cwd);
+
+        if (r != OE_OK || retval != 0)
+        {
+            fprintf(stderr, "%s: oe_wrap_init()\n", argv[0]);
+            exit(1);
+        }
     }
 
     /* Run the enclave. */

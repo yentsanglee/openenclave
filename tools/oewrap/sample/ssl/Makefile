@@ -12,10 +12,10 @@ all:
 	$(CC) -g -o main main.o load_file.o $(LIBRARIES)
 
 run:
-	oerun .main.enc $(CURDIR)/cert.pem
+	oerun .main.enc cert.pem
 
 clean:
-	rm -f main main.o load_file.o .main.enc
+	rm -f main .main.enc main.o load_file.o
 
 build:
 	$(CC) -g $(INCLUDES) -o main main.c load_file.c $(LIBRARIES)
