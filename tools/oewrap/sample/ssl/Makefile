@@ -11,11 +11,5 @@ all:
 	$(CC) -g -Wall -Werror $(INCLUDES) -c load_file.c
 	$(CC) -g -o main main.o load_file.o $(LIBRARIES)
 
-run:
-	oerun .main.enc cert.pem
-
 clean:
-	rm -f main .main.enc main.o load_file.o
-
-build:
-	$(CC) -g $(INCLUDES) -o main main.c load_file.c $(LIBRARIES)
+	rm -f main main.enc main.o load_file.o

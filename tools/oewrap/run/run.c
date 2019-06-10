@@ -176,8 +176,7 @@ int main(int argc, const char* argv[])
     }
     else
     {
-        ptrdiff_t n = bn - argv[0];
-        snprintf(path, sizeof(path), "%.*s.%s.enc", (int)n, argv[0], bn);
+        snprintf(path, sizeof(path), "%s.enc", argv[0]);
     }
 
     return run_enclave(path, argc, argv);

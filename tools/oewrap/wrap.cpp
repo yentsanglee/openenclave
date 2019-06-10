@@ -773,7 +773,7 @@ int handle_cc(const vector<string>& args_, const string& compiler)
         }
 
         old_out_file = path;
-        new_out_file = dirname(path) + "/." + basename(path) + ".enc";
+        new_out_file = dirname(path) + "/" + basename(path) + ".enc";
 
         remove(old_out_file.c_str());
         remove(new_out_file.c_str());
