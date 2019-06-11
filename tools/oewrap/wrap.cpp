@@ -587,7 +587,7 @@ bool has_sources(const vector<string>& args)
     return false;
 }
 
-int get_out_file(const vector<string>& args, string& path)
+int get_target(const vector<string>& args, string& path)
 {
     path.clear();
 
@@ -766,7 +766,7 @@ int handle_cc(const vector<string>& args_, const string& compiler)
     {
         string path;
 
-        if (get_out_file(args, path) != 0)
+        if (get_target(args, path) != 0)
         {
             fprintf(stderr, "%s: output file not found\n", arg0);
             exit(1);
@@ -1033,6 +1033,334 @@ done:
     return ret;
 }
 
+void extract_opt_args(
+    vector<string>& args,
+    const string& opt,
+    vector<string>& options)
+{
+    vector<string> result_args;
+
+    options.clear();
+
+    for (size_t i = 0; i < args.size();)
+    {
+        const string& arg = args[i];
+
+        if (arg.substr(0, opt.size()) == opt)
+        {
+            if (arg == opt)
+            {
+                if (i + 1 != args.size())
+                {
+                    options.push_back(args[i + 1]);
+                    i += 2;
+                }
+            }
+            else
+            {
+                options.push_back(arg.substr(2));
+                i++;
+            }
+        }
+        else
+        {
+            result_args.push_back(arg);
+            i++;
+        }
+    }
+
+    args = result_args;
+}
+
+void extract_flags(vector<string>& args, vector<string>& flags)
+{
+    vector<string> result_args;
+
+    flags.clear();
+
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        const string& arg = args[i];
+
+        if (arg[0] == '-')
+        {
+            flags.push_back(arg);
+        }
+        else
+        {
+            result_args.push_back(arg);
+        }
+    }
+
+    args = result_args;
+}
+
+static const char* source_exts[] = {
+    ".c",
+    ".cc",
+    ".cpp",
+    ".s",
+    ".S",
+    NULL,
+};
+
+static const char* object_exts[] = {
+    ".o",
+    NULL,
+};
+
+static const char* archive_exts[] = {
+    ".a",
+    NULL,
+};
+
+void extract_files(
+    vector<string>& args,
+    const char* exts[],
+    vector<string>& sources)
+{
+    vector<string> result_args;
+
+    sources.clear();
+
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        const string& arg = args[i];
+        bool found = false;
+
+        for (size_t j = 0; exts[j]; j++)
+        {
+            const char* ext = exts[j];
+            size_t pos = arg.find(ext);
+
+            if (pos != string::npos && pos == (arg.size() - strlen(ext)))
+            {
+                sources.push_back(arg);
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+            result_args.push_back(arg);
+    }
+
+    args = result_args;
+}
+
+void extract_shared_objects(vector<string>& args, vector<string>& sources)
+{
+    vector<string> result_args;
+
+    sources.clear();
+
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        const string& arg = args[i];
+
+        size_t pos = arg.find(".so");
+
+        if (pos != string::npos && pos == (arg.size() - strlen(".so")))
+        {
+            sources.push_back(arg);
+            continue;
+        }
+
+        if (arg.find(".so.") != string::npos)
+        {
+            sources.push_back(arg);
+            continue;
+        }
+
+        result_args.push_back(arg);
+    }
+
+    args = result_args;
+}
+
+void extract_sources(vector<string>& args, vector<string>& sources)
+{
+    return extract_files(args, source_exts, sources);
+}
+
+void extract_objects(vector<string>& args, vector<string>& sources)
+{
+    return extract_files(args, object_exts, sources);
+}
+
+void extract_archives(vector<string>& args, vector<string>& sources)
+{
+    return extract_files(args, archive_exts, sources);
+}
+
+int handle_oedb_cc(const vector<string>& args_)
+{
+    int exit_status;
+    FILE* os = stdout;
+    vector<string> args = args_;
+
+    printf("%s\n", COLOR_RED);
+
+    // Print the target:
+    {
+        vector<string> targets;
+
+        extract_opt_args(args, "-o", targets);
+
+        if (targets.size() != 1)
+        {
+            fprintf(stderr, "%s: cannot resolve target\n", arg0);
+            exit(1);
+        }
+
+        fprintf(os, "%s:\n", targets[0].c_str());
+    }
+
+    // Print the current directory:
+    {
+        char cwd[PATH_MAX];
+
+        if (!getcwd(cwd, sizeof(cwd)))
+        {
+            fprintf(stderr, "%s: cannot resolve current directory\n", arg0);
+            exit(1);
+        }
+
+        fprintf(os, "CURDIR=%s\n", cwd);
+    }
+
+    // Print the command:
+    fprintf(os, "CC=%s\n", args[0].c_str());
+    args.erase(args.begin());
+
+    // Print the includes:
+    {
+        vector<string> includes;
+        extract_opt_args(args, "-I", includes);
+
+        for (size_t i = 0; i < includes.size(); i++)
+            fprintf(os, "INCLUDE=%s\n", includes[i].c_str());
+    }
+
+    // Print the defines:
+    {
+        vector<string> defines;
+        extract_opt_args(args, "-D", defines);
+
+        for (size_t i = 0; i < defines.size(); i++)
+            fprintf(os, "DEFINE=%s\n", defines[i].c_str());
+    }
+
+    // LIB:
+    {
+        vector<string> libs;
+        extract_opt_args(args, "-l", libs);
+
+        for (size_t i = 0; i < libs.size(); i++)
+            fprintf(os, "LIB=%s\n", libs[i].c_str());
+    }
+
+    // LIBPATH:
+    {
+        vector<string> libs;
+        extract_opt_args(args, "-L", libs);
+
+        for (size_t i = 0; i < libs.size(); i++)
+            fprintf(os, "LIBPATH=%s\n", libs[i].c_str());
+    }
+
+    // Discard these options and their arguments. */
+    {
+        vector<string> tmp;
+        extract_opt_args(args, "-MF", tmp);
+        extract_opt_args(args, "-MT", tmp);
+        extract_opt_args(args, "-MMD", tmp);
+    }
+
+    // Extract source files.
+    {
+        vector<string> sources;
+        extract_sources(args, sources);
+
+        for (size_t i = 0; i < sources.size(); i++)
+            fprintf(os, "SOURCE=%s\n", sources[i].c_str());
+    }
+
+    // Extract object files.
+    {
+        vector<string> objects;
+        extract_objects(args, objects);
+
+        for (size_t i = 0; i < objects.size(); i++)
+            fprintf(os, "OBJECT=%s\n", objects[i].c_str());
+    }
+
+    // Extract archive files.
+    {
+        vector<string> archives;
+        extract_archives(args, archives);
+
+        for (size_t i = 0; i < archives.size(); i++)
+            fprintf(os, "ARCHIVE=%s\n", archives[i].c_str());
+    }
+
+    // Extract .so files:
+    {
+        vector<string> shared_objects;
+        extract_shared_objects(args, shared_objects);
+
+        for (size_t i = 0; i < shared_objects.size(); i++)
+            fprintf(os, "SHOBJ=%s\n", shared_objects[i].c_str());
+    }
+
+    // Extract the CFLAGS:
+    {
+        vector<string> cflags;
+        extract_flags(args, cflags);
+
+        for (size_t i = 0; i < cflags.size(); i++)
+            fprintf(os, "CFLAG=%s\n", cflags[i].c_str());
+    }
+
+    // Fail if any unhandled arguments:
+    if (args.size())
+    {
+        fprintf(stderr, "%s: unhandled arguments:\n", arg0);
+        print_args(args, COLOR_RED);
+        exit(1);
+    }
+
+    printf("%s\n", COLOR_NONE);
+
+    print_args(args, COLOR_GREEN);
+
+    // Finish with a blank line.
+    fprintf(os, "\n");
+
+    if (exec(args_, &exit_status) != 0)
+    {
+        fprintf(stderr, "%s: exec() failed\n", arg0);
+        exit(1);
+    }
+
+    return exit_status;
+}
+
+int handle_oedb_ar(const vector<string>& args)
+{
+    int exit_status;
+
+    print_args(args, COLOR_CYAN);
+
+    if (exec(args, &exit_status) != 0)
+    {
+        fprintf(stderr, "%s: exec() failed\n", arg0);
+        exit(1);
+    }
+
+    return exit_status;
+}
+
 int main(int argc, const char* argv[])
 {
     arg0 = argv[0];
@@ -1074,6 +1402,14 @@ int main(int argc, const char* argv[])
     else if (cmd == "shadow-ar")
     {
         return handle_shadow_ar(args);
+    }
+    else if (cmd == "oedb-gcc")
+    {
+        return handle_oedb_cc(args);
+    }
+    else if (cmd == "oedb-ar")
+    {
+        return handle_oedb_ar(args);
     }
     else
     {
