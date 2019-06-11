@@ -7,3 +7,6 @@ all:
 
 run:
 	oerun main.enc
+
+clean:
+	rm -rf main main.enc main.o main.enc.o
