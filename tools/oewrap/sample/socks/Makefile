@@ -10,4 +10,4 @@ all:
 	$(CC) -o cli cli.o
 
 clean:
-	rm -rf srv cli srv.o cli.o
+	rm -rf srv srv.enc cli cli.enc srv.o cli.o

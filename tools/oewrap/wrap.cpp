@@ -913,6 +913,12 @@ int handle_shadow_ar(const vector<string>& args)
     return exit_status;
 }
 
+void make_substitutions(vector<option>& options, option& opt)
+{
+    (void)options;
+    (void)opt;
+}
+
 int load_config(vector<option>& options)
 {
     int ret = -1;
@@ -963,9 +969,6 @@ int load_config(vector<option>& options)
         {
             const char* start = p;
 
-            while (isalpha(*p) || *p == '_')
-                p++;
-
             while (isalpha(*p) || isalnum(*p) || *p == '_')
                 p++;
 
@@ -1014,7 +1017,10 @@ int load_config(vector<option>& options)
             value.assign(start, (size_t)(p - start));
         }
 
-        options.push_back(option(keyword, value));
+        option opt(keyword, value);
+        make_substitutions(options, opt);
+
+        options.push_back(opt);
     }
 
     ret = 0;
