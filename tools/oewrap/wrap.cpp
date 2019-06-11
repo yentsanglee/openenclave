@@ -1196,10 +1196,36 @@ void extract_archives(vector<string>& args, vector<string>& sources)
 int handle_oedb_cc(const vector<string>& args_)
 {
     int exit_status;
-    FILE* os = stdout;
+    FILE* os = NULL;
     vector<string> args = args_;
 
-    printf("%s\n", COLOR_RED);
+    printf("%s", COLOR_RED);
+    fflush(stdout);
+
+    // Open the oedb log:
+    {
+        vector<string> options;
+        get_options("oedb_log", options);
+
+        if (options.size() == 0)
+        {
+            fprintf(stderr, "%s: missing oedb_log option\n", arg0);
+            exit(1);
+        }
+        else if (options.size() != 1)
+        {
+            fprintf(stderr, "%s: too many oedb_log options\n", arg0);
+            exit(1);
+        }
+
+        const string& path = options[0];
+
+        if (!(os = fopen(path.c_str(), "a")))
+        {
+            fprintf(stderr, "%s: failed to open log: %s\n", arg0, path.c_str());
+            exit(1);
+        }
+    }
 
     // Print the target:
     {
@@ -1330,9 +1356,8 @@ int handle_oedb_cc(const vector<string>& args_)
         exit(1);
     }
 
-    printf("%s\n", COLOR_NONE);
-
-    print_args(args, COLOR_GREEN);
+    printf("%s", COLOR_NONE);
+    fflush(stdout);
 
     // Finish with a blank line.
     fprintf(os, "\n");
@@ -1342,6 +1367,9 @@ int handle_oedb_cc(const vector<string>& args_)
         fprintf(stderr, "%s: exec() failed\n", arg0);
         exit(1);
     }
+
+    if (os)
+        fclose(os);
 
     return exit_status;
 }
