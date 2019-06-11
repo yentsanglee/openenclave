@@ -1193,7 +1193,19 @@ void extract_archives(vector<string>& args, vector<string>& sources)
     return extract_files(args, archive_exts, sources);
 }
 
-int handle_oedb_cc(const vector<string>& args_)
+static FILE* open_cdb_log()
+{
+    vector<string> options;
+
+    get_options("cdb_log", options);
+
+    if (options.size() != 1)
+        return NULL;
+
+    return fopen(options[0].c_str(), "a");
+}
+
+int handle_cdb_cc(const vector<string>& args_)
 {
     int exit_status;
     FILE* os = NULL;
@@ -1202,29 +1214,11 @@ int handle_oedb_cc(const vector<string>& args_)
     printf("%s", COLOR_RED);
     fflush(stdout);
 
-    // Open the oedb log:
+    // Open the cdb log:
+    if (!(os = open_cdb_log()))
     {
-        vector<string> options;
-        get_options("oedb_log", options);
-
-        if (options.size() == 0)
-        {
-            fprintf(stderr, "%s: missing oedb_log option\n", arg0);
-            exit(1);
-        }
-        else if (options.size() != 1)
-        {
-            fprintf(stderr, "%s: too many oedb_log options\n", arg0);
-            exit(1);
-        }
-
-        const string& path = options[0];
-
-        if (!(os = fopen(path.c_str(), "a")))
-        {
-            fprintf(stderr, "%s: failed to open log: %s\n", arg0, path.c_str());
-            exit(1);
-        }
+        fprintf(stderr, "%s: failed to open the log file\n", arg0);
+        exit(1);
     }
 
     // Print the target:
@@ -1374,17 +1368,85 @@ int handle_oedb_cc(const vector<string>& args_)
     return exit_status;
 }
 
-int handle_oedb_ar(const vector<string>& args)
+int handle_cdb_ar(const vector<string>& args_)
 {
     int exit_status;
+    FILE* os = NULL;
+    vector<string> args = args_;
+    vector<string> objects;
 
-    print_args(args, COLOR_CYAN);
+    printf("%s", COLOR_RED);
+    fflush(stdout);
 
-    if (exec(args, &exit_status) != 0)
+    // Open the cdb log:
+    if (!(os = open_cdb_log()))
+    {
+        fprintf(stderr, "%s: failed to open the log file\n", arg0);
+        exit(1);
+    }
+
+    // Print the target:
+    {
+        vector<string> archives;
+        extract_archives(args, archives);
+
+        if (archives.size() != 1)
+        {
+            fprintf(stderr, "%s: archive argument not found\n", arg0);
+            exit(1);
+        }
+
+        fprintf(os, "%s:\n", archives[0].c_str());
+    }
+
+    // Print the current directory:
+    {
+        char cwd[PATH_MAX];
+
+        if (!getcwd(cwd, sizeof(cwd)))
+        {
+            fprintf(stderr, "%s: cannot resolve current directory\n", arg0);
+            exit(1);
+        }
+
+        fprintf(os, "CURDIR=%s\n", cwd);
+    }
+
+    // Print the command:
+    fprintf(os, "AR=%s\n", args[0].c_str());
+    args.erase(args.begin());
+
+    // Extract object files.
+    extract_objects(args, objects);
+
+    if (args.size() != 1)
+    {
+        fprintf(stderr, "%s: unhandled arguments:\n", arg0);
+        print_args(args, COLOR_RED);
+        exit(1);
+    }
+
+    // Print ARFLAGS:
+    fprintf(os, "ARFLAGS=%s\n", args[0].c_str());
+
+    // Print the objects.
+    for (size_t i = 0; i < objects.size(); i++)
+        fprintf(os, "OBJECT=%s\n", objects[i].c_str());
+
+    printf("%s", COLOR_NONE);
+    fflush(stdout);
+
+    // Finish with a blank line.
+    fprintf(os, "\n");
+
+    if (exec(args_, &exit_status) != 0)
     {
         fprintf(stderr, "%s: exec() failed\n", arg0);
         exit(1);
     }
+
+    if (os)
+        fclose(os);
 
     return exit_status;
 }
@@ -1431,13 +1493,13 @@ int main(int argc, const char* argv[])
     {
         return handle_shadow_ar(args);
     }
-    else if (cmd == "oedb-gcc")
+    else if (cmd == "cdb-gcc")
     {
-        return handle_oedb_cc(args);
+        return handle_cdb_cc(args);
     }
-    else if (cmd == "oedb-ar")
+    else if (cmd == "cdb-ar")
     {
-        return handle_oedb_ar(args);
+        return handle_cdb_ar(args);
     }
     else
     {
