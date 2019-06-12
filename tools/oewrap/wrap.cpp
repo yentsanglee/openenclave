@@ -17,6 +17,8 @@ using namespace std;
 
 static const char* arg0;
 
+static string config_dir;
+
 #define COLOR_RED "\033[0;31m"
 #define COLOR_VIOLET "\033[0;35m"
 #define COLOR_GREEN "\033[0;32m"
@@ -39,6 +41,7 @@ static vector<option> _options;
 __attribute__((format(printf, 1, 2))) void err(const char* fmt, ...)
 {
     fprintf(stderr, "%s", COLOR_RED);
+
     fprintf(stderr, "%s: error: ", arg0);
 
     va_list ap;
@@ -49,7 +52,7 @@ __attribute__((format(printf, 1, 2))) void err(const char* fmt, ...)
     fprintf(stderr, "\n\n");
 
     fprintf(stderr, "%s", COLOR_NONE);
-    fflush(stdout);
+    fflush(stderr);
 
     exit(1);
 }
@@ -71,15 +74,16 @@ __attribute__((format(printf, 2, 3))) void err(
 
     for (size_t i = 0; i < args.size(); i++)
     {
-        fprintf(stderr, "%s", args[i].c_str());
+        fprintf(stderr, "arg=%s", args[i].c_str());
 
         if (i + 1 != args.size())
             fprintf(stderr, " ");
     }
 
     fprintf(stderr, "\n\n");
+
     fprintf(stderr, "%s", COLOR_NONE);
-    fflush(stdout);
+    fflush(stderr);
 
     exit(1);
 }
@@ -983,7 +987,6 @@ void make_substitutions(vector<option>& options, option& opt)
 int load_config(vector<option>& options)
 {
     int ret = -1;
-    const char* home;
     FILE* is = NULL;
     string path;
     char buf[1024];
@@ -991,10 +994,10 @@ int load_config(vector<option>& options)
 
     options.clear();
 
-    if (!(home = getenv("HOME")))
+    if (config_dir.empty())
         goto done;
 
-    path = string(home) + "/.oewraprc";
+    path = config_dir + "/config";
 
     if (!(is = fopen(path.c_str(), "r")))
         goto done;
@@ -1317,11 +1320,17 @@ bool is_dir(const string& path)
 int handle_cdb_cc(const vector<string>& args_)
 {
     int exit_status;
-    FILE* os = NULL;
     vector<string> args = args_;
+    FILE* os = NULL;
+    FILE* log = NULL;
+    char* buf = NULL;
+    size_t len = 0;
 
-    // Open the cdb log:
-    if (!(os = open_cdb_log()))
+    if (!(os = open_memstream(&buf, &len)))
+        err("open_memstream() failed");
+
+    // Open the CDB log:
+    if (!(log = open_cdb_log()))
         err("failed to open the log file");
 
     // Print the target:
@@ -1512,6 +1521,14 @@ int handle_cdb_cc(const vector<string>& args_)
     if (os)
         fclose(os);
 
+    if (fwrite(buf, 1, len, log) != len)
+        err(args_, "failed to write to cdb log");
+
+    if (log)
+        fclose(log);
+
+    free(buf);
+
     return exit_status;
 }
 
@@ -1519,11 +1536,17 @@ int handle_cdb_ar(const vector<string>& args_)
 {
     int exit_status;
     FILE* os = NULL;
+    FILE* log = NULL;
     vector<string> args = args_;
     vector<string> objects;
+    char* buf = NULL;
+    size_t len = 0;
+
+    if (!(os = open_memstream(&buf, &len)))
+        err("open_memstream() failed");
 
     // Open the cdb log:
-    if (!(os = open_cdb_log()))
+    if (!(log = open_cdb_log()))
         err("failed to open the log file");
 
     // Print the target line:
@@ -1537,6 +1560,16 @@ int handle_cdb_ar(const vector<string>& args_)
             err(args_, "too many archives arguments");
 
         fprintf(os, "%s:\n", archives[0].c_str());
+    }
+
+    // Print CURDIR line:
+    {
+        char cwd[PATH_MAX];
+
+        if (!getcwd(cwd, sizeof(cwd)))
+            err("failed to get current directory");
+
+        fprintf(os, "CURDIR=%s\n", cwd);
     }
 
     // Print AR line:
@@ -1576,7 +1609,319 @@ int handle_cdb_ar(const vector<string>& args_)
     if (os)
         fclose(os);
 
+    if (fwrite(buf, 1, len, log) != len)
+        err(args_, "failed to write to cdb log");
+
+    if (log)
+        fclose(log);
+
+    free(buf);
+
     return exit_status;
+}
+
+static void dump_keywords(const char* keyword, const vector<string>& values)
+{
+    for (size_t i = 0; i < values.size(); i++)
+        printf("%s=%s\n", keyword, values[i].c_str());
+}
+
+struct target
+{
+    string name;
+    string curdir;
+    string cc;
+    string ar;
+    string arflags;
+    vector<string> ldlibs;
+    vector<string> cflags;
+    vector<string> defines;
+    vector<string> includes;
+    vector<string> shobjs;
+    vector<string> objects;
+    vector<string> archives;
+    vector<string> sources;
+    vector<string> ldpaths;
+
+    void clear()
+    {
+        name.clear();
+        curdir.clear();
+        cc.clear();
+        ar.clear();
+        arflags.clear();
+        ldlibs.clear();
+        cflags.clear();
+        defines.clear();
+        includes.clear();
+        shobjs.clear();
+        objects.clear();
+        archives.clear();
+        sources.clear();
+        ldpaths.clear();
+    }
+
+    void dump() const
+    {
+        if (cc.size())
+        {
+            printf("%s:\n", name.c_str());
+
+            if (curdir.size())
+                printf("CURDIR=%s\n", curdir.c_str());
+
+            if (cc.size())
+                printf("CC=%s\n", cc.c_str());
+
+            dump_keywords("INCLUDE", includes);
+            dump_keywords("DEFINE", defines);
+            dump_keywords("LDLIB", ldlibs);
+            dump_keywords("LDPATH", ldpaths);
+            dump_keywords("SOURCE", sources);
+            dump_keywords("OBJECT", objects);
+            dump_keywords("ARCHIVE", archives);
+            dump_keywords("SHOBJ", shobjs);
+            dump_keywords("CFLAG", cflags);
+
+            printf("\n");
+        }
+        else if (ar.size())
+        {
+            printf("%s:\n", name.c_str());
+
+            if (curdir.size())
+                printf("CURDIR=%s\n", curdir.c_str());
+
+            if (ar.size())
+                printf("AR=%s\n", ar.c_str());
+
+            printf("ARFLAGS=%s\n", arflags.c_str());
+
+            dump_keywords("OBJECT", objects);
+
+            printf("\n");
+        }
+        else
+        {
+            err("unknown target");
+        }
+    }
+};
+
+int load_cdb_spec(const string& path, vector<target>& targets)
+{
+    int ret = -1;
+    FILE* is = NULL;
+    targets.clear();
+    char buf[4096];
+    unsigned int line = 0;
+    target target;
+    bool inside = false;
+
+    ret = 0;
+
+    targets.clear();
+
+    if (!(is = fopen(path.c_str(), "r")))
+        goto done;
+
+    while (fgets(buf, sizeof(buf), is) != NULL)
+    {
+        char* p = buf;
+        size_t len;
+
+        line++;
+
+        // Remove leading whitespace:
+        while (isspace(*p))
+            p++;
+
+        // Skip comments:
+        if (p[0] == '#')
+            continue;
+
+        // Remove trailing whitespace:
+        {
+            char* end = p + strlen(p);
+
+            while (end != p && isspace(end[-1]))
+                *--end = '\0';
+        }
+
+        len = strlen(p);
+
+        // If end of target:
+        if (len == 0)
+        {
+            if (target.name.empty())
+                err("syntax error");
+
+            targets.push_back(target);
+            target.clear();
+            inside = false;
+            continue;
+        }
+
+        // If a target line:
+        if (!inside && p[len - 1] == ':')
+        {
+            target.name = string(p).substr(0, len - 1);
+            inside = true;
+            continue;
+        }
+
+        // Handle KEYWORD=VALUE pairs:
+        {
+            string keyword;
+            {
+                const char* start = p;
+
+                while (isalpha(*p) || isalnum(*p) || *p == '_')
+                    p++;
+
+                if (p == start)
+                {
+                    fprintf(
+                        stderr,
+                        "%s: %s(%u): syntax error\n",
+                        arg0,
+                        path.c_str(),
+                        line);
+                    exit(1);
+                }
+
+                keyword.assign(start, (size_t)(p - start));
+            }
+
+            // Expect '=':
+            {
+                while (isspace(*p))
+                    p++;
+
+                if (*p++ != '=')
+                {
+                    fprintf(
+                        stderr,
+                        "%s: %s(%u): syntax error\n",
+                        arg0,
+                        path.c_str(),
+                        line);
+                    exit(1);
+                }
+
+                while (isspace(*p))
+                    p++;
+            }
+
+            // Get the value:
+            string value;
+            {
+                const char* start = p;
+
+                while (*p)
+                    p++;
+
+                value.assign(start, (size_t)(p - start));
+            }
+
+            if (keyword == "CC")
+                target.cc = value;
+            else if (keyword == "AR")
+                target.ar = value;
+            else if (keyword == "ARFLAGS")
+                target.arflags = value;
+            else if (keyword == "ARCHIVE")
+                target.archives.push_back(value);
+            else if (keyword == "CFLAG")
+                target.cflags.push_back(value);
+            else if (keyword == "DEFINE")
+                target.defines.push_back(value);
+            else if (keyword == "INCLUDE")
+                target.includes.push_back(value);
+            else if (keyword == "SHOBJ")
+                target.shobjs.push_back(value);
+            else if (keyword == "OBJECT")
+                target.objects.push_back(value);
+            else if (keyword == "CURDIR")
+                target.curdir = value;
+            else if (keyword == "SOURCE")
+                target.sources.push_back(value);
+            else if (keyword == "LDLIB")
+                target.ldlibs.push_back(value);
+            else if (keyword == "LDPATH")
+                target.ldpaths.push_back(value);
+            else
+            {
+                err("unknown keyword on line %u: %s\n", line, keyword.c_str());
+            }
+
+            continue;
+        }
+    }
+
+done:
+
+    if (is)
+        fclose(is);
+
+    return ret;
+}
+
+int handle_cdb_dump(const vector<string>& args)
+{
+    int ret = -1;
+
+    if (args.size() != 1)
+    {
+        fprintf(stderr, "Usage: %s cdb-dump CDB_SPEC\n", arg0);
+        print_args(args, COLOR_RED);
+        exit(1);
+    }
+
+    vector<target> targets;
+
+    if (load_cdb_spec(args[0], targets) != 0)
+        err("failed to open CDB specification: %s\n", args[0].c_str());
+
+    for (size_t i = 0; i < targets.size(); i++)
+    {
+        const target& target = targets[i];
+        target.dump();
+    }
+
+    ret = 0;
+
+    return ret;
+}
+
+int create_config_dir(string& path_out)
+{
+    int ret = -1;
+    const char* home;
+    struct stat buf;
+    string path;
+
+    if (!(home = getenv("HOME")))
+        goto done;
+
+    path = string(home) + "/.oewrap";
+
+    if (stat(path.c_str(), &buf) == 0)
+    {
+        if (!S_ISDIR(buf.st_mode))
+            goto done;
+    }
+    else
+    {
+        if (mkdir(path.c_str(), 0777) != 0)
+            goto done;
+    }
+
+    path_out = path;
+    ret = 0;
+
+done:
+    return ret;
 }
 
 int main(int argc, const char* argv[])
@@ -1584,16 +1929,22 @@ int main(int argc, const char* argv[])
     arg0 = argv[0];
     vector<string> args;
 
-    if (argc < 3)
+    if (argc < 2)
     {
         fprintf(stderr, "Usage: %s command command-args...\n", arg0);
+        exit(1);
+    }
+
+    if (create_config_dir(config_dir) != 0)
+    {
+        fprintf(stderr, "%s: cannot create .oewrap config directory\n", arg0);
         exit(1);
     }
 
     // Load the configuration file:
     if (load_config(_options) != 0)
     {
-        fprintf(stderr, "%s: cannot open ${HOME}/.oewraprc\n", arg0);
+        fprintf(stderr, "%s: cannot open .oewrap/config file\n", arg0);
         exit(1);
     }
 
@@ -1628,6 +1979,10 @@ int main(int argc, const char* argv[])
     else if (cmd == "cdb-ar")
     {
         return handle_cdb_ar(args);
+    }
+    else if (cmd == "cdb-dump")
+    {
+        return handle_cdb_dump(args);
     }
     else
     {
