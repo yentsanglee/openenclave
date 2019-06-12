@@ -123,4 +123,6 @@ delete_arg=-lutil
 ##
 ##==============================================================================
 
+#cdb_root=/root/ssl
+cdb_root=/root/libc-test
 cdb_log=/root/cdb.log

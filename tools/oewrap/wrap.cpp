@@ -17,6 +17,12 @@ using namespace std;
 
 static const char* arg0;
 
+#define COLOR_RED "\033[0;31m"
+#define COLOR_VIOLET "\033[0;35m"
+#define COLOR_GREEN "\033[0;32m"
+#define COLOR_CYAN "\033[0;36m"
+#define COLOR_NONE "\033[0m"
+
 struct option
 {
     option(const string& keyword_, const string& value_)
@@ -30,6 +36,54 @@ struct option
 
 static vector<option> _options;
 
+__attribute__((format(printf, 1, 2))) void err(const char* fmt, ...)
+{
+    fprintf(stderr, "%s", COLOR_RED);
+    fprintf(stderr, "%s: error: ", arg0);
+
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+
+    fprintf(stderr, "\n\n");
+
+    fprintf(stderr, "%s", COLOR_NONE);
+    fflush(stdout);
+
+    exit(1);
+}
+
+__attribute__((format(printf, 2, 3))) void err(
+    const vector<string>& args,
+    const char* fmt,
+    ...)
+{
+    fprintf(stderr, "%s", COLOR_RED);
+    fprintf(stderr, "%s: error: ", arg0);
+
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+
+    fprintf(stderr, "\n");
+
+    for (size_t i = 0; i < args.size(); i++)
+    {
+        fprintf(stderr, "%s", args[i].c_str());
+
+        if (i + 1 != args.size())
+            fprintf(stderr, " ");
+    }
+
+    fprintf(stderr, "\n\n");
+    fprintf(stderr, "%s", COLOR_NONE);
+    fflush(stdout);
+
+    exit(1);
+}
+
 void get_options(const string& keyword, vector<string>& values)
 {
     for (size_t i = 0; i < _options.size(); i++)
@@ -37,6 +91,19 @@ void get_options(const string& keyword, vector<string>& values)
         if (_options[i].keyword == keyword)
             values.push_back(_options[i].value);
     }
+}
+
+int get_option(const string& keyword, string& value)
+{
+    value.clear();
+
+    for (size_t i = 0; i < _options.size(); i++)
+    {
+        if (_options[i].keyword == keyword)
+            value = _options[i].value;
+    }
+
+    return value.empty() ? -1 : 0;
 }
 
 int split(const char* str, const char* delim, vector<string>& v)
@@ -72,12 +139,6 @@ void dump_args(const vector<string>& args)
 
     printf("\n");
 }
-
-char COLOR_RED[] = "\033[0;31m";
-char COLOR_VIOLET[] = "\033[0;35m";
-char COLOR_GREEN[] = "\033[0;32m";
-char COLOR_CYAN[] = "\033[0;36m";
-char COLOR_NONE[] = "\033[0m";
 
 void print_args(const vector<string>& args, const char* color)
 {
@@ -1205,21 +1266,63 @@ static FILE* open_cdb_log()
     return fopen(options[0].c_str(), "a");
 }
 
+int resolve_path(string& path)
+{
+    int ret = -1;
+    string root;
+    char cwd[PATH_MAX];
+    string tmp_path;
+
+    if (get_option("cdb_root", root) != 0)
+        goto done;
+
+    if (!getcwd(cwd, sizeof(cwd)))
+        goto done;
+
+    if (path[0] == '/')
+    {
+        tmp_path = path;
+    }
+    else
+    {
+        tmp_path = string(cwd) + "/" + path;
+
+        if (tmp_path.substr(0, root.size()) != root)
+            goto done;
+
+        if (tmp_path[root.size()] != '/')
+            goto done;
+
+        tmp_path = tmp_path.substr(root.size() + 1);
+    }
+
+    path = tmp_path;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+bool is_dir(const string& path)
+{
+    struct stat buf;
+
+    if (stat(path.c_str(), &buf) != 0)
+        return false;
+
+    return S_ISDIR(buf.st_mode);
+}
+
 int handle_cdb_cc(const vector<string>& args_)
 {
     int exit_status;
     FILE* os = NULL;
     vector<string> args = args_;
 
-    printf("%s", COLOR_RED);
-    fflush(stdout);
-
     // Open the cdb log:
     if (!(os = open_cdb_log()))
-    {
-        fprintf(stderr, "%s: failed to open the log file\n", arg0);
-        exit(1);
-    }
+        err("failed to open the log file");
 
     // Print the target:
     {
@@ -1228,41 +1331,45 @@ int handle_cdb_cc(const vector<string>& args_)
         extract_opt_args(args, "-o", targets);
 
         if (targets.size() != 1)
-        {
-            fprintf(stderr, "%s: cannot resolve target\n", arg0);
-            exit(1);
-        }
+            err(args_, "cannot resolve target");
 
         fprintf(os, "%s:\n", targets[0].c_str());
     }
 
-    // Print the current directory:
+    // Print CURDIR line:
     {
         char cwd[PATH_MAX];
 
         if (!getcwd(cwd, sizeof(cwd)))
-        {
-            fprintf(stderr, "%s: cannot resolve current directory\n", arg0);
-            exit(1);
-        }
+            err("failed to get current directory");
 
         fprintf(os, "CURDIR=%s\n", cwd);
     }
 
-    // Print the command:
+    // Print CC line:
     fprintf(os, "CC=%s\n", args[0].c_str());
     args.erase(args.begin());
 
-    // Print the includes:
+    // Print INCLUDE lines:
     {
         vector<string> includes;
         extract_opt_args(args, "-I", includes);
 
         for (size_t i = 0; i < includes.size(); i++)
-            fprintf(os, "INCLUDE=%s\n", includes[i].c_str());
+        {
+            string path = includes[i];
+
+            if (resolve_path(path) != 0)
+                err(args_, "cannot resovle path: %s", path.c_str());
+
+            if (!is_dir(path))
+                err(args_, "no such directory: %s", path.c_str());
+
+            fprintf(os, "INCLUDE=%s\n", path.c_str());
+        }
     }
 
-    // Print the defines:
+    // Print DEFINE lines:
     {
         vector<string> defines;
         extract_opt_args(args, "-D", defines);
@@ -1271,25 +1378,35 @@ int handle_cdb_cc(const vector<string>& args_)
             fprintf(os, "DEFINE=%s\n", defines[i].c_str());
     }
 
-    // LIB:
+    // Print LDLIB lines:
     {
         vector<string> libs;
         extract_opt_args(args, "-l", libs);
 
         for (size_t i = 0; i < libs.size(); i++)
-            fprintf(os, "LIB=%s\n", libs[i].c_str());
+            fprintf(os, "LDLIB=%s\n", libs[i].c_str());
     }
 
-    // LIBPATH:
+    // Print LDPATH lines:
     {
         vector<string> libs;
         extract_opt_args(args, "-L", libs);
 
         for (size_t i = 0; i < libs.size(); i++)
-            fprintf(os, "LIBPATH=%s\n", libs[i].c_str());
+        {
+            string path = libs[i];
+
+            if (resolve_path(path) != 0)
+                err(args_, "cannot resovle path: %s", path.c_str());
+
+            if (!is_dir(path))
+                err(args_, "no such directory: %s", path.c_str());
+
+            fprintf(os, "LDPATH=%s\n", path.c_str());
+        }
     }
 
-    // Discard these options and their arguments. */
+    // Discard these options and their arguments:
     {
         vector<string> tmp;
         extract_opt_args(args, "-MF", tmp);
@@ -1297,43 +1414,83 @@ int handle_cdb_cc(const vector<string>& args_)
         extract_opt_args(args, "-MMD", tmp);
     }
 
-    // Extract source files.
+    // Print SOURCE lines:
     {
         vector<string> sources;
         extract_sources(args, sources);
 
         for (size_t i = 0; i < sources.size(); i++)
-            fprintf(os, "SOURCE=%s\n", sources[i].c_str());
+        {
+            string path = sources[i];
+
+            if (resolve_path(path) != 0)
+                err(args_, "cannot resovle path: %s", path.c_str());
+
+            if (access(path.c_str(), F_OK) != 0)
+                err(args_, "no such source file: %s", path.c_str());
+
+            fprintf(os, "SOURCE=%s\n", path.c_str());
+        }
     }
 
-    // Extract object files.
+    // Print OBJECT lines:
     {
         vector<string> objects;
         extract_objects(args, objects);
 
         for (size_t i = 0; i < objects.size(); i++)
-            fprintf(os, "OBJECT=%s\n", objects[i].c_str());
+        {
+            string path = objects[i];
+
+            if (resolve_path(path) != 0)
+                err(args_, "cannot resovle path: %s", path.c_str());
+
+            if (access(path.c_str(), F_OK) != 0)
+                err(args_, "no such object file: %s", path.c_str());
+
+            fprintf(os, "OBJECT=%s\n", path.c_str());
+        }
     }
 
-    // Extract archive files.
+    // Print ARCHIVE lines:
     {
         vector<string> archives;
         extract_archives(args, archives);
 
         for (size_t i = 0; i < archives.size(); i++)
-            fprintf(os, "ARCHIVE=%s\n", archives[i].c_str());
+        {
+            string path = archives[i];
+
+            if (resolve_path(path) != 0)
+                err(args_, "cannot resovle path: %s", path.c_str());
+
+            if (access(path.c_str(), F_OK) != 0)
+                err(args_, "no such archive: %s", path.c_str());
+
+            fprintf(os, "ARCHIVE=%s\n", path.c_str());
+        }
     }
 
-    // Extract .so files:
+    // Print SHOBJ lines:
     {
         vector<string> shared_objects;
         extract_shared_objects(args, shared_objects);
 
         for (size_t i = 0; i < shared_objects.size(); i++)
-            fprintf(os, "SHOBJ=%s\n", shared_objects[i].c_str());
+        {
+            string path = shared_objects[i];
+
+            if (resolve_path(path) != 0)
+                err(args_, "cannot resovle path: %s", path.c_str());
+
+            if (access(path.c_str(), F_OK) != 0)
+                err(args_, "no such shared object: %s", path.c_str());
+
+            fprintf(os, "SHOBJ=%s\n", path.c_str());
+        }
     }
 
-    // Extract the CFLAGS:
+    // Print CFLAG lines:
     {
         vector<string> cflags;
         extract_flags(args, cflags);
@@ -1342,25 +1499,15 @@ int handle_cdb_cc(const vector<string>& args_)
             fprintf(os, "CFLAG=%s\n", cflags[i].c_str());
     }
 
-    // Fail if any unhandled arguments:
+    // Fail if any remaining unhandled arguments:
     if (args.size())
-    {
-        fprintf(stderr, "%s: unhandled arguments:\n", arg0);
-        print_args(args, COLOR_RED);
-        exit(1);
-    }
-
-    printf("%s", COLOR_NONE);
-    fflush(stdout);
+        err(args, "unhandled arguments");
 
     // Finish with a blank line.
     fprintf(os, "\n");
 
     if (exec(args_, &exit_status) != 0)
-    {
-        fprintf(stderr, "%s: exec() failed\n", arg0);
-        exit(1);
-    }
+        err(args_, "exec failed");
 
     if (os)
         fclose(os);
@@ -1375,75 +1522,56 @@ int handle_cdb_ar(const vector<string>& args_)
     vector<string> args = args_;
     vector<string> objects;
 
-    printf("%s", COLOR_RED);
-    fflush(stdout);
-
     // Open the cdb log:
     if (!(os = open_cdb_log()))
-    {
-        fprintf(stderr, "%s: failed to open the log file\n", arg0);
-        exit(1);
-    }
+        err("failed to open the log file");
 
-    // Print the target:
+    // Print the target line:
     {
         vector<string> archives;
         extract_archives(args, archives);
 
-        if (archives.size() != 1)
-        {
-            fprintf(stderr, "%s: archive argument not found\n", arg0);
-            exit(1);
-        }
+        if (archives.size() == 0)
+            err(args_, "missing archive argument");
+        else if (archives.size() != 1)
+            err(args_, "too many archives arguments");
 
         fprintf(os, "%s:\n", archives[0].c_str());
     }
 
-    // Print the current directory:
-    {
-        char cwd[PATH_MAX];
-
-        if (!getcwd(cwd, sizeof(cwd)))
-        {
-            fprintf(stderr, "%s: cannot resolve current directory\n", arg0);
-            exit(1);
-        }
-
-        fprintf(os, "CURDIR=%s\n", cwd);
-    }
-
-    // Print the command:
+    // Print AR line:
     fprintf(os, "AR=%s\n", args[0].c_str());
     args.erase(args.begin());
 
     // Extract object files.
     extract_objects(args, objects);
 
+    // Only the options should remain:
     if (args.size() != 1)
-    {
-        fprintf(stderr, "%s: unhandled arguments:\n", arg0);
-        print_args(args, COLOR_RED);
-        exit(1);
-    }
+        err(args, "unhandled arguments");
 
-    // Print ARFLAGS:
+    // Print the ARFLAGS line:
     fprintf(os, "ARFLAGS=%s\n", args[0].c_str());
 
     // Print the objects.
     for (size_t i = 0; i < objects.size(); i++)
-        fprintf(os, "OBJECT=%s\n", objects[i].c_str());
+    {
+        string path = objects[i];
 
-    printf("%s", COLOR_NONE);
-    fflush(stdout);
+        if (resolve_path(path) != 0)
+            err(args_, "cannot resovle path: %s", path.c_str());
+
+        if (access(path.c_str(), F_OK) != 0)
+            err(args_, "no such object file: %s", path.c_str());
+
+        fprintf(os, "OBJECT=%s\n", path.c_str());
+    }
 
     // Finish with a blank line.
     fprintf(os, "\n");
 
     if (exec(args_, &exit_status) != 0)
-    {
-        fprintf(stderr, "%s: exec() failed\n", arg0);
-        exit(1);
-    }
+        err(args_, "exec() failed");
 
     if (os)
         fclose(os);
@@ -1493,7 +1621,7 @@ int main(int argc, const char* argv[])
     {
         return handle_shadow_ar(args);
     }
-    else if (cmd == "cdb-gcc")
+    else if (cmd == "cdb-cc")
     {
         return handle_cdb_cc(args);
     }
