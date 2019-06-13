@@ -19,6 +19,8 @@ static const char* arg0;
 
 static string config_dir;
 
+static string cdb_root;
+
 #define COLOR_RED "\033[0;31m"
 #define COLOR_VIOLET "\033[0;35m"
 #define COLOR_GREEN "\033[0;32m"
@@ -1257,26 +1259,23 @@ void extract_archives(vector<string>& args, vector<string>& sources)
     return extract_files(args, archive_exts, sources);
 }
 
-static FILE* open_cdb_log()
+static FILE* open_cdb_spec()
 {
-    vector<string> options;
-
-    get_options("cdb_log", options);
-
-    if (options.size() != 1)
+    if (cdb_root.empty())
         return NULL;
 
-    return fopen(options[0].c_str(), "a");
+    const string path = cdb_root + "/cdb.spec";
+
+    return fopen(path.c_str(), "a");
 }
 
 int resolve_path(string& path)
 {
     int ret = -1;
-    string root;
     char cwd[PATH_MAX];
     string tmp_path;
 
-    if (get_option("cdb_root", root) != 0)
+    if (cdb_root.empty())
         goto done;
 
     if (!getcwd(cwd, sizeof(cwd)))
@@ -1290,13 +1289,13 @@ int resolve_path(string& path)
     {
         tmp_path = string(cwd) + "/" + path;
 
-        if (tmp_path.substr(0, root.size()) != root)
+        if (tmp_path.substr(0, cdb_root.size()) != cdb_root)
             goto done;
 
-        if (tmp_path[root.size()] != '/')
+        if (tmp_path[cdb_root.size()] != '/')
             goto done;
 
-        tmp_path = tmp_path.substr(root.size() + 1);
+        tmp_path = tmp_path.substr(cdb_root.size() + 1);
     }
 
     path = tmp_path;
@@ -1330,7 +1329,7 @@ int handle_cdb_cc(const vector<string>& args_)
         err("open_memstream() failed");
 
     // Open the CDB log:
-    if (!(log = open_cdb_log()))
+    if (!(log = open_cdb_spec()))
         err("failed to open the log file");
 
     // Print the target:
@@ -1546,8 +1545,8 @@ int handle_cdb_ar(const vector<string>& args_)
         err("open_memstream() failed");
 
     // Open the cdb log:
-    if (!(log = open_cdb_log()))
-        err("failed to open the log file");
+    if (!(log = open_cdb_spec()))
+        err("failed to open the CDB spec file");
 
     // Print the target line:
     {
@@ -1707,6 +1706,56 @@ struct target
         }
     }
 };
+
+int find_target(
+    const vector<target>& targets,
+    const string& name,
+    target& target)
+{
+    target.clear();
+
+    for (size_t i = 0; i < targets.size(); i++)
+    {
+        if (targets[i].name == name)
+        {
+            target = targets[i];
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+void find_object_sources(const target& object, vector<string>& sources)
+{
+    for (size_t i = 0; i < object.sources.size(); i++)
+    {
+        const string& source = object.sources[i];
+        sources.push_back(source);
+    }
+}
+
+int find_archive_sources(
+    const vector<target>& targets,
+    const target& archive,
+    vector<string>& sources)
+{
+    sources.clear();
+
+    for (size_t i = 0; i < archive.objects.size(); i++)
+    {
+        const string& object_name = archive.objects[i];
+
+        target object;
+
+        if (find_target(targets, object_name, object) != 0)
+            return -1;
+
+        find_object_sources(object, sources);
+    }
+
+    return 0;
+}
 
 int load_cdb_spec(const string& path, vector<target>& targets)
 {
@@ -1894,6 +1943,80 @@ int handle_cdb_dump(const vector<string>& args)
     return ret;
 }
 
+string short_libname(const string& name)
+{
+    string s;
+
+    if (name.substr(0, 3) != "lib")
+        return string();
+
+    for (size_t i = 3; i < name.size(); i++)
+    {
+        if (name.substr(i) == ".a")
+            break;
+
+        s += name[i];
+    }
+
+    return s;
+}
+
+int handle_cdb_gen(const vector<string>& args)
+{
+    int ret = -1;
+    vector<target> targets;
+    target archive;
+
+    if (args.size() != 2)
+    {
+        fprintf(stderr, "Usage: %s cdb-dump CDB_SPEC archive-name\n", arg0);
+        print_args(args, COLOR_RED);
+        exit(1);
+    }
+
+    const string cdb_spec = args[0];
+    const string archive_name = args[1];
+
+    // Load the CDB specification:
+    if (load_cdb_spec(cdb_spec, targets) != 0)
+        err("failed to open CDB specification: %s\n", args[0].c_str());
+
+    // If not a library:
+    {
+        size_t pos = archive_name.find(".a");
+
+        if (pos == string::npos || pos != (archive_name.size() - 2))
+            err("not a library: %s", archive_name.c_str());
+    }
+
+    // Find this archive target:
+    if (find_target(targets, archive_name, archive) != 0)
+        err("no such target: %s", archive_name.c_str());
+
+    const string libname = short_libname(archive_name);
+
+    printf("add_library(%s STATIC\n", libname.c_str());
+
+    vector<string> sources;
+
+    if (find_archive_sources(targets, archive, sources) != 0)
+        err("failed to find sources");
+
+    for (size_t i = 0; i < sources.size(); i++)
+    {
+        printf("    %s", sources[i].c_str());
+
+        if (i + 1 != sources.size())
+            printf("\n");
+    }
+
+    printf(")\n\n");
+
+    ret = 0;
+
+    return ret;
+}
+
 int create_config_dir(string& path_out)
 {
     int ret = -1;
@@ -1918,6 +2041,25 @@ int create_config_dir(string& path_out)
     }
 
     path_out = path;
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int set_cdb_root(void)
+{
+    int ret = -1;
+    const char* path;
+
+    if (!(path = getenv("OE_CDB_ROOT")))
+        goto done;
+
+    if (!is_dir(path))
+        goto done;
+
+    cdb_root = path;
+
     ret = 0;
 
 done:
@@ -1952,6 +2094,13 @@ int main(int argc, const char* argv[])
 
     argv_to_args(argc - 2, argv + 2, args);
 
+    // Set the CDB root for cdb commands only:
+    if (cmd.substr(0, 4) == "cdb-")
+    {
+        if (set_cdb_root() != 0)
+            err("Invalid or unset OE_CDB_ROOT environment variable");
+    }
+
     if (cmd == "gcc")
     {
         return handle_cc(args, "gcc");
@@ -1983,6 +2132,10 @@ int main(int argc, const char* argv[])
     else if (cmd == "cdb-dump")
     {
         return handle_cdb_dump(args);
+    }
+    else if (cmd == "cdb-gen")
+    {
+        return handle_cdb_gen(args);
     }
     else
     {

@@ -116,12 +116,3 @@ delete_arg=-lrt
 delete_arg=-lcrypt
 delete_arg=-lresolv
 delete_arg=-lutil
-
-##==============================================================================
-##
-## cdb options:
-##
-##==============================================================================
-
-cdb_root=/root/ssl
-cdb_log=/root/cdb.log
