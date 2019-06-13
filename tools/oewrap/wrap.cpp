@@ -1735,12 +1735,12 @@ void find_object_sources(const target& object, vector<string>& sources)
     }
 }
 
-int find_archive_sources(
+int find_archive_objects(
     const vector<target>& targets,
     const target& archive,
-    vector<string>& sources)
+    vector<target>& objects)
 {
-    sources.clear();
+    objects.clear();
 
     for (size_t i = 0; i < archive.objects.size(); i++)
     {
@@ -1751,7 +1751,7 @@ int find_archive_sources(
         if (find_target(targets, object_name, object) != 0)
             return -1;
 
-        find_object_sources(object, sources);
+        objects.push_back(object);
     }
 
     return 0;
@@ -1961,6 +1961,23 @@ string short_libname(const string& name)
     return s;
 }
 
+string cmake_name(const string& name)
+{
+    string s = name;
+
+    for (size_t i = 3; i < name.size(); i++)
+    {
+        char c = s[i];
+
+        if (i == 0)
+            s[i] = (isalpha(c) || c == '_') ? c : '_';
+        else
+            s[i] = (isalnum(c) || c == '_') ? c : '_';
+    }
+
+    return s;
+}
+
 int handle_cdb_gen(const vector<string>& args)
 {
     int ret = -1;
@@ -1995,22 +2012,105 @@ int handle_cdb_gen(const vector<string>& args)
 
     const string libname = short_libname(archive_name);
 
-    printf("add_library(%s STATIC\n", libname.c_str());
+    vector<target> objects;
 
-    vector<string> sources;
-
-    if (find_archive_sources(targets, archive, sources) != 0)
+    if (find_archive_objects(targets, archive, objects) != 0)
         err("failed to find sources");
 
-    for (size_t i = 0; i < sources.size(); i++)
+    // add_library(name OBJECT ...)
+    for (size_t i = 0; i < objects.size(); i++)
     {
-        printf("    %s", sources[i].c_str());
+        const target& object = objects[i];
 
-        if (i + 1 != sources.size())
-            printf("\n");
+        if (object.sources.size() != 1)
+            err("unexpected");
+
+        const string name = cmake_name(object.name);
+        const string source = object.sources[0];
+
+        printf("add_library(\n");
+        printf("    %s\n", name.c_str());
+        printf("    OBJECT\n");
+        printf("    %s)\n\n", source.c_str());
     }
 
-    printf(")\n\n");
+    // target_include_directories()
+    for (size_t i = 0; i < objects.size(); i++)
+    {
+        const target& object = objects[i];
+        const string name = cmake_name(object.name);
+
+        if (object.includes.size())
+        {
+            printf("target_include_directories(\n");
+            printf("    %s\n", name.c_str());
+            printf("    PRIVATE\n");
+
+            for (size_t j = 0; j < object.includes.size(); j++)
+            {
+                const string& include = object.includes[j];
+
+                printf("    %s", include.c_str());
+
+                if (j + 1 == object.includes.size())
+                    printf(")");
+
+                printf("\n");
+            }
+
+            printf("\n");
+        }
+    }
+
+    // target_compile_definitions()
+    for (size_t i = 0; i < objects.size(); i++)
+    {
+        const target& object = objects[i];
+        const string name = cmake_name(object.name);
+
+        if (object.includes.size())
+        {
+            printf("target_compile_definitions(\n");
+            printf("    %s\n", name.c_str());
+            printf("    PRIVATE\n");
+
+            for (size_t j = 0; j < object.defines.size(); j++)
+            {
+                const string& include = object.defines[j];
+
+                printf("    %s", include.c_str());
+
+                if (j + 1 == object.defines.size())
+                    printf(")");
+
+                printf("\n");
+            }
+
+            printf("\n");
+        }
+    }
+
+    // add_library(libname $<TARGET_OBJECTS:?> ...)
+    {
+        printf("add_library(\n");
+        printf("    %s\n", libname.c_str());
+        printf("    STATIC\n");
+
+        for (size_t i = 0; i < objects.size(); i++)
+        {
+            const target& object = objects[i];
+            const string name = cmake_name(object.name);
+
+            printf("    $<TARGET_OBJECTS:%s>", name.c_str());
+
+            if (i + 1 != objects.size())
+                printf("\n");
+            else
+                printf(")");
+        }
+
+        printf("\n");
+    }
 
     ret = 0;
 
