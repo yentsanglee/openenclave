@@ -3,21 +3,21 @@
 
 ##==============================================================================
 ##
-## These rules generate the edge routines for the POSIX interface, which is
-## installed by oe_register_posix_ecall_function_table().
+## These rules generate the edge routines for the SYSCALL interface, which is
+## installed by oe_register_syscall_ecall_function_table().
 ##
 ##==============================================================================
 
 set(EDL_DIR ${CMAKE_SOURCE_DIR}/common)
-set(EDL_FILE ${EDL_DIR}/posix.edl)
+set(EDL_FILE ${EDL_DIR}/syscall.edl)
 
 add_custom_command(
-    OUTPUT posix_u.h posix_u.c posix_args.h
-    DEPENDS ${EDL_FILE} edger8r
+    OUTPUT syscall_u.h syscall_u.c syscall_args.h
+    DEPENDS ${EDL_FILE}
     COMMAND edger8r --search-path ${EDL_DIR} --untrusted ${EDL_FILE})
 
-add_custom_target(posix_untrusted_edl
-    DEPENDS posix_u.h posix_u.c posix_args.h)
+add_custom_target(syscall_untrusted_edl
+    DEPENDS syscall_u.h syscall_u.c syscall_args.h)
 
 ##==============================================================================
 ##
@@ -41,7 +41,7 @@ if (UNIX)
     crypto/openssl/rsa.c
     crypto/openssl/sha.c
     linux/hostthread.c
-    linux/posix.c
+    linux/syscall.c
     linux/time.c
     linux/windows.c)
 elseif (WIN32)
@@ -52,7 +52,7 @@ elseif (WIN32)
     crypto/bcrypt/rsa.c
     crypto/bcrypt/sha.c
     windows/hostthread.c
-    windows/posix.c
+    windows/syscall.c
     windows/time.c)
 else()
   message(FATAL_ERROR "Unknown OS. Only supported OSes are Linux and Windows")
@@ -84,6 +84,7 @@ if (OE_SGX)
     sgx/sgxload.c
     sgx/sgxmeasure.c
     sgx/sgxquote.c
+    sgx/sgxquoteprovider.c
     sgx/sgxsign.c
     sgx/sgxtypes.c
     sgx/traceh.c)
@@ -97,7 +98,7 @@ if (OE_SGX)
       sgx/linux/entersim.S
       sgx/linux/exception.c
       sgx/linux/sgxioctl.c
-      sgx/linux/sgxquoteprovider.c
+      sgx/linux/sgxquoteproviderloader.c
       sgx/linux/xstate.c)
   else()
     list(APPEND PLATFORM_SRC
@@ -106,6 +107,7 @@ if (OE_SGX)
       sgx/windows/enter.asm
       sgx/windows/entersim.asm
       sgx/windows/exception.c
+      sgx/windows/sgxquoteproviderloader.c
       sgx/windows/xstate.c)
   endif()
 
@@ -129,7 +131,7 @@ add_library(oehost STATIC
   files.c
   fopen.c
   hexdump.c
-  posix_u_wrapper.c
+  syscall_u_wrapper.c
   memalign.c
   ocalls.c
   result.c
@@ -144,7 +146,7 @@ if(WIN32)
     target_link_libraries(oehost PUBLIC ws2_32)
 endif()
 
-add_dependencies(oehost posix_untrusted_edl)
+add_dependencies(oehost syscall_untrusted_edl)
 
 # TODO: Replace these with `find_package` and add as dependencies to
 # the CMake package.
@@ -157,7 +159,7 @@ if (UNIX)
     add_library(crypto SHARED IMPORTED)
     set_target_properties(crypto PROPERTIES IMPORTED_LOCATION ${CRYPTO_LIB})
   endif ()
-  
+
   find_library(DL_LIB NAMES dl)
   if(NOT DL_LIB)
     message(FATAL_ERROR "-- Looking for dl library - not found")
@@ -183,24 +185,40 @@ target_include_directories(oehost PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # TODO: Handle Trust Zone etc.
 if (USE_LIBSGX)
-  find_library(LIBSGX_COMMON NAMES sgx_enclave_common)
-  find_library(LIBSGX_QE NAMES sgx_dcap_ql)
-  find_library(LIBSGX_URTS NAMES sgx_urts)
-
-  if (NOT LIBSGX_COMMON OR NOT LIBSGX_QE OR NOT LIBSGX_URTS)
-    message(FATAL_ERROR "No SGX libraries found, aborting! Set -DUSE_LIBSGX=OFF to ignore.")
+  if (WIN32)
+    set(LIBPATHS
+      ${CMAKE_SOURCE_DIR}/prereqs/nuget/EnclaveCommonAPI/lib/native/x64-Release
+      ${CMAKE_SOURCE_DIR}/prereqs/nuget/DCAP_Components/build/lib/native/Libraries)
+    set(INCPATHS
+      "${CMAKE_SOURCE_DIR}/prereqs/nuget/EnclaveCommonAPI/Header Files"
+      "${CMAKE_SOURCE_DIR}/prereqs/nuget/DCAP_Components/build/Header Files")
+    set(WINSYSLOCATION
+       $ENV{WINDIR}/System32)
   endif ()
 
+  find_library(LIBSGX_COMMON NAMES sgx_enclave_common PATHS ${LIBPATHS})
+  find_library(LIBSGX_QE NAMES sgx_dcap_ql PATHS ${LIBPATHS})
+  if (NOT LIBSGX_COMMON OR NOT LIBSGX_QE)
+    message(FATAL_ERROR "No SGX libraries found, aborting! Set -DUSE_LIBSGX=OFF to ignore.")
+  endif ()
   add_library(sgx_enclave_common SHARED IMPORTED)
-  set_target_properties(sgx_enclave_common PROPERTIES IMPORTED_LOCATION ${LIBSGX_COMMON})
-
   add_library(sgx_dcap_ql SHARED IMPORTED)
-  set_target_properties(sgx_dcap_ql PROPERTIES IMPORTED_LOCATION ${LIBSGX_QE})
 
-  add_library(sgx_urts SHARED IMPORTED)
-  set_target_properties(sgx_urts PROPERTIES IMPORTED_LOCATION ${LIBSGX_URTS})
+  if (UNIX)
+    set_target_properties(sgx_enclave_common PROPERTIES IMPORTED_LOCATION ${LIBSGX_COMMON})
+    set_target_properties(sgx_dcap_ql PROPERTIES IMPORTED_LOCATION ${LIBSGX_QE})
+  elseif (WIN32)
+    set_target_properties(sgx_enclave_common PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${INCPATHS}"
+      IMPORTED_LOCATION ${WINSYSLOCATION}
+      IMPORTED_IMPLIB ${LIBSGX_COMMON})
+    set_target_properties(sgx_dcap_ql PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${INCPATHS}"
+      IMPORTED_LOCATION ${WINSYSLOCATION}
+      IMPORTED_IMPLIB ${LIBSGX_QE})
+  endif ()
 
-  target_link_libraries(oehost PUBLIC sgx_enclave_common sgx_dcap_ql sgx_urts)
+  target_link_libraries(oehost PUBLIC sgx_enclave_common sgx_dcap_ql)
   target_compile_definitions(oehost PUBLIC OE_USE_LIBSGX)
 endif ()
 

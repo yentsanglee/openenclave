@@ -22,7 +22,7 @@ let is_foreign_array (pt : parameter_type) =
     size. *)
 let get_array_dims (ns : int list) =
   let get_dim n = if n = -1 then "[]" else sprintf "[%d]" n in
-  if ns = [] then "" else List.fold_left (fun acc n -> acc ^ get_dim n) "" ns
+  String.concat "" (List.map get_dim ns)
 
 let get_typed_declr_str (ty : atype) (declr : declarator) =
   let tystr = get_tystr ty in
@@ -106,8 +106,14 @@ let is_wstr_ptr = function PTVal _ -> false | PTPtr (_, a) -> a.pa_iswstr
 
 let is_str_or_wstr_ptr (p, _) = is_str_ptr p || is_wstr_ptr p
 
-let gen_c_for i =
-  if i = "1" then [] else [sprintf "for (size_t _i = 0; _i < %s; ++_i)" i]
+let gen_c_for count body =
+  if count = "1" then body
+  else
+    [ [sprintf "for (size_t _i = 0; _i < %s; _i++)" count]
+    ; ["{"]
+    ; List.map (( ^ ) "    ") body
+    ; ["}"] ]
+    |> List.flatten
 
 let gen_c_deref i = if i = "1" then "->" else "[_i]."
 
@@ -148,18 +154,16 @@ let attr_value_to_string argstruct = function
 (** For a parameter, get its size expression. *)
 let oe_get_param_size (ptype, decl, argstruct) =
   let type_expr = get_type_expr ptype in
-  (* TODO: Handle edge case of [size * count]. *)
-  let get_ptr_or_decl_size (p : ptr_size) (d : declarator) =
-    match attr_value_to_string argstruct p.ps_count with
-    | Some s -> sprintf "(%s * sizeof(%s))" s type_expr
-    | None -> (
-      match attr_value_to_string argstruct p.ps_size with
-      | Some s -> s
-      | None ->
-          let dims =
-            List.map (fun i -> "[" ^ string_of_int i ^ "]") d.array_dims
-          in
-          sprintf "sizeof(%s%s)" type_expr (String.concat "" dims) )
+  let get_ptr_or_decl_size (p : ptr_size) =
+    let size = attr_value_to_string argstruct p.ps_size
+    and count = attr_value_to_string argstruct p.ps_count in
+    match (size, count) with
+    | Some s, None -> s
+    | None, Some c -> sprintf "(%s * sizeof(%s))" c type_expr
+    (* TODO: Check that this is an even multiple of the size of type. *)
+    | Some s, Some c -> sprintf "(%s * %s)" s c
+    | None, None ->
+        sprintf "sizeof(%s%s)" type_expr (get_array_dims decl.array_dims)
   in
   match ptype with
   | PTPtr (_, ptr_attr) ->
@@ -167,23 +171,24 @@ let oe_get_param_size (ptype, decl, argstruct) =
         argstruct ^ decl.identifier ^ "_len * sizeof(char)"
       else if ptr_attr.pa_iswstr then
         argstruct ^ decl.identifier ^ "_len * sizeof(wchar_t)"
-      else get_ptr_or_decl_size ptr_attr.pa_size decl
+      else get_ptr_or_decl_size ptr_attr.pa_size
   (* Values have no marshalling size. *)
   | _ -> ""
 
 (** For a parameter, get its count expression. *)
 let oe_get_param_count (ptype, decl, argstruct) =
   let type_expr = get_type_expr ptype in
-  (* TODO: Handle edge case of [size * count]. *)
-  let get_ptr_or_decl_count (p : ptr_size) (d : declarator) =
-    match attr_value_to_string argstruct p.ps_count with
-    | Some s -> s
-    | None -> (
-      match attr_value_to_string argstruct p.ps_size with
-      | Some s -> sprintf "(%s / sizeof(%s))" s type_expr
-      | None ->
-          let dims = List.map string_of_int d.array_dims in
-          String.concat " * " dims )
+  let get_ptr_or_decl_count (p : ptr_size) =
+    let size = attr_value_to_string argstruct p.ps_size
+    and count = attr_value_to_string argstruct p.ps_count in
+    match (size, count) with
+    (* TODO: Check that these are even multiples of the size of type. *)
+    | Some s, None -> sprintf "(%s / sizeof(%s))" s type_expr
+    | None, Some c -> c
+    | Some s, Some c -> sprintf "((%s * %s) / sizeof(%s))" s c type_expr
+    | None, None ->
+        let dims = List.map string_of_int decl.array_dims in
+        String.concat " * " dims
   in
   match ptype with
   | PTPtr (_, ptr_attr) ->
@@ -192,32 +197,38 @@ let oe_get_param_count (ptype, decl, argstruct) =
         (* TODO: Double-check that this length includes the
            null-terminator. *)
         argstruct ^ decl.identifier ^ "_len"
-      else get_ptr_or_decl_count ptr_attr.pa_size decl
+      else get_ptr_or_decl_count ptr_attr.pa_size
   (* Values are always a count of 1. *)
   | _ -> "1"
 
-(** Generate the prototype for a given function. Optionally add an
-    [oe_enclave_t*] first parameter. *)
+(** Generate the prototype for a given function. *)
 let oe_gen_prototype (fd : func_decl) =
-  let get_plist_str (plist : pdecl list) =
-    if List.length plist = 0 then "void"
-    else
-      (if List.length plist = 1 then "" else "\n    ")
-      ^ String.concat ",\n    " (List.map gen_parm_str plist)
+  let plist_str =
+    let args = List.map gen_parm_str fd.plist in
+    match args with
+    | [] -> "void"
+    | [arg] -> arg
+    | _ -> "\n    " ^ String.concat ",\n    " args
   in
-  sprintf "%s %s(%s)" (get_tystr fd.rtype) fd.fname (get_plist_str fd.plist)
+  sprintf "%s %s(%s)" (get_tystr fd.rtype) fd.fname plist_str
 
+(** Generate the wrapper prototype for a given function. Optionally
+    add an [oe_enclave_t*] first parameter. *)
 let oe_gen_wrapper_prototype (fd : func_decl) (is_ecall : bool) =
-  let args = List.map gen_parm_str fd.plist in
-  let args =
-    if fd.rtype <> Void then (get_tystr fd.rtype ^ "* _retval") :: args
-    else args
+  let plist_str =
+    let args =
+      [ (if is_ecall then ["oe_enclave_t* enclave"] else [])
+      ; ( match fd.rtype with
+        | Void -> []
+        | _ -> [get_tystr fd.rtype ^ "* _retval"] )
+      ; List.map gen_parm_str fd.plist ]
+      |> List.flatten
+    in
+    match args with
+    | [arg] -> arg
+    | _ -> "\n    " ^ String.concat ",\n    " args
   in
-  let args = if is_ecall then "oe_enclave_t* enclave" :: args else args in
-  sprintf "oe_result_t %s(%s)" fd.fname
-    ( if List.length args = 0 then ""
-    else if List.length args = 1 then List.hd args
-    else "\n    " ^ String.concat ",\n    " args )
+  sprintf "oe_result_t %s(%s)" fd.fname plist_str
 
 (** Emit [struct], [union], or [enum]. *)
 let emit_composite_type =
@@ -227,11 +238,10 @@ let emit_composite_type =
     ; String.concat "\n"
         (List.map
            (fun (ptype, decl) ->
-             let dims = List.map (sprintf "[%d]") decl.array_dims in
-             let dims_str = String.concat "" dims in
              sprintf "    %s %s%s;"
                (get_tystr (get_param_atype ptype))
-               decl.identifier dims_str )
+               decl.identifier
+               (get_array_dims decl.array_dims) )
            s.smlist)
     ; "} " ^ s.sname ^ ";"
     ; "" ]
@@ -242,10 +252,8 @@ let emit_composite_type =
     ; String.concat "\n"
         (List.map
            (fun (atype, decl) ->
-             let dims = List.map (sprintf "[%d]") decl.array_dims in
-             let dims_str = String.concat "" dims in
-             sprintf "    %s %s%s;" (get_tystr atype) decl.identifier dims_str
-             )
+             sprintf "    %s %s%s;" (get_tystr atype) decl.identifier
+               (get_array_dims decl.array_dims) )
            u.umlist)
     ; "} " ^ u.uname ^ ";"
     ; "" ]
@@ -324,15 +332,12 @@ let oe_gen_call_user_function (fd : func_decl) =
          fd.plist)
     ^ ");" ]
 
-(** Check if any of the parameters or the return type has the given
-    root type. *)
-let uses_type (root_type : atype) (fd : func_decl) =
-  let param_match =
-    List.exists (fun (pt, decl) -> root_type = get_param_atype pt) fd.plist
-  in
-  if param_match then param_match else root_type = fd.rtype
-
 let warn_non_portable_types (fd : func_decl) =
+  (* Check if any of the parameters or the return type has the given
+     root type. *)
+  let uses_type (t : atype) =
+    t = fd.rtype || List.exists (fun (p, _) -> t = get_param_atype p) fd.plist
+  in
   let print_portability_warning ty =
     printf
       "Warning: Function '%s': %s has different sizes on Windows and Linux. \
@@ -350,13 +355,13 @@ let warn_non_portable_types (fd : func_decl) =
   (* longs are represented as an Int type *)
   let long_t = Int {ia_signedness= Signed; ia_shortness= ILong} in
   let ulong_t = Int {ia_signedness= Unsigned; ia_shortness= ILong} in
-  if uses_type WChar fd then print_portability_warning "wchar_t" ;
-  if uses_type LDouble fd then print_portability_warning "long double" ;
+  if uses_type WChar then print_portability_warning "wchar_t" ;
+  if uses_type LDouble then print_portability_warning "long double" ;
   (* Handle long type *)
-  if uses_type (Long Signed) fd || uses_type long_t fd then
+  if uses_type (Long Signed) || uses_type long_t then
     print_portability_warning_with_recommendation "long" "int64_t or int32_t" ;
   (* Handle unsigned long type *)
-  if uses_type (Long Unsigned) fd || uses_type ulong_t fd then
+  if uses_type (Long Unsigned) || uses_type ulong_t then
     print_portability_warning_with_recommendation "unsigned long"
       "uint64_t or uint32_t"
 
@@ -371,37 +376,34 @@ let warn_signed_size_or_count_types (fd : func_decl) =
   let size_params =
     filter_map
       (fun (ptype, _) ->
-        (* The size may be either a [count] or [size], and then either a
-         number or string. We are interested in the strings, as the
-         indicate named [size] or [count] parameters. *)
+        (* The size may be either a [count] or [size], and then
+           either a number or string. We are interested in the
+           strings, as they indicate named [size] or [count]
+           parameters. *)
         let param_name {ps_size; ps_count} =
           match (ps_size, ps_count) with
           (* [s] is the name of the parameter as a string. *)
           | None, Some (AString s) | Some (AString s), None -> Some s
-          (* TODO: Check for [Some (ANumber n)] that [n > 0] *)
+          (* TODO: Check for [Some (ANumber n)] that [n < 1] *)
           | _ -> None
         in
         (* Only variables that are pointers where [chkptr] is true may
-         have size parameters. TODO: Validate this! *)
+           have size parameters. *)
         match ptype with
-        | PTPtr (_, ptr_attr) when ptr_attr.pa_chkptr ->
-            param_name ptr_attr.pa_size
+        | PTPtr (_, a) when a.pa_chkptr -> param_name a.pa_size
         | _ -> None )
       fd.plist
   in
   (* Print warnings for size parameters that are [Signed]. *)
   List.iter
     (fun (ptype, decl) ->
-      (* TODO: Maybe make this a utility function. *)
-      let get_int_signedness (i : int_attr) = i.ia_signedness in
-      let name = decl.identifier in
-      if List.mem name size_params then
+      let id = decl.identifier in
+      if List.mem id size_params then
         match ptype with
-        (* TODO: Combine these two patterns. *)
         | PTVal (Long s | LLong s) when s = Signed ->
-            print_signedness_warning name
-        | PTVal (Int i) when get_int_signedness i = Signed ->
-            print_signedness_warning name
+            print_signedness_warning id
+        | PTVal (Int i) when i.ia_signedness = Signed ->
+            print_signedness_warning id
         | _ -> () )
     fd.plist
 
@@ -634,24 +636,31 @@ let gen_enclave_code (ec : enclave_content) (ep : edger8r_params) =
   in
   (* Prepare [input_buffer]. *)
   let oe_prepare_input_buffer (fd : func_decl) (alloc_func : string) =
-    let oe_compute_buffer_size (buffer : string)
-        (predicate : parameter_type * declarator -> bool) (plist : pdecl list)
-        =
-      let rec gen_add_size prefix count (ptype, decl) =
-        let size = oe_get_param_size (ptype, decl, "_args." ^ prefix) in
-        let arg = prefix ^ decl.identifier in
-        [ gen_c_for count
-        ; [sprintf "if (%s) OE_ADD_SIZE(%s, %s);" arg buffer size]
-        ; (let param_count =
-             oe_get_param_count (ptype, decl, "_args." ^ prefix)
-           in
-           flatten_map
-             (gen_add_size (arg ^ gen_c_deref param_count) param_count)
-             (get_deepcopy_members (get_param_atype ptype))) ]
-        |> List.flatten
+    let oe_compute_buffer_size buffer predicate plist =
+      let rec gen_add_size args count (ptype, decl) =
+        let argstruct =
+          match args with
+          | [] -> "_args."
+          | hd :: _ -> "_args." ^ hd ^ gen_c_deref count
+        in
+        let size = oe_get_param_size (ptype, decl, argstruct) in
+        let arg =
+          match args with
+          | [] -> decl.identifier
+          | hd :: _ -> hd ^ gen_c_deref count ^ decl.identifier
+        in
+        gen_c_for count
+          ( [ [ sprintf "if (%s)"
+                  (String.concat " && " (List.rev (arg :: args))) ]
+            ; [sprintf "    OE_ADD_SIZE(%s, %s);" buffer size]
+            ; (let param_count = oe_get_param_count (ptype, decl, argstruct) in
+               flatten_map
+                 (gen_add_size (arg :: args) param_count)
+                 (get_deepcopy_members (get_param_atype ptype))) ]
+          |> List.flatten )
       in
       let params =
-        flatten_map (gen_add_size "" "1") (List.filter predicate plist)
+        flatten_map (gen_add_size [] "1") (List.filter predicate plist)
       in
       (* Note that the indentation for the first line is applied by the
          parent function. *)
@@ -665,25 +674,35 @@ let gen_enclave_code (ec : enclave_content) (ep : edger8r_params) =
       oe_compute_buffer_size "_output_buffer_size" is_out_or_inout_ptr
     in
     let oe_serialize_buffer_inputs (plist : pdecl list) =
-      let rec gen_serialize prefix count (ptype, decl) =
-        let size = oe_get_param_size (ptype, decl, "_args." ^ prefix) in
+      let rec gen_serialize args count (ptype, decl) =
+        let argstruct =
+          match args with
+          | [] -> "_args."
+          | hd :: _ -> "_args." ^ hd ^ gen_c_deref count
+        in
+        let size = oe_get_param_size (ptype, decl, argstruct) in
+        let arg =
+          match args with
+          | [] -> decl.identifier
+          | hd :: _ -> hd ^ gen_c_deref count ^ decl.identifier
+        in
         let tystr = get_cast_to_mem_expr (ptype, decl) false in
-        let arg = prefix ^ decl.identifier in
         (* These need to be in order and so done together. *)
-        [ gen_c_for count
-        ; [ sprintf "OE_WRITE_%s_PARAM(%s, %s, %s);"
-              (if is_in_ptr ptype then "IN" else "IN_OUT")
-              arg size tystr ]
-        ; (let param_count =
-             oe_get_param_count (ptype, decl, "_args." ^ prefix)
-           in
-           flatten_map
-             (gen_serialize (arg ^ gen_c_deref param_count) param_count)
-             (get_deepcopy_members (get_param_atype ptype))) ]
-        |> List.flatten
+        gen_c_for count
+          ( [ (* NOTE: This makes the embedded check in the `OE_` macro superfluous. *)
+              [ sprintf "if (%s)"
+                  (String.concat " && " (List.rev (arg :: args))) ]
+            ; [ sprintf "    OE_WRITE_%s_PARAM(%s, %s, %s);"
+                  (if is_in_ptr ptype then "IN" else "IN_OUT")
+                  arg size tystr ]
+            ; (let param_count = oe_get_param_count (ptype, decl, argstruct) in
+               flatten_map
+                 (gen_serialize (arg :: args) param_count)
+                 (get_deepcopy_members (get_param_atype ptype))) ]
+          |> List.flatten )
       in
       let params =
-        flatten_map (gen_serialize "" "1")
+        flatten_map (gen_serialize [] "1")
           (List.filter is_in_or_inout_ptr plist)
       in
       (* Note that the indentation for the first line is applied by the
@@ -764,26 +783,35 @@ let gen_enclave_code (ec : enclave_content) (ep : edger8r_params) =
         fd.plist ]
     |> List.flatten
   in
-  let rec oe_gen_set_pointers prefix count setter (ptype, decl) =
-    let size = oe_get_param_size (ptype, decl, "pargs_in->" ^ prefix) in
+  let rec oe_gen_set_pointers args count setter (ptype, decl) =
+    let argstruct =
+      match args with
+      | [] -> "pargs_in->"
+      | hd :: _ -> "pargs_in->" ^ hd ^ gen_c_deref count
+    in
+    let size = oe_get_param_size (ptype, decl, argstruct) in
+    let arg =
+      match args with
+      | [] -> decl.identifier
+      | hd :: _ -> hd ^ gen_c_deref count ^ decl.identifier
+    in
     let tystr = get_cast_to_mem_expr (ptype, decl) false in
-    let arg = prefix ^ decl.identifier in
-    [ gen_c_for count
-    ; [sprintf "OE_%s_POINTER(%s, %s, %s);" (setter ptype) arg size tystr]
-    ; (let param_count =
-         oe_get_param_count (ptype, decl, "pargs_in->" ^ prefix)
-       in
-       flatten_map
-         (oe_gen_set_pointers
-            (arg ^ gen_c_deref param_count)
-            param_count setter)
-         (get_deepcopy_members (get_param_atype ptype))) ]
-    |> List.flatten
+    gen_c_for count
+      ( [ (* NOTE: This makes the embedded check in the `OE_` macro superfluous. *)
+          [ sprintf "if (pargs_in->%s)"
+              (String.concat " && pargs_in->" (List.rev (arg :: args))) ]
+        ; [ sprintf "    OE_%s_POINTER(%s, %s, %s);" (setter ptype) arg size
+              tystr ]
+        ; (let param_count = oe_get_param_count (ptype, decl, argstruct) in
+           flatten_map
+             (oe_gen_set_pointers (arg :: args) param_count setter)
+             (get_deepcopy_members (get_param_atype ptype))) ]
+      |> List.flatten )
   in
   let oe_gen_in_and_inout_setters (plist : pdecl list) =
     let params =
       flatten_map
-        (oe_gen_set_pointers "" "1" (fun p ->
+        (oe_gen_set_pointers [] "1" (fun p ->
              if is_inout_ptr p then "SET_IN_OUT" else "SET_IN" ))
         (List.filter is_in_or_inout_ptr plist)
     in
@@ -796,7 +824,7 @@ let gen_enclave_code (ec : enclave_content) (ep : edger8r_params) =
   let oe_gen_out_and_inout_setters (plist : pdecl list) =
     let params =
       flatten_map
-        (oe_gen_set_pointers "" "1" (fun p ->
+        (oe_gen_set_pointers [] "1" (fun p ->
              if is_inout_ptr p then "COPY_AND_SET_IN_OUT" else "SET_OUT" ))
         (List.filter is_out_or_inout_ptr plist)
     in
@@ -885,28 +913,39 @@ let gen_enclave_code (ec : enclave_content) (ep : edger8r_params) =
     (* Generate assignment argument to corresponding field in args. This
        is necessary for all arguments, not just copy-as-value, because
        they are used directly by later marshalling code. *)
-    let rec gen_assignment prefix count (ptype, decl) =
+    let rec gen_assignment args count (ptype, decl) =
       let id = decl.identifier in
-      let arg = prefix ^ id in
-      [ gen_c_for count
-      ; [ sprintf "_args.%s = %s%s;" arg
-            (get_cast_to_mem_expr (ptype, decl) true)
-            arg ]
-      ; (* for string parameter fill the len field *)
-        ( if is_str_ptr ptype then
-          [sprintf "_args.%s_len = (%s) ? (strlen(%s) + 1) : 0;" arg id id]
-        else if is_wstr_ptr ptype then
-          [sprintf "_args.%s_len = (%s) ? (wcslen(%s) + 1) : 0;" arg id id]
-        else [] )
-      ; (let param_count =
-           oe_get_param_count (ptype, decl, "_args." ^ prefix)
-         in
-         flatten_map
-           (gen_assignment (arg ^ gen_c_deref param_count) param_count)
-           (get_deepcopy_members (get_param_atype ptype))) ]
-      |> List.flatten
+      let argstruct =
+        match args with
+        | [] -> "_args."
+        | hd :: _ -> "_args." ^ hd ^ gen_c_deref count
+      in
+      let arg =
+        match args with [] -> id | hd :: _ -> hd ^ gen_c_deref count ^ id
+      in
+      gen_c_for count
+        ( [ ( match args with
+            | [] -> []
+            | _ -> [sprintf "if (%s)" (String.concat " && " (List.rev args))]
+            )
+          ; [ sprintf "%s_args.%s = %s%s;"
+                (match args with [] -> "" | _ -> "    ")
+                arg
+                (get_cast_to_mem_expr (ptype, decl) true)
+                arg ]
+          ; (* for string parameter fill the len field *)
+            ( if is_str_ptr ptype then
+              [sprintf "_args.%s_len = (%s) ? (strlen(%s) + 1) : 0;" arg id id]
+            else if is_wstr_ptr ptype then
+              [sprintf "_args.%s_len = (%s) ? (wcslen(%s) + 1) : 0;" arg id id]
+            else [] )
+          ; (let param_count = oe_get_param_count (ptype, decl, argstruct) in
+             flatten_map
+               (gen_assignment (arg :: args) param_count)
+               (get_deepcopy_members (get_param_atype ptype))) ]
+        |> List.flatten )
     in
-    flatten_map (gen_assignment "" "1") fd.plist
+    flatten_map (gen_assignment [] "1") fd.plist
   in
   (* Generate host ECALL wrapper function. *)
   let oe_gen_host_ecall_wrapper (tf : trusted_func) =

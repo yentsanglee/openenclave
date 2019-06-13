@@ -160,14 +160,11 @@ include(package_settings)
 include(add_enclave)
 
 # User configurable options
+# DCAP library support on Windows is experimental and is disabled by default
 if (UNIX)
   option(USE_LIBSGX "Build oehost using SGX library requiring FLC" ON)
 elseif (WIN32)
   option(USE_LIBSGX "Build oehost using SGX library requiring FLC" OFF)
-endif ()
-
-if (USE_LIBSGX AND WIN32)
-  message(FATAL_ERROR "USE_LIBSGX is not yet supported on Windows.")
 endif ()
 
 # TODO: See #756: Fix this because it is incompatible with
@@ -178,10 +175,6 @@ if (uppercase_CMAKE_BUILD_TYPE STREQUAL "DEBUG" AND NOT WIN32)
 else ()
   # In win32 or non-debug builds, debug_malloc is off by default
   option(USE_DEBUG_MALLOC "Build oeenclave with memory leak detection capability." OFF)
-endif ()
-
-if (USE_DEBUG_MALLOC AND WIN32)
-  message(FATAL_ERROR "USE_DEBUG_MALLOC is not supported on Windows. Disable this when calling cmake with -DUSE_DEBUG_MALLOC=OFF")
 endif ()
 
 option(ADD_WINDOWS_ENCLAVE_TESTS "Build Windows enclave tests" OFF)
@@ -213,7 +206,7 @@ if (BUILD_ENCLAVES)
   add_subdirectory(3rdparty)
   add_subdirectory(libc)
   add_subdirectory(libcxx)
-  add_subdirectory(posix)
+  add_subdirectory(syscall)
 endif()
 
 if (UNIX)
