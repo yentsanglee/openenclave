@@ -1,3 +1,0 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the MIT License.
-readelf -r main | grep R_X86_64_GLOB_DAT
