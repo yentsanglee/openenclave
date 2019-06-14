@@ -76,7 +76,7 @@ __attribute__((format(printf, 2, 3))) void err(
 
     for (size_t i = 0; i < args.size(); i++)
     {
-        fprintf(stderr, "arg=%s", args[i].c_str());
+        fprintf(stderr, "%s", args[i].c_str());
 
         if (i + 1 != args.size())
             fprintf(stderr, " ");
@@ -1214,27 +1214,30 @@ void extract_files(
     args = result_args;
 }
 
-void extract_shared_objects(vector<string>& args, vector<string>& sources)
+void extract_shared_objects(vector<string>& args, vector<string>& shobjs)
 {
     vector<string> result_args;
 
-    sources.clear();
+    shobjs.clear();
 
     for (size_t i = 0; i < args.size(); i++)
     {
         const string& arg = args[i];
 
+        if (arg[0] == '-')
+            continue;
+
         size_t pos = arg.find(".so");
 
         if (pos != string::npos && pos == (arg.size() - strlen(".so")))
         {
-            sources.push_back(arg);
+            shobjs.push_back(arg);
             continue;
         }
 
         if (arg.find(".so.") != string::npos)
         {
-            sources.push_back(arg);
+            shobjs.push_back(arg);
             continue;
         }
 
@@ -1269,7 +1272,7 @@ static FILE* open_cdb_spec()
     return fopen(path.c_str(), "a");
 }
 
-int resolve_path(string& path)
+int resolve_path(const string& path, string& relative, string& full)
 {
     int ret = -1;
     char cwd[PATH_MAX];
@@ -1284,6 +1287,7 @@ int resolve_path(string& path)
     if (path[0] == '/')
     {
         tmp_path = path;
+        full = path;
     }
     else
     {
@@ -1295,10 +1299,11 @@ int resolve_path(string& path)
         if (tmp_path[cdb_root.size()] != '/')
             goto done;
 
+        full = tmp_path;
         tmp_path = tmp_path.substr(cdb_root.size() + 1);
     }
 
-    path = tmp_path;
+    relative = tmp_path;
 
     ret = 0;
 
@@ -1341,7 +1346,13 @@ int handle_cdb_cc(const vector<string>& args_)
         if (targets.size() != 1)
             err(args_, "cannot resolve target");
 
-        fprintf(os, "%s:\n", targets[0].c_str());
+        string relative;
+        string full;
+
+        if (resolve_path(targets[0], relative, full) != 0)
+            err("failed to resolve target: %s", targets[0].c_str());
+
+        fprintf(os, "%s:\n", relative.c_str());
     }
 
     // Print CURDIR line:
@@ -1354,6 +1365,23 @@ int handle_cdb_cc(const vector<string>& args_)
         fprintf(os, "CURDIR=%s\n", cwd);
     }
 
+#if 0
+    // Print the COMMAND:
+    {
+        fprintf(os, "COMMAND=");
+
+        for (size_t i = 0; i < args.size(); i++)
+        {
+            fprintf(os, "%s", args[i].c_str());
+
+            if (i + 1 != args.size())
+                printf(" ");
+        }
+
+        fprintf(os, "\n");
+    }
+#endif
+
     // Print CC line:
     fprintf(os, "CC=%s\n", args[0].c_str());
     args.erase(args.begin());
@@ -1365,15 +1393,16 @@ int handle_cdb_cc(const vector<string>& args_)
 
         for (size_t i = 0; i < includes.size(); i++)
         {
-            string path = includes[i];
+            string relative;
+            string full;
 
-            if (resolve_path(path) != 0)
-                err(args_, "cannot resovle path: %s", path.c_str());
+            if (resolve_path(includes[i], relative, full) != 0)
+                err(args_, "cannot resovle path: %s", includes[i].c_str());
 
-            if (!is_dir(path))
-                err(args_, "no such directory: %s", path.c_str());
+            if (!is_dir(full))
+                err(args_, "no such include directory: %s", full.c_str());
 
-            fprintf(os, "INCLUDE=%s\n", path.c_str());
+            fprintf(os, "INCLUDE=%s\n", relative.c_str());
         }
     }
 
@@ -1402,15 +1431,16 @@ int handle_cdb_cc(const vector<string>& args_)
 
         for (size_t i = 0; i < libs.size(); i++)
         {
-            string path = libs[i];
+            string relative;
+            string full;
 
-            if (resolve_path(path) != 0)
-                err(args_, "cannot resovle path: %s", path.c_str());
+            if (resolve_path(libs[i], relative, full) != 0)
+                err(args_, "cannot resovle path: %s", libs[i].c_str());
 
-            if (!is_dir(path))
-                err(args_, "no such directory: %s", path.c_str());
+            if (!is_dir(full))
+                err(args_, "no such lib directory: %s", full.c_str());
 
-            fprintf(os, "LDPATH=%s\n", path.c_str());
+            fprintf(os, "LDPATH=%s\n", relative.c_str());
         }
     }
 
@@ -1429,15 +1459,16 @@ int handle_cdb_cc(const vector<string>& args_)
 
         for (size_t i = 0; i < sources.size(); i++)
         {
-            string path = sources[i];
+            string relative;
+            string full;
 
-            if (resolve_path(path) != 0)
-                err(args_, "cannot resovle path: %s", path.c_str());
+            if (resolve_path(sources[i], relative, full) != 0)
+                err(args_, "cannot resovle path: %s", sources[i].c_str());
 
-            if (access(path.c_str(), F_OK) != 0)
-                err(args_, "no such source file: %s", path.c_str());
+            if (access(full.c_str(), F_OK) != 0)
+                err(args_, "no such source file: %s", full.c_str());
 
-            fprintf(os, "SOURCE=%s\n", path.c_str());
+            fprintf(os, "SOURCE=%s\n", relative.c_str());
         }
     }
 
@@ -1448,15 +1479,16 @@ int handle_cdb_cc(const vector<string>& args_)
 
         for (size_t i = 0; i < objects.size(); i++)
         {
-            string path = objects[i];
+            string relative;
+            string full;
 
-            if (resolve_path(path) != 0)
-                err(args_, "cannot resovle path: %s", path.c_str());
+            if (resolve_path(objects[i], relative, full) != 0)
+                err(args_, "cannot resovle path: %s", objects[i].c_str());
 
-            if (access(path.c_str(), F_OK) != 0)
-                err(args_, "no such object file: %s", path.c_str());
+            if (access(full.c_str(), F_OK) != 0)
+                err(args_, "no such object file: %s", full.c_str());
 
-            fprintf(os, "OBJECT=%s\n", path.c_str());
+            fprintf(os, "OBJECT=%s\n", relative.c_str());
         }
     }
 
@@ -1467,15 +1499,16 @@ int handle_cdb_cc(const vector<string>& args_)
 
         for (size_t i = 0; i < archives.size(); i++)
         {
-            string path = archives[i];
+            string relative;
+            string full;
 
-            if (resolve_path(path) != 0)
-                err(args_, "cannot resovle path: %s", path.c_str());
+            if (resolve_path(archives[i], relative, full) != 0)
+                err(args_, "cannot resovle path: %s", archives[i].c_str());
 
-            if (access(path.c_str(), F_OK) != 0)
-                err(args_, "no such archive: %s", path.c_str());
+            if (access(full.c_str(), F_OK) != 0)
+                err(args_, "no such archive: %s", full.c_str());
 
-            fprintf(os, "ARCHIVE=%s\n", path.c_str());
+            fprintf(os, "ARCHIVE=%s\n", relative.c_str());
         }
     }
 
@@ -1486,15 +1519,16 @@ int handle_cdb_cc(const vector<string>& args_)
 
         for (size_t i = 0; i < shared_objects.size(); i++)
         {
-            string path = shared_objects[i];
+            string relative;
+            string full;
 
-            if (resolve_path(path) != 0)
-                err(args_, "cannot resovle path: %s", path.c_str());
+            if (resolve_path(shared_objects[i], relative, full) != 0)
+                err(args_, "cannot resolve: %s", shared_objects[i].c_str());
 
-            if (access(path.c_str(), F_OK) != 0)
-                err(args_, "no such shared object: %s", path.c_str());
+            if (access(full.c_str(), F_OK) != 0)
+                err(args_, "no such shared object: %s", full.c_str());
 
-            fprintf(os, "SHOBJ=%s\n", path.c_str());
+            fprintf(os, "SHOBJ=%s\n", relative.c_str());
         }
     }
 
@@ -1558,7 +1592,13 @@ int handle_cdb_ar(const vector<string>& args_)
         else if (archives.size() != 1)
             err(args_, "too many archives arguments");
 
-        fprintf(os, "%s:\n", archives[0].c_str());
+        string relative;
+        string full;
+
+        if (resolve_path(archives[0], relative, full) != 0)
+            err("failed to resolve archive path");
+
+        fprintf(os, "%s:\n", relative.c_str());
     }
 
     // Print CURDIR line:
@@ -1570,6 +1610,23 @@ int handle_cdb_ar(const vector<string>& args_)
 
         fprintf(os, "CURDIR=%s\n", cwd);
     }
+
+#if 0
+    // Print the COMMAND:
+    {
+        fprintf(os, "COMMAND=");
+
+        for (size_t i = 0; i < args.size(); i++)
+        {
+            fprintf(os, "%s", args[i].c_str());
+
+            if (i + 1 != args.size())
+                printf(" ");
+        }
+
+        fprintf(os, "\n");
+    }
+#endif
 
     // Print AR line:
     fprintf(os, "AR=%s\n", args[0].c_str());
@@ -1588,15 +1645,16 @@ int handle_cdb_ar(const vector<string>& args_)
     // Print the objects.
     for (size_t i = 0; i < objects.size(); i++)
     {
-        string path = objects[i];
+        string relative;
+        string full;
 
-        if (resolve_path(path) != 0)
-            err(args_, "cannot resovle path: %s", path.c_str());
+        if (resolve_path(objects[i], relative, full) != 0)
+            err(args_, "cannot resovle path: %s", objects[i].c_str());
 
-        if (access(path.c_str(), F_OK) != 0)
-            err(args_, "no such object file: %s", path.c_str());
+        if (access(full.c_str(), F_OK) != 0)
+            err(args_, "no such object file: %s", full.c_str());
 
-        fprintf(os, "OBJECT=%s\n", path.c_str());
+        fprintf(os, "OBJECT=%s\n", relative.c_str());
     }
 
     // Finish with a blank line.
@@ -2015,7 +2073,7 @@ int handle_cdb_gen(const vector<string>& args)
     vector<target> objects;
 
     if (find_archive_objects(targets, archive, objects) != 0)
-        err("failed to find sources");
+        err("failed to find sources for %s", archive_name.c_str());
 
     // add_library(name OBJECT ...)
     for (size_t i = 0; i < objects.size(); i++)
