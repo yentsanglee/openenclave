@@ -5,6 +5,8 @@ add_executable(oewrap wrap.cpp)
 
 target_include_directories(oewrap PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
+target_link_libraries(oewrap crypto)
+
 set_property(TARGET oewrap PROPERTY RUNTIME_OUTPUT_DIRECTORY ${OE_BINDIR})
 
 install (TARGETS oewrap DESTINATION ${CMAKE_INSTALL_BINDIR})

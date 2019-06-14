@@ -3,6 +3,7 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <openssl/sha.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,6 +27,57 @@ static string cdb_root;
 #define COLOR_GREEN "\033[0;32m"
 #define COLOR_CYAN "\033[0;36m"
 #define COLOR_NONE "\033[0m"
+
+struct sha256_string
+{
+    char buf[65];
+};
+
+int compute_hash(const char* path, sha256_string* string)
+{
+    int ret = -1;
+    FILE* is = NULL;
+    char buf[4096];
+    size_t n;
+    SHA256_CTX ctx;
+    unsigned char hash[32];
+
+    if (string)
+        memset(string, 0, sizeof(sha256_string));
+
+    if (!path || !string)
+        goto done;
+
+    if (!(is = fopen(path, "r")))
+        goto done;
+
+    if (!SHA256_Init(&ctx))
+        goto done;
+
+    while ((n = fread(buf, 1, sizeof(buf), is)) > 0)
+    {
+        if (!SHA256_Update(&ctx, buf, n))
+            goto done;
+    }
+
+    if (!SHA256_Final(hash, &ctx))
+        goto done;
+
+    // Convert hash to string:
+    for (size_t i = 0; i < sizeof(hash); i++)
+    {
+        snprintf(&string->buf[i * 2], 3, "%02x", hash[i]);
+    }
+
+    ret = 0;
+
+done:
+
+    if (is)
+        fclose(is);
+
+    return ret;
+}
 
 struct option
 {
@@ -1329,6 +1381,7 @@ int handle_cdb_cc(const vector<string>& args_)
     FILE* log = NULL;
     char* buf = NULL;
     size_t len = 0;
+    string target_name;
 
     if (!(os = open_memstream(&buf, &len)))
         err("open_memstream() failed");
@@ -1351,6 +1404,8 @@ int handle_cdb_cc(const vector<string>& args_)
 
         if (resolve_path(targets[0], relative, full) != 0)
             err("failed to resolve target: %s", targets[0].c_str());
+
+        target_name = full;
 
         fprintf(os, "%s:\n", relative.c_str());
     }
@@ -1489,6 +1544,13 @@ int handle_cdb_cc(const vector<string>& args_)
                 err(args_, "no such object file: %s", full.c_str());
 
             fprintf(os, "OBJECT=%s\n", relative.c_str());
+
+            sha256_string hash;
+
+            if (compute_hash(full.c_str(), &hash) != 0)
+                err("failed to compute object hash: %s", full.c_str());
+
+            fprintf(os, "OBJHASH=%s\n", hash.buf);
         }
     }
 
@@ -1545,11 +1607,22 @@ int handle_cdb_cc(const vector<string>& args_)
     if (args.size())
         err(args, "unhandled arguments");
 
-    // Finish with a blank line.
-    fprintf(os, "\n");
-
     if (exec(args_, &exit_status) != 0)
         err(args_, "exec failed");
+
+    // Print HASH;
+    if (exit_status == 0)
+    {
+        sha256_string hash;
+
+        if (compute_hash(target_name.c_str(), &hash) != 0)
+            err("failed to compute hash for %s", target_name.c_str());
+
+        fprintf(os, "HASH=%s\n", hash.buf);
+    }
+
+    // Finish with a blank line.
+    fprintf(os, "\n");
 
     if (os)
         fclose(os);
@@ -1655,6 +1728,13 @@ int handle_cdb_ar(const vector<string>& args_)
             err(args_, "no such object file: %s", full.c_str());
 
         fprintf(os, "OBJECT=%s\n", relative.c_str());
+
+        sha256_string hash;
+
+        if (compute_hash(full.c_str(), &hash) != 0)
+            err("failed to compute object hash: %s", full.c_str());
+
+        fprintf(os, "OBJHASH=%s\n", hash.buf);
     }
 
     // Finish with a blank line.
@@ -1686,6 +1766,7 @@ static void dump_keywords(const char* keyword, const vector<string>& values)
 struct target
 {
     string name;
+    string hash;
     string curdir;
     string cc;
     string ar;
@@ -1696,6 +1777,7 @@ struct target
     vector<string> includes;
     vector<string> shobjs;
     vector<string> objects;
+    vector<string> objhashes;
     vector<string> archives;
     vector<string> sources;
     vector<string> ldpaths;
@@ -1703,6 +1785,7 @@ struct target
     void clear()
     {
         name.clear();
+        hash.clear();
         curdir.clear();
         cc.clear();
         ar.clear();
@@ -1713,6 +1796,7 @@ struct target
         includes.clear();
         shobjs.clear();
         objects.clear();
+        objhashes.clear();
         archives.clear();
         sources.clear();
         ldpaths.clear();
@@ -1736,9 +1820,11 @@ struct target
             dump_keywords("LDPATH", ldpaths);
             dump_keywords("SOURCE", sources);
             dump_keywords("OBJECT", objects);
+            dump_keywords("OBJHASH", objhashes);
             dump_keywords("ARCHIVE", archives);
             dump_keywords("SHOBJ", shobjs);
             dump_keywords("CFLAG", cflags);
+            printf("HASH=%s\n", hash.c_str());
 
             printf("\n");
         }
@@ -1755,6 +1841,8 @@ struct target
             printf("ARFLAGS=%s\n", arflags.c_str());
 
             dump_keywords("OBJECT", objects);
+            dump_keywords("OBJHASH", objhashes);
+            printf("HASH=%s\n", hash.c_str());
 
             printf("\n");
         }
@@ -1784,6 +1872,25 @@ int find_target(
     return -1;
 }
 
+int find_target_by_hash(
+    const vector<target>& targets,
+    const string& hash,
+    target& target)
+{
+    target.clear();
+
+    for (size_t i = 0; i < targets.size(); i++)
+    {
+        if (targets[i].hash == hash)
+        {
+            target = targets[i];
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 void find_object_sources(const target& object, vector<string>& sources)
 {
     for (size_t i = 0; i < object.sources.size(); i++)
@@ -1802,12 +1909,17 @@ int find_archive_objects(
 
     for (size_t i = 0; i < archive.objects.size(); i++)
     {
-        const string& object_name = archive.objects[i];
+        const string& name = archive.objects[i];
+        const string& hash = archive.objhashes[i];
 
         target object;
 
-        if (find_target(targets, object_name, object) != 0)
+        if (find_target(targets, name, object) != 0 &&
+            find_target_by_hash(targets, hash, object) != 0)
+        {
+            err("failed to find object: %s: %s", name.c_str(), hash.c_str());
             return -1;
+        }
 
         objects.push_back(object);
     }
@@ -1947,6 +2059,8 @@ int load_cdb_spec(const string& path, vector<target>& targets)
                 target.shobjs.push_back(value);
             else if (keyword == "OBJECT")
                 target.objects.push_back(value);
+            else if (keyword == "OBJHASH")
+                target.objhashes.push_back(value);
             else if (keyword == "CURDIR")
                 target.curdir = value;
             else if (keyword == "SOURCE")
@@ -1955,6 +2069,8 @@ int load_cdb_spec(const string& path, vector<target>& targets)
                 target.ldlibs.push_back(value);
             else if (keyword == "LDPATH")
                 target.ldpaths.push_back(value);
+            else if (keyword == "HASH")
+                target.hash = value;
             else
             {
                 err("unknown keyword on line %u: %s\n", line, keyword.c_str());
