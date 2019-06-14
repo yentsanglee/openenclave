@@ -847,6 +847,7 @@ static int handle_ar_subcommand(const vector<string>& args_)
     vector<string> objects;
     char* buf = NULL;
     size_t len = 0;
+    string target_name;
 
     if (!(os = open_memstream(&buf, &len)))
         err("open_memstream() failed");
@@ -872,6 +873,8 @@ static int handle_ar_subcommand(const vector<string>& args_)
             err("failed to resolve archive path");
 
         fprintf(os, "%s:\n", relative.c_str());
+
+        target_name = full;
     }
 
     // Print CURDIR line:
@@ -937,11 +940,22 @@ static int handle_ar_subcommand(const vector<string>& args_)
         fprintf(os, "OBJHASH=%s\n", hash.buf);
     }
 
-    // Finish with a blank line.
-    fprintf(os, "\n");
-
     if (exec(args_, &exit_status) != 0)
         err(args_, "exec() failed");
+
+    // Print HASH;
+    if (exit_status == 0)
+    {
+        sha256_string hash;
+
+        if (compute_hash(target_name.c_str(), &hash) != 0)
+            err("failed to compute hash for %s", target_name.c_str());
+
+        fprintf(os, "HASH=%s\n", hash.buf);
+    }
+
+    // Finish with a blank line.
+    fprintf(os, "\n");
 
     if (os)
         fclose(os);
