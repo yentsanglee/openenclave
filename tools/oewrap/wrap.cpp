@@ -1767,8 +1767,6 @@ int load_cdb_spec(const string& path, vector<target>& targets)
     target target;
     bool inside = false;
 
-    ret = 0;
-
     targets.clear();
 
     if (!(is = fopen(path.c_str(), "r")))
@@ -1907,6 +1905,8 @@ int load_cdb_spec(const string& path, vector<target>& targets)
             continue;
         }
     }
+
+    ret = 0;
 
 done:
 
