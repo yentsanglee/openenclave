@@ -14,8 +14,13 @@ INCLUDES += -I.
 LDFLAGS += =-Wl,-pie
 LDFLAGS += =-Wl,-Bstatic
 
+SOURCES += start.c
+SOURCES += strings.c
+SOURCES += init.c
+SOURCES += fini.c
+
 all:
-	gcc -o main $(CFLAGS) $(INCLUDES) $(LDFLAG) start.c strings.c
+	gcc -o main $(CFLAGS) $(INCLUDES) $(LDFLAG) $(SOURCES)
 
 clean:
 	rm -rf main
