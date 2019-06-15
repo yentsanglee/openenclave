@@ -9,6 +9,11 @@ __attribute__((constructor)) void _constructor(void)
     fs_print_str("_constructor()\n");
 }
 
+__attribute__((destructor)) void _destructor(void)
+{
+    fs_print_str("_destructor()\n");
+}
+
 void _start()
 {
     fs_call_init_functions();
