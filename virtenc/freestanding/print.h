@@ -9,33 +9,39 @@
 #include "../freestanding/syscall.h"
 #include "../freestanding/string.h"
 
-FS_INLINE int fs_puts(const char* s)
+FS_INLINE void fs_put_str(const char* s)
 {
-    const int fd = 1;
-    const char newline = '\n';
-
-    fs_syscall3(FS_SYS_write, fd, (long)s, fs_strlen(s));
-    fs_syscall3(FS_SYS_write, fd, (long)&newline, 1);
-
-    return 0;
+    fs_syscall3(FS_SYS_write, 1, (long)s, fs_strlen(s));
 }
 
-FS_INLINE int fs_put_oct(uint64_t x)
+FS_INLINE void fs_put_nl(void)
 {
-    fs_intstr_buf_t buf;
-    return fs_puts(fs_uint64_octstr(&buf, x, NULL));
+    const char nl = '\n';
+    fs_syscall3(FS_SYS_write, 1, (long)&nl, 1);
 }
 
-FS_INLINE int fs_put_dec(uint64_t x)
+FS_INLINE void fs_put_oct(uint64_t x)
 {
     fs_intstr_buf_t buf;
-    return fs_puts(fs_uint64_decstr(&buf, x, NULL));
+    fs_put_str(fs_uint64_octstr(&buf, x, NULL));
 }
 
-FS_INLINE int fs_put_hex(uint64_t x)
+FS_INLINE void fs_put_uint(uint64_t x)
 {
     fs_intstr_buf_t buf;
-    return fs_puts(fs_uint64_hexstr(&buf, x, NULL));
+    fs_put_str(fs_uint64_decstr(&buf, x, NULL));
+}
+
+FS_INLINE void fs_put_int(int64_t x)
+{
+    fs_intstr_buf_t buf;
+    fs_put_str(fs_int64_decstr(&buf, x, NULL));
+}
+
+FS_INLINE void fs_put_hex(uint64_t x)
+{
+    fs_intstr_buf_t buf;
+    fs_put_str(fs_uint64_hexstr(&buf, x, NULL));
 }
 
 #endif /* _FREESTANDING_PRINT_H */
