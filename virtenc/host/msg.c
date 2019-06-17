@@ -4,14 +4,10 @@
 
 ssize_t ve_read(int fd, void* buf, size_t count)
 {
-    ssize_t ret = read(fd, buf, count);
-    printf("host:read: %zu\n", ret);
-    return ret;
+    return read(fd, buf, count);
 }
 
 ssize_t ve_write(int fd, const void* buf, size_t count)
 {
-    ssize_t ret = write(fd, buf, count);
-    printf("host:wrote: %zu\n", ret);
-    return ret;
+    return write(fd, buf, count);
 }

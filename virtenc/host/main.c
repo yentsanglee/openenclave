@@ -26,6 +26,8 @@ pid_t exec(const char* path, int fds[2])
 {
     pid_t ret = -1;
     pid_t pid;
+    int stdout_pipe[2]; /* child's stdout pipe */
+    int stdin_pipe[2];  /* child's stdin pipe */
 
     if (!path)
         goto done;
@@ -33,7 +35,10 @@ pid_t exec(const char* path, int fds[2])
     if (access(path, X_OK) != 0)
         goto done;
 
-    if (pipe(fds) == -1)
+    if (pipe(stdout_pipe) == -1)
+        goto done;
+
+    if (pipe(stdin_pipe) == -1)
         goto done;
 
     pid = fork();
@@ -44,10 +49,11 @@ pid_t exec(const char* path, int fds[2])
     /* If child. */
     if (pid == 0)
     {
-        close(STDIN_FILENO);
-        close(STDOUT_FILENO);
-        dup2(fds[0], STDIN_FILENO);
-        dup2(fds[1], STDOUT_FILENO);
+        dup2(stdout_pipe[1], STDOUT_FILENO);
+        close(stdout_pipe[0]);
+
+        dup2(stdin_pipe[0], STDIN_FILENO);
+        close(stdin_pipe[1]);
 
         char* argv[2] = {(char*)path, NULL};
 
@@ -55,25 +61,36 @@ pid_t exec(const char* path, int fds[2])
         abort();
     }
 
+    close(stdout_pipe[1]);
+    close(stdin_pipe[0]);
+
+    fds[0] = stdout_pipe[0];
+    fds[1] = stdin_pipe[1];
+
     ret = pid;
 
 done:
     return ret;
 }
 
-int handle_print_in(int fds[2], size_t size)
+int handle_print_in(int fds[2], size_t size, bool* eof)
 {
     int ret = -1;
     ve_msg_print_in_t* in = NULL;
     ve_msg_print_out_t out;
 
+    if (eof)
+        *eof = true;
+
+    if (!eof)
+        goto done;
+
     if (!(in = malloc(size)))
         goto done;
 
-    if (ve_recv_n(fds[0], in, size) != 0)
+    if (ve_recv_n(fds[0], in, size, eof) != 0)
         goto done;
 
-    printf("{%.*s}\n", (int)size, in->data);
     out.ret = (write(OE_STDOUT_FILENO, in->data, size) == -1) ? -1 : 0;
 
     if (ve_send_msg(fds[1], VE_MSG_PRINT_OUT, &out, sizeof(out)) != 0)
@@ -95,20 +112,33 @@ void handle_messages(int fds[2])
     {
         ve_msg_type_t type;
         size_t size;
+        bool eof;
 
-        printf("<<<<<<<<<<<<<\n");
-        if (ve_recv_msg(fds[0], &type, &size) != 0)
+        if (ve_recv_msg(fds[0], &type, &size, &eof) != 0)
+        {
+            if (eof)
+            {
+                printf("enclave exited (1)\n");
+                return;
+            }
+
             err("ve_recv_msg() failed");
-        printf(">>>>>>>>>>>>>\n");
+        }
 
         switch (type)
         {
             case VE_MSG_PRINT_IN:
             {
-                printf("case VE_MSG_PRINT_IN\n");
-                fflush(stdout);
-                if (handle_print_in(fds, size) != 0)
+                if (handle_print_in(fds, size, &eof) != 0)
+                {
+                    if (eof)
+                    {
+                        printf("enclave exited (2)\n");
+                        return;
+                    }
+
                     err("handle_print_in() failed");
+                }
                 break;
             }
             default:
