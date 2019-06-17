@@ -1,4 +1,4 @@
-void fs_call_fini_functions(void)
+void ve_call_fini_functions(void)
 {
     void (**fn)(void);
     extern void (*__fini_array_start)(void);

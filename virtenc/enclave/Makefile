@@ -1,3 +1,5 @@
+ROOT = $(CURDIR)/../..
+
 CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -g
@@ -10,6 +12,7 @@ CFLAGS += -nostartfiles
 CFLAGS += -lgcc
 
 INCLUDES += -I.
+INCLUDES += -I$(ROOT)/include
 
 LDFLAGS += =-Wl,-pie
 LDFLAGS += =-Wl,-Bstatic
@@ -18,6 +21,8 @@ SOURCES += start.c
 SOURCES += strings.c
 SOURCES += init.c
 SOURCES += fini.c
+SOURCES += msg.c
+SOURCES += syscall.c
 
 all:
 	gcc -o main $(CFLAGS) $(INCLUDES) $(LDFLAG) $(SOURCES)

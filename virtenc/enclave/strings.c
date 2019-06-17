@@ -1,6 +1,6 @@
-#include <freestanding/string.h>
+#include "string.h"
 
-size_t fs_strlen(const char* s)
+size_t ve_strlen(const char* s)
 {
     const char* p = s;
 
@@ -10,7 +10,7 @@ size_t fs_strlen(const char* s)
     return p - s;
 }
 
-int fs_strcmp(const char* s1, const char* s2)
+int ve_strcmp(const char* s1, const char* s2)
 {
     while ((*s1 && *s2) && (*s1 == *s2))
     {
@@ -21,7 +21,7 @@ int fs_strcmp(const char* s1, const char* s2)
     return *s1 - *s2;
 }
 
-size_t fs_strlcpy(char* dest, const char* src, size_t size)
+size_t ve_strlcpy(char* dest, const char* src, size_t size)
 {
     const char* start = src;
 
@@ -41,7 +41,7 @@ size_t fs_strlcpy(char* dest, const char* src, size_t size)
     return (size_t)(src - start);
 }
 
-size_t fs_strlcat(char* dest, const char* src, size_t size)
+size_t ve_strlcat(char* dest, const char* src, size_t size)
 {
     size_t n = 0;
 
@@ -80,7 +80,7 @@ static __inline__ char oe_get_hex_char(uint64_t x, size_t i)
     return (char)((nibble < 10) ? ('0' + nibble) : ('a' + (nibble - 10)));
 }
 
-const char* fs_uint64_octstr(fs_intstr_buf_t* buf, uint64_t x, size_t* size)
+const char* ve_uint64_octstr(ve_intstr_buf_t* buf, uint64_t x, size_t* size)
 {
     char* p;
     char* end = buf->data + sizeof(buf->data) - 1;
@@ -99,7 +99,7 @@ const char* fs_uint64_octstr(fs_intstr_buf_t* buf, uint64_t x, size_t* size)
     return p;
 }
 
-const char* fs_uint64_decstr(fs_intstr_buf_t* buf, uint64_t x, size_t* size)
+const char* ve_uint64_decstr(ve_intstr_buf_t* buf, uint64_t x, size_t* size)
 {
     char* p;
     char* end = buf->data + sizeof(buf->data) - 1;
@@ -118,7 +118,7 @@ const char* fs_uint64_decstr(fs_intstr_buf_t* buf, uint64_t x, size_t* size)
     return p;
 }
 
-const char* fs_uint64_hexstr(fs_intstr_buf_t* buf, uint64_t x, size_t* size)
+const char* ve_uint64_hexstr(ve_intstr_buf_t* buf, uint64_t x, size_t* size)
 {
     for (size_t i = 0; i < 16; i++)
         buf->data[15 - i] = oe_get_hex_char(x, i);
@@ -132,19 +132,19 @@ const char* fs_uint64_hexstr(fs_intstr_buf_t* buf, uint64_t x, size_t* size)
         p++;
 
     if (size)
-        *size = fs_strlen(p);
+        *size = ve_strlen(p);
 
     return p;
 }
 
-const char* fs_int64_decstr(fs_intstr_buf_t* buf, int64_t x, size_t* size)
+const char* ve_int64_decstr(ve_intstr_buf_t* buf, int64_t x, size_t* size)
 {
     char* p;
     int neg = 0;
     static const char _str[] = "-9223372036854775808";
     char* end = buf->data + sizeof(buf->data) - 1;
 
-    if (x == FS_INT64_MIN)
+    if (x == OE_INT64_MIN)
     {
         *size = sizeof(_str) - 1;
         return _str;

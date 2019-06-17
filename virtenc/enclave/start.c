@@ -1,34 +1,41 @@
-#include <freestanding/exit.h>
-#include <freestanding/print.h>
+#include "exit.h"
+#include "msg.h"
+#include "print.h"
 
-void fs_call_init_functions(void);
-void fs_call_fini_functions(void);
+void ve_call_init_functions(void);
+void ve_call_fini_functions(void);
 
 __attribute__((constructor)) void _constructor(void)
 {
-    fs_print_str("_constructor()\n");
+    //    ve_print_str("_constructor()\n");
 }
 
 __attribute__((destructor)) void _destructor(void)
 {
-    fs_print_str("_destructor()\n");
+    //    ve_print_str("_destructor()\n");
 }
 
 void _start()
 {
-    fs_call_init_functions();
+    ve_call_init_functions();
 
-    fs_print_str("_start()\n");
+#if 0
+    ve_print_str("_start()\n");
 
-    fs_print_oct(0777);
-    fs_print_nl();
-    fs_print_uint(99);
-    fs_print_nl();
-    fs_print_int(-123);
-    fs_print_nl();
-    fs_print_hex(0xABCD);
-    fs_print_nl();
+    ve_print_oct(0777);
+    ve_print_nl();
+    ve_print_uint(99);
+    ve_print_nl();
+    ve_print_int(-123);
+    ve_print_nl();
+    ve_print_hex(0xABCD);
+    ve_print_nl();
 
-    fs_call_fini_functions();
-    fs_exit(99);
+#endif
+    ve_msg_print("\007");
+    // ve_msg_print("PRINT2\n");
+    // ve_msg_print("PRINT3\n");
+
+    ve_call_fini_functions();
+    ve_exit(99);
 }

@@ -1,6 +1,4 @@
-#include <freestanding/print.h>
-
-void fs_call_init_functions(void)
+void ve_call_init_functions(void)
 {
     void (**fn)(void);
     extern void (*__init_array_start)(void);
