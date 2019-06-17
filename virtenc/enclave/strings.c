@@ -21,10 +21,7 @@ int fs_strcmp(const char* s1, const char* s2)
     return *s1 - *s2;
 }
 
-size_t fs_strlcpy(
-    char* dest,
-    const char* src,
-    size_t size)
+size_t fs_strlcpy(char* dest, const char* src, size_t size)
 {
     const char* start = src;
 
@@ -44,10 +41,7 @@ size_t fs_strlcpy(
     return (size_t)(src - start);
 }
 
-size_t fs_strlcat(
-    char* dest,
-    const char* src,
-    size_t size)
+size_t fs_strlcat(char* dest, const char* src, size_t size)
 {
     size_t n = 0;
 

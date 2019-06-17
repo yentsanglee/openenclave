@@ -5,9 +5,9 @@
 #define _FREESTANDING_PRINT_H
 
 #include "../freestanding/defs.h"
-#include "../freestanding/types.h"
-#include "../freestanding/syscall.h"
 #include "../freestanding/string.h"
+#include "../freestanding/syscall.h"
+#include "../freestanding/types.h"
 
 FS_INLINE void fs_print_str(const char* s)
 {

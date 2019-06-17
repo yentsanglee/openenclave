@@ -73,8 +73,7 @@ FS_INLINE long fs_syscall4(long n, long x1, long x2, long x3, long x4)
     return ret;
 }
 
-FS_INLINE long
-syscall5(long n, long x1, long x2, long x3, long x4, long x5)
+FS_INLINE long syscall5(long n, long x1, long x2, long x3, long x4, long x5)
 {
     unsigned long ret;
     register long r10 __asm__("r10") = x4;

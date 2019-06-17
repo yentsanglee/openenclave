@@ -1,5 +1,5 @@
-#include <freestanding/print.h>
 #include <freestanding/exit.h>
+#include <freestanding/print.h>
 
 void fs_call_init_functions(void);
 void fs_call_fini_functions(void);
