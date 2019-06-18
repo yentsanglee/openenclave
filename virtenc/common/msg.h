@@ -8,13 +8,14 @@
 
 typedef enum _ve_msg_type
 {
+    VE_MSG_INIT,
     VE_MSG_PRINT,
-    VE_MSG_PING,
     VE_MSG_TERMINATE,
+    VE_MSG_NEW_THREAD,
 } ve_msg_type_t;
 
-#define __VE_MSG_MIN VE_MSG_PRINT
-#define __VE_MSG_MAX VE_MSG_TERMINATE
+#define __VE_MSG_MIN VE_MSG_INIT
+#define __VE_MSG_MAX VE_MSG_NEW_THREAD
 
 typedef struct _ve_msg
 {
@@ -33,15 +34,16 @@ typedef struct _ve_msg_print_out
     int ret;
 } ve_msg_print_out_t;
 
-typedef struct _ve_msg_ping_in
+typedef struct _ve_msg_init_in
 {
-    size_t count;
-} ve_msg_ping_in_t;
+    /* Child's end of the socket pair that the parent created. */
+    int sock;
+} ve_msg_init_in_t;
 
-typedef struct _ve_msg_ping_out
+typedef struct _ve_msg_init_out
 {
-    size_t count;
-} ve_msg_ping_out_t;
+    int ret;
+} ve_msg_init_out_t;
 
 typedef struct _ve_msg_terminate_in
 {
@@ -52,6 +54,16 @@ typedef struct _ve_msg_terminate_out
 {
     int ret;
 } ve_msg_terminate_out_t;
+
+typedef struct _ve_msg_new_thread_in
+{
+    uint32_t tcs;
+} ve_msg_new_thread_in_t;
+
+typedef struct _ve_msg_new_thread_out
+{
+    int ret;
+} ve_msg_new_thread_out_t;
 
 ssize_t ve_read(int fd, void* buf, size_t count);
 

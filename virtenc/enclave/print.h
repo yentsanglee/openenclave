@@ -6,6 +6,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/internal/syscall/unistd.h>
+#include "exit.h"
 #include "string.h"
 #include "syscall.h"
 
@@ -42,6 +43,13 @@ OE_INLINE void ve_print_hex(uint64_t x)
 {
     ve_intstr_buf_t buf;
     ve_print_str(ve_uint64_hexstr(&buf, x, NULL));
+}
+
+OE_INLINE void ve_put_err(const char* msg)
+{
+    ve_print_str(msg);
+    ve_print_nl();
+    ve_exit(1);
 }
 
 #endif /* _VE_PRINT_H */

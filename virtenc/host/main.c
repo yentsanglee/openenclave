@@ -2,12 +2,19 @@
 #include <openenclave/internal/syscall/unistd.h>
 #include "../common/msg.h"
 
+#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stropts.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <unistd.h>
+#include "globals.h"
 
 const char* arg0;
+
+globals_t globals;
 
 OE_PRINTF_FORMAT(1, 2)
 static void err(const char* fmt, ...)
@@ -28,6 +35,10 @@ pid_t exec(const char* path, int fds[2])
     pid_t pid;
     int stdout_pipe[2]; /* child's stdout pipe */
     int stdin_pipe[2];  /* child's stdin pipe */
+    int socks[2];
+
+    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, socks) == -1)
+        goto done;
 
     if (!path)
         goto done;
@@ -51,6 +62,7 @@ pid_t exec(const char* path, int fds[2])
     {
         dup2(stdout_pipe[1], STDOUT_FILENO);
         close(stdout_pipe[0]);
+        close(socks[0]);
 
         dup2(stdin_pipe[0], STDIN_FILENO);
         close(stdin_pipe[1]);
@@ -61,11 +73,15 @@ pid_t exec(const char* path, int fds[2])
         abort();
     }
 
+    close(socks[1]);
     close(stdout_pipe[1]);
     close(stdin_pipe[0]);
 
     fds[0] = stdout_pipe[0];
     fds[1] = stdin_pipe[1];
+
+    globals.sock = socks[0];
+    globals.child_sock = socks[1];
 
     ret = pid;
 
@@ -150,15 +166,15 @@ void handle_messages(int fds[2])
     }
 }
 
-int ve_msg_ping(int fds[2])
+int ve_init_child(int fds[2])
 {
     int ret = -1;
-    ve_msg_ping_in_t in;
-    ve_msg_ping_out_t out;
-    const ve_msg_type_t type = VE_MSG_PING;
+    ve_msg_init_in_t in;
+    ve_msg_init_out_t out;
+    const ve_msg_type_t type = VE_MSG_INIT;
     bool eof;
 
-    in.count = 7;
+    in.sock = globals.child_sock;
 
     if (ve_send_msg(fds[1], type, &in, sizeof(in)) != 0)
         goto done;
@@ -166,7 +182,19 @@ int ve_msg_ping(int fds[2])
     if (ve_recv_msg_by_type(fds[0], type, &out, sizeof(out), &eof) != 0)
         goto done;
 
-    printf("ping response: count=%zu\n", out.count);
+    /* Test the socket connection between child and parent. */
+    {
+        int sock = -1;
+        bool eof;
+
+        if (ve_recv_n(globals.sock, &sock, sizeof(sock), &eof) != 0)
+            err("init failed: read of sock failed");
+
+        if (sock != globals.child_sock)
+            err("init failed: sock confirm failed");
+    }
+
+    printf("init response: ret=%d\n", out.ret);
 
     ret = 0;
 
@@ -174,7 +202,7 @@ done:
     return ret;
 }
 
-int ve_msg_terminate(int fds[2])
+int ve_terminate_child(int fds[2])
 {
     int ret = -1;
     ve_msg_terminate_in_t in;
@@ -191,6 +219,51 @@ int ve_msg_terminate(int fds[2])
         goto done;
 
     printf("terminate response: ret=%d\n", out.ret);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int ve_msg_new_thread(int fds[2], int tcs)
+{
+    int ret = -1;
+    ve_msg_new_thread_in_t in;
+    ve_msg_new_thread_out_t out;
+    const ve_msg_type_t type = VE_MSG_NEW_THREAD;
+    bool eof;
+
+    in.tcs = tcs;
+
+    if (ve_send_msg(fds[1], type, &in, sizeof(in)) != 0)
+        goto done;
+
+#if 0
+    int socks[2];
+
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, socks) == -1)
+        goto done;
+
+printf("socks[0]=%d\n", socks[0]);
+printf("socks[1]=%d\n", socks[1]);
+
+    /* Send the fd to the enclave */
+    {
+        int retval;
+
+        if ((retval = ioctl(fds[1], I_SENDFD, socks[1])) == -1)
+        {
+            printf("*** ioctl(): retval=%d errno=%d\n", retval, errno);
+            goto done;
+        }
+    }
+#endif
+
+    if (ve_recv_msg_by_type(fds[0], type, &out, sizeof(out), &eof) != 0)
+        goto done;
+
+    printf("new_thread response: ret=%d\n", out.ret);
 
     ret = 0;
 
@@ -216,8 +289,13 @@ int main(int argc, const char* argv[])
         exit(1);
     }
 
-    ve_msg_ping(fds);
-    ve_msg_terminate(fds);
+    /* Initialize the child process. */
+    ve_init_child(fds);
+
+    ve_msg_new_thread(fds, 0);
+
+    /* Terminate the child process. */
+    ve_terminate_child(fds);
 
     return 0;
 }
