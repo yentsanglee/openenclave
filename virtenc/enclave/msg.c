@@ -27,19 +27,17 @@ void ve_debug(const char* str)
     ve_print_nl();
 }
 
-static int _handle_msg_terminate(size_t size, bool* eof)
+static int _handle_msg_terminate(size_t size)
 {
     int ret = -1;
     ve_msg_terminate_in_t in;
     ve_msg_terminate_out_t out;
     const ve_msg_type_t type = VE_MSG_TERMINATE;
 
-    *eof = false;
-
     if (size != sizeof(in))
         goto done;
 
-    if (ve_recv_n(globals.sock, &in, sizeof(in), eof) != 0)
+    if (ve_recv_n(globals.sock, &in, sizeof(in)) != 0)
         goto done;
 
     out.ret = 0;
@@ -56,7 +54,7 @@ done:
     return ret;
 }
 
-static int _handle_msg_add_thread(size_t size, bool* eof)
+static int _handle_msg_add_thread(size_t size)
 {
     int ret = -1;
     ve_msg_add_thread_in_t in;
@@ -66,12 +64,10 @@ static int _handle_msg_add_thread(size_t size, bool* eof)
     int sock = -1;
     const uint32_t ACK = 0xACACACAC;
 
-    *eof = false;
-
     if (size != sizeof(in))
         goto done;
 
-    if (ve_recv_n(globals.sock, &in, sizeof(in), eof) != 0)
+    if (ve_recv_n(globals.sock, &in, sizeof(in)) != 0)
         goto done;
 
     if (globals.num_threads == MAX_THREADS)
@@ -119,9 +115,8 @@ int ve_handle_init(void)
     const int sin = OE_STDIN_FILENO;
     const ve_msg_type_t type = VE_MSG_INIT;
     ve_msg_init_in_t in;
-    bool eof;
 
-    if (ve_recv_msg_by_type(sin, type, &in, sizeof(in), &eof) != 0)
+    if (ve_recv_msg_by_type(sin, type, &in, sizeof(in)) != 0)
         goto done;
 
     globals.sock = in.sock;
@@ -143,22 +138,21 @@ int ve_handle_messages(void)
     {
         ve_msg_type_t type;
         size_t size;
-        bool eof;
 
-        if (ve_recv_msg(globals.sock, &type, &size, &eof) != 0)
+        if (ve_recv_msg(globals.sock, &type, &size) != 0)
             goto done;
 
         switch (type)
         {
             case VE_MSG_TERMINATE:
             {
-                if (_handle_msg_terminate(size, &eof) != 0)
+                if (_handle_msg_terminate(size) != 0)
                     goto done;
                 break;
             }
             case VE_MSG_ADD_THREAD:
             {
-                if (_handle_msg_add_thread(size, &eof) != 0)
+                if (_handle_msg_add_thread(size) != 0)
                     goto done;
                 break;
             }

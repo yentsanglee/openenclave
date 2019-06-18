@@ -69,29 +69,20 @@ ssize_t ve_write(int fd, const void* buf, size_t count);
 
 void ve_debug(const char* str);
 
-OE_INLINE int ve_recv_n(int fd, void* buf, size_t count, bool* eof)
+OE_INLINE int ve_recv_n(int fd, void* buf, size_t count)
 {
     int ret = -1;
     uint8_t* p = (uint8_t*)buf;
     size_t n = count;
 
-    if (eof)
-        *eof = false;
-
-    if (fd < 0 || !buf || !eof)
+    if (fd < 0 || !buf)
         goto done;
 
     while (n > 0)
     {
         ssize_t r = ve_read(fd, p, n);
 
-        if (r == 0)
-        {
-            *eof = true;
-            goto done;
-        }
-
-        if (r < 0)
+        if (r <= 0)
             goto done;
 
         p += r;
@@ -158,18 +149,15 @@ done:
     return ret;
 }
 
-OE_INLINE int ve_recv_msg(int fd, ve_msg_type_t* type, size_t* size, bool* eof)
+OE_INLINE int ve_recv_msg(int fd, ve_msg_type_t* type, size_t* size)
 {
     int ret = -1;
     ve_msg_t msg;
 
-    if (eof)
-        *eof = false;
-
-    if (!type || !size || !eof)
+    if (!type || !size)
         goto done;
 
-    if (ve_recv_n(fd, &msg, sizeof(ve_msg_t), eof) != 0)
+    if (ve_recv_n(fd, &msg, sizeof(ve_msg_t)) != 0)
         goto done;
 
     if (msg.magic != VE_MSG_MAGIC)
@@ -191,19 +179,12 @@ OE_INLINE int ve_recv_msg_by_type(
     int fd,
     ve_msg_type_t type,
     void* data,
-    size_t size,
-    bool* eof)
+    size_t size)
 {
     int ret = -1;
     ve_msg_t msg;
 
-    if (eof)
-        *eof = false;
-
-    if (!eof)
-        goto done;
-
-    if (ve_recv_n(fd, &msg, sizeof(ve_msg_t), eof) != 0)
+    if (ve_recv_n(fd, &msg, sizeof(ve_msg_t)) != 0)
         goto done;
 
     if (msg.magic != VE_MSG_MAGIC)
@@ -212,7 +193,7 @@ OE_INLINE int ve_recv_msg_by_type(
     if (msg.type != type || msg.size != size)
         goto done;
 
-    if (ve_recv_n(fd, data, size, eof) != 0)
+    if (ve_recv_n(fd, data, size) != 0)
         goto done;
 
     ret = 0;

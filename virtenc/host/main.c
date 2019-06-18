@@ -47,9 +47,8 @@ static int _init_child(int child_fd, int child_sock)
     /* Test the socket connection between child and parent. */
     {
         int sock = -1;
-        bool eof;
 
-        if (ve_recv_n(globals.sock, &sock, sizeof(sock), &eof) != 0)
+        if (ve_recv_n(globals.sock, &sock, sizeof(sock)) != 0)
             err("init failed: read of sock failed");
 
         if (sock != child_sock)
@@ -128,14 +127,13 @@ int _terminate_child(void)
     ve_msg_terminate_in_t in;
     ve_msg_terminate_out_t out;
     const ve_msg_type_t type = VE_MSG_TERMINATE;
-    bool eof;
 
     in.status = 0;
 
     if (ve_send_msg(globals.sock, type, &in, sizeof(in)) != 0)
         goto done;
 
-    if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out), &eof) != 0)
+    if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out)) != 0)
         goto done;
 
     printf("terminate response: ret=%d\n", out.ret);
@@ -152,7 +150,6 @@ int _add_child_thread(int tcs)
     ve_msg_add_thread_in_t in;
     ve_msg_add_thread_out_t out;
     const ve_msg_type_t type = VE_MSG_ADD_THREAD;
-    bool eof;
     int socks[2] = {-1, -1};
     extern int send_fd(int sock, int fd);
 
@@ -172,16 +169,15 @@ int _add_child_thread(int tcs)
     {
         const uint32_t ACK = 0xACACACAC;
         uint32_t ack;
-        bool eof;
 
-        if (ve_recv_n(socks[0], &ack, sizeof(ack), &eof) != 0)
+        if (ve_recv_n(socks[0], &ack, sizeof(ack)) != 0)
             err("cannot read ack");
 
         if (ack != ACK)
             err("bad ack");
     }
 
-    if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out), &eof) != 0)
+    if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out)) != 0)
         goto done;
 
     if (globals.num_threads == MAX_THREADS)
