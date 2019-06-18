@@ -242,7 +242,7 @@ int main(int argc, const char* argv[])
     if ((pid = _exec(argv[1])) == -1)
         err("failed to execute %s", argv[1]);
 
-    /* Add a thread to the child process. */
+    /* Add threads to the child process. */
     _add_child_thread(0);
     _add_child_thread(1);
     _add_child_thread(2);
