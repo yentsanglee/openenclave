@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #ifndef _VE_MSG_H
 #define _VE_MSG_H
 
@@ -39,11 +42,6 @@ typedef struct _ve_msg_init_in
     /* Child's end of the socket pair that the parent created. */
     int sock;
 } ve_msg_init_in_t;
-
-typedef struct _ve_msg_init_out
-{
-    int ret;
-} ve_msg_init_out_t;
 
 typedef struct _ve_msg_terminate_in
 {

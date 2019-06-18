@@ -22,7 +22,7 @@ ssize_t ve_write(int fd, const void* buf, size_t count)
 
 void ve_debug(const char* str)
 {
-    ve_print_str(str);
+    ve_print(str);
     ve_print_nl();
 }
 
@@ -46,7 +46,7 @@ static int _handle_msg_terminate(size_t size, bool* eof)
     if (ve_send_msg(globals.sock, type, &out, sizeof(out)) != 0)
         goto done;
 
-    ve_print_str("enclave: terminated\n");
+    ve_print("enclave: terminated\n");
     ve_exit(in.status);
 
     ret = 0;
@@ -70,22 +70,6 @@ static int _handle_msg_new_thread(size_t size, bool* eof)
     if (ve_recv_n(globals.sock, &in, sizeof(in), eof) != 0)
         goto done;
 
-#if 0
-    {
-        int retval;
-        struct ve_strrecvfd buf;
-
-        if ((retval = ve_ioctl(OE_STDIN_FILENO, VE_I_RECVFD, &buf)) != 0)
-        {
-            ve_print_str("ve_ioctl failed\n");
-            goto done;
-        }
-
-        ve_print_str("fd="); ve_print_int(buf.fd); ve_print_nl();
-        ve_print_str("retval="); ve_print_int(retval); ve_print_nl();
-    }
-#endif
-
     out.ret = 0;
 
     if (ve_send_msg(globals.sock, type, &out, sizeof(out)) != 0)
@@ -103,7 +87,6 @@ int ve_handle_init(void)
     const int sin = OE_STDIN_FILENO;
     const ve_msg_type_t type = VE_MSG_INIT;
     ve_msg_init_in_t in;
-    ve_msg_init_out_t out;
     bool eof;
 
     if (ve_recv_msg_by_type(sin, type, &in, sizeof(in), &eof) != 0)
@@ -112,11 +95,6 @@ int ve_handle_init(void)
     globals.sock = in.sock;
 
     if (ve_send_n(globals.sock, &in.sock, sizeof(in.sock)) != 0)
-        goto done;
-
-    out.ret = 0;
-
-    if (ve_send_msg(OE_STDOUT_FILENO, type, &out, sizeof(out)) != 0)
         goto done;
 
     ret = 0;

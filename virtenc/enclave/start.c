@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include "exit.h"
 #include "globals.h"
 #include "msg.h"
@@ -22,11 +25,11 @@ void _start()
 
     /* Wait here to be initialized and to receive the socket. */
     if (ve_handle_init() != 0)
-        ve_put_err("ve_handle_init() failed");
+        ve_print_err("ve_handle_init() failed");
 
     /* Handle messages over socket channel. */
     if (ve_handle_messages() != 0)
-        ve_put_err("ve_handle_message() failed");
+        ve_print_err("ve_handle_message() failed");
 
     ve_call_fini_functions();
     ve_exit(0);

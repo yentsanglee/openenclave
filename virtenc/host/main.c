@@ -32,12 +32,11 @@ static void err(const char* fmt, ...)
     exit(1);
 }
 
-pid_t exec(const char* path, int fds[2])
+pid_t exec(const char* path, int* child_fd)
 {
     pid_t ret = -1;
     pid_t pid;
-    int stdout_pipe[2]; /* child's stdout pipe */
-    int stdin_pipe[2];  /* child's stdin pipe */
+    int stdin_pipe[2]; /* child's stdin pipe */
     int socks[2];
 
     if (socketpair(AF_LOCAL, SOCK_STREAM, 0, socks) == -1)
@@ -47,9 +46,6 @@ pid_t exec(const char* path, int fds[2])
         goto done;
 
     if (access(path, X_OK) != 0)
-        goto done;
-
-    if (pipe(stdout_pipe) == -1)
         goto done;
 
     if (pipe(stdin_pipe) == -1)
@@ -63,10 +59,6 @@ pid_t exec(const char* path, int fds[2])
     /* If child. */
     if (pid == 0)
     {
-        dup2(stdout_pipe[1], STDOUT_FILENO);
-        close(stdout_pipe[0]);
-        close(socks[0]);
-
         dup2(stdin_pipe[0], STDIN_FILENO);
         close(stdin_pipe[1]);
 
@@ -77,11 +69,9 @@ pid_t exec(const char* path, int fds[2])
     }
 
     close(socks[1]);
-    close(stdout_pipe[1]);
     close(stdin_pipe[0]);
 
-    fds[0] = stdout_pipe[0];
-    fds[1] = stdin_pipe[1];
+    *child_fd = stdin_pipe[1];
 
     globals.sock = socks[0];
     globals.child_sock = socks[1];
@@ -92,20 +82,15 @@ done:
     return ret;
 }
 
-int ve_init_child(int fds[2])
+int ve_init_child(int child_fd)
 {
     int ret = -1;
     ve_msg_init_in_t in;
-    ve_msg_init_out_t out;
     const ve_msg_type_t type = VE_MSG_INIT;
-    bool eof;
 
     in.sock = globals.child_sock;
 
-    if (ve_send_msg(fds[1], type, &in, sizeof(in)) != 0)
-        goto done;
-
-    if (ve_recv_msg_by_type(fds[0], type, &out, sizeof(out), &eof) != 0)
+    if (ve_send_msg(child_fd, type, &in, sizeof(in)) != 0)
         goto done;
 
     /* Test the socket connection between child and parent. */
@@ -118,9 +103,9 @@ int ve_init_child(int fds[2])
 
         if (sock != globals.child_sock)
             err("init failed: sock confirm failed");
-    }
 
-    printf("init response: ret=%d\n", out.ret);
+        printf("sock=%d\n", sock);
+    }
 
     ret = 0;
 
@@ -201,7 +186,7 @@ int main(int argc, const char* argv[])
 {
     arg0 = argv[0];
     pid_t pid;
-    int fds[2];
+    int child_fd;
 
     if (argc != 2)
     {
@@ -209,14 +194,14 @@ int main(int argc, const char* argv[])
         exit(1);
     }
 
-    if ((pid = exec(argv[1], fds)) == -1)
+    if ((pid = exec(argv[1], &child_fd)) == -1)
     {
         fprintf(stderr, "%s: failed to execute %s\n", argv[0], argv[1]);
         exit(1);
     }
 
     /* Initialize the child process. */
-    ve_init_child(fds);
+    ve_init_child(child_fd);
 
     ve_msg_new_thread(0);
 

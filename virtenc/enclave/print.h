@@ -10,45 +10,46 @@
 #include "string.h"
 #include "syscall.h"
 
-OE_INLINE void ve_print_str(const char* s)
+OE_INLINE void ve_print(const char* s)
 {
-    ve_syscall(OE_SYS_write, OE_STDERR_FILENO, (long)s, ve_strlen(s));
+    ve_syscall(OE_SYS_write, OE_STDOUT_FILENO, (long)s, ve_strlen(s));
 }
 
 OE_INLINE void ve_print_nl(void)
 {
     const char nl = '\n';
-    ve_syscall(OE_SYS_write, OE_STDERR_FILENO, (long)&nl, 1);
+    ve_syscall(OE_SYS_write, OE_STDOUT_FILENO, (long)&nl, 1);
 }
 
 OE_INLINE void ve_print_oct(uint64_t x)
 {
     ve_intstr_buf_t buf;
-    ve_print_str(ve_uint64_octstr(&buf, x, NULL));
+    ve_print(ve_uint64_octstr(&buf, x, NULL));
 }
 
 OE_INLINE void ve_print_uint(uint64_t x)
 {
     ve_intstr_buf_t buf;
-    ve_print_str(ve_uint64_decstr(&buf, x, NULL));
+    ve_print(ve_uint64_decstr(&buf, x, NULL));
 }
 
 OE_INLINE void ve_print_int(int64_t x)
 {
     ve_intstr_buf_t buf;
-    ve_print_str(ve_int64_decstr(&buf, x, NULL));
+    ve_print(ve_int64_decstr(&buf, x, NULL));
 }
 
 OE_INLINE void ve_print_hex(uint64_t x)
 {
     ve_intstr_buf_t buf;
-    ve_print_str(ve_uint64_hexstr(&buf, x, NULL));
+    ve_print(ve_uint64_hexstr(&buf, x, NULL));
 }
 
-OE_INLINE void ve_put_err(const char* msg)
+OE_INLINE void ve_print_err(const char* s)
 {
-    ve_print_str(msg);
-    ve_print_nl();
+    const char nl = '\n';
+    ve_syscall(OE_SYS_write, OE_STDERR_FILENO, (long)s, ve_strlen(s));
+    ve_syscall(OE_SYS_write, OE_STDERR_FILENO, (long)&nl, 1);
     ve_exit(1);
 }
 
