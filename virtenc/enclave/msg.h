@@ -5,4 +5,6 @@
 
 int ve_msg_print(const char* data);
 
+int ve_handle_message(void);
+
 #endif /* _VE_ENCLAVE_MSG_H */

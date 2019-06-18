@@ -8,12 +8,13 @@
 
 typedef enum _ve_msg_type
 {
-    VE_MSG_PRINT_IN,
-    VE_MSG_PRINT_OUT,
+    VE_MSG_PRINT,
+    VE_MSG_PING,
+    VE_MSG_TERMINATE,
 } ve_msg_type_t;
 
-#define __VE_MSG_MIN VE_MSG_PRINT_IN
-#define __VE_MSG_MAX VE_MSG_PRINT_OUT
+#define __VE_MSG_MIN VE_MSG_PRINT
+#define __VE_MSG_MAX VE_MSG_TERMINATE
 
 typedef struct _ve_msg
 {
@@ -32,9 +33,31 @@ typedef struct _ve_msg_print_out
     int ret;
 } ve_msg_print_out_t;
 
+typedef struct _ve_msg_ping_in
+{
+    size_t count;
+} ve_msg_ping_in_t;
+
+typedef struct _ve_msg_ping_out
+{
+    size_t count;
+} ve_msg_ping_out_t;
+
+typedef struct _ve_msg_terminate_in
+{
+    int status;
+} ve_msg_terminate_in_t;
+
+typedef struct _ve_msg_terminate_out
+{
+    int ret;
+} ve_msg_terminate_out_t;
+
 ssize_t ve_read(int fd, void* buf, size_t count);
 
 ssize_t ve_write(int fd, const void* buf, size_t count);
+
+void ve_debug(const char* str);
 
 OE_INLINE int ve_recv_n(int fd, void* buf, size_t count, bool* eof)
 {
@@ -167,7 +190,7 @@ OE_INLINE int ve_recv_msg_by_type(
     if (eof)
         *eof = false;
 
-    if (!type || !size || !eof)
+    if (!eof)
         goto done;
 
     if (ve_recv_n(fd, &msg, sizeof(ve_msg_t), eof) != 0)

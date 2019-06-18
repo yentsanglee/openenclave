@@ -73,11 +73,12 @@ done:
     return ret;
 }
 
-int handle_print_in(int fds[2], size_t size, bool* eof)
+int handle_print(int fds[2], size_t size, bool* eof)
 {
     int ret = -1;
     ve_msg_print_in_t* in = NULL;
     ve_msg_print_out_t out;
+    const ve_msg_type_t type = VE_MSG_PRINT;
 
     if (eof)
         *eof = true;
@@ -93,7 +94,7 @@ int handle_print_in(int fds[2], size_t size, bool* eof)
 
     out.ret = (write(OE_STDOUT_FILENO, in->data, size) == -1) ? -1 : 0;
 
-    if (ve_send_msg(fds[1], VE_MSG_PRINT_OUT, &out, sizeof(out)) != 0)
+    if (ve_send_msg(fds[1], type, &out, sizeof(out)) != 0)
         goto done;
 
     ret = 0;
@@ -127,9 +128,9 @@ void handle_messages(int fds[2])
 
         switch (type)
         {
-            case VE_MSG_PRINT_IN:
+            case VE_MSG_PRINT:
             {
-                if (handle_print_in(fds, size, &eof) != 0)
+                if (handle_print(fds, size, &eof) != 0)
                 {
                     if (eof)
                     {
@@ -137,7 +138,7 @@ void handle_messages(int fds[2])
                         return;
                     }
 
-                    err("handle_print_in() failed");
+                    err("handle_print() failed");
                 }
                 break;
             }
@@ -147,6 +148,54 @@ void handle_messages(int fds[2])
             }
         }
     }
+}
+
+int ve_msg_ping(int fds[2])
+{
+    int ret = -1;
+    ve_msg_ping_in_t in;
+    ve_msg_ping_out_t out;
+    const ve_msg_type_t type = VE_MSG_PING;
+    bool eof;
+
+    in.count = 7;
+
+    if (ve_send_msg(fds[1], type, &in, sizeof(in)) != 0)
+        goto done;
+
+    if (ve_recv_msg_by_type(fds[0], type, &out, sizeof(out), &eof) != 0)
+        goto done;
+
+    printf("ping response: count=%zu\n", out.count);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int ve_msg_terminate(int fds[2])
+{
+    int ret = -1;
+    ve_msg_terminate_in_t in;
+    ve_msg_terminate_out_t out;
+    const ve_msg_type_t type = VE_MSG_TERMINATE;
+    bool eof;
+
+    in.status = 0;
+
+    if (ve_send_msg(fds[1], type, &in, sizeof(in)) != 0)
+        goto done;
+
+    if (ve_recv_msg_by_type(fds[0], type, &out, sizeof(out), &eof) != 0)
+        goto done;
+
+    printf("terminate response: ret=%d\n", out.ret);
+
+    ret = 0;
+
+done:
+    return ret;
 }
 
 int main(int argc, const char* argv[])
@@ -167,7 +216,8 @@ int main(int argc, const char* argv[])
         exit(1);
     }
 
-    handle_messages(fds);
+    ve_msg_ping(fds);
+    ve_msg_terminate(fds);
 
     return 0;
 }

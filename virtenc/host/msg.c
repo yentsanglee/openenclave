@@ -11,3 +11,8 @@ ssize_t ve_write(int fd, const void* buf, size_t count)
 {
     return write(fd, buf, count);
 }
+
+void ve_debug(const char* str)
+{
+    puts(str);
+}
