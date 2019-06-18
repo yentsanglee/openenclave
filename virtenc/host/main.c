@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include <openenclave/bits/defs.h>
 #include <openenclave/internal/syscall/unistd.h>
 #include "../common/msg.h"
@@ -89,83 +92,6 @@ done:
     return ret;
 }
 
-int handle_print(int fds[2], size_t size, bool* eof)
-{
-    int ret = -1;
-    ve_msg_print_in_t* in = NULL;
-    ve_msg_print_out_t out;
-    const ve_msg_type_t type = VE_MSG_PRINT;
-
-    if (eof)
-        *eof = true;
-
-    if (!eof)
-        goto done;
-
-    if (!(in = malloc(size)))
-        goto done;
-
-    if (ve_recv_n(fds[0], in, size, eof) != 0)
-        goto done;
-
-    out.ret = (write(OE_STDOUT_FILENO, in->data, size) == -1) ? -1 : 0;
-
-    if (ve_send_msg(fds[1], type, &out, sizeof(out)) != 0)
-        goto done;
-
-    ret = 0;
-
-done:
-
-    if (in)
-        free(in);
-
-    return ret;
-}
-
-void handle_messages(int fds[2])
-{
-    for (;;)
-    {
-        ve_msg_type_t type;
-        size_t size;
-        bool eof;
-
-        if (ve_recv_msg(fds[0], &type, &size, &eof) != 0)
-        {
-            if (eof)
-            {
-                printf("enclave exited (1)\n");
-                return;
-            }
-
-            err("ve_recv_msg() failed");
-        }
-
-        switch (type)
-        {
-            case VE_MSG_PRINT:
-            {
-                if (handle_print(fds, size, &eof) != 0)
-                {
-                    if (eof)
-                    {
-                        printf("enclave exited (2)\n");
-                        return;
-                    }
-
-                    err("handle_print() failed");
-                }
-                break;
-            }
-            default:
-            {
-                err("unhandled: %u", type);
-            }
-        }
-    }
-}
-
 int ve_init_child(int fds[2])
 {
     int ret = -1;
@@ -202,7 +128,7 @@ done:
     return ret;
 }
 
-int ve_terminate_child(int fds[2])
+int ve_terminate_child(void)
 {
     int ret = -1;
     ve_msg_terminate_in_t in;
@@ -212,10 +138,10 @@ int ve_terminate_child(int fds[2])
 
     in.status = 0;
 
-    if (ve_send_msg(fds[1], type, &in, sizeof(in)) != 0)
+    if (ve_send_msg(globals.sock, type, &in, sizeof(in)) != 0)
         goto done;
 
-    if (ve_recv_msg_by_type(fds[0], type, &out, sizeof(out), &eof) != 0)
+    if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out), &eof) != 0)
         goto done;
 
     printf("terminate response: ret=%d\n", out.ret);
@@ -226,7 +152,7 @@ done:
     return ret;
 }
 
-int ve_msg_new_thread(int fds[2], int tcs)
+int ve_msg_new_thread(int tcs)
 {
     int ret = -1;
     ve_msg_new_thread_in_t in;
@@ -236,7 +162,7 @@ int ve_msg_new_thread(int fds[2], int tcs)
 
     in.tcs = tcs;
 
-    if (ve_send_msg(fds[1], type, &in, sizeof(in)) != 0)
+    if (ve_send_msg(globals.sock, type, &in, sizeof(in)) != 0)
         goto done;
 
 #if 0
@@ -260,7 +186,7 @@ printf("socks[1]=%d\n", socks[1]);
     }
 #endif
 
-    if (ve_recv_msg_by_type(fds[0], type, &out, sizeof(out), &eof) != 0)
+    if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out), &eof) != 0)
         goto done;
 
     printf("new_thread response: ret=%d\n", out.ret);
@@ -292,10 +218,10 @@ int main(int argc, const char* argv[])
     /* Initialize the child process. */
     ve_init_child(fds);
 
-    ve_msg_new_thread(fds, 0);
+    ve_msg_new_thread(0);
 
     /* Terminate the child process. */
-    ve_terminate_child(fds);
+    ve_terminate_child();
 
     return 0;
 }
