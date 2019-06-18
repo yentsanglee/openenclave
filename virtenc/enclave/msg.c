@@ -113,7 +113,7 @@ done:
     return ret;
 }
 
-int ve_handle_message(void)
+int ve_handle_messages(void)
 {
     int ret = -1;
 
