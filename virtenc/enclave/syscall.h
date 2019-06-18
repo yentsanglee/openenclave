@@ -10,4 +10,6 @@
 
 long ve_syscall(long number, ...);
 
+long ve_syscall2(long number, long x1, long x2);
+
 #endif /* _VE_SYSCALL_H */

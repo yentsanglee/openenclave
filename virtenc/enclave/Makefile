@@ -27,6 +27,9 @@ SOURCES += ioctl.c
 SOURCES += recvfd.c
 SOURCES += socket.c
 SOURCES += close.c
+SOURCES += clone.c
+SOURCES += sleep.c
+SOURCES += nanosleep.c
 
 all:
 	gcc -o main $(CFLAGS) $(INCLUDES) $(LDFLAG) $(SOURCES)

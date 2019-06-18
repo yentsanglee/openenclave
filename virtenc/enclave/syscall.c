@@ -135,3 +135,8 @@ long ve_syscall(long number, ...)
 
     return ret;
 }
+
+long ve_syscall2(long number, long x1, long x2)
+{
+    return _syscall2(number, x1, x2);
+}
