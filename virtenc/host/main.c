@@ -12,6 +12,7 @@
 #include <stropts.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include "globals.h"
 
@@ -30,56 +31,6 @@ static void err(const char* fmt, ...)
     va_end(ap);
     fprintf(stderr, "\n");
     exit(1);
-}
-
-pid_t exec(const char* path, int* child_fd)
-{
-    pid_t ret = -1;
-    pid_t pid;
-    int stdin_pipe[2]; /* child's stdin pipe */
-    int socks[2];
-
-    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, socks) == -1)
-        goto done;
-
-    if (!path)
-        goto done;
-
-    if (access(path, X_OK) != 0)
-        goto done;
-
-    if (pipe(stdin_pipe) == -1)
-        goto done;
-
-    pid = fork();
-
-    if (pid < 0)
-        goto done;
-
-    /* If child. */
-    if (pid == 0)
-    {
-        dup2(stdin_pipe[0], STDIN_FILENO);
-        close(stdin_pipe[1]);
-
-        char* argv[2] = {(char*)path, NULL};
-
-        execv(path, argv);
-        abort();
-    }
-
-    close(socks[1]);
-    close(stdin_pipe[0]);
-
-    *child_fd = stdin_pipe[1];
-
-    globals.sock = socks[0];
-    globals.child_sock = socks[1];
-
-    ret = pid;
-
-done:
-    return ret;
 }
 
 int ve_init_child(int child_fd)
@@ -110,6 +61,65 @@ int ve_init_child(int child_fd)
     ret = 0;
 
 done:
+    return ret;
+}
+
+pid_t exec(const char* path)
+{
+    pid_t ret = -1;
+    pid_t pid;
+    int fds[2] = {-1, -1};
+    int socks[2] = {-1, -1};
+
+    if (!path || access(path, X_OK) != 0)
+        goto done;
+
+    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, socks) == -1)
+        goto done;
+
+    if (pipe(fds) == -1)
+        goto done;
+
+    if ((pid = fork()) < 0)
+        goto done;
+
+    /* If child. */
+    if (pid == 0)
+    {
+        dup2(fds[0], STDIN_FILENO);
+        close(fds[0]);
+        close(fds[1]);
+        close(socks[0]);
+
+        char* argv[2] = {(char*)path, NULL};
+        execv(path, argv);
+
+        fprintf(stderr, "%s: execv() failed\n", arg0);
+        abort();
+    }
+
+    globals.sock = socks[0];
+    globals.child_sock = socks[1];
+
+    if (ve_init_child(fds[1]) != 0)
+        goto done;
+
+    ret = pid;
+
+done:
+
+    if (fds[0] != -1)
+        close(fds[0]);
+
+    if (fds[1] != -1)
+        close(fds[1]);
+
+    if (socks[1] != -1)
+        close(socks[1]);
+
+    if (ret == -1 && socks[0] != -1)
+        close(socks[0]);
+
     return ret;
 }
 
@@ -182,11 +192,33 @@ done:
     return ret;
 }
 
+static int _get_child_exit_status(int pid, int* status_out)
+{
+    int ret = -1;
+    int r;
+    int status;
+
+    *status_out = 0;
+
+    while ((r = waitpid(pid, &status, 0)) == -1 && errno == EINTR)
+        ;
+
+    if (r != pid)
+        goto done;
+
+    *status_out = WEXITSTATUS(status);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 int main(int argc, const char* argv[])
 {
     arg0 = argv[0];
     pid_t pid;
-    int child_fd;
+    int status;
 
     if (argc != 2)
     {
@@ -194,19 +226,19 @@ int main(int argc, const char* argv[])
         exit(1);
     }
 
-    if ((pid = exec(argv[1], &child_fd)) == -1)
-    {
-        fprintf(stderr, "%s: failed to execute %s\n", argv[0], argv[1]);
-        exit(1);
-    }
-
-    /* Initialize the child process. */
-    ve_init_child(child_fd);
+    if ((pid = exec(argv[1])) == -1)
+        err("failed to execute %s", argv[1]);
 
     ve_msg_new_thread(0);
 
     /* Terminate the child process. */
     ve_terminate_child();
+
+    /* Wait for child to exit. */
+    if (_get_child_exit_status(pid, &status) != 0)
+        err("failed to get child exit status");
+
+    printf("child exit status: %d\n", status);
 
     return 0;
 }
