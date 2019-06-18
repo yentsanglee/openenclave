@@ -21,7 +21,7 @@ const char* arg0;
 globals_t globals;
 
 OE_PRINTF_FORMAT(1, 2)
-static void err(const char* fmt, ...)
+void err(const char* fmt, ...)
 {
     va_list ap;
 
@@ -33,13 +33,13 @@ static void err(const char* fmt, ...)
     exit(1);
 }
 
-int ve_init_child(int child_fd)
+static int _init_child(int child_fd, int child_sock)
 {
     int ret = -1;
     ve_msg_init_in_t in;
     const ve_msg_type_t type = VE_MSG_INIT;
 
-    in.sock = globals.child_sock;
+    in.sock = child_sock;
 
     if (ve_send_msg(child_fd, type, &in, sizeof(in)) != 0)
         goto done;
@@ -52,7 +52,7 @@ int ve_init_child(int child_fd)
         if (ve_recv_n(globals.sock, &sock, sizeof(sock), &eof) != 0)
             err("init failed: read of sock failed");
 
-        if (sock != globals.child_sock)
+        if (sock != child_sock)
             err("init failed: sock confirm failed");
 
         printf("sock=%d\n", sock);
@@ -64,7 +64,7 @@ done:
     return ret;
 }
 
-pid_t exec(const char* path)
+static pid_t _exec(const char* path)
 {
     pid_t ret = -1;
     pid_t pid;
@@ -99,9 +99,8 @@ pid_t exec(const char* path)
     }
 
     globals.sock = socks[0];
-    globals.child_sock = socks[1];
 
-    if (ve_init_child(fds[1]) != 0)
+    if (_init_child(fds[1], socks[1]) != 0)
         goto done;
 
     ret = pid;
@@ -123,7 +122,7 @@ done:
     return ret;
 }
 
-int ve_terminate_child(void)
+int _terminate_child(void)
 {
     int ret = -1;
     ve_msg_terminate_in_t in;
@@ -147,48 +146,65 @@ done:
     return ret;
 }
 
-int ve_msg_new_thread(int tcs)
+int _add_child_thread(int tcs)
 {
     int ret = -1;
-    ve_msg_new_thread_in_t in;
-    ve_msg_new_thread_out_t out;
-    const ve_msg_type_t type = VE_MSG_NEW_THREAD;
+    ve_msg_add_thread_in_t in;
+    ve_msg_add_thread_out_t out;
+    const ve_msg_type_t type = VE_MSG_ADD_THREAD;
     bool eof;
+    int socks[2] = {-1, -1};
+    extern int send_fd(int sock, int fd);
 
     in.tcs = tcs;
 
     if (ve_send_msg(globals.sock, type, &in, sizeof(in)) != 0)
         goto done;
 
-#if 0
-    int socks[2];
-
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, socks) == -1)
         goto done;
 
-printf("socks[0]=%d\n", socks[0]);
-printf("socks[1]=%d\n", socks[1]);
-
     /* Send the fd to the enclave */
-    {
-        int retval;
+    if (send_fd(globals.sock, socks[1]) != 0)
+        err("send_fd() failed");
 
-        if ((retval = ioctl(fds[1], I_SENDFD, socks[1])) == -1)
-        {
-            printf("*** ioctl(): retval=%d errno=%d\n", retval, errno);
-            goto done;
-        }
+    /* Receive acknowlegement for the sendfd operation. */
+    {
+        const uint32_t ACK = 0xACACACAC;
+        uint32_t ack;
+        bool eof;
+
+        if (ve_recv_n(socks[0], &ack, sizeof(ack), &eof) != 0)
+            err("cannot read ack");
+
+        if (ack != ACK)
+            err("bad ack");
     }
-#endif
 
     if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out), &eof) != 0)
         goto done;
 
-    printf("new_thread response: ret=%d\n", out.ret);
+    if (globals.num_threads == MAX_THREADS)
+        goto done;
+
+    /* ATTN: need locking */
+    globals.threads[globals.num_threads].sock = socks[0];
+    globals.threads[globals.num_threads].tcs = tcs;
+    globals.num_threads++;
+    socks[0] = -1;
+
+    printf("add_thread response: ret=%d\n", out.ret);
 
     ret = 0;
 
 done:
+
+    if (socks[0] != -1)
+        close(socks[0]);
+
+    if (socks[1] != -1)
+        close(socks[1]);
+
     return ret;
 }
 
@@ -226,13 +242,17 @@ int main(int argc, const char* argv[])
         exit(1);
     }
 
-    if ((pid = exec(argv[1])) == -1)
+    /* Create the child process. */
+    if ((pid = _exec(argv[1])) == -1)
         err("failed to execute %s", argv[1]);
 
-    ve_msg_new_thread(0);
+    /* Add a thread to the child process. */
+    _add_child_thread(0);
+    _add_child_thread(1);
+    _add_child_thread(2);
 
     /* Terminate the child process. */
-    ve_terminate_child();
+    _terminate_child();
 
     /* Wait for child to exit. */
     if (_get_child_exit_status(pid, &status) != 0)

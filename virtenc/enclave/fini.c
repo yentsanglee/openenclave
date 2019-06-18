@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 void ve_call_fini_functions(void)
 {
     void (**fn)(void);

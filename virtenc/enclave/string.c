@@ -172,3 +172,40 @@ const char* ve_int64_decstr(ve_intstr_buf_t* buf, int64_t x, size_t* size)
 
     return p;
 }
+
+void* ve_memset(void* s, int c, size_t n)
+{
+    uint8_t* p = (uint8_t*)s;
+
+    while (n--)
+        *p++ = c;
+
+    return s;
+}
+
+void* ve_memcpy(void* dest, const void* src, size_t n)
+{
+    uint8_t* p = (uint8_t*)dest;
+    const uint8_t* q = (uint8_t*)src;
+
+    while (n--)
+        *p++ = *q++;
+
+    return dest;
+}
+
+int ve_memcmp(const void* s1, const void* s2, size_t n)
+{
+    const unsigned char* p = (const unsigned char*)s1;
+    const unsigned char* q = (const unsigned char*)s2;
+
+    while (n--)
+    {
+        int r = *p++ - *q++;
+
+        if (r)
+            return r;
+    }
+
+    return 0;
+}

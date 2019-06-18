@@ -107,7 +107,7 @@ _syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         case OE_SYS_ioctl:
             return _syscall6(n, x1, x2, x3, x4, x5, x6);
         default:
-            return -1;
+            return _syscall6(n, x1, x2, x3, x4, x5, x6);
     }
 }
 

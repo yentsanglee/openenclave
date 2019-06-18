@@ -39,6 +39,13 @@ OE_INLINE void ve_print_int(int64_t x)
     ve_print(ve_int64_decstr(&buf, x, NULL));
 }
 
+OE_INLINE void ve_print_int_msg(const char* msg, int64_t x)
+{
+    ve_print(msg);
+    ve_print_int(x);
+    ve_print_nl();
+}
+
 OE_INLINE void ve_print_hex(uint64_t x)
 {
     ve_intstr_buf_t buf;

@@ -3,6 +3,7 @@
 
 #include "msg.h"
 #include <openenclave/internal/syscall/unistd.h>
+#include "close.h"
 #include "exit.h"
 #include "globals.h"
 #include "ioctl.h"
@@ -55,12 +56,15 @@ done:
     return ret;
 }
 
-static int _handle_msg_new_thread(size_t size, bool* eof)
+static int _handle_msg_add_thread(size_t size, bool* eof)
 {
     int ret = -1;
-    ve_msg_new_thread_in_t in;
-    ve_msg_new_thread_out_t out;
-    const ve_msg_type_t type = VE_MSG_NEW_THREAD;
+    ve_msg_add_thread_in_t in;
+    ve_msg_add_thread_out_t out;
+    const ve_msg_type_t type = VE_MSG_ADD_THREAD;
+    extern int ve_recv_fd(int sock);
+    int sock = -1;
+    const uint32_t ACK = 0xACACACAC;
 
     *eof = false;
 
@@ -70,6 +74,30 @@ static int _handle_msg_new_thread(size_t size, bool* eof)
     if (ve_recv_n(globals.sock, &in, sizeof(in), eof) != 0)
         goto done;
 
+    if (globals.num_threads == MAX_THREADS)
+    {
+        if (ve_send_msg(globals.sock, type, &out, sizeof(out)) != 0)
+            goto done;
+
+        out.ret = -1;
+        ret = 0;
+        goto done;
+    }
+
+    /* Receive the socket descriptor from the host. */
+    if ((sock = ve_recv_fd(globals.sock)) < 0)
+        goto done;
+
+    /* Send an acknowledgement to the sendfd operation. */
+    if (ve_send_n(sock, &ACK, sizeof(ACK)) != 0)
+        goto done;
+
+    /* ATTN: need locking */
+    globals.threads[globals.num_threads].sock = sock;
+    globals.threads[globals.num_threads].tcs = in.tcs;
+    globals.num_threads++;
+    sock = -1;
+
     out.ret = 0;
 
     if (ve_send_msg(globals.sock, type, &out, sizeof(out)) != 0)
@@ -78,6 +106,10 @@ static int _handle_msg_new_thread(size_t size, bool* eof)
     ret = 0;
 
 done:
+
+    if (sock != -1)
+        ve_close(sock);
+
     return ret;
 }
 
@@ -124,9 +156,9 @@ int ve_handle_messages(void)
                     goto done;
                 break;
             }
-            case VE_MSG_NEW_THREAD:
+            case VE_MSG_ADD_THREAD:
             {
-                if (_handle_msg_new_thread(size, &eof) != 0)
+                if (_handle_msg_add_thread(size, &eof) != 0)
                     goto done;
                 break;
             }

@@ -14,11 +14,11 @@ typedef enum _ve_msg_type
     VE_MSG_INIT,
     VE_MSG_PRINT,
     VE_MSG_TERMINATE,
-    VE_MSG_NEW_THREAD,
+    VE_MSG_ADD_THREAD,
 } ve_msg_type_t;
 
 #define __VE_MSG_MIN VE_MSG_INIT
-#define __VE_MSG_MAX VE_MSG_NEW_THREAD
+#define __VE_MSG_MAX VE_MSG_ADD_THREAD
 
 typedef struct _ve_msg
 {
@@ -53,15 +53,15 @@ typedef struct _ve_msg_terminate_out
     int ret;
 } ve_msg_terminate_out_t;
 
-typedef struct _ve_msg_new_thread_in
+typedef struct _ve_msg_add_thread_in
 {
     uint32_t tcs;
-} ve_msg_new_thread_in_t;
+} ve_msg_add_thread_in_t;
 
-typedef struct _ve_msg_new_thread_out
+typedef struct _ve_msg_add_thread_out
 {
     int ret;
-} ve_msg_new_thread_out_t;
+} ve_msg_add_thread_out_t;
 
 ssize_t ve_read(int fd, void* buf, size_t count);
 

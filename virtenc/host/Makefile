@@ -10,6 +10,7 @@ CFLAGS += -m64
 
 SOURCES += main.c
 SOURCES += msg.c
+SOURCES += sendfd.c
 
 DEFINES += -DHOST
 
@@ -20,4 +21,4 @@ clean:
 	rm -rf main
 
 run:
-	./main ../enclave/main
+	@ ./main ../enclave/main
