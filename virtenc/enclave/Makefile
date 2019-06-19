@@ -36,10 +36,11 @@ SOURCES += clone.S
 SOURCES += sbrk.c
 SOURCES += start.c
 SOURCES += lock.c
-SOURCES += alloc.c
 SOURCES += put.c
 SOURCES += getpid.c
 SOURCES += gettid.c
+SOURCES += malloc.c
+SOURCES += abort.c
 #SOURCES += clone_sample.c
 
 all:

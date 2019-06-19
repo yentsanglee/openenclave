@@ -3,7 +3,6 @@
 
 #include "msg.h"
 #include <openenclave/internal/syscall/unistd.h>
-#include "alloc.h"
 #include "clone.h"
 #include "close.h"
 #include "exit.h"
@@ -11,6 +10,7 @@
 #include "gettid.h"
 #include "globals.h"
 #include "ioctl.h"
+#include "malloc.h"
 #include "put.h"
 #include "signal.h"
 #include "string.h"
@@ -131,7 +131,7 @@ static int _create_new_thread(thread_arg_t* arg)
     {
         const size_t STACK_ALIGNMENT = 4096;
 
-        if (!(stack = ve_alloc_aligned(arg->stack_size, STACK_ALIGNMENT)))
+        if (!(stack = ve_memalign(STACK_ALIGNMENT, arg->stack_size)))
             goto done;
 
         ve_memset(stack, 0, arg->stack_size);
@@ -139,7 +139,7 @@ static int _create_new_thread(thread_arg_t* arg)
 
     /* Copy the arg into heap memory. */
     {
-        if (!(new_arg = ve_alloc(sizeof(thread_arg_t))))
+        if (!(new_arg = ve_calloc(1, sizeof(thread_arg_t))))
             goto done;
 
         *new_arg = *arg;
