@@ -34,7 +34,7 @@ int child(void* arg)
 OE_ALIGNED(4096)
 uint64_t _stack[STACK_SIZE];
 
-#if 1
+#if 0
 void _start()
 {
     ve_call_init_functions();
