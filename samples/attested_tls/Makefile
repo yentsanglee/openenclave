@@ -6,13 +6,13 @@
 all: build
 
 build:
-	$(MAKE) -C tls_between_enclaves 
+#	$(MAKE) -C tls_between_enclaves
 	$(MAKE) -C tls_between_non_enclave_enclave
 
 clean:
-	$(MAKE) -C tls_between_enclaves clean
+#	$(MAKE) -C tls_between_enclaves clean
 	$(MAKE) -C tls_between_non_enclave_enclave clean
 
 run:
-	$(MAKE) -C tls_between_enclaves run
+#	$(MAKE) -C tls_between_enclaves run
 	$(MAKE) -C tls_between_non_enclave_enclave run

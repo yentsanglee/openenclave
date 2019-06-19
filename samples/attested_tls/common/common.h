@@ -15,3 +15,17 @@
 
 #define CLIENT_PAYLOAD_SIZE strlen(CLIENT_PAYLOAD)
 #define SERVER_PAYLOAD_SIZE strlen(SERVER_PAYLOAD)
+
+typedef enum
+{
+    GETKEY,
+    GETKEYRESPONSE,
+    SENDPAYLOAD
+} PROTOCOL_COMMANDS;
+
+typedef struct
+{
+    PROTOCOL_COMMANDS cmd;
+    size_t payload_size;
+    /* payload_size of bytes follows after the header. */
+} protocol_header;

@@ -56,75 +56,117 @@ done:
     return ret;
 }
 
-// This routine conducts a simple HTTP request/response communication with
-// server
-int communicate_with_server(SSL* ssl)
+int ssl_read_all(SSL* ssl, uint8_t* buf, size_t size)
 {
-    unsigned char buf[200];
-    int ret = 1;
-    int error = 0;
-    int len = 0;
-    int bytes_written = 0;
     int bytes_read = 0;
+    int error;
 
-    // Write an GET request to the server
-    printf(TLS_CLIENT "Write to server-->:\n\n");
-    len = snprintf((char*)buf, sizeof(buf) - 1, CLIENT_PAYLOAD);
-    while ((bytes_written = SSL_write(ssl, buf, (size_t)len)) <= 0)
+    while (bytes_read < size)
+    {
+        int tmp = SSL_read(ssl, buf + bytes_read, size - bytes_read);
+        if (tmp <= 0)
+        {
+            error = SSL_get_error(ssl, tmp);
+            if (error == SSL_ERROR_WANT_READ)
+                continue;
+            printf(TLS_CLIENT "Failed! SSL_read returned %d\n", error);
+            return -1;
+        }
+        bytes_read -= tmp;
+    }
+
+    return 0;
+}
+
+int ssl_write_all(SSL* ssl, const uint8_t* buf, size_t size)
+{
+    int bytes_written;
+    int error;
+
+    while ((bytes_written = SSL_write(ssl, buf, size)) <= 0)
     {
         error = SSL_get_error(ssl, bytes_written);
         if (error == SSL_ERROR_WANT_WRITE)
             continue;
         printf(TLS_CLIENT "Failed! SSL_write returned %d\n", error);
-        ret = bytes_written;
+        return -1;
+    }
+
+    return 0;
+}
+
+int write_key_request(SSL* ssl)
+{
+    protocol_header hdr;
+
+    printf(TLS_CLIENT "Write to server-->:\n\n");
+    hdr.cmd = GETKEY;
+    hdr.payload_size = 0;
+
+    if (ssl_write_all(ssl, (unsigned char*)&hdr, sizeof(hdr)) != 0)
+    {
+        printf(TLS_CLIENT "Failed! ssl_write_all return an error.\n");
+        return -1;
+    }
+
+    printf(TLS_CLIENT "\n\n%zu bytes written\n\n", sizeof(hdr));
+    return 0;
+}
+
+int read_key(SSL* ssl, unsigned char* buf)
+{
+    protocol_header hdr;
+
+    printf(TLS_CLIENT "\n\n<-- Read from server:\n");
+    if (ssl_read_all(ssl, (unsigned char*)&hdr, sizeof(hdr)) != 0)
+    {
+        printf(TLS_CLIENT "Failed! ssl_read_all returned an error.\n");
+        return -1;
+    }
+
+    if (ssl_read_all(ssl, buf, hdr.payload_size) != 0)
+    {
+        printf(TLS_CLIENT "Failed! ssl_read_all returned an error.\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+// This routine conducts a simple protocol for sending client encrypted data
+// to the server. The protocol is the following:
+//      1. Client sends public key request to the enclave server.
+//      2. Enclave generates a private/public key pair and sends the public key
+//      to the client.
+//      3. Client encrypts the client encryption key with the public key and
+//      sends the data + key to server.
+//      4. Server uses the private key to decrypt the encryption key and then
+//      uses that key to decrypt the data.
+int communicate_with_server(SSL* ssl)
+{
+    unsigned char buf[4096];
+    int ret = 1;
+
+    // Step 1: Write public key request.
+    ret = write_key_request(ssl);
+    if (ret != 0)
+    {
+        printf(TLS_CLIENT "Failed! write_key_request returned an error.\n");
         goto done;
     }
 
-    printf(TLS_CLIENT "\n\n%d bytes written\n\n", bytes_written);
-
-    // Read the HTTP response from server
-    printf(TLS_CLIENT "\n\n<-- Read from server:\n");
-    do
+    // Step 2: Client receives public key from server.
+    ret = read_key(ssl, buf);
+    if (ret != 0)
     {
-        len = sizeof(buf) - 1;
-        memset(buf, 0, sizeof(buf));
-        bytes_read = SSL_read(ssl, buf, (size_t)len);
-        if (bytes_read <= 0)
-        {
-            int error = SSL_get_error(ssl, bytes_read);
-            if (error == SSL_ERROR_WANT_READ)
-                continue;
+        printf(TLS_CLIENT "Failed! read_key returned an error.\n");
+        goto done;
+    }
 
-            printf(TLS_CLIENT "Failed! SSL_read returned error=%d\n", error);
-            ret = bytes_read;
-            break;
-        }
+    printf("Printing out the public key: %s\n", buf);
 
-        printf(TLS_CLIENT " %d bytes read\n", bytes_read);
-#ifdef ADD_TEST_CHECKING
-        // check to to see if received payload is expected
-        if ((bytes_read != SERVER_PAYLOAD_SIZE) ||
-            (memcmp(SERVER_PAYLOAD, buf, bytes_read) != 0))
-        {
-            printf(
-                TLS_CLIENT "ERROR: expected reading %lu bytes but only "
-                           "received %d bytes\n",
-                SERVER_PAYLOAD_SIZE,
-                bytes_read);
-            ret = bytes_read;
-            goto done;
-        }
-        else
-        {
-            printf(TLS_CLIENT
-                   " received all the expected data from server\n\n");
-            ret = 0;
-            break;
-        }
-        printf("Verified: the contents of server payload were expected\n\n");
-#endif
-    } while (1);
     ret = 0;
+
 done:
     return ret;
 }

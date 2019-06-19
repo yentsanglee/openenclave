@@ -120,6 +120,216 @@ exit:
     return ret;
 }
 
+int generate_keypair(mbedtls_rsa_context* rsa)
+{
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    int res = -1;
+
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+
+    res = mbedtls_ctr_drbg_seed(
+        &ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    if (res != 0)
+    {
+        printf(TLS_SERVER "Failed to seed mbedtls rng.\n");
+        goto done;
+    }
+
+    res = mbedtls_rsa_gen_key(
+        rsa, mbedtls_ctr_drbg_random, &ctr_drbg, 2048, 65537);
+    if (res != 0)
+    {
+        printf(TLS_SERVER "Failed to generate RSA public/private key pair.\n");
+        goto done;
+    }
+
+    res = 0;
+
+done:
+    mbedtls_entropy_free(&entropy);
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    return res;
+}
+
+int ssl_read_all(mbedtls_ssl_context* ssl, unsigned char* buf, size_t size)
+{
+    size_t bytes_read = 0;
+
+    while (bytes_read < size)
+    {
+        int ret = mbedtls_ssl_read(ssl, buf + bytes_read, size - bytes_read);
+
+        if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
+            ret == MBEDTLS_ERR_SSL_WANT_WRITE)
+            continue;
+
+        if (ret <= 0)
+        {
+            switch (ret)
+            {
+                case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
+                    printf(TLS_SERVER "connection was closed gracefully\n");
+                    return -1;
+
+                case MBEDTLS_ERR_NET_CONN_RESET:
+                    printf(TLS_SERVER "connection was reset by peer\n");
+                    return -1;
+
+                default:
+                    printf(
+                        TLS_SERVER "mbedtls_ssl_read returned -0x%x\n", -ret);
+                    return -1;
+            }
+            return -1;
+        }
+        bytes_read += (size_t)ret;
+    }
+    return 0;
+}
+
+int ssl_write_all(
+    mbedtls_ssl_context* ssl,
+    const unsigned char* buf,
+    size_t size)
+{
+    size_t bytes_written = 0;
+
+    while (bytes_written < size)
+    {
+        int ret =
+            mbedtls_ssl_write(ssl, buf + bytes_written, size - bytes_written);
+        if (ret <= 0)
+        {
+            if (ret == MBEDTLS_ERR_NET_CONN_RESET)
+            {
+                printf(TLS_SERVER "failed\n  ! peer closed the connection\n\n");
+                return -1;
+            }
+            if (ret != MBEDTLS_ERR_SSL_WANT_READ &&
+                ret != MBEDTLS_ERR_SSL_WANT_WRITE)
+            {
+                printf(
+                    TLS_SERVER "failed\n  ! mbedtls_ssl_write returned %d\n\n",
+                    ret);
+                return -1;
+            }
+        }
+        bytes_written += (size_t)ret;
+    }
+
+    return 0;
+}
+
+int handle_get_key(mbedtls_ssl_context* ssl, mbedtls_rsa_context* rsa)
+{
+    protocol_header hdr;
+
+    // Read the GETKEY request from the client.
+    printf(TLS_SERVER "<---- Read from client:\n");
+    if (ssl_read_all(ssl, (unsigned char*)&hdr, sizeof(hdr)) != 0)
+    {
+        printf(TLS_SERVER "ssl_read_all failed!\n");
+        return -1;
+    }
+    printf(TLS_SERVER "<---- read GETKEY request from client\n");
+
+    // Generate the RSA public/private key pair.
+    printf(TLS_SERVER "Generating public/private key pair.\n");
+    mbedtls_rsa_init(rsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+    if (generate_keypair(rsa) != 0)
+    {
+        printf(TLS_SERVER "ERROR: Failed to generate RSA keys.\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+int write_key(mbedtls_ssl_context* ssl, mbedtls_rsa_context* rsa)
+{
+    // First, we need to convert to pk to get the PEM file.
+    mbedtls_pk_context pk;
+    protocol_header hdr;
+    uint8_t send_buf[4096];
+    size_t send_buf_size = sizeof(send_buf) - sizeof(hdr);
+    int ret = -1;
+
+    mbedtls_pk_init(&pk);
+
+    if (mbedtls_pk_setup(&pk, mbedtls_pk_info_from_type(MBEDTLS_PK_RSA)) != 0)
+    {
+        printf(TLS_SERVER "ERROR: Failed to setup pk from rsa context\n");
+        goto done;
+    }
+
+    if (mbedtls_rsa_copy(mbedtls_pk_rsa(pk), rsa) != 0)
+    {
+        printf(TLS_SERVER "ERROR: failed to copy rsa key\n");
+        goto done;
+    }
+
+    if (mbedtls_pk_write_pubkey_pem(
+            &pk, send_buf + sizeof(hdr), send_buf_size) != 0)
+    {
+        printf(TLS_SERVER "ERROR: failed to write public key to PEM\n");
+        goto done;
+    }
+
+    hdr.cmd = GETKEYRESPONSE;
+    hdr.payload_size = strlen((const char*)send_buf + sizeof(hdr)) + 1;
+    memcpy(send_buf, &hdr, sizeof(hdr));
+
+    // Now, we just write the buffer to the client.
+    if (ssl_write_all(ssl, send_buf, sizeof(hdr) + hdr.payload_size) != 0)
+    {
+        printf(TLS_SERVER "ERROR: failed to ssl_write_all.\n");
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+    mbedtls_pk_free(&pk);
+    return ret;
+}
+
+// This routine conducts a simple protocol for sending client encrypted data
+// to the server. The protocol is the following:
+//      1. Client sends public key request to the enclave server.
+//      2. Enclave generates a private/public key pair and sends the public key
+//      to the client.
+//      3. Client encrypts the client encryption key with the public key and
+//      sends the data + key to server.
+//      4. Server uses the private key to decrypt the encryption key and then
+//      uses that key to decrypt the data.
+int handle_communication_protocol(mbedtls_ssl_context* ssl)
+{
+    mbedtls_rsa_context rsa;
+    int ret;
+
+    // Step 1: Get the key request from the client and generate the key pair.
+    if (handle_get_key(ssl, &rsa) != 0)
+    {
+        printf(TLS_SERVER "ERROR: failed to handle_get_key.\n");
+        return -1;
+    }
+
+    // Step 2: Send the public key back to the client.
+    if (write_key(ssl, &rsa) != 0)
+    {
+        printf(TLS_SERVER "ERROR: failed to write_key.\n");
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+    mbedtls_rsa_free(&rsa);
+    return ret;
+}
+
 // This routine was created to demonstrate a simple communication scenario
 // between a TLS client and an TLS server. In a real TLS server app, you
 // definitely will have to do more that just receiving a single message
@@ -181,84 +391,14 @@ waiting_for_connection_request:
 
     printf(TLS_SERVER "mbedtls_ssl_handshake done successfully\n");
 
-    // read client's request
-    printf(TLS_SERVER "<---- Read from client:\n");
-    do
+    // Handle the custom procotol between server and client.
+    if (handle_communication_protocol(ssl) != 0)
     {
-        len = sizeof(buf) - 1;
-        memset(buf, 0, sizeof(buf));
-        ret = mbedtls_ssl_read(ssl, buf, len);
-
-        if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
-            ret == MBEDTLS_ERR_SSL_WANT_WRITE)
-            continue;
-
-        if (ret <= 0)
-        {
-            switch (ret)
-            {
-                case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
-                    printf(TLS_SERVER "connection was closed gracefully\n");
-                    break;
-
-                case MBEDTLS_ERR_NET_CONN_RESET:
-                    printf(TLS_SERVER "connection was reset by peer\n");
-                    break;
-
-                default:
-                    printf(
-                        TLS_SERVER "mbedtls_ssl_read returned -0x%x\n", -ret);
-                    break;
-            }
-            break;
-        }
-
-        len = ret;
-        printf(TLS_SERVER "%d bytes received from client:\n", len);
-
-        // For testing purpose, valdiate received data's content and size
-#ifdef ADD_TEST_CHECKING
-        if ((len != CLIENT_PAYLOAD_SIZE) ||
-            (memcmp(CLIENT_PAYLOAD, buf, len) != 0))
-        {
-            printf(
-                TLS_SERVER
-                "ERROR: expected reading %d bytes but only got %d bytes\n",
-                (int)CLIENT_PAYLOAD_SIZE,
-                len);
-            ret = MBEDTLS_EXIT_FAILURE;
-            goto done;
-        }
-        printf(TLS_SERVER
-               "Verified: the contents of client payload were expected\n\n");
-#endif
-        if (ret == CLIENT_PAYLOAD_SIZE)
-            break;
-    } while (1);
-
-    // Write a response back to the client
-    printf(TLS_SERVER "-----> Write to client:\n");
-    len = snprintf((char*)buf, sizeof(buf) - 1, SERVER_PAYLOAD);
-
-    while ((ret = mbedtls_ssl_write(ssl, buf, len)) <= 0)
-    {
-        if (ret == MBEDTLS_ERR_NET_CONN_RESET)
-        {
-            printf(TLS_SERVER "failed\n  ! peer closed the connection\n\n");
-            goto waiting_for_connection_request;
-        }
-        if (ret != MBEDTLS_ERR_SSL_WANT_READ &&
-            ret != MBEDTLS_ERR_SSL_WANT_WRITE)
-        {
-            printf(
-                TLS_SERVER "failed\n  ! mbedtls_ssl_write returned %d\n\n",
-                ret);
-            goto done;
-        }
+        printf(TLS_SERVER "Failed! handle_communication_protocol failed.\n");
+        goto done;
     }
 
-    len = ret;
-    printf(TLS_SERVER "%d bytes written to client\n\n", len);
+    // Write a close back to the client
     printf(TLS_SERVER "Closing the connection...\n");
     while ((ret = mbedtls_ssl_close_notify(ssl)) < 0)
     {
