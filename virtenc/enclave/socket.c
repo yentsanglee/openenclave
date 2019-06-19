@@ -6,7 +6,6 @@
 #include <openenclave/bits/types.h>
 #include <openenclave/internal/syscall/netinet/in.h>
 #include <openenclave/internal/syscall/sys/socket.h>
-#include "print.h"
 #include "syscall.h"
 
 ssize_t ve_recvmsg(int sockfd, struct ve_msghdr* msg, int flags)

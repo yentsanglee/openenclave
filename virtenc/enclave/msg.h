@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #ifndef _VE_ENCLAVE_MSG_H
 #define _VE_ENCLAVE_MSG_H
 

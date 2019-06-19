@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include "../common/msg.h"
 #include <stdio.h>
 #include <unistd.h>

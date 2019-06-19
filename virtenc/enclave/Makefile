@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
 ROOT = $(CURDIR)/../..
 
 CFLAGS += -Wall
@@ -17,7 +20,6 @@ INCLUDES += -I$(ROOT)/include
 LDFLAGS += =-Wl,-pie
 LDFLAGS += =-Wl,-Bstatic
 
-SOURCES += start.c
 SOURCES += string.c
 SOURCES += init.c
 SOURCES += fini.c
@@ -27,12 +29,22 @@ SOURCES += ioctl.c
 SOURCES += recvfd.c
 SOURCES += socket.c
 SOURCES += close.c
-SOURCES += clone.c
 SOURCES += sleep.c
 SOURCES += nanosleep.c
+SOURCES += globals.c
+SOURCES += clone.S
+SOURCES += sbrk.c
+SOURCES += start.c
+SOURCES += lock.c
+SOURCES += alloc.c
+SOURCES += put.c
+SOURCES += getpid.c
+SOURCES += gettid.c
+#SOURCES += clone_sample.c
 
 all:
 	gcc -o main $(CFLAGS) $(INCLUDES) $(LDFLAG) $(SOURCES)
 
 clean:
 	rm -rf main
+

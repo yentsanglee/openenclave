@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stropts.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -53,8 +54,6 @@ static int _init_child(int child_fd, int child_sock)
 
         if (sock != child_sock)
             err("init failed: sock confirm failed");
-
-        printf("sock=%d\n", sock);
     }
 
     ret = 0;
@@ -128,15 +127,28 @@ int _terminate_child(void)
     ve_msg_terminate_out_t out;
     const ve_msg_type_t type = VE_MSG_TERMINATE;
 
-    in.status = 0;
+    memset(&in, 0, sizeof(in));
 
-    if (ve_send_msg(globals.sock, type, &in, sizeof(in)) != 0)
-        goto done;
+    /* Terminate child threads. */
+    for (size_t i = 0; i < globals.num_threads; i++)
+    {
+        int sock = globals.threads[i].sock;
 
-    if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out)) != 0)
-        goto done;
+        if (ve_send_msg(sock, type, &in, sizeof(in)) != 0)
+            goto done;
 
-    printf("terminate response: ret=%d\n", out.ret);
+        if (ve_recv_msg_by_type(sock, type, &out, sizeof(out)) != 0)
+            goto done;
+    }
+
+    /* Terminate the main thread. */
+    {
+        if (ve_send_msg(globals.sock, type, &in, sizeof(in)) != 0)
+            goto done;
+
+        if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out)) != 0)
+            goto done;
+    }
 
     ret = 0;
 
@@ -144,7 +156,7 @@ done:
     return ret;
 }
 
-int _add_child_thread(int tcs)
+int _add_child_thread(int tcs, size_t stack_size)
 {
     int ret = -1;
     ve_msg_add_thread_in_t in;
@@ -154,6 +166,7 @@ int _add_child_thread(int tcs)
     extern int send_fd(int sock, int fd);
 
     in.tcs = tcs;
+    in.stack_size = stack_size;
 
     if (ve_send_msg(globals.sock, type, &in, sizeof(in)) != 0)
         goto done;
@@ -188,10 +201,9 @@ int _add_child_thread(int tcs)
     globals.threads[globals.num_threads].tcs = tcs;
     globals.num_threads++;
     socks[0] = -1;
+    socks[1] = -1;
 
-    printf("add_thread response: ret=%d\n", out.ret);
-
-    ret = 0;
+    ret = out.ret;
 
 done:
 
@@ -200,6 +212,41 @@ done:
 
     if (socks[1] != -1)
         close(socks[1]);
+
+    return ret;
+}
+
+int _ping_thread(int tcs)
+{
+    int ret = -1;
+    ve_msg_ping_thread_in_t in;
+    ve_msg_ping_thread_out_t out;
+    const ve_msg_type_t type = VE_MSG_PING_THREAD;
+    int sock = -1;
+
+    in.tcs = tcs;
+
+    for (size_t i = 0; i < globals.num_threads; i++)
+    {
+        if (globals.threads[i].tcs == tcs)
+        {
+            sock = globals.threads[i].sock;
+            break;
+        }
+    }
+
+    if (sock == -1)
+        goto done;
+
+    if (ve_send_msg(sock, type, &in, sizeof(in)) != 0)
+        goto done;
+
+    if (ve_recv_msg_by_type(sock, type, &out, sizeof(out)) != 0)
+        goto done;
+
+    ret = out.ret;
+
+done:
 
     return ret;
 }
@@ -231,6 +278,7 @@ int main(int argc, const char* argv[])
     arg0 = argv[0];
     pid_t pid;
     int status;
+    const size_t STACK_SIZE = 4096 * 256;
 
     if (argc != 2)
     {
@@ -243,9 +291,14 @@ int main(int argc, const char* argv[])
         err("failed to execute %s", argv[1]);
 
     /* Add threads to the child process. */
-    _add_child_thread(0);
-    _add_child_thread(1);
-    _add_child_thread(2);
+    _add_child_thread(0, STACK_SIZE);
+    _add_child_thread(1, STACK_SIZE);
+    _add_child_thread(2, STACK_SIZE);
+
+    /* Ping each of the threads. */
+    _ping_thread(0);
+    _ping_thread(1);
+    _ping_thread(2);
 
     /* Terminate the child process. */
     _terminate_child();

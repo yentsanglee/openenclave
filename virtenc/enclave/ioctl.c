@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include "ioctl.h"
 #include <openenclave/corelibc/stdarg.h>
 #include <openenclave/internal/syscall/sys/syscall.h>

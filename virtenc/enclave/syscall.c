@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include "syscall.h"
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
