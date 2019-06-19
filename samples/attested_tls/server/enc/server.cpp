@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <mbedtls/aes.h>
 #include <mbedtls/certs.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/debug.h>
@@ -339,6 +340,46 @@ done:
     return res;
 }
 
+int decrypt_data(
+    unsigned char* key,
+    size_t keysize,
+    unsigned char* iv,
+    unsigned char* data,
+    size_t datasize)
+{
+    mbedtls_aes_context ctx;
+    unsigned char output[32];
+    int ret = -1;
+
+    mbedtls_aes_init(&ctx);
+
+    ret = mbedtls_aes_setkey_dec(&ctx, key, keysize * 8);
+    if (ret != 0)
+    {
+        printf(TLS_SERVER "Failed mbedtls_aes_setkey_dec: %d\n", ret);
+        goto done;
+    }
+
+    ret = mbedtls_aes_crypt_cbc(
+        &ctx, MBEDTLS_DECRYPT, datasize, iv, data, output);
+    if (ret != 0)
+    {
+        printf(TLS_SERVER "Failed mbedtls_aes_crypt_cbc: %d\n", ret);
+        goto done;
+    }
+
+    // mbedtls does not remove padding. Check the last byte and removing
+    // padding.
+    output[sizeof(output) - output[sizeof(output) - 1]] = 0;
+
+    printf(TLS_SERVER "Decrypted secret data = %s\n", (const char*)output);
+    ret = 0;
+
+done:
+    mbedtls_aes_free(&ctx);
+    return ret;
+}
+
 int read_payload(mbedtls_ssl_context* ssl, mbedtls_rsa_context* rsa)
 {
     protocol_header hdr;
@@ -387,8 +428,7 @@ int read_payload(mbedtls_ssl_context* ssl, mbedtls_rsa_context* rsa)
 
     // Decrypt the payload data with the key and IV.
     printf(TLS_SERVER "now decrypting payload with AES key.\n");
-
-    ret = 0;
+    ret = decrypt_data(output, outlen, phdr.iv, payload, phdr.data_size);
 
 done:
     return ret;
