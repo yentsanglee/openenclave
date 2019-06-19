@@ -51,7 +51,7 @@ static int _handle_terminate(size_t size, int sock)
     if (ve_send_msg(sock, type, &out, sizeof(out)) != 0)
         goto done;
 
-    ve_puts("_thread: exiting");
+    ve_put_int("thread: exit: ", ve_gettid());
     ve_exit(in.status);
 
     ret = 0;
@@ -64,13 +64,12 @@ static int _thread(void* arg_)
 {
     thread_arg_t* arg = (thread_arg_t*)arg_;
 
-    ve_put_uint("_thread new: tcs: ", arg->tcs);
-
+    ve_put_uint("=== _thread: ", arg->tid);
 #if 0
-    ve_put_uint("*** _thread: tcs: ", arg->tcs);
-    ve_put_uint("*** _thread: tid: ", arg->tid);
-    ve_put_uint("*** _thread: tid: ", ve_gettid());
-    ve_put_uint("*** _thread: pid: ", ve_getpid());
+    ve_put_uint("thread.tcs: ", arg->tcs);
+    ve_put_uint("thread.tid: ", arg->tid);
+    ve_put_uint("thread.tid: ", ve_gettid());
+    ve_put_uint("thread.pid: ", ve_getpid());
 #endif
 
     for (;;)
@@ -80,7 +79,7 @@ static int _thread(void* arg_)
 
         if (ve_recv_msg(arg->sock, &type, &size) != 0)
         {
-            ve_put("_thread: failed to recv message\n");
+            ve_put("_thread(): failed to recv message\n");
             continue;
         }
 
@@ -94,7 +93,7 @@ static int _thread(void* arg_)
                 if (ve_recv_n(arg->sock, &in, sizeof(in)) != 0)
                     ve_put_err("failed to recv message");
 
-                ve_put_int("_thread: ping: tcs=", arg->tcs);
+                ve_put_int("thread: ping: ", arg->tid);
                 out.ret = 0;
 
                 if (ve_send_msg(arg->sock, type, &out, sizeof(out)) != 0)
@@ -109,7 +108,7 @@ static int _thread(void* arg_)
             }
             default:
             {
-                ve_put("_thread: unknown message\n");
+                ve_put("thread: unknown message\n");
                 break;
             }
         }
@@ -122,7 +121,6 @@ static int _create_new_thread(thread_arg_t* arg)
 {
     int ret = -1;
     uint8_t* stack;
-    thread_arg_t* new_arg;
 
     if (!arg)
         goto done;
@@ -135,14 +133,6 @@ static int _create_new_thread(thread_arg_t* arg)
             goto done;
 
         ve_memset(stack, 0, arg->stack_size);
-    }
-
-    /* Copy the arg into heap memory. */
-    {
-        if (!(new_arg = ve_calloc(1, sizeof(thread_arg_t))))
-            goto done;
-
-        *new_arg = *arg;
     }
 
     /* Create the new thread. */
@@ -160,16 +150,11 @@ static int _create_new_thread(thread_arg_t* arg)
         flags |= VE_CLONE_DETACHED;
         flags |= VE_SIGCHLD;
         flags |= VE_CLONE_PARENT_SETTID;
-        flags |= VE_CLONE_CHILD_SETTID;
+        // flags |= VE_CLONE_CHILD_SETTID;
 
         if ((rval = ve_clone(
-                 _thread,
-                 stack_bottom,
-                 flags,
-                 new_arg,
-                 &arg->tid,
-                 NULL,
-                 &new_arg->tid)) == -1)
+                 _thread, stack_bottom, flags, arg, &arg->tid, NULL, NULL)) ==
+            -1)
         {
             goto done;
         }
@@ -190,7 +175,7 @@ static int _handle_add_thread(size_t size)
     extern int ve_recv_fd(int sock);
     int sock = -1;
     const uint32_t ACK = 0xACACACAC;
-    thread_arg_t arg;
+    thread_arg_t* arg;
 
     if (size != sizeof(in))
         goto done;
@@ -216,24 +201,20 @@ static int _handle_add_thread(size_t size)
     if (ve_send_n(sock, &ACK, sizeof(ACK)) != 0)
         goto done;
 
-    /* Initialie the thread argument. */
-    {
-        arg.sock = sock;
-        sock = -1;
-        arg.tcs = in.tcs;
-        arg.stack_size = in.stack_size;
-    }
-
     /* Add this new thread to the global list. */
+    ve_lock(&globals.threads_lock);
     {
-        ve_lock(&globals.threads_lock);
-        globals.threads[globals.num_threads] = arg;
+        arg = &globals.threads[globals.num_threads];
+        arg->sock = sock;
+        arg->tcs = in.tcs;
+        arg->stack_size = in.stack_size;
         globals.num_threads++;
-        ve_unlock(&globals.threads_lock);
+        sock = -1;
     }
+    ve_unlock(&globals.threads_lock);
 
     /* Create the new thread. */
-    if (_create_new_thread(&arg) != 0)
+    if (_create_new_thread(arg) != 0)
         goto done;
 
     out.ret = 0;

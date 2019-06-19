@@ -12,6 +12,7 @@
 typedef struct _thread_arg
 {
     int sock;
+    void* stack;
     size_t stack_size;
     uint32_t tcs;
     int tid;
