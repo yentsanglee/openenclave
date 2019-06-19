@@ -29,3 +29,11 @@ typedef struct
     size_t payload_size;
     /* payload_size of bytes follows after the header. */
 } protocol_header;
+
+typedef struct
+{
+    unsigned char key[256];
+    unsigned char iv[16];
+    size_t data_size;
+    /* data_size of bytes follows after the header. */
+} payload_header;

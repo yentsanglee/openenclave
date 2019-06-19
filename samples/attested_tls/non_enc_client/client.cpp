@@ -13,6 +13,7 @@
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
+#include <openssl/rand.h>
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
@@ -133,6 +134,257 @@ int read_key(SSL* ssl, unsigned char* buf)
     return 0;
 }
 
+int encrypt_data(
+    unsigned char* key,
+    unsigned char* iv,
+    unsigned char* msg,
+    size_t msg_size,
+    unsigned char* outbuf,
+    size_t* out_written)
+{
+    EVP_CIPHER_CTX* cipher = NULL;
+    int outlen;
+    int outlen2;
+    int ret = -1;
+
+    // Load it up into the cipher
+    cipher = EVP_CIPHER_CTX_new();
+    if (cipher == NULL)
+    {
+        printf(
+            TLS_CLIENT "Failed! EVP_CIPHER_CTX_new returned %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto done;
+    }
+
+    // Encrypt the data
+    if (EVP_EncryptInit_ex(cipher, EVP_aes_128_cbc(), NULL, key, iv) != 1)
+    {
+        printf(
+            TLS_CLIENT "Failed! EVP_EncryptInit_ex returned %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto done;
+    }
+
+    if (EVP_EncryptUpdate(cipher, outbuf, &outlen, msg, msg_size) != 1)
+    {
+        printf(
+            TLS_CLIENT "Failed! EVP_EncryptUpdate returned %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto done;
+    }
+
+    if (EVP_EncryptFinal(cipher, outbuf + outlen, &outlen2) != 1)
+    {
+        printf(
+            TLS_CLIENT "Failed! EVP_EncryptFinal returned %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto done;
+    }
+
+    *out_written = outlen + outlen2;
+    ret = 0;
+
+done:
+    if (cipher)
+    {
+        EVP_CIPHER_CTX_free(cipher);
+    }
+
+    return ret;
+}
+
+EVP_PKEY* load_public_key(const char* pem)
+{
+    BIO* bio = NULL;
+    EVP_PKEY* rsa = NULL;
+    EVP_PKEY* ret = NULL;
+
+    bio = BIO_new_mem_buf(pem, -1);
+    if (bio == NULL)
+    {
+        printf(
+            TLS_CLIENT "Failed! BIO_new_mem_buf returned %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto done;
+    }
+
+    if (PEM_read_bio_PUBKEY(bio, &rsa, 0, NULL) == NULL)
+    {
+        printf(
+            TLS_CLIENT "Failed! PEM_read_bio_RSAPublicKey returned %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto done;
+    }
+
+    ret = rsa;
+    rsa = NULL;
+
+done:
+    if (bio)
+    {
+        BIO_free(bio);
+    }
+
+    if (rsa)
+    {
+        EVP_PKEY_free(rsa);
+    }
+
+    return ret;
+}
+
+int encrypt_aes_key(
+    EVP_PKEY* rsa,
+    unsigned char* key,
+    size_t keylen,
+    unsigned char* outkey,
+    size_t outkeylen)
+{
+    EVP_PKEY_CTX* ctx = NULL;
+    int ret = -1;
+
+    ctx = EVP_PKEY_CTX_new(rsa, NULL);
+    if (ctx == NULL)
+    {
+        printf(
+            TLS_CLIENT "Failed! EVP_PKEY_CTX_new returned %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto done;
+    }
+
+    if (EVP_PKEY_encrypt_init(ctx) != 1)
+    {
+        printf(
+            TLS_CLIENT "Failed! EVP_PKEY_encrypt_init returned %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto done;
+    }
+
+    // For some reason, this causes a linking error.
+#if 0
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) != 1)
+    {
+        printf(
+            TLS_CLIENT "Failed! EVP_PKEY_CTX_set_rsa_padding returned %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto done;
+    }
+#endif
+
+    if (EVP_PKEY_encrypt(ctx, outkey, &outkeylen, key, keylen) != 1)
+    {
+        printf(
+            TLS_CLIENT "Failed! EVP_PKEY_encrypt returned %s\n",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+
+    if (ctx != NULL)
+        EVP_PKEY_CTX_free(ctx);
+
+    return ret;
+}
+
+int write_payload_data(
+    SSL* ssl,
+    unsigned char* outkey,
+    unsigned char* iv,
+    unsigned char* out,
+    size_t outlen)
+{
+    protocol_header hdr;
+    payload_header phdr;
+    unsigned char buffer[512];
+
+    // Set up payload header.
+    memcpy(phdr.key, outkey, sizeof(phdr.key));
+    memcpy(phdr.iv, iv, sizeof(phdr.iv));
+    phdr.data_size = outlen;
+
+    // Set up the protocol header.
+    hdr.cmd = SENDPAYLOAD;
+    hdr.payload_size = sizeof(payload_header) + phdr.data_size;
+
+    // Format looks like:
+    // PROTOCOL_HEADER | PAYLOAD_HEADER | PAYLOAD_DATA
+    memcpy(buffer, &hdr, sizeof(hdr));
+    memcpy(buffer + sizeof(hdr), &phdr, sizeof(phdr));
+    memcpy(buffer + sizeof(hdr) + sizeof(phdr), out, phdr.data_size);
+
+    return ssl_write_all(
+        ssl, buffer, sizeof(hdr) + sizeof(phdr) + phdr.data_size);
+}
+
+int send_encrypted_data(SSL* ssl, const char* pem)
+{
+    unsigned char key[16];
+    unsigned char iv[16];
+    static const char secret_msg[] = "Hello World from host!";
+    unsigned char out[64];
+    size_t outlen;
+    unsigned char outkey[256];
+    EVP_PKEY* rsa = NULL;
+    protocol_header hdr;
+    int ret = -1;
+
+    printf(TLS_CLIENT "Generating IV and AES key.\n");
+
+    // Generate a random AES key
+    RAND_bytes(key, sizeof(key));
+
+    // Generate the initialization vector for AES-CBC
+    RAND_bytes(iv, sizeof(iv));
+
+    // Encrypt the data.
+    printf(TLS_CLIENT "Encrypting secret message: %s\n", secret_msg);
+    ret = encrypt_data(
+        key,
+        iv,
+        (unsigned char*)secret_msg,
+        sizeof(secret_msg) - 1,
+        out,
+        &outlen);
+    if (ret != 0)
+    {
+        printf(TLS_CLIENT "Failed! encrypt_data had an error.\n");
+        goto done;
+    }
+
+    // Load up the public key.
+    printf(TLS_CLIENT "Loading public key to openssl.\n");
+    rsa = load_public_key(pem);
+    if (rsa == NULL)
+    {
+        printf(TLS_CLIENT "Failed! load_public_key had an error.\n");
+        goto done;
+    }
+
+    //  Encrypt the key with the public key
+    printf(TLS_CLIENT "Encrypting AES key with public key.\n");
+    if (encrypt_aes_key(rsa, key, sizeof(key), outkey, sizeof(outkey)) != 0)
+    {
+        printf(TLS_CLIENT "Failed! encrypt_aes_key had an error.\n");
+        goto done;
+    }
+
+    // Send the entire message (ENCRYPTED_KEY || IV || ENCRYPTED_MESSAGE)
+    printf(TLS_CLIENT "Sending payload to server.\n");
+    ret = write_payload_data(ssl, outkey, iv, out, outlen);
+
+done:
+    if (rsa)
+    {
+        EVP_PKEY_free(rsa);
+    }
+
+    return ret;
+}
+
 // This routine conducts a simple protocol for sending client encrypted data
 // to the server. The protocol is the following:
 //      1. Client sends public key request to the enclave server.
@@ -163,7 +415,15 @@ int communicate_with_server(SSL* ssl)
         goto done;
     }
 
-    printf("Printing out the public key: %s\n", buf);
+    printf("Printing out the public key: \n%s\n", buf);
+
+    // Step 3: Client sends the encrypted key and the encrypted data.
+    ret = send_encrypted_data(ssl, (const char*)buf);
+    if (ret != 0)
+    {
+        printf(TLS_CLIENT "Failed! read_key returned an error.\n");
+        goto done;
+    }
 
     ret = 0;
 
