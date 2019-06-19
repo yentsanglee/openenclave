@@ -237,7 +237,7 @@ int handle_get_key(mbedtls_ssl_context* ssl, mbedtls_rsa_context* rsa)
 
     // Generate the RSA public/private key pair.
     printf(TLS_SERVER "Generating public/private key pair.\n");
-    mbedtls_rsa_init(rsa, MBEDTLS_RSA_PKCS_V21, MBEDTLS_MD_SHA256);
+    mbedtls_rsa_init(rsa, MBEDTLS_RSA_PKCS_V15, 0);
     if (generate_keypair(rsa) != 0)
     {
         printf(TLS_SERVER "ERROR: Failed to generate RSA keys.\n");
@@ -295,6 +295,105 @@ done:
     return ret;
 }
 
+int decrypt_key(
+    mbedtls_rsa_context* rsa,
+    unsigned char* input,
+    unsigned char* output,
+    size_t* outlen)
+{
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    int res = -1;
+
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
+
+    res = mbedtls_ctr_drbg_seed(
+        &ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    if (res != 0)
+    {
+        printf(TLS_SERVER "Failed to seed mbedtls rng.\n");
+        goto done;
+    }
+
+    res = mbedtls_rsa_pkcs1_decrypt(
+        rsa,
+        mbedtls_ctr_drbg_random,
+        &ctr_drbg,
+        MBEDTLS_RSA_PRIVATE,
+        outlen,
+        input,
+        output,
+        *outlen);
+    if (res != 0)
+    {
+        printf(TLS_SERVER "Failed to decrypt encryption key: %d\n", res);
+        goto done;
+    }
+
+    res = 0;
+
+done:
+    mbedtls_entropy_free(&entropy);
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    return res;
+}
+
+int read_payload(mbedtls_ssl_context* ssl, mbedtls_rsa_context* rsa)
+{
+    protocol_header hdr;
+    payload_header phdr;
+    unsigned char payload[512];
+    unsigned char output[256];
+    size_t outlen = sizeof(output);
+    int ret = -1;
+
+    // Load all the data from the ssl connection.
+    if (ssl_read_all(ssl, (unsigned char*)&hdr, sizeof(hdr)) != 0)
+    {
+        printf(TLS_SERVER "ERROR: failed to ssl_read_all.\n");
+        goto done;
+    }
+
+    if (ssl_read_all(ssl, (unsigned char*)&phdr, sizeof(phdr)) != 0)
+    {
+        printf(TLS_SERVER "ERROR: failed to ssl_read_all.\n");
+        goto done;
+    }
+
+    printf(
+        TLS_SERVER "read_payload: got sizes %zu %zu\n",
+        hdr.payload_size,
+        phdr.data_size);
+    if (ssl_read_all(ssl, payload, phdr.data_size) != 0)
+    {
+        printf(TLS_SERVER "ERROR: failed to ssl_read_all.\n");
+        goto done;
+    }
+
+    // Decrypt the key using the rsa private key.
+    printf(TLS_SERVER "now decrypting the AES key.\n");
+    ret = decrypt_key(rsa, phdr.key, output, &outlen);
+    if (ret != 0)
+    {
+        printf(TLS_SERVER "ERROR: failed to decrypt_key.\n");
+        goto done;
+    }
+
+    printf(TLS_SERVER "DUMPING AES KEY.\n");
+    for (size_t i = 0; i < outlen; i++)
+        printf("%d ", output[i]);
+    printf("\n");
+
+    // Decrypt the payload data with the key and IV.
+    printf(TLS_SERVER "now decrypting payload with AES key.\n");
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 // This routine conducts a simple protocol for sending client encrypted data
 // to the server. The protocol is the following:
 //      1. Client sends public key request to the enclave server.
@@ -320,6 +419,14 @@ int handle_communication_protocol(mbedtls_ssl_context* ssl)
     if (write_key(ssl, &rsa) != 0)
     {
         printf(TLS_SERVER "ERROR: failed to write_key.\n");
+        goto done;
+    }
+
+    // Step 3: Server recevies the encrypted data from the client and decrypts
+    // the secret.
+    if (read_payload(ssl, &rsa) != 0)
+    {
+        printf(TLS_SERVER "ERROR: failed to read payload.\n");
         goto done;
     }
 

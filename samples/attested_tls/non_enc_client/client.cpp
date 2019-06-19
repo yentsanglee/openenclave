@@ -336,6 +336,12 @@ int send_encrypted_data(SSL* ssl, const char* pem)
 
     // Generate a random AES key
     RAND_bytes(key, sizeof(key));
+    printf(TLS_CLIENT "DUMPING AES KEY.\n");
+    for (size_t i = 0; i < sizeof(key); i++)
+    {
+        printf("%d ", key[i]);
+    }
+    printf("\n");
 
     // Generate the initialization vector for AES-CBC
     RAND_bytes(iv, sizeof(iv));
