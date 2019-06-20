@@ -9,7 +9,7 @@
 #include "sbrk.h"
 #include "string.h"
 
-#if defined(VE_STATIC)
+#if defined(BUILD_STATIC)
 #define USE_DLMALLOC
 #endif
 

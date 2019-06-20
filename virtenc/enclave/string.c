@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "string.h"
+#include "put.h"
 
 size_t ve_strlen(const char* s)
 {
@@ -178,7 +179,7 @@ const char* ve_int64_decstr(ve_intstr_buf_t* buf, int64_t x, size_t* size)
 
 void* ve_memset(void* s, int c, size_t n)
 {
-    uint8_t* p = (uint8_t*)s;
+    volatile uint8_t* p = (volatile uint8_t*)s;
 
     while (n--)
         *p++ = c;
@@ -188,7 +189,12 @@ void* ve_memset(void* s, int c, size_t n)
 
 void* memset(void* s, int c, size_t n)
 {
-    return ve_memset(s, c, n);
+    volatile uint8_t* p = (volatile uint8_t*)s;
+
+    while (n--)
+        *p++ = c;
+
+    return s;
 }
 
 void* ve_memcpy(void* dest, const void* src, size_t n)

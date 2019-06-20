@@ -16,18 +16,18 @@ void ve_call_fini_functions(void);
 
 __attribute__((constructor)) static void constructor(void)
 {
-    // ve_put("constructor()\n");
+    ve_put("constructor()\n");
 }
 
 static int _main(void)
 {
     ve_put("main()\n");
 
-    ve_malloc(1);
-
     /* Wait here to be initialized and to receive the main socket. */
     if (ve_handle_init() != 0)
+    {
         ve_put_err("ve_handle_init() failed");
+    }
 
     /* Handle messages over the main socket. */
     if (ve_handle_messages() != 0)
@@ -36,12 +36,13 @@ static int _main(void)
     return 0;
 }
 
-#if defined(VE_STATIC)
+#if defined(BUILD_STATIC)
 void _start(void)
 {
     ve_call_init_functions();
-    ve_exit(_main());
+    int rval = _main();
     ve_call_fini_functions();
+    ve_exit(rval);
 }
 #else
 int main(void)

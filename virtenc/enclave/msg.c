@@ -217,7 +217,13 @@ done:
 int ve_handle_messages(void)
 {
     int ret = -1;
+#if 0
+    /* ATTN: This line crashes on clang around __asan_memset(). */
     ve_msg_t msg = VE_MSG_INITIALIZER;
+#else
+    ve_msg_t msg;
+    ve_memset(&msg, 0, sizeof(msg));
+#endif
 
     for (;;)
     {

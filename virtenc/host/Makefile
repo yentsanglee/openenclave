@@ -13,6 +13,8 @@ CFLAGS += -Werror
 CFLAGS += -g
 CFLAGS += -fPIE
 CFLAGS += -m64
+#CFLAGS += -fsanitize=address
+#CFLAGS += -fno-omit-frame-pointer
 
 SOURCES += main.c
 SOURCES += msg.c

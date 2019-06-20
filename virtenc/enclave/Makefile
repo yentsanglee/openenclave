@@ -1,26 +1,28 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-#CC = clang-7
-CC = gcc
+CC = clang-7
+#CC = gcc
 
 ROOT = $(CURDIR)/../..
 
 CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -g
-CFLAGS += -O0
+CFLAGS += -O1
+#CFLAGS += -O0
 CFLAGS += -fPIE
 CFLAGS += -m64
 CFLAGS += -nostdinc
+#CFLAGS += -fno-builtin
 #CFLAGS += -lgcc
 #CFLAGS += -ffreestanding
 
 DYNAMIC_CFLAGS += $(CFLAGS)
 
 DYNAMIC_CFLAGS += -fsanitize=address
-DYNAMIC_CFLAGS += -fsanitize=leak
 DYNAMIC_CFLAGS += -fno-omit-frame-pointer
+#DYNAMIC_CFLAGS += -fsanitize=leak
 
 INCLUDES += -I.
 INCLUDES += -I$(ROOT)/include
@@ -61,10 +63,13 @@ STATIC_LDFLAGS += -nodefaultlibs
 all: static dynamic
 
 static:
-	$(CC) -DVE_STATIC -o main.static $(CFLAGS) $(INCLUDES) $(STATIC_LDFLAGS) $(SOURCES)
+	$(CC) -DBUILD_STATIC -o main.static $(CFLAGS) $(INCLUDES) $(STATIC_LDFLAGS) $(SOURCES)
 
 dynamic:
 	$(CC) -o main $(DYNAMIC_CFLAGS) $(INCLUDES) $(DYNAMIC_LDFLAGS) $(SOURCES)
+
+xxx:
+	$(CC) -c $(DYNAMIC_CFLAGS) $(INCLUDES) $(DYNAMIC_LDFLAGS) -S msg.c
 
 clean:
 	rm -rf main
