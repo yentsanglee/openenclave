@@ -6,6 +6,13 @@ VALGRIND_OPTS += --trace-children=yes
 VALGRIND_OPTS += --soname-synonyms=somalloc=NONE
 VALGRIND_OPTS += --leak-check=full
 VALGRIND_OPTS += --track-fds=yes
+VALGRIND_OPTS += --show-reachable=yes
+VALGRIND_OPTS += --show-possibly-lost=yes
+VALGRIND_OPTS += --track-origins=yes
+VALGRIND_OPTS += --malloc-fill=0xAA
+VALGRIND_OPTS += --free-fill=0xDD
+#VALGRIND_OPTS += --expensive-definedness-checks=yes
+#VALGRIND_OPTS += --verbose
 
 all:
 	$(MAKE) -C enclave
