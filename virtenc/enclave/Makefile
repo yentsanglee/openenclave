@@ -10,7 +10,6 @@ CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -g
 CFLAGS += -O1
-#CFLAGS += -O0
 CFLAGS += -fPIE
 CFLAGS += -m64
 CFLAGS += -nostdinc
@@ -20,9 +19,11 @@ CFLAGS += -nostdinc
 
 DYNAMIC_CFLAGS += $(CFLAGS)
 
+ifdef SANITIZE
 DYNAMIC_CFLAGS += -fsanitize=address
 DYNAMIC_CFLAGS += -fno-omit-frame-pointer
-#DYNAMIC_CFLAGS += -fsanitize=leak
+DYNAMIC_CFLAGS += -fsanitize=leak
+endif
 
 INCLUDES += -I.
 INCLUDES += -I$(ROOT)/include
