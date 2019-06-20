@@ -6,5 +6,5 @@
 
 int ve_getpid(void)
 {
-    return (int)ve_syscall(OE_SYS_getpid);
+    return (int)ve_syscall0(OE_SYS_getpid);
 }

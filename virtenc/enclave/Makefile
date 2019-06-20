@@ -1,8 +1,8 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-#CC = clang-7
-CC = gcc
+CC = clang-7
+#CC = gcc
 
 ROOT = $(CURDIR)/../..
 
@@ -13,8 +13,8 @@ CFLAGS += -O0
 CFLAGS += -fPIE
 CFLAGS += -m64
 CFLAGS += -nostdinc
-CFLAGS += -lgcc
-CFLAGS += -ffreestanding
+#CFLAGS += -lgcc
+#CFLAGS += -ffreestanding
 
 DYNAMIC_CFLAGS += $(CFLAGS)
 #DYNAMIC_CFLAGS += -fsanitize=address

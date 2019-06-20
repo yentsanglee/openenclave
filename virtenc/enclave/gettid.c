@@ -6,5 +6,5 @@
 
 int ve_gettid(void)
 {
-    return (int)ve_syscall(OE_SYS_gettid);
+    return (int)ve_syscall0(OE_SYS_gettid);
 }

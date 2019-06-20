@@ -5,5 +5,5 @@
 
 int ve_close(int fd)
 {
-    return ve_syscall(OE_SYS_close, (long)fd);
+    return ve_syscall1(OE_SYS_close, (long)fd);
 }

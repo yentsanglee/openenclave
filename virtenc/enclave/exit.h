@@ -9,7 +9,7 @@
 
 OE_INLINE void ve_exit(int status)
 {
-    ve_syscall(OE_SYS_exit, status);
+    ve_syscall1(OE_SYS_exit, status);
 }
 
 #endif /* _VE_EXIT_H */

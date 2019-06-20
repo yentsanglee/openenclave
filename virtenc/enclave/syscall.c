@@ -6,7 +6,7 @@
 #include <openenclave/bits/types.h>
 #include <openenclave/corelibc/stdarg.h>
 
-static long _syscall0(long n)
+long ve_syscall0(long n)
 {
     unsigned long ret;
 
@@ -17,7 +17,7 @@ static long _syscall0(long n)
     return ret;
 }
 
-static long _syscall1(long n, long x1)
+long ve_syscall1(long n, long x1)
 {
     unsigned long ret;
 
@@ -29,7 +29,7 @@ static long _syscall1(long n, long x1)
     return ret;
 }
 
-static long _syscall2(long n, long x1, long x2)
+long ve_syscall2(long n, long x1, long x2)
 {
     unsigned long ret;
 
@@ -41,7 +41,7 @@ static long _syscall2(long n, long x1, long x2)
     return ret;
 }
 
-static long _syscall3(long n, long x1, long x2, long x3)
+long ve_syscall3(long n, long x1, long x2, long x3)
 {
     unsigned long ret;
 
@@ -53,7 +53,7 @@ static long _syscall3(long n, long x1, long x2, long x3)
     return ret;
 }
 
-static long _syscall4(long n, long x1, long x2, long x3, long x4)
+long ve_syscall4(long n, long x1, long x2, long x3, long x4)
 {
     unsigned long ret;
     register long r10 __asm__("r10") = x4;
@@ -66,7 +66,7 @@ static long _syscall4(long n, long x1, long x2, long x3, long x4)
     return ret;
 }
 
-static long _syscall5(long n, long x1, long x2, long x3, long x4, long x5)
+long ve_syscall5(long n, long x1, long x2, long x3, long x4, long x5)
 {
     unsigned long ret;
     register long r10 __asm__("r10") = x4;
@@ -79,8 +79,7 @@ static long _syscall5(long n, long x1, long x2, long x3, long x4, long x5)
     return ret;
 }
 
-static long
-_syscall6(long n, long x1, long x2, long x3, long x4, long x5, long x6)
+long ve_syscall6(long n, long x1, long x2, long x3, long x4, long x5, long x6)
 {
     unsigned long ret;
     register long r10 __asm__("r10") = x4;
@@ -94,52 +93,4 @@ _syscall6(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         : "rcx", "r11", "memory");
 
     return ret;
-}
-
-static long
-_syscall(long n, long x1, long x2, long x3, long x4, long x5, long x6)
-{
-    switch (n)
-    {
-        case OE_SYS_read:
-            return _syscall3(n, x1, x2, x3);
-        case OE_SYS_write:
-            return _syscall3(n, x1, x2, x3);
-        case OE_SYS_exit:
-            return _syscall1(n, x1);
-        case OE_SYS_ioctl:
-            return _syscall6(n, x1, x2, x3, x4, x5, x6);
-        default:
-            return _syscall6(n, x1, x2, x3, x4, x5, x6);
-    }
-}
-
-long ve_syscall(long number, ...)
-{
-    oe_va_list ap;
-
-    oe_va_start(ap, number);
-    long x1 = oe_va_arg(ap, long);
-    long x2 = oe_va_arg(ap, long);
-    long x3 = oe_va_arg(ap, long);
-    long x4 = oe_va_arg(ap, long);
-    long x5 = oe_va_arg(ap, long);
-    long x6 = oe_va_arg(ap, long);
-    long ret = _syscall(number, x1, x2, x3, x4, x5, x6);
-    oe_va_end(ap);
-
-    (void)_syscall0;
-    (void)_syscall1;
-    (void)_syscall2;
-    (void)_syscall3;
-    (void)_syscall4;
-    (void)_syscall5;
-    (void)_syscall6;
-
-    return ret;
-}
-
-long ve_syscall2(long number, long x1, long x2)
-{
-    return _syscall2(number, x1, x2);
 }

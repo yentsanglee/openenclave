@@ -7,5 +7,5 @@
 
 ssize_t ve_write(int fd, const void* buf, size_t count)
 {
-    return ve_syscall(OE_SYS_write, fd, (long)buf, (long)count);
+    return ve_syscall3(OE_SYS_write, fd, (long)buf, (long)count);
 }

@@ -27,7 +27,7 @@ int ve_ioctl(int fd, unsigned long request, ...)
     x6 = (long)oe_va_arg(ap, long);
     oe_va_end(ap);
 
-    ret = ve_syscall(OE_SYS_ioctl, x1, x2, x3, x4, x5, x6);
+    ret = ve_syscall6(OE_SYS_ioctl, x1, x2, x3, x4, x5, x6);
 
     return ret;
 }

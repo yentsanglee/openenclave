@@ -1,6 +1,9 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
+CC = clang-7
+#CC = gcc
+
 ROOT = $(CURDIR)/../..
 
 INCLUDES += -I$(ROOT)/include
@@ -20,7 +23,7 @@ SOURCES += ../common/lock.c
 DEFINES += -DHOST
 
 all:
-	gcc -o main $(CFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAG) $(SOURCES)
+	$(CC) -o main $(CFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAG) $(SOURCES)
 
 clean:
 	rm -rf main
