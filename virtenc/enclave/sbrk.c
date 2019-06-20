@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #include "sbrk.h"
-#include "lock.h"
+#include "../common/lock.h"
 #include "syscall.h"
 
 void* ve_sbrk(intptr_t increment)

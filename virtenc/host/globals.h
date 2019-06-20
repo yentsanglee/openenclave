@@ -5,6 +5,7 @@
 #define _VE_HOST_GLOBALS_H
 
 #include <stddef.h>
+#include "../common/lock.h"
 
 #define MAX_THREADS 1024
 
@@ -20,6 +21,7 @@ typedef struct _globals
     int sock;
     int child_sock;
     thread_info_t threads[MAX_THREADS];
+    ve_lock_t threads_lock;
     size_t num_threads;
 } globals_t;
 

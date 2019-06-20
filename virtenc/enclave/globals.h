@@ -5,7 +5,7 @@
 #define _VE_ENCLAVE_GLOBALS_H
 
 #include <openenclave/bits/types.h>
-#include "lock.h"
+#include "../common/lock.h"
 
 #define MAX_THREADS 1024
 

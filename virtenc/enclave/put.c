@@ -3,8 +3,8 @@
 
 #include "put.h"
 #include <openenclave/internal/syscall/unistd.h>
+#include "../common/lock.h"
 #include "exit.h"
-#include "lock.h"
 #include "string.h"
 #include "syscall.h"
 

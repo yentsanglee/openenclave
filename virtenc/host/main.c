@@ -110,7 +110,8 @@ done:
     return ret;
 }
 
-int _terminate_child(void)
+/* Should be called when there is only one surviving thread in the system. */
+static int _terminate_child(void)
 {
     int ret = -1;
     const ve_msg_type_t type = VE_MSG_TERMINATE;
@@ -204,11 +205,15 @@ int _add_child_thread(int tcs, size_t stack_size)
             goto done;
     }
 
-    /* ATTN: need locking */
-    globals.threads[globals.num_threads].sock = socks[0];
-    globals.threads[globals.num_threads].child_sock = socks[1];
-    globals.threads[globals.num_threads].tcs = tcs;
-    globals.num_threads++;
+    ve_lock(&globals.threads_lock);
+    {
+        globals.threads[globals.num_threads].sock = socks[0];
+        globals.threads[globals.num_threads].child_sock = socks[1];
+        globals.threads[globals.num_threads].tcs = tcs;
+        globals.num_threads++;
+    }
+    ve_unlock(&globals.threads_lock);
+
     socks[0] = -1;
     socks[1] = -1;
 
@@ -233,14 +238,18 @@ int _ping_thread(int tcs)
     int sock = -1;
 
     /* Select the thread to ping. */
-    for (size_t i = 0; i < globals.num_threads; i++)
+    ve_lock(&globals.threads_lock);
     {
-        if (globals.threads[i].tcs == tcs)
+        for (size_t i = 0; i < globals.num_threads; i++)
         {
-            sock = globals.threads[i].sock;
-            break;
+            if (globals.threads[i].tcs == tcs)
+            {
+                sock = globals.threads[i].sock;
+                break;
+            }
         }
     }
+    ve_unlock(&globals.threads_lock);
 
     /* If the the thread not found. */
     if (sock == -1)

@@ -31,7 +31,6 @@ SOURCES += globals.c
 SOURCES += clone.S
 SOURCES += sbrk.c
 SOURCES += start.c
-SOURCES += lock.c
 SOURCES += put.c
 SOURCES += getpid.c
 SOURCES += gettid.c
@@ -39,6 +38,7 @@ SOURCES += malloc.c
 SOURCES += abort.c
 SOURCES += read.c
 SOURCES += write.c
+SOURCES += ../common/lock.c
 
 DYNAMIC_LDFLAGS += -nostartfiles
 

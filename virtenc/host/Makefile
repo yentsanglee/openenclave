@@ -15,6 +15,7 @@ SOURCES += main.c
 SOURCES += msg.c
 SOURCES += sendfd.c
 SOURCES += malloc.c
+SOURCES += ../common/lock.c
 
 DEFINES += -DHOST
 
