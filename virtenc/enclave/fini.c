@@ -12,3 +12,8 @@ void ve_call_fini_functions(void)
         (*fn)();
     }
 }
+
+void __libc_csu_fini(void)
+{
+    ve_call_fini_functions();
+}

@@ -5,6 +5,7 @@
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
 #include "abort.h"
+#include "put.h"
 #include "sbrk.h"
 #include "string.h"
 

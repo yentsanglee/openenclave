@@ -133,6 +133,8 @@ static int _create_new_thread(thread_arg_t* arg)
             goto done;
 
         ve_memset(stack, 0, arg->stack_size);
+
+        arg->stack = stack;
     }
 
     /* Create the new thread. */
@@ -271,12 +273,20 @@ int ve_handle_messages(void)
             {
                 if (_handle_terminate(size, globals.sock) != 0)
                     goto done;
+
+                /* Release stack memory. */
+                for (size_t i = 0; i < globals.num_threads; i++)
+                {
+                    ve_free(globals.threads[i].stack);
+                }
+
                 break;
             }
             case VE_MSG_ADD_THREAD:
             {
                 if (_handle_add_thread(size) != 0)
                     goto done;
+
                 break;
             }
             default:

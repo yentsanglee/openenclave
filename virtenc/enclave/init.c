@@ -10,3 +10,8 @@ void ve_call_init_functions(void)
     for (fn = &__init_array_start; fn < &__init_array_end; fn++)
         (*fn)();
 }
+
+void __libc_csu_init(void)
+{
+    ve_call_init_functions();
+}

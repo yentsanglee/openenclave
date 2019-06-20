@@ -14,11 +14,16 @@
 void ve_call_init_functions(void);
 void ve_call_fini_functions(void);
 
+__attribute__((constructor)) static void constructor(void)
+{
+    ve_put("constructor()\n");
+}
+
 int main(void)
 {
     ve_call_init_functions();
 
-    ve_malloc(13);
+    ve_put("main()\n");
 
     /* Wait here to be initialized and to receive the main socket. */
     if (ve_handle_init() != 0)

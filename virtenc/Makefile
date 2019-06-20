@@ -4,6 +4,7 @@
 VALGRIND_OPTS += --tool=memcheck
 VALGRIND_OPTS += --trace-children=yes
 VALGRIND_OPTS += --soname-synonyms=somalloc=NONE
+VALGRIND_OPTS += --leak-check=full
 #VALGRIND_OPTS += --verbose
 
 all:
