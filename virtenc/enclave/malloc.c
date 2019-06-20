@@ -9,6 +9,12 @@
 #include "sbrk.h"
 #include "string.h"
 
+#if defined(VE_STATIC)
+#define USE_DLMALLOC
+#endif
+
+#if defined(USE_DLMALLOC)
+
 static void* memset(void* s, int c, size_t n)
 {
     return ve_memset(s, c, n);
@@ -77,6 +83,14 @@ void* memalign(size_t alignment, size_t size)
 {
     return dlmemalign(alignment, size);
 }
+
+#endif /* defined(USE_DLMALLOC) */
+
+void* malloc(size_t size);
+void free(void* ptr);
+void* calloc(size_t nmemb, size_t size);
+void* realloc(void* ptr, size_t size);
+void* memalign(size_t alignment, size_t size);
 
 void* ve_malloc(size_t size)
 {

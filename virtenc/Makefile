@@ -24,10 +24,13 @@ clean:
 
 run:
 	@ echo "********************************************"
-	./host/main ./enclave/main
-	@ echo "********************************************"
 	./host/main ./enclave/main.static
+	@ echo "********************************************"
+	./host/main ./enclave/main
 	@ echo "********************************************"
 
 vg:
 	valgrind $(VALGRIND_OPTS) ./host/main ./enclave/main
+
+r:
+	./host/main ./enclave/main
