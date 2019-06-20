@@ -4,6 +4,8 @@
 CC = clang-7
 #CC = gcc
 
+#SANITIZE=1
+
 ROOT = $(CURDIR)/../..
 
 CFLAGS += -Wall
