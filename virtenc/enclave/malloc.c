@@ -52,27 +52,54 @@ static const int ENOMEM = 12;
 #include "../../3rdparty/dlmalloc/dlmalloc/malloc.c"
 #pragma GCC diagnostic pop
 
-void* ve_malloc(size_t size)
+__attribute__((visibility("default"))) void* malloc(size_t size)
 {
     return dlmalloc(size);
 }
 
-void ve_free(void* ptr)
+__attribute__((visibility("default"))) void free(void* ptr)
 {
     return dlfree(ptr);
 }
 
-void* ve_calloc(size_t nmemb, size_t size)
+__attribute__((visibility("default"))) void* calloc(size_t nmemb, size_t size)
 {
     return dlcalloc(nmemb, size);
 }
 
-void* ve_realloc(void* ptr, size_t size)
+__attribute__((visibility("default"))) void* realloc(void* ptr, size_t size)
 {
     return dlrealloc(ptr, size);
 }
 
-void* ve_memalign(size_t alignment, size_t size)
+__attribute__((visibility("default"))) void* memalign(
+    size_t alignment,
+    size_t size)
 {
     return dlmemalign(alignment, size);
+}
+
+void* ve_malloc(size_t size)
+{
+    return malloc(size);
+}
+
+void ve_free(void* ptr)
+{
+    return free(ptr);
+}
+
+void* ve_calloc(size_t nmemb, size_t size)
+{
+    return calloc(nmemb, size);
+}
+
+void* ve_realloc(void* ptr, size_t size)
+{
+    return realloc(ptr, size);
+}
+
+void* ve_memalign(size_t alignment, size_t size)
+{
+    return memalign(alignment, size);
 }

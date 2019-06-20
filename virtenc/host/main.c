@@ -165,6 +165,8 @@ int _add_child_thread(int tcs, size_t stack_size)
     int socks[2] = {-1, -1};
     extern int send_fd(int sock, int fd);
 
+    memset(&in, 0, sizeof(in));
+
     in.tcs = tcs;
     in.stack_size = stack_size;
 

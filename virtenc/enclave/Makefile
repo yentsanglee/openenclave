@@ -6,6 +6,7 @@ ROOT = $(CURDIR)/../..
 CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -g
+CFLAGS += -O0
 CFLAGS += -fPIE
 CFLAGS += -m64
 CFLAGS += -nostdinc
