@@ -412,6 +412,21 @@ int read_payload(mbedtls_ssl_context* ssl, mbedtls_rsa_context* rsa)
         goto done;
     }
 
+    printf(TLS_SERVER "CLIENT SENT PAYLOAD DATA =\n");
+    for (size_t i = 0; i < sizeof(hdr); i++)
+    {
+        printf("%x ", *((unsigned char*)&hdr + i));
+    }
+    for (size_t i = 0; i < sizeof(phdr); i++)
+    {
+        printf("%x ", *((unsigned char*)&phdr + i));
+    }
+    for (size_t i = 0; i < phdr.data_size; i++)
+    {
+        printf("%x ", payload[i]);
+    }
+    printf("\n");
+
     // Decrypt the key using the rsa private key.
     printf(TLS_SERVER "now decrypting the AES key.\n");
     ret = decrypt_key(rsa, phdr.key, output, &outlen);

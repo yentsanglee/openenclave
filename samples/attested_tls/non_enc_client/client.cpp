@@ -316,6 +316,13 @@ int write_payload_data(
     memcpy(buffer + sizeof(hdr), &phdr, sizeof(phdr));
     memcpy(buffer + sizeof(hdr) + sizeof(phdr), out, phdr.data_size);
 
+    printf(TLS_CLIENT "PAYLOAD DATA IS:\n");
+    for (size_t i = 0; i < sizeof(hdr) + sizeof(phdr) + phdr.data_size; i++)
+    {
+        printf("%x ", buffer[i]);
+    }
+    printf("\n");
+
     return ssl_write_all(
         ssl, buffer, sizeof(hdr) + sizeof(phdr) + phdr.data_size);
 }
