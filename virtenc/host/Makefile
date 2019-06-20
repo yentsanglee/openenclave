@@ -14,6 +14,7 @@ CFLAGS += -m64
 SOURCES += main.c
 SOURCES += msg.c
 SOURCES += sendfd.c
+SOURCES += malloc.c
 
 DEFINES += -DHOST
 

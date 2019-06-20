@@ -12,20 +12,11 @@
 #include "ioctl.h"
 #include "malloc.h"
 #include "put.h"
+#include "recvfd.h"
 #include "signal.h"
 #include "string.h"
 #include "syscall.h"
 #include "time.h"
-
-ssize_t ve_read(int fd, void* buf, size_t count)
-{
-    return ve_syscall(OE_SYS_read, fd, (long)buf, (long)count);
-}
-
-ssize_t ve_write(int fd, const void* buf, size_t count)
-{
-    return ve_syscall(OE_SYS_write, fd, (long)buf, (long)count);
-}
 
 void ve_debug(const char* str)
 {
@@ -33,36 +24,10 @@ void ve_debug(const char* str)
     ve_put_nl();
 }
 
-static int _handle_terminate(size_t size, int sock)
-{
-    int ret = -1;
-    ve_msg_terminate_in_t in;
-    ve_msg_terminate_out_t out;
-    const ve_msg_type_t type = VE_MSG_TERMINATE;
-
-    if (size != sizeof(in))
-        goto done;
-
-    if (ve_recv_n(sock, &in, sizeof(in)) != 0)
-        goto done;
-
-    out.ret = 0;
-
-    if (ve_send_msg(sock, type, &out, sizeof(out)) != 0)
-        goto done;
-
-    ve_put_int("thread: exit: ", ve_gettid());
-    ve_exit(in.status);
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
 static int _thread(void* arg_)
 {
     thread_arg_t* arg = (thread_arg_t*)arg_;
+    ve_msg_t msg = VE_MSG_INITIALIZER;
 
     ve_put_uint("=== _thread: ", arg->tid);
 #if 0
@@ -74,36 +39,40 @@ static int _thread(void* arg_)
 
     for (;;)
     {
-        ve_msg_type_t type;
-        size_t size;
-
-        if (ve_recv_msg(arg->sock, &type, &size) != 0)
+        if (ve_recv_msg(arg->sock, &msg) != 0)
         {
             ve_put("_thread(): failed to recv message\n");
             continue;
         }
 
-        switch (type)
+        switch (msg.type)
         {
             case VE_MSG_PING_THREAD:
             {
-                ve_msg_ping_thread_in_t in;
-                ve_msg_ping_thread_out_t out;
-
-                if (ve_recv_n(arg->sock, &in, sizeof(in)) != 0)
-                    ve_put_err("failed to recv message");
+                ve_msg_ping_thread_out_t out = {0};
 
                 ve_put_int("thread: ping: ", arg->tid);
-                out.ret = 0;
 
-                if (ve_send_msg(arg->sock, type, &out, sizeof(out)) != 0)
+                if (ve_send_msg(arg->sock, msg.type, &out, sizeof(out)) != 0)
                     ve_put_err("failed to send message");
 
                 break;
             }
             case VE_MSG_TERMINATE:
             {
-                _handle_terminate(size, arg->sock);
+                ve_msg_terminate_out_t out = {0};
+
+                ve_put_int("thread: exit: ", ve_gettid());
+
+                if (ve_send_msg(arg->sock, msg.type, &out, sizeof(out)) != 0)
+                    ve_put_err("failed to send message");
+
+                /* Close the standard descriptors. */
+                ve_close(OE_STDIN_FILENO);
+                ve_close(OE_STDOUT_FILENO);
+                ve_close(OE_STDERR_FILENO);
+
+                ve_exit(0);
                 break;
             }
             default:
@@ -112,6 +81,8 @@ static int _thread(void* arg_)
                 break;
             }
         }
+
+        ve_msg_free(&msg);
     }
 
     return 0;
@@ -168,29 +139,22 @@ done:
     return ret;
 }
 
-static int _handle_add_thread(size_t size)
+static int _handle_add_thread(const ve_msg_add_thread_in_t* in)
 {
     int ret = -1;
-    ve_msg_add_thread_in_t in;
-    ve_msg_add_thread_out_t out;
     const ve_msg_type_t type = VE_MSG_ADD_THREAD;
-    extern int ve_recv_fd(int sock);
     int sock = -1;
-    const uint32_t ACK = 0xACACACAC;
     thread_arg_t* arg;
 
-    if (size != sizeof(in))
-        goto done;
-
-    if (ve_recv_n(globals.sock, &in, sizeof(in)) != 0)
-        goto done;
-
+    /* Fail if out of threads. */
+    /* TODO: host should pass num_tcs parameter. */
     if (globals.num_threads == MAX_THREADS)
     {
+        const ve_msg_add_thread_out_t out = {.ret = -1};
+
         if (ve_send_msg(globals.sock, type, &out, sizeof(out)) != 0)
             goto done;
 
-        out.ret = -1;
         ret = 0;
         goto done;
     }
@@ -199,17 +163,13 @@ static int _handle_add_thread(size_t size)
     if ((sock = ve_recv_fd(globals.sock)) < 0)
         goto done;
 
-    /* Send an acknowledgement to the sendfd operation. */
-    if (ve_send_n(sock, &ACK, sizeof(ACK)) != 0)
-        goto done;
-
     /* Add this new thread to the global list. */
     ve_lock(&globals.threads_lock);
     {
         arg = &globals.threads[globals.num_threads];
         arg->sock = sock;
-        arg->tcs = in.tcs;
-        arg->stack_size = in.stack_size;
+        arg->tcs = in->tcs;
+        arg->stack_size = in->stack_size;
         globals.num_threads++;
         sock = -1;
     }
@@ -219,10 +179,13 @@ static int _handle_add_thread(size_t size)
     if (_create_new_thread(arg) != 0)
         goto done;
 
-    out.ret = 0;
+    /* Send the response. */
+    {
+        ve_msg_add_thread_out_t out = {.ret = 0};
 
-    if (ve_send_msg(globals.sock, type, &out, sizeof(out)) != 0)
-        goto done;
+        if (ve_send_msg(globals.sock, type, &out, sizeof(out)) != 0)
+            goto done;
+    }
 
     ret = 0;
 
@@ -237,17 +200,13 @@ done:
 int ve_handle_init(void)
 {
     int ret = -1;
-    const int sin = OE_STDIN_FILENO;
     const ve_msg_type_t type = VE_MSG_INIT;
     ve_msg_init_in_t in;
 
-    if (ve_recv_msg_by_type(sin, type, &in, sizeof(in)) != 0)
+    if (ve_recv_msg_by_type(OE_STDIN_FILENO, type, &in, sizeof(in)) != 0)
         goto done;
 
     globals.sock = in.sock;
-
-    if (ve_send_n(globals.sock, &in.sock, sizeof(in.sock)) != 0)
-        goto done;
 
     ret = 0;
 
@@ -258,33 +217,46 @@ done:
 int ve_handle_messages(void)
 {
     int ret = -1;
+    ve_msg_t msg = VE_MSG_INITIALIZER;
 
     for (;;)
     {
-        ve_msg_type_t type;
-        size_t size;
-
-        if (ve_recv_msg(globals.sock, &type, &size) != 0)
+        if (ve_recv_msg(globals.sock, &msg) != 0)
             goto done;
 
-        switch (type)
+        switch (msg.type)
         {
             case VE_MSG_TERMINATE:
             {
-                if (_handle_terminate(size, globals.sock) != 0)
-                    goto done;
+                ve_msg_terminate_out_t out = {0};
 
-                /* Release stack memory. */
+                /* Release thread stack memory and sockets . */
                 for (size_t i = 0; i < globals.num_threads; i++)
                 {
                     ve_free(globals.threads[i].stack);
+                    ve_close(globals.threads[i].sock);
                 }
 
+                ve_put_int("main: exit: ", ve_gettid());
+
+                if (ve_send_msg(globals.sock, msg.type, &out, sizeof(out)) != 0)
+                    ve_put_err("failed to send message");
+
+                ve_close(globals.sock);
+                ve_msg_free(&msg);
+                ve_exit(0);
                 break;
             }
             case VE_MSG_ADD_THREAD:
             {
-                if (_handle_add_thread(size) != 0)
+                const ve_msg_add_thread_in_t* in;
+
+                if (msg.size != sizeof(ve_msg_add_thread_in_t))
+                    goto done;
+
+                in = (const ve_msg_add_thread_in_t*)msg.data;
+
+                if (_handle_add_thread(in) != 0)
                     goto done;
 
                 break;
@@ -294,10 +266,15 @@ int ve_handle_messages(void)
                 goto done;
             }
         }
+
+        ve_msg_free(&msg);
     }
 
     ret = 0;
 
 done:
+
+    ve_msg_free(&msg);
+
     return ret;
 }

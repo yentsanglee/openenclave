@@ -11,12 +11,14 @@
 typedef struct _thread_info
 {
     int sock;
+    int child_sock;
     uint32_t tcs;
 } thread_info_t;
 
 typedef struct _globals
 {
     int sock;
+    int child_sock;
     thread_info_t threads[MAX_THREADS];
     size_t num_threads;
 } globals_t;

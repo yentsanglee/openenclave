@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-#STATIC_LINKAGE=1
-
 ROOT = $(CURDIR)/../..
 
 CFLAGS += -Wall
@@ -12,13 +10,8 @@ CFLAGS += -O0
 CFLAGS += -fPIE
 CFLAGS += -m64
 CFLAGS += -nostdinc
-CFLAGS += -ffreestanding
-CFLAGS += -nostartfiles
 CFLAGS += -lgcc
-ifdef STATIC_LINKAGE
-CFLAGS += -nostdlib
-CFLAGS += -nodefaultlibs
-endif
+CFLAGS += -ffreestanding
 
 INCLUDES += -I.
 INCLUDES += -I$(ROOT)/include
@@ -44,14 +37,21 @@ SOURCES += getpid.c
 SOURCES += gettid.c
 SOURCES += malloc.c
 SOURCES += abort.c
-ifdef STATIC_LINKAGE
-LDFLAGS += =-Wl,-pie
-LDFLAGS += =-Wl,-Bstatic
-LDFLAGS += =-Wl,-e_start
-endif
+SOURCES += read.c
+SOURCES += write.c
+
+DYNAMIC_LDFLAGS += -nostartfiles
+
+STATIC_LDFLAGS += $(LDFLAGS)
+STATIC_LDFLAGS += -Wl,-pie
+STATIC_LDFLAGS += -Wl,-Bstatic
+STATIC_LDFLAGS += -Wl,-e_start
+STATIC_LDFLAGS += -nostdlib
+STATIC_LDFLAGS += -nodefaultlibs
 
 all:
-	gcc -o main $(CFLAGS) $(INCLUDES) $(LDFLAG) $(SOURCES)
+	gcc -o main.static $(CFLAGS) $(INCLUDES) $(STATIC_LDFLAGS) $(SOURCES)
+	gcc -o main $(CFLAGS) $(INCLUDES) $(DYNAMIC_LDFLAGS) $(SOURCES)
 
 clean:
 	rm -rf main

@@ -23,5 +23,7 @@ prereqs/dcap/*.deb
 prereqs/nuget/*
 prereqs/packages/.packages
 prereqs/sgx-driver/*.bin
+
 virtenc/enclave/main
 virtenc/host/main
+virtenc/enclave/main.static

@@ -5,7 +5,7 @@ VALGRIND_OPTS += --tool=memcheck
 VALGRIND_OPTS += --trace-children=yes
 VALGRIND_OPTS += --soname-synonyms=somalloc=NONE
 VALGRIND_OPTS += --leak-check=full
-#VALGRIND_OPTS += --verbose
+VALGRIND_OPTS += --track-fds=yes
 
 all:
 	$(MAKE) -C enclave
@@ -16,7 +16,11 @@ clean:
 	$(MAKE) -C host clean
 
 run:
+	@ echo "********************************************"
 	./host/main ./enclave/main
+	@ echo "********************************************"
+	./host/main ./enclave/main.static
+	@ echo "********************************************"
 
 vg:
 	valgrind $(VALGRIND_OPTS) ./host/main ./enclave/main
