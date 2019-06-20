@@ -186,6 +186,11 @@ void* ve_memset(void* s, int c, size_t n)
     return s;
 }
 
+void* memset(void* s, int c, size_t n)
+{
+    return ve_memset(s, c, n);
+}
+
 void* ve_memcpy(void* dest, const void* src, size_t n)
 {
     uint8_t* p = (uint8_t*)dest;

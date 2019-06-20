@@ -6,7 +6,7 @@
 
 void ve_abort()
 {
-    *((int*)0) = 0;
+    *((volatile int*)0) = 0;
     ve_exit(127);
 
     for (;;)

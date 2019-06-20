@@ -19,11 +19,11 @@ __attribute__((constructor)) static void constructor(void)
     ve_put("constructor()\n");
 }
 
-int main(void)
+static int _main(void)
 {
-    ve_call_init_functions();
-
     ve_put("main()\n");
+
+    ve_call_init_functions();
 
     /* Wait here to be initialized and to receive the main socket. */
     if (ve_handle_init() != 0)
@@ -40,5 +40,5 @@ int main(void)
 
 void _start(void)
 {
-    ve_exit(main());
+    ve_exit(_main());
 }
