@@ -21,7 +21,7 @@ supported.
 - **Polling** (e.g., select, poll)
 - **System information** (e.g., gethostname, getdomainname)
 - **Network information** (e.g., getaddrinfo, getnameinfo)
-- **Process/group/user information** (e.g., getpid, getuid, getgid, etc.)
+- **Process/user/group information** (e.g., getpid, getuid, getgid, etc.)
 
 Chapter 1 provides an overview of the subsystem. Chapter 2 discusses which
 system functions are supported.
