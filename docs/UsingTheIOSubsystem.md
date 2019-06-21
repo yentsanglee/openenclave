@@ -1,12 +1,30 @@
 Using the Open Enclave I/O subsystem
 ====================================
 
-Synopsis
---------
+Introduction
+============
 
 This document explains how to use the **Open Enclave I/O subsystem**, which
 encompasses file I/O and socket I/O. This subsystem provides enclaves with
-access to files and sockets.
+access to files and sockets. In particular, the following features are
+supported.
+
+- **POSIX file I/O** (e.g., open, read, etc.)
+- **Buffered file I/O** (e.g., fopen, fread, etc.)
+- **File control** (e.g., fcntl, ioctl, etc.)
+- **File manipulation** (e.g., link, remove, rename, etc.)
+- **File information** (e.g., stat, access, etc.)
+- **File system mounting** (e.g., mount, umount, umount2)
+- **Directory enumeration** (e.g., opendir, readdir, etc.)
+- **Directory manipulation** (e.g., mkdir, rmdir, chdir, getcwd, etc.)
+- **Sockets** (e.g., socket, listen, bin, accept, send, recv, etc.)
+- **Polling** (e.g., select, poll)
+- **System information** (e.g., gethostname, getdomainname)
+- **Network information** (e.g., getaddrinfo, getnameinfo)
+- **Process/group/user information** (e.g., getpid, getuid, getgid, etc.)
+
+Chapter 1 provides an overview of the subsystem. Chapter 2 discusses which
+system functions are supported.
 
 Chapter 1: Overview
 ===================
@@ -30,34 +48,6 @@ are needed. This is purely a security measure. By default, enclaves have no
 access to files or sockets. The next section describes how to opt-in to
 various I/O features.
 
-Supported features
-------------------
-
-The I/O subsystem supports the following features.
-
-- **POSIX file I/O** (e.g., open, read, etc.)
-- **Buffered file I/O** (e.g., fopen, fread, etc.)
-- **File control** (e.g., fcntl, ioctl, etc.)
-- **File manipulation** (e.g., link, remove, rename, etc.)
-- **File information** (e.g., stat, access, etc.)
-- **File system mounting** (e.g., mount, umount, umount2)
-- **Directory enumeration** (e.g., opendir, readdir, etc.)
-- **Directory manipulation** (e.g., mkdir, rmdir, chdir, getcwd, etc.)
-- **Sockets** (e.g., socket, listen, bin, accept, send, recv, etc.)
-- **Polling** (e.g., select, poll)
-- **System information** (e.g., gethostname, getdomainname)
-- **Network information** (e.g., getaddrinfo, getnameinfo)
-- **Process/group/user information** (e.g., getpid, getuid, getgid, etc.)
-
-The second chapter discusses specifically which functions are implemented and
-their limitations.
-
-Operating system support
-------------------------
-
-The current version is Limited to Linux hosts. Windows host support is under
-development.
-
 Opting in
 ---------
 
@@ -76,6 +66,14 @@ following.
     - **oe_load_module_host_file_system()**
     - **oe_load_module_host_socket_interface()**
     - **oe_load_module_host_resolver()**
+
+The I/O subsystem supports the following features.
+
+Operating system support
+------------------------
+
+The current version is Limited to Linux hosts. Windows host support is under
+development.
 
 File system path resolution
 ---------------------------
@@ -291,3 +289,15 @@ void echod_server(uint16_t port)
     close(listener);
 }
 ```
+
+Chapter 1: Supported functions
+==============================
+
+This chapter discusses which system functions are supported by the I/O
+subsystem. Each section discusses a system header file, describing which
+functions are supported.
+
+**<stdio.h>**
+-------------
+
+
