@@ -8,8 +8,8 @@ This document explains how to use the **Open Enclave I/O subsystem**, which
 encompasses file I/O and socket I/O. This subsystem provides enclaves with
 access to files and sockets.
 
-Overview
---------
+Chapter 1: Overview
+===================
 
 The **Open Enclave I/O subsystem** exposes I/O features through ordinary system
 header files. These headers fall roughly into three categories.
@@ -30,6 +30,34 @@ are needed. This is purely a security measure. By default, enclaves have no
 access to files or sockets. The next section describes how to opt-in to
 various I/O features.
 
+Supported features
+------------------
+
+The I/O subsystem supports the following features.
+
+- **POSIX file I/O** (e.g., open, read, etc.)
+- **Buffered file I/O** (e.g., fopen, fread, etc.)
+- **File control** (e.g., fcntl, ioctl, etc.)
+- **File manipulation** (e.g., link, remove, rename, etc.)
+- **File information** (e.g., stat, access, etc.)
+- **File system mounting** (e.g., mount, umount, umount2)
+- **Directory enumeration** (e.g., opendir, readdir, etc.)
+- **Directory manipulation** (e.g., mkdir, rmdir, chdir, getcwd, etc.)
+- **Sockets** (e.g., socket, listen, bin, accept, send, recv, etc.)
+- **Polling** (e.g., select, poll)
+- **System information** (e.g., gethostname, getdomainname)
+- **Network information** (e.g., getaddrinfo, getnameinfo)
+- **Process/group/user information** (e.g., getpid, getuid, getgid, etc.)
+
+The second chapter discusses specifically which functions are implemented and
+their limitations.
+
+Operating system support
+------------------------
+
+The current version is Limited to Linux hosts. Windows host support is under
+development.
+
 Opting in
 ---------
 
@@ -49,8 +77,217 @@ following.
     - **oe_load_module_host_socket_interface()**
     - **oe_load_module_host_resolver()**
 
+File system path resolution
+---------------------------
+
+Path-oriented functions must resolve their path parameter to a file system
+device. There are two mechanisms for doing this. The first mechanisms employs
+the Linux **mount** function defined below.
+
+```
+#include <sys/mount.h>
+
+int mount(
+    const char* source,
+    const char* target,
+    const char* filesystemtype,
+    unsigned long mountflags,
+    const void* data);
+```
+
+This function attaches a file system to the directory specifies by **target**.
+**filesystemtype** parameter specifies the name of the file system. The next
+section will show how to mount the non-secure host file system.
+
+The second path-resolution mechanism employs the following functions.
+
+```
+oe_result_t oe_set_thread_devid(uint64_t devid);
+oe_result_t oe_clear_thread_devid();
+```
+
+The **oe_set_thread_devid** function sets the device id for the current
+thread. Once set, that device is used by path-oriented functions until
+it is cleared by calling **oe_clear_thread_devid**. These functions can be
+used to wrap calls to path-oriented functions. Consider the following function
+definition.
+
+```
+#include <stdio.h>
+#include <openenclave/enclave.h>
+
+FILE* fopen_by_device(uint64_t devid, const char *path, const char *mode)
+{
+    extern oe_result_t oe_set_thread_devid(uint64_t devid);
+    extern oe_result_t oe_clear_thread_devid(uint64_t devid);
+
+    oe_set_thread_devid(devid);
+    FILE* stream = fopen(path, mode);
+    oe_clear_thread_devid(devid);
+
+    return stream;
+}
+```
+
+This function can then be used to compose device-specific functions. For
+example.
+
+```
+FILE* fopen_host_file_system(const char *path, const char *mode)
+{
+    const uint64_t OE_DEVID_HOST_FILE_SYSTEM = 1;
+
+    return fopen_by_device(OE_DEVID_HOST_FILE_SYSTEM, path, mode);
+}
+```
+
+Caution: the thread-devid functions are experimental in the current release.
+
+A file system example
+----------------------
+
+This section shows how an enclave may create a file on the host file system.
+First the enclave links **liboehostfs** and then loads the **host file system**
+module and mounts this file system as shown below.
+
+```
+#include <openenclave/enclave.h>
+#include <sys/mount.h>
+
+int setup()
+{
+    oe_result_t result;
+
+    /* Load the host file system module. */
+    if ((result = oe_load_module_host_socket_interface()) != OE_OK)
+        return -1;
+
+    /* Mount the host file system on the root directory. */
+    if (mount("/", "/", OE_HOST_FILE_SYSTEM, 0, NULL) != 0)
+        return -1;
+
+    return 0;
+}
+```
+
+The **mount()** function is discussed later in this document.
+
+The following function makes use of the standard C stream functions to create
+a new file that contains the letters of the alphabet.
+
+```
+#include <stdio.h>
+#include <string.h>
+
+int create_alphabet_file(const char* path)
+{
+    FILE* stream = NULL;
+    const char ALPHABET[] = "abcdefghijklmnopqrstuvwxyz";
+
+    /* Open the file for write. */
+    if (!(stream = fopen(path, "w")))
+        return -1;
+
+    /* Write the letters of the alphabet to the file. */
+    if (fwrite(alphabet, 1, sizeof(alphabet), stream) != sizeof(ALPHABET))
+    {
+        fclose(stream);
+        return -1;
+    }
+
+    fclose(stream);
+
+    return 0;
+}
+```
+
 A socket example
 ----------------
 
-This section shows how to create an enclave that hosts an echo server, which
-echos back requests received on a socket.
+This section provides an example of an enclave that runs an echo service. This
+service accepts a client connection, reads a request, writes the request back
+to the client, and closes the connection. Before the service can run, the
+appropriate module is loaded as shown below. Also this enclave application
+must be linked with **liboehostsock**.
+
+```
+#include <openenclave/enclave.h>
+
+void setup()
+{
+    oe_load_module_host_socket_interface();
+}
+```
+
+The function that runs the services is listed below.
+
+```
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+void echod_server(uint16_t port)
+{
+    int listener;
+
+    /* Create the listener socket. */
+    if ((listener = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        error_exit("socket() failed: errno=%d", errno);
+
+    /* Reuse this server address. */
+    {
+        const int opt = 1;
+        const socklen_t opt_len = sizeof(opt);
+
+        if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &opt, opt_len) != 0)
+            error_exit("setsockopt() failed: errno=%d", errno);
+    }
+
+    /* Listen on this address. */
+    {
+        struct sockaddr_in addr;
+        const int backlog = 10;
+
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        addr.sin_port = htons(port);
+
+        if (bind(listener, (struct sockaddr*)&addr, sizeof(addr)) != 0)
+            error_exit("bind() failed: errno=%d", errno);
+
+        if (listen(listener, backlog) != 0)
+            error_exit("listen() failed: errno=%d", errno);
+    }
+
+    /* Accept-recv-send-close until a zero value is received. */
+    for (;;)
+    {
+        int client;
+        uint64_t value;
+
+        if ((client = accept(listener, NULL, NULL)) < 0)
+            error_exit("accept() failed: errno=%d", errno);
+
+        if (recv_n(client, &value, sizeof(value)) != 0)
+            error_exit("recv_n() failed: errno=%d", errno);
+
+        if (send_n(client, &value, sizeof(value)) != 0)
+            error_exit("send_n() failed: errno=%d", errno);
+
+        close(client);
+
+        if (value == 0)
+            break;
+    }
+
+    close(listener);
+}
+```
