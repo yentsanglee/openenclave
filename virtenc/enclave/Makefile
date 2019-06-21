@@ -54,6 +54,7 @@ SOURCES += read.c
 SOURCES += write.c
 SOURCES += shm.c
 SOURCES += ../common/lock.c
+SOURCES += ../common/msg.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles
 

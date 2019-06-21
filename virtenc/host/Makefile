@@ -22,6 +22,7 @@ SOURCES += sendfd.c
 SOURCES += malloc.c
 SOURCES += hostmalloc.c
 SOURCES += ../common/lock.c
+SOURCES += ../common/msg.c
 
 DEFINES += -DHOST
 
