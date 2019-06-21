@@ -17,7 +17,7 @@ supported.
 - **File system mounting** (e.g., mount, umount, umount2)
 - **Directory enumeration** (e.g., opendir, readdir, etc.)
 - **Directory manipulation** (e.g., mkdir, rmdir, chdir, getcwd, etc.)
-- **Sockets** (e.g., socket, listen, bin, accept, send, recv, etc.)
+- **Sockets** (e.g., socket, listen, bind, accept, send, recv, etc.)
 - **Polling** (e.g., select, poll)
 - **System information** (e.g., gethostname, getdomainname)
 - **Network information** (e.g., getaddrinfo, getnameinfo)
@@ -298,11 +298,10 @@ functions are supported.
 **<stdio.h>**
 -------------
 
-The I/O subsustem adds supports for the following functions from the
-**<stdio.h>** header.
+For the **<stdio.h>** header, the I/O subsustem adds support for the following
+functions.
 
-
-| Function          | Notes                                                    |
+| Function          | Limitations                                              |
 | :---              | :---                                                     |
 | clearerr          |                                                          |
 | dprintf           |                                                          |
@@ -340,4 +339,229 @@ The I/O subsustem adds supports for the following functions from the
 | vdprintf          |                                                          |
 | vfprintf          |                                                          |
 | vfscanf           |                                                          |
+|                   | <img width="1000">                                       |
+
+**<stdlib.h>**
+-------------
+
+For the **<stdlib.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| realpath          | Canonicalizes path but does not resolve symbolic links.  |
+|                   | <img width="1000">                                       |
+
+**<fcntl.h>**
+-------------
+
+For the **<fcntl.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| fcntl             | Only partial support for command types.                  |
+| open              |                                                          |
+|                   | <img width="1000">                                       |
+
+**<unistd.h>**
+-------------
+
+For the **<unistd.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| access            |                                                          |
+| chdir             |                                                          |
+| close             |                                                          |
+| dup               |                                                          |
+| dup2              |                                                          |
+| getcwd            |                                                          |
+| getdomainname     |                                                          |
+| getegid           |                                                          |
+| geteuid           |                                                          |
+| getgid            |                                                          |
+| getgroups         |                                                          |
+| gethostname       |                                                          |
+| getpgid           |                                                          |
+| getpgrp           |                                                          |
+| getpid            |                                                          |
+| getppid           |                                                          |
+| getuid            |                                                          |
+| link              |                                                          |
+| lseek             |                                                          |
+| read              |                                                          |
+| rmdir             |                                                          |
+| sleep             |                                                          |
+| unlink            |                                                          |
+| write             |                                                          |
+|                   | <img width="1000">                                       |
+
+**<netdb.h>**
+-------------
+
+For the **<netdb.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| freeaddrinfo      |                                                          |
+| getaddrinfo       |                                                          |
+| getnameinfo       |                                                          |
+|                   | <img width="1000">                                       |
+
+**<socket.h>**
+-------------
+
+For the **<socket.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| accept            |                                                          |
+| bind              |                                                          |
+| connect           |                                                          |
+| getpeername       |                                                          |
+| getsockname       |                                                          |
+| getsockopt        |                                                          |
+| listen            |                                                          |
+| recv              |                                                          |
+| recvfrom          |                                                          |
+| recvmsg           |                                                          |
+| send              |                                                          |
+| sendmsg           |                                                          |
+| sendto            |                                                          |
+| setsockopt        |                                                          |
+| shutdown          |                                                          |
+| socket            |                                                          |
+| socketpair        |                                                          |
+|                   | <img width="1000">                                       |
+
+**<select.h>**
+-------------
+
+For the **<select.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| FD_CLR            |                                                          |
+| FD_ISSET          |                                                          |
+| FD_SET            |                                                          |
+| FD_ZERO           |                                                          |
+| select            |                                                          |
+|                   | <img width="1000">                                       |
+
+**<dirent.h>**
+-------------
+
+For the **<dirent.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| closedir          |                                                          |
+| opendir           |                                                          |
+| readdir           |                                                          |
+| readdir_r         |                                                          |
+| rewinddir         |                                                          |
+| telldir           |                                                          |
+|                   | <img width="1000">                                       |
+
+**<poll.h>**
+-------------
+
+For the **<poll.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| poll              |                                                          |
+|                   | <img width="1000">                                       |
+
+**<poll.h>**
+-------------
+
+For the **<poll.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| poll              |                                                          |
+|                   | <img width="1000">                                       |
+
+**<ioctl.h>**
+-------------
+
+For the **<ioctl.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| ioctl             | Only partial support for request types.                  |
+|                   | <img width="1000">                                       |
+
+**<mount.h>**
+-------------
+
+For the **<mount.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| mount             |                                                          |
+| umount            |                                                          |
+| umount2           |                                                          |
+|                   | <img width="1000">                                       |
+
+**<uname.h>**
+-------------
+
+For the **<uname.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| uname             |                                                          |
+|                   | <img width="1000">                                       |
+
+
+**<sys/uio.h>**
+-------------
+
+For the **<sys/uio.h>** header, the I/O subsustem adds support for the following
+functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| readv             |                                                          |
+| writev            |                                                          |
+|                   | <img width="1000">                                       |
+
+**<sys/stat.h>**
+-------------
+
+For the **<sys/stat.h>** header, the I/O subsustem adds support for the
+following functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| mkdir             |                                                          |
+| stat              |                                                          |
+|                   | <img width="1000">                                       |
+
+**<arpa/inet.h>**
+-------------
+
+For the **<arpa/inet.h>** header, the I/O subsustem adds support for the
+following functions.
+
+| Function          | Limitations                                              |
+| :---              | :---                                                     |
+| htonl             |                                                          |
+| htons             |                                                          |
+| ntohl             |                                                          |
+| ntohs             |                                                          |
+| inet_addr         |                                                          |
 |                   | <img width="1000">                                       |
