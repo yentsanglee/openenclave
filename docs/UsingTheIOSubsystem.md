@@ -328,6 +328,7 @@ the I/O subsystem.
 | printf        | yes       |                                                  |
 | fprintf       | yes       |                                                  |
 | sprintf       | yes       |                                                  |
+:--------------:|:---------:|:-------------------------------------------------|
 | snprintf      | yes       |                                                  |
 | snprintf      | yes       |                                                  |
 | vprintf       | yes       |                                                  |
