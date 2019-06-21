@@ -67,13 +67,11 @@ following.
 - **oe_load_module_host_socket_interface()**
 - **oe_load_module_host_resolver()**
 
-The I/O subsystem supports the following features.
-
 Operating system support
 ------------------------
 
-The current version is Limited to Linux hosts. Windows host support is under
-development.
+The current version is Limited to Linux hosts but Windows host is under
+development now.
 
 File system path resolution
 ---------------------------
@@ -300,4 +298,10 @@ functions are supported.
 **<stdio.h>**
 -------------
 
+### fopen()
 
+blah blah balh
+
+### fclose()
+
+blah blah balh
