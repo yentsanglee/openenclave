@@ -298,37 +298,45 @@ functions are supported.
 **<stdio.h>**
 -------------
 
-This table below defines the functions from **<stdio.h>** that are supported by
-the I/O subsystem.
+The I/O subsustem adds supports for the following functions from the
+**<stdio.h>** header.
 
-| Function      | Supported | Notes                                            |
-:--------------:|:---------:|:-------------------------------------------------|
-| fopen         | yes       |                                                  |
-| freopen       | yes       |                                                  |
-| fclose        | yes       |                                                  |
-| remove        | yes       |                                                  |
-| rename        | yes       |                                                  |
-| feof          | yes       |                                                  |
-| ferror        | yes       |                                                  |
-| fflush        | yes       |                                                  |
-| clearerr      | yes       |                                                  |
-| fseek         | yes       |                                                  |
-| ftell         | yes       |                                                  |
-| rewind        | yes       |                                                  |
-| fgetpos       | yes       |                                                  |
-| fsetpos       | yes       |                                                  |
-| fread         | yes       |                                                  |
-| fwrite        | yes       |                                                  |
-| fgetc         | yes       |                                                  |
-| getc          | yes       |                                                  |
-| fgets         | yes       |                                                  |
-| gets          | no        | Deprecated by C11                                |
-| fputs         | yes       |                                                  |
-| puts          | yes       |                                                  |
-| printf        | yes       |                                                  |
-| fprintf       | yes       |                                                  |
-| sprintf       | yes       |                                                  |
-:--------------:|:---------:|:-------------------------------------------------|
-| snprintf      | yes       |                                                  |
-| snprintf      | yes       |                                                  |
-| vprintf       | yes       |                                                  |
+
+| Function          |
+:------------------:|
+| clearerr          |
+| dprintf           |
+| fclose            |
+| fdopen            |
+| feof              |
+| ferror            |
+| fflush            |
+| fgetc             |
+| fgetln            |
+| fgetpos           |
+| fgets             |
+| fileno            |
+| fopen             |
+| fprintf           |
+| fputs             |
+| fread             |
+| freopen           |
+| fscanf            |
+| fseeko            |
+| fseek             |
+| fsetpos           |
+| ftello            |
+| ftell             |
+| fwrite            |
+| getc              |
+| gets              |
+| remove            |
+| rename            |
+| rewind            |
+| setbuffer         |
+| setbuf            |
+| setlinebuf        |
+| setvbuf           |
+| vdprintf          |
+| vfprintf          |
+| vfscanf           |
