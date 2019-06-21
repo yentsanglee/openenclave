@@ -302,41 +302,41 @@ The I/O subsustem adds supports for the following functions from the
 **<stdio.h>** header.
 
 
-| Function          |
-:------------------:|
-| clearerr          |
-| dprintf           |
-| fclose            |
-| fdopen            |
-| feof              |
-| ferror            |
-| fflush            |
-| fgetc             |
-| fgetln            |
-| fgetpos           |
-| fgets             |
-| fileno            |
-| fopen             |
-| fprintf           |
-| fputs             |
-| fread             |
-| freopen           |
-| fscanf            |
-| fseeko            |
-| fseek             |
-| fsetpos           |
-| ftello            |
-| ftell             |
-| fwrite            |
-| getc              |
-| gets              |
-| remove            |
-| rename            |
-| rewind            |
-| setbuffer         |
-| setbuf            |
-| setlinebuf        |
-| setvbuf           |
-| vdprintf          |
-| vfprintf          |
-| vfscanf           |
+| Function          | Notes                                                    |
+:------------------:|:--------------------------------------------------------:|
+| clearerr          |                                                          |
+| dprintf           |                                                          |
+| fclose            |                                                          |
+| fdopen            |                                                          |
+| feof              |                                                          |
+| ferror            |                                                          |
+| fflush            |                                                          |
+| fgetc             |                                                          |
+| fgetln            |                                                          |
+| fgetpos           |                                                          |
+| fgets             |                                                          |
+| fileno            |                                                          |
+| fopen             |                                                          |
+| fprintf           |                                                          |
+| fputs             |                                                          |
+| fread             |                                                          |
+| freopen           |                                                          |
+| fscanf            |                                                          |
+| fseeko            |                                                          |
+| fseek             |                                                          |
+| fsetpos           |                                                          |
+| ftello            |                                                          |
+| ftell             |                                                          |
+| fwrite            |                                                          |
+| getc              |                                                          |
+| gets              |                                                          |
+| remove            |                                                          |
+| rename            |                                                          |
+| rewind            |                                                          |
+| setbuffer         |                                                          |
+| setbuf            |                                                          |
+| setlinebuf        |                                                          |
+| setvbuf           |                                                          |
+| vdprintf          |                                                          |
+| vfprintf          |                                                          |
+| vfscanf           |                                                          |
