@@ -302,9 +302,9 @@ The I/O subsustem adds supports for the following functions from the
 **<stdio.h>** header.
 
 
-| Function          | Notes                                                    |
+| Function          | Notes <img width="500">                                  |
 | :---              | :---                                                     |
-| clearerr          | <img width="500">                                        |
+| clearerr          |                                                          |
 | dprintf           |                                                          |
 | fclose            |                                                          |
 | fdopen            |                                                          |
