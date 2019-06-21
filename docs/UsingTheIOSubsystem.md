@@ -288,6 +288,54 @@ void echod_server(uint16_t port)
 }
 ```
 
+The client listing follows.
+
+```
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+
+static void echod_client(uint16_t port, uint64_t value)
+{
+    int sock;
+
+    /* Create the client socket. */
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+        error_exit("socket() failed: errno=%d", errno);
+
+    /* Connect to the server. */
+    {
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        addr.sin_port = htons(port);
+
+        if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) != 0)
+            error_exit("connectd() failed: errno=%d", errno);
+    }
+
+    /* write/read "hello" to/from  the server. */
+    {
+        uint64_t tmp;
+
+        if (send_n(sock, &value, sizeof(value)) != 0)
+            error_exit("send_n() failed: errno=%d", errno);
+
+        if (recv_n(sock, &tmp, sizeof(tmp)) != 0)
+            error_exit("recv_n() failed: errno=%d", errno);
+
+        if (tmp != value)
+            error_exit("comparision failed");
+    }
+
+    close(sock);
+}
+```
+
 Chapter 1: Supported functions
 ==============================
 
