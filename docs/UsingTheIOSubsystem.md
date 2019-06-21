@@ -303,7 +303,7 @@ The I/O subsustem adds supports for the following functions from the
 
 
 | Function          | Notes                                                    |
-:------------------:|:--------------------------------------------------------:|
+|:---           ---:|                                                      ---:|
 | clearerr          |                                                          |
 | dprintf           |                                                          |
 | fclose            |                                                          |
