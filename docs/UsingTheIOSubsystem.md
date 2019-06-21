@@ -303,7 +303,31 @@ the I/O subsystem.
 
 | Function      | Supported | Notes                                            |
 :--------------:|:---------:|:-------------------------------------------------|
-| XXX           | YYY       | Some note                                        |
-| XXX           | YYY       | Some note                                        |
-| XXX           | YYY       | Some note                                        |
-| XXX           | YYY       | Some note                                        |
+| fopen         | yes       |                                                  |
+| freopen       | yes       |                                                  |
+| fclose        | yes       |                                                  |
+| remove        | yes       |                                                  |
+| rename        | yes       |                                                  |
+| feof          | yes       |                                                  |
+| ferror        | yes       |                                                  |
+| fflush        | yes       |                                                  |
+| clearerr      | yes       |                                                  |
+| fseek         | yes       |                                                  |
+| ftell         | yes       |                                                  |
+| rewind        | yes       |                                                  |
+| fgetpos       | yes       |                                                  |
+| fsetpos       | yes       |                                                  |
+| fread         | yes       |                                                  |
+| fwrite        | yes       |                                                  |
+| fgetc         | yes       |                                                  |
+| getc          | yes       |                                                  |
+| fgets         | yes       |                                                  |
+| gets          | no        | Deprecated by C11                                |
+| fputs         | yes       |                                                  |
+| puts          | yes       |                                                  |
+| printf        | yes       |                                                  |
+| fprintf       | yes       |                                                  |
+| sprintf       | yes       |                                                  |
+| snprintf      | yes       |                                                  |
+| snprintf      | yes       |                                                  |
+| vprintf       | yes       |                                                  |
