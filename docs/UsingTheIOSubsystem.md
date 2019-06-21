@@ -56,16 +56,16 @@ use. Opting in is a matter of (1) linking the desired module libraries and
 (2) calling functions to load the modules. I/O features are packaged as
 static libraries. This release provides the following modules.
 
-    - **liboehostfs** -- access to non-secure host files and directories.
-    - **liboehostsock** -- access to non-secure sockets.
-    - **libhostresolver** -- access to network information.
+- **liboehostfs** -- access to non-secure host files and directories.
+- **liboehostsock** -- access to non-secure sockets.
+- **libhostresolver** -- access to network information.
 
 After linking modules, the enclave loads modules by calling one of the
 following.
 
-    - **oe_load_module_host_file_system()**
-    - **oe_load_module_host_socket_interface()**
-    - **oe_load_module_host_resolver()**
+- **oe_load_module_host_file_system()**
+- **oe_load_module_host_socket_interface()**
+- **oe_load_module_host_resolver()**
 
 The I/O subsystem supports the following features.
 
