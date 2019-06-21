@@ -304,7 +304,7 @@ The I/O subsustem adds supports for the following functions from the
 
 | Function          | Notes                                                    |
 | :---              | :---                                                     |
-| clearerr          | <img src="" width="200">                                 |
+| clearerr          | <img width="200">                                 |
 | dprintf           |                                                          |
 | fclose            |                                                          |
 | fdopen            |                                                          |
