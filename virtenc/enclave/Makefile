@@ -52,6 +52,7 @@ SOURCES += malloc.c
 SOURCES += abort.c
 SOURCES += read.c
 SOURCES += write.c
+SOURCES += shm.c
 SOURCES += ../common/lock.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles

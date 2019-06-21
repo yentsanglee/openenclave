@@ -13,6 +13,8 @@ void ve_puts(const char* s);
 
 void ve_put_nl(void);
 
+void ve_put_str(const char* s, const char* x);
+
 void ve_put_oct(const char* s, uint64_t x);
 
 void ve_put_uint(const char* s, uint64_t x);

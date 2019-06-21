@@ -29,6 +29,15 @@ void ve_puts(const char* s)
     ve_unlock(&_lock);
 }
 
+void ve_put_str(const char* s, const char* x)
+{
+    ve_lock(&_lock);
+    ve_put(s);
+    ve_put(x);
+    ve_put_nl();
+    ve_unlock(&_lock);
+}
+
 void ve_put_oct(const char* s, uint64_t x)
 {
     ve_lock(&_lock);

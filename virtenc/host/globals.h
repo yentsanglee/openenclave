@@ -16,13 +16,21 @@ typedef struct _thread_info
     uint32_t tcs;
 } thread_info_t;
 
+#define HOST_HEAP_SIZE (1024 * 1024)
+
 typedef struct _globals
 {
     int sock;
     int child_sock;
+
     thread_info_t threads[MAX_THREADS];
     ve_lock_t threads_lock;
     size_t num_threads;
+
+    /* Host heap memory shared with child processes. */
+    int shmid;
+    void* shmaddr;
+    size_t shmsize;
 } globals_t;
 
 extern globals_t globals;

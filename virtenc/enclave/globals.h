@@ -24,6 +24,9 @@ typedef struct _globals
     thread_arg_t threads[MAX_THREADS];
     size_t num_threads;
     ve_lock_t threads_lock;
+
+    /* Shared memory between host and enclave. */
+    void* shmaddr;
 } globals_t;
 
 extern globals_t globals;

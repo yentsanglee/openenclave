@@ -6,16 +6,21 @@
 #include "../common/msg.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stropts.h>
 #include <sys/ioctl.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 #include "globals.h"
+#include "hostmalloc.h"
 
 const char* arg0;
 
@@ -34,20 +39,86 @@ void err(const char* fmt, ...)
     exit(1);
 }
 
-static int _init_child(int child_fd, int child_sock)
+OE_PRINTF_FORMAT(1, 2)
+void puterr(const char* fmt, ...)
+{
+    va_list ap;
+
+    fprintf(stderr, "%s: error: ", arg0);
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    fprintf(stderr, "\n");
+}
+
+/* Create a shared-memory heap for making ecalls and ocalls. */
+static int _create_host_heap(globals_t* globals, size_t heap_size)
 {
     int ret = -1;
-    ve_msg_init_in_t in;
-    const ve_msg_type_t type = VE_MSG_INIT;
+    const int PERM = (S_IRUSR | S_IWUSR);
+    int shmid = -1;
+    void* shmaddr = NULL;
 
-    in.sock = child_sock;
-
-    if (ve_send_msg(child_fd, type, &in, sizeof(in)) != 0)
+    if ((shmid = shmget(IPC_PRIVATE, heap_size, PERM)) == -1)
         goto done;
+
+    if ((shmaddr = shmat(shmid, NULL, 0)) == (void*)-1)
+        goto done;
+
+    globals->shmid = shmid;
+    globals->shmaddr = shmaddr;
+    globals->shmsize = heap_size;
+    shmid = -1;
+    shmaddr = NULL;
 
     ret = 0;
 
 done:
+
+    if (shmaddr)
+        shmdt(shmaddr);
+
+    if (shmid != -1)
+        shmctl(shmid, IPC_RMID, NULL);
+
+    return ret;
+}
+
+static int _init_child(int child_fd, int child_sock)
+{
+    int ret = -1;
+    ve_msg_init_in_t in;
+    ve_msg_init_out_t out;
+    const ve_msg_type_t type = VE_MSG_INIT;
+
+    in.sock = child_sock;
+    in.shmid = globals.shmid;
+    in.shmaddr = globals.shmaddr;
+
+    *((uint64_t*)globals.shmaddr) = 0xffffffffffffffff;
+
+    /* Send request on the file descriptor. */
+    if (ve_send_msg(child_fd, type, &in, sizeof(in)) != 0)
+        goto done;
+
+    /* Receive the response on the socket. */
+    if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out)) != 0)
+        goto done;
+
+    if (out.ret != 0)
+        goto done;
+
+    /* Check that child was able to write to shared memory. */
+    if (*((uint64_t*)globals.shmaddr) != VE_SHMADDR_MAGIC)
+    {
+        puterr("shared memory crosscheck failed");
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+
     return ret;
 }
 
@@ -233,9 +304,12 @@ done:
 int _ping_thread(int tcs)
 {
     int ret = -1;
+    ve_msg_ping_thread_in_t in = {0};
     ve_msg_ping_thread_out_t out;
     const ve_msg_type_t type = VE_MSG_PING_THREAD;
     int sock = -1;
+    const char MESSAGE[] = "ping";
+    char* str = NULL;
 
     /* Select the thread to ping. */
     ve_lock(&globals.threads_lock);
@@ -255,8 +329,22 @@ int _ping_thread(int tcs)
     if (sock == -1)
         goto done;
 
+    /* Set the value. */
+    srand((unsigned int)sock);
+    in.value = rand();
+
+    /* Pass a string in shared memory. */
+    {
+        if (!(str = ve_host_malloc(sizeof(MESSAGE))))
+            goto done;
+
+        strcpy(str, MESSAGE);
+
+        in.str = str;
+    }
+
     /* Send the message */
-    if (ve_send_msg(sock, type, NULL, 0) != 0)
+    if (ve_send_msg(sock, type, &in, sizeof(in)) != 0)
         goto done;
 
     /* Receive the response. */
@@ -266,9 +354,15 @@ int _ping_thread(int tcs)
     if (out.ret != 0)
         goto done;
 
+    if (out.value != in.value)
+        goto done;
+
     ret = 0;
 
 done:
+
+    if (str)
+        ve_host_free(str);
 
     return ret;
 }
@@ -308,6 +402,10 @@ int main(int argc, const char* argv[])
         exit(1);
     }
 
+    /* Create shared memory before fork-exec. */
+    if (_create_host_heap(&globals, HOST_HEAP_SIZE) != 0)
+        err("failed to allocate shared memory");
+
     /* Create the child process. */
     if ((pid = _exec(argv[1])) == -1)
         err("failed to execute %s", argv[1]);
@@ -334,6 +432,8 @@ int main(int argc, const char* argv[])
     close(OE_STDIN_FILENO);
     close(OE_STDOUT_FILENO);
     close(OE_STDERR_FILENO);
+
+    /* ATTN: close sockets and release shared memory. */
 
     return 0;
 }

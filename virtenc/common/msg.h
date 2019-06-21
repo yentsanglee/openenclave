@@ -18,6 +18,8 @@ void ve_free(void* ptr);
 
 #define VE_MSG_INITIALIZER {VE_MSG_NONE, 0, NULL};
 
+#define VE_SHMADDR_MAGIC 0xc500f4b6cd2c4f42
+
 typedef enum _ve_msg_type
 {
     VE_MSG_NONE,
@@ -41,8 +43,15 @@ typedef struct _ve_msg
     void* data;
 } ve_msg_t;
 
+typedef struct _ve_msg_ping_thread_in
+{
+    int value;
+    char* str;
+} ve_msg_ping_thread_in_t;
+
 typedef struct _ve_msg_ping_thread_out
 {
+    int value;
     int ret;
 } ve_msg_ping_thread_out_t;
 
@@ -50,7 +59,16 @@ typedef struct _ve_msg_init_in
 {
     /* Child's end of the socket pair that the parent created. */
     int sock;
+
+    /* Host's shared memory heap. */
+    int shmid;
+    void* shmaddr;
 } ve_msg_init_in_t;
+
+typedef struct _ve_msg_init_out
+{
+    int ret;
+} ve_msg_init_out_t;
 
 typedef struct _ve_msg_terminate_out
 {

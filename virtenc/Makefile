@@ -11,7 +11,6 @@ VALGRIND_OPTS += --show-possibly-lost=yes
 VALGRIND_OPTS += --track-origins=yes
 VALGRIND_OPTS += --malloc-fill=0xAA
 VALGRIND_OPTS += --free-fill=0xDD
-#VALGRIND_OPTS += --expensive-definedness-checks=yes
 #VALGRIND_OPTS += --verbose
 
 export ASAN_OPTIONS=detect_leaks=1

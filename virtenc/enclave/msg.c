@@ -13,6 +13,7 @@
 #include "malloc.h"
 #include "put.h"
 #include "recvfd.h"
+#include "shm.h"
 #include "signal.h"
 #include "string.h"
 #include "syscall.h"
@@ -27,7 +28,7 @@ void ve_debug(const char* str)
 static int _thread(void* arg_)
 {
     thread_arg_t* arg = (thread_arg_t*)arg_;
-    ve_msg_t msg = VE_MSG_INITIALIZER;
+    ve_msg_t msg;
 
     ve_put_uint("=== _thread: ", arg->tid);
 #if 0
@@ -49,9 +50,22 @@ static int _thread(void* arg_)
         {
             case VE_MSG_PING_THREAD:
             {
+                const ve_msg_ping_thread_in_t* in;
                 ve_msg_ping_thread_out_t out = {0};
 
-                ve_put_int("thread: ping: ", arg->tid);
+                if (msg.size != sizeof(ve_msg_ping_thread_in_t))
+                    ve_put_err("failed to send message");
+
+                in = (const ve_msg_ping_thread_in_t*)msg.data;
+
+                ve_put_int("thread: ping: tid=", arg->tid);
+                ve_put_int("thread: ping: value=", in->value);
+                ve_put_str("thread: ping: str=", in->str);
+
+                if (!in->str || ve_strcmp(in->str, "ping") != 0)
+                    out.ret = -1;
+
+                out.value = in->value;
 
                 if (ve_send_msg(arg->sock, msg.type, &out, sizeof(out)) != 0)
                     ve_put_err("failed to send message");
@@ -197,18 +211,62 @@ done:
     return ret;
 }
 
+int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
+{
+    int ret = -1;
+    void* rval;
+
+    if (shmid == -1 || shmaddr == NULL || shmaddr == (void*)-1)
+        goto done;
+
+    /* Attach the host's shared memory heap. */
+    if ((rval = ve_shmat(shmid, shmaddr, VE_SHM_RND)) == (void*)-1)
+    {
+        /* ATTN: send response on failure? */
+        ve_put_uint("error: ve_shmat(1) failed: shmaddr=", (uint64_t)shmaddr);
+        goto done;
+    }
+
+    if (rval != shmaddr)
+    {
+        /* ATTN: send response on failure? */
+        ve_put_uint("error: ve_shmat(2) failed: shmaddr=", (uint64_t)shmaddr);
+        goto done;
+    }
+
+    globals->shmaddr = rval;
+
+    *((uint64_t*)rval) = VE_SHMADDR_MAGIC;
+
+    ret = 0;
+
+done:
+    return 0;
+}
+
 int ve_handle_init(void)
 {
     int ret = -1;
     const ve_msg_type_t type = VE_MSG_INIT;
     ve_msg_init_in_t in;
+    ve_msg_terminate_out_t out = {-1};
 
+    /* Receive request from standard-input. */
     if (ve_recv_msg_by_type(OE_STDIN_FILENO, type, &in, sizeof(in)) != 0)
         goto done;
 
     globals.sock = in.sock;
 
-    ret = 0;
+    if (_attach_host_heap(&globals, in.shmid, in.shmaddr) != 0)
+        ve_put("_attach_host_heap() failed");
+    else
+        out.ret = 0;
+
+    /* Send response on the socket. */
+    if (ve_send_msg(globals.sock, type, &out, sizeof(out)) != 0)
+        goto done;
+
+    ret = out.ret;
 
 done:
     return ret;
@@ -251,6 +309,7 @@ int ve_handle_messages(void)
 
                 ve_close(globals.sock);
                 ve_msg_free(&msg);
+                ve_shmdt(globals.shmaddr);
                 ve_exit(0);
                 break;
             }
