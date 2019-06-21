@@ -32,9 +32,9 @@ Chapter 1: Overview
 The **Open Enclave I/O subsystem** exposes I/O features through ordinary system
 header files. These headers fall roughly into three categories.
 
-- C headers, (such as stdio.h, stdlib.h)
-- POSIX headers (such as socket.h, dirent.h, fnctl.h, stat.h)
-- Linux headers (such as mount.h)
+- **C headers** (such as stdio.h, stdlib.h)
+- **POSIX headers** (such as socket.h, dirent.h, fnctl.h, stat.h)
+- **Linux headers** (such as mount.h)
 
 **Open Enclave** provides a partial implementation of these headers and many
 others. These headers are part of [**musl libc**](https://www.musl-libc.org),
