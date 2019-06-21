@@ -302,7 +302,7 @@ The I/O subsustem adds supports for the following functions from the
 **<stdio.h>** header.
 
 
-| Function          | Notes <img width="1000">                                 |
+| Function          | Notes                                                    |
 | :---              | :---                                                     |
 | clearerr          |                                                          |
 | dprintf           |                                                          |
@@ -340,3 +340,4 @@ The I/O subsustem adds supports for the following functions from the
 | vdprintf          |                                                          |
 | vfprintf          |                                                          |
 | vfscanf           |                                                          |
+|                   | <img width="1000">                                       |
