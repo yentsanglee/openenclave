@@ -298,10 +298,10 @@ functions are supported.
 **<stdio.h>**
 -------------
 
-### fopen()
+This table below defines the functions from **<stdio.h>** that are supported by
+the I/O subsystem.
 
-blah blah balh
+| Function  | Supported | Notes                                                |
+:----------:|:---------:|:-----------------------------------------------------|
+| XXX       | YYY       | Some note                                            |
 
-### fclose()
-
-blah blah balh
