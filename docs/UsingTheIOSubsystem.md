@@ -301,7 +301,9 @@ functions are supported.
 This table below defines the functions from **<stdio.h>** that are supported by
 the I/O subsystem.
 
-| Function  | Supported | Notes                                                |
-:----------:|:---------:|:-----------------------------------------------------|
-| XXX       | YYY       | Some note                                            |
-
+| Function      | Supported | Notes                                            |
+:--------------:|:---------:|:-------------------------------------------------|
+| XXX           | YYY       | Some note                                        |
+| XXX           | YYY       | Some note                                        |
+| XXX           | YYY       | Some note                                        |
+| XXX           | YYY       | Some note                                        |
