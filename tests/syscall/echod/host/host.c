@@ -29,12 +29,61 @@ static void error_exit(const char* fmt, ...)
     exit(1);
 }
 
-static void run_client(uint16_t port)
+static int recv_n(int fd, void* buf, size_t count)
+{
+    int ret = -1;
+    uint8_t* p = (uint8_t*)buf;
+    size_t n = count;
+
+    if (fd < 0 || !buf)
+        goto done;
+
+    while (n > 0)
+    {
+        ssize_t r = recv(fd, p, n, 0);
+
+        if (r <= 0)
+            goto done;
+
+        p += r;
+        n -= (size_t)r;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int send_n(int fd, const void* buf, size_t count)
+{
+    int ret = -1;
+    const uint8_t* p = (const uint8_t*)buf;
+    size_t n = count;
+
+    if (fd < 0 || !buf)
+        goto done;
+
+    while (n > 0)
+    {
+        ssize_t r = send(fd, p, n, 0);
+
+        if (r <= 0)
+            goto done;
+
+        p += r;
+        n -= (size_t)r;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static void run_client(uint16_t port, uint64_t value)
 {
     int sock;
-    const char hello[] = "hello";
-    const char quit[] = "quit";
-    char buf[1024];
 
     /* Create the client socket. */
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -54,19 +103,17 @@ static void run_client(uint16_t port)
 
     /* write/read "hello" to/from  the server. */
     {
-        if (send(sock, hello, sizeof(hello), 0) != sizeof(hello))
-            error_exit("send() failed: errno=%d", errno);
+        uint64_t tmp;
 
-        if (recv(sock, buf, sizeof(buf), 0) != sizeof(hello))
-            error_exit("recv() failed: errno=%d", errno);
+        if (send_n(sock, &value, sizeof(value)) != 0)
+            error_exit("send_n() failed: errno=%d", errno);
 
-        if (memcmp(hello, buf, sizeof(hello)) != 0)
-            error_exit("memcmp() failed");
+        if (recv_n(sock, &tmp, sizeof(tmp)) != 0)
+            error_exit("recv_n() failed: errno=%d", errno);
+
+        if (tmp != value)
+            error_exit("comparision failed");
     }
-
-    /* Send "quit" command to the server. */
-    if (send(sock, quit, sizeof(quit), 0) != sizeof(quit))
-        error_exit("send() failed: errno=%d", errno);
 
     close(sock);
 }
@@ -114,7 +161,11 @@ int main(int argc, const char* argv[])
     sleep(1);
 
     /* Run the client. */
-    run_client(PORT);
+    for (size_t value = 1; value <= 10; value++)
+        run_client(PORT, value);
+
+    /* Terminate the server. */
+    run_client(PORT, 0);
 
     /* Join with the server thread. */
     pthread_join(thread, NULL);
