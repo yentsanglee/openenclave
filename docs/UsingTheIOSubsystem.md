@@ -49,5 +49,8 @@ following.
     - **oe_load_module_host_socket_interface()**
     - **oe_load_module_host_resolver()**
 
-An socket example
------------------
+A socket example
+----------------
+
+This section shows how to create an enclave that hosts an echo server, which
+echos back requests received on a socket.
