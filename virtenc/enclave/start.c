@@ -2,7 +2,9 @@
 // Licensed under the MIT License.
 
 #include <openenclave/bits/defs.h>
+#include <openenclave/internal/syscall/unistd.h>
 #include "clone.h"
+#include "close.h"
 #include "exit.h"
 #include "globals.h"
 #include "malloc.h"
@@ -25,13 +27,11 @@ static int _main(void)
 
     /* Wait here to be initialized and to receive the main socket. */
     if (ve_handle_init() != 0)
-    {
         ve_put_err("ve_handle_init() failed");
-    }
 
     /* Handle messages over the main socket. */
-    if (ve_handle_messages() != 0)
-        ve_put_err("ve_handle_message() failed");
+    if (ve_handle_calls(globals.sock) != 0)
+        ve_put_err("enclave: ve_handle_calls() failed");
 
     return 0;
 }

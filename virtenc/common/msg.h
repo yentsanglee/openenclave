@@ -55,36 +55,10 @@ typedef struct _ve_msg_ping_thread_out
     int ret;
 } ve_msg_ping_thread_out_t;
 
-typedef struct _ve_msg_init_in
-{
-    /* Child's end of the socket pair that the parent created. */
-    int sock;
-
-    /* Host's shared memory heap. */
-    int shmid;
-    void* shmaddr;
-} ve_msg_init_in_t;
-
-typedef struct _ve_msg_init_out
-{
-    int ret;
-} ve_msg_init_out_t;
-
 typedef struct _ve_msg_terminate_out
 {
     int ret;
 } ve_msg_terminate_out_t;
-
-typedef struct _ve_msg_add_thread_in
-{
-    uint32_t tcs;
-    size_t stack_size;
-} ve_msg_add_thread_in_t;
-
-typedef struct _ve_msg_add_thread_out
-{
-    int ret;
-} ve_msg_add_thread_out_t;
 
 ssize_t ve_read(int fd, void* buf, size_t count);
 
@@ -109,8 +83,12 @@ typedef enum _ve_func
     VE_FUNC_RET,
     VE_FUNC_ERR,
     VE_FUNC_INIT,
+    VE_FUNC_ADD_THREAD,
+    VE_FUNC_TERMINATE,
     VE_FUNC_PING,
 } ve_func_t;
+
+const char* ve_func_name(ve_func_t func);
 
 typedef struct _ve_call_msg
 {
@@ -118,18 +96,35 @@ typedef struct _ve_call_msg
     uint64_t arg;
 } ve_call_msg_t;
 
+#define VE_INIT_ARG_MAGIC 0x3b146763853147ce
+
 typedef struct _ve_init_arg
 {
+    uint64_t magic;
+
     /* Child's end of the socket pair that the parent created. */
     int sock;
 
     /* Host's shared memory heap. */
     int shmid;
     void* shmaddr;
-
-    /* Return value from function. */
-    int ret;
 } ve_init_arg_t;
+
+typedef struct _ve_add_thread_arg
+{
+    uint64_t tcs;
+    uint64_t stack_size;
+    int ret;
+} ve_add_thread_arg_t;
+
+typedef struct _ve_terminate_arg
+{
+    int ret;
+} ve_terminate_arg_t;
+
+int ve_call_send(int fd, uint64_t func, uint64_t arg_in);
+
+int ve_call_recv(int fd, uint64_t* arg_out);
 
 int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out);
 

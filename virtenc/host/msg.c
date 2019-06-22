@@ -44,12 +44,9 @@ static int _handle_call(uint64_t func, uint64_t arg_in, uint64_t* arg_out)
     }
 }
 
-int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
+int ve_call_send(int fd, uint64_t func, uint64_t arg_in)
 {
     int ret = -1;
-
-    if (arg_out)
-        *arg_out = 0;
 
     if (fd < 0)
         goto done;
@@ -61,6 +58,22 @@ int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
         if (ve_send_n(fd, &msg, sizeof(msg)) != 0)
             goto done;
     }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int ve_call_recv(int fd, uint64_t* arg_out)
+{
+    int ret = -1;
+
+    if (arg_out)
+        *arg_out = 0;
+
+    if (fd < 0)
+        goto done;
 
     /* Receive response. */
     for (;;)
@@ -107,6 +120,22 @@ int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
             }
         }
     }
+
+done:
+    return ret;
+}
+
+int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
+{
+    int ret = -1;
+
+    if (ve_call_send(fd, func, arg_in) != 0)
+        goto done;
+
+    if (ve_call_recv(fd, arg_out) != 0)
+        goto done;
+
+    ret = 0;
 
 done:
     return ret;

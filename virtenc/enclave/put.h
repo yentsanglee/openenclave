@@ -25,4 +25,6 @@ void ve_put_hex(const char* s, uint64_t x);
 
 void ve_put_err(const char* s);
 
+void __ve_trace(const char* file, unsigned int line);
+
 #endif /* _VE_PUT_H */

@@ -159,3 +159,24 @@ int ve_recv_msg_by_type(int fd, ve_msg_type_t type, void* data, size_t size)
 done:
     return ret;
 }
+
+const char* ve_func_name(ve_func_t func)
+{
+    switch (func)
+    {
+        case VE_FUNC_RET:
+            return "RET";
+        case VE_FUNC_ERR:
+            return "ERR";
+        case VE_FUNC_INIT:
+            return "INIT";
+        case VE_FUNC_ADD_THREAD:
+            return "ADD_THREAD";
+        case VE_FUNC_TERMINATE:
+            return "TERMINATE";
+        case VE_FUNC_PING:
+            return "PING";
+    }
+
+    return "UNKNOWN";
+}

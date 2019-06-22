@@ -53,6 +53,8 @@ SOURCES += abort.c
 SOURCES += read.c
 SOURCES += write.c
 SOURCES += shm.c
+SOURCES += trace.c
+SOURCES += waitpid.c
 SOURCES += ../common/lock.c
 SOURCES += ../common/msg.c
 

@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include "globals.h"
 #include "hostmalloc.h"
+#include "trace.h"
 
 const char* arg0;
 
@@ -84,65 +85,28 @@ done:
     return ret;
 }
 
-int _init_child_v2(int child_fd, int child_sock)
-{
-    int ret = -1;
-    ve_init_arg_t* arg = NULL;
-
-    if (!(arg = ve_host_calloc(1, sizeof(ve_init_arg_t))))
-        goto done;
-
-    arg->sock = child_sock;
-    arg->shmid = globals.shmid;
-    arg->shmaddr = globals.shmaddr;
-
-    *((uint64_t*)globals.shmaddr) = 0xffffffffffffffff;
-
-    if (ve_call(child_fd, VE_FUNC_INIT, (uint64_t)arg, NULL) != 0)
-        goto done;
-
-    if (arg->ret != 0)
-        goto done;
-
-    /* Check that child was able to write to shared memory. */
-    if (*((uint64_t*)globals.shmaddr) != VE_SHMADDR_MAGIC)
-    {
-        puterr("shared memory crosscheck failed");
-        goto done;
-    }
-
-    ret = 0;
-
-done:
-
-    if (arg)
-        ve_host_free(arg);
-
-    return ret;
-}
-
 static int _init_child(int child_fd, int child_sock)
 {
     int ret = -1;
-    ve_msg_init_in_t in;
-    ve_msg_init_out_t out;
-    const ve_msg_type_t type = VE_MSG_INIT;
+    ve_init_arg_t arg;
+    uint64_t retval;
 
-    in.sock = child_sock;
-    in.shmid = globals.shmid;
-    in.shmaddr = globals.shmaddr;
+    arg.magic = VE_INIT_ARG_MAGIC;
+    arg.sock = child_sock;
+    arg.shmid = globals.shmid;
+    arg.shmaddr = globals.shmaddr;
 
     *((uint64_t*)globals.shmaddr) = 0xffffffffffffffff;
 
-    /* Send request on the file descriptor. */
-    if (ve_send_msg(child_fd, type, &in, sizeof(in)) != 0)
+    /* Send the message to the child's standard input. */
+    if (ve_send_n(child_fd, &arg, sizeof(arg)) != 0)
         goto done;
 
-    /* Receive the response on the socket. */
-    if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out)) != 0)
+    /* Receive the message on the socket. */
+    if (ve_recv_n(globals.sock, &retval, sizeof(retval)) != 0)
         goto done;
 
-    if (out.ret != 0)
+    if (retval != 0)
         goto done;
 
     /* Check that child was able to write to shared memory. */
@@ -218,12 +182,38 @@ done:
     return ret;
 }
 
+static int _terminate_main_thread(void)
+{
+    int ret = -1;
+    ve_terminate_arg_t* arg;
+    const int sock = globals.sock;
+    const int child_sock = globals.child_sock;
+
+    if (!(arg = ve_host_calloc(1, sizeof(ve_terminate_arg_t))))
+        goto done;
+
+    if (ve_call_send(sock, VE_FUNC_TERMINATE, (uint64_t)arg) != 0)
+        goto done;
+
+    close(sock);
+    close(child_sock);
+
+    ret = 0;
+
+done:
+
+    if (arg)
+        ve_host_free(arg);
+
+    return ret;
+}
+
 /* Should be called when there is only one surviving thread in the system. */
 static int _terminate_child(void)
 {
     int ret = -1;
-    const ve_msg_type_t type = VE_MSG_TERMINATE;
 
+    const ve_msg_type_t type = VE_MSG_TERMINATE;
     /* Terminate child threads. */
     for (size_t i = 0; i < globals.num_threads; i++)
     {
@@ -244,24 +234,8 @@ static int _terminate_child(void)
         close(child_sock);
     }
 
-    /* Terminate the main thread. */
-    {
-        const int sock = globals.sock;
-        const int child_sock = globals.child_sock;
-        ve_msg_terminate_out_t out;
-
-        if (ve_send_msg(sock, type, NULL, 0) != 0)
-            goto done;
-
-        if (ve_recv_msg_by_type(sock, type, &out, sizeof(out)) != 0)
-            goto done;
-
-        if (out.ret != 0)
-            goto done;
-
-        close(sock);
-        close(child_sock);
-    }
+    if (_terminate_main_thread() != 0)
+        goto done;
 
     ret = 0;
 
@@ -272,46 +246,41 @@ done:
 int _add_child_thread(int tcs, size_t stack_size)
 {
     int ret = -1;
-    const ve_msg_type_t type = VE_MSG_ADD_THREAD;
     int socks[2] = {-1, -1};
     extern int send_fd(int sock, int fd);
+    ve_add_thread_arg_t* arg = NULL;
 
     /* Fail if no more threads. */
     if (globals.num_threads == MAX_THREADS)
         goto done;
 
-    /* Send the request. */
+    /* Create the socket pair. */
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, socks) == -1)
+        goto done;
+
+    /* Create the call argument. */
     {
-        ve_msg_add_thread_in_t in;
-
-        memset(&in, 0, sizeof(in));
-        in.tcs = tcs;
-        in.stack_size = stack_size;
-
-        if (ve_send_msg(globals.sock, type, &in, sizeof(in)) != 0)
-            goto done;
-    }
-
-    /* Create socket pair and send one side to the child. */
-    {
-        if (socketpair(AF_UNIX, SOCK_STREAM, 0, socks) == -1)
+        if (!(arg = ve_host_calloc(1, sizeof(ve_add_thread_arg_t))))
             goto done;
 
-        /* Send the fd to the enclave */
-        if (send_fd(globals.sock, socks[1]) != 0)
-            err("send_fd() failed");
+        arg->tcs = tcs;
+        arg->stack_size = stack_size;
     }
+
+    /* Send ther request. */
+    if (ve_call_send(globals.sock, VE_FUNC_ADD_THREAD, (uint64_t)arg) != 0)
+        goto done;
+
+    /* Send the fd to the enclave after send but before receive. */
+    if (send_fd(globals.sock, socks[1]) != 0)
+        goto done;
 
     /* Receive the response. */
-    {
-        ve_msg_add_thread_out_t out;
+    if (ve_call_recv(globals.sock, NULL) != 0)
+        goto done;
 
-        if (ve_recv_msg_by_type(globals.sock, type, &out, sizeof(out)) != 0)
-            goto done;
-
-        if (out.ret != 0)
-            goto done;
-    }
+    if (arg->ret != 0)
+        goto done;
 
     ve_lock(&globals.threads_lock);
     {
@@ -334,6 +303,9 @@ done:
 
     if (socks[1] != -1)
         close(socks[1]);
+
+    if (arg)
+        ve_host_free(arg);
 
     return ret;
 }
@@ -448,17 +420,30 @@ int main(int argc, const char* argv[])
         err("failed to execute %s", argv[1]);
 
     /* Add threads to the child process. */
-    _add_child_thread(0, STACK_SIZE);
-    _add_child_thread(1, STACK_SIZE);
-    _add_child_thread(2, STACK_SIZE);
+    if (_add_child_thread(0, STACK_SIZE) != 0)
+        err("failed to add child thread");
+
+    if (_add_child_thread(1, STACK_SIZE) != 0)
+        err("failed to add child thread");
+
+    if (_add_child_thread(2, STACK_SIZE) != 0)
+        err("failed to add child thread");
 
     /* Ping each of the threads. */
-    _ping_thread(0);
-    _ping_thread(1);
-    _ping_thread(2);
+    {
+        if (_ping_thread(0) != 0)
+            err("host: _ping_thread() failed");
+
+        if (_ping_thread(1) != 0)
+            err("host: _ping_thread() failed");
+
+        if (_ping_thread(2) != 0)
+            err("host: _ping_thread() failed");
+    }
 
     /* Terminate the child process. */
-    _terminate_child();
+    if (_terminate_child() != 0)
+        err("failed to terminate child");
 
     /* Wait for child to exit. */
     if (_get_child_exit_status(pid, &status) != 0)
