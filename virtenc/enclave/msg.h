@@ -12,4 +12,6 @@ int ve_handle_init(void);
 
 int ve_handle_messages(void);
 
+int ve_handle_calls(int fd);
+
 #endif /* _VE_ENCLAVE_MSG_H */

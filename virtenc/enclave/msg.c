@@ -344,3 +344,141 @@ done:
 
     return ret;
 }
+
+static int _handle_ping(int fd, uint64_t arg_in, uint64_t* arg_out)
+{
+    ve_puts("enclave pinged");
+
+    (void)fd;
+
+    *arg_out = arg_in;
+
+    return 0;
+}
+
+static int _handle_call(
+    int fd,
+    uint64_t func,
+    uint64_t arg_in,
+    uint64_t* arg_out)
+{
+    switch (func)
+    {
+        case VE_FUNC_PING:
+        {
+            return _handle_ping(fd, arg_in, arg_out);
+        }
+        default:
+        {
+            return -1;
+        }
+    }
+}
+
+int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
+{
+    int ret = -1;
+
+    if (arg_out)
+        *arg_out = 0;
+
+    if (fd < 0)
+        goto done;
+
+    /* Send request. */
+    {
+        ve_call_msg_t msg = {func, arg_in};
+
+        if (ve_send_n(fd, &msg, sizeof(msg)) != 0)
+            goto done;
+    }
+
+    /* Receive response. */
+    for (;;)
+    {
+        ve_call_msg_t msg;
+
+        if (ve_recv_n(fd, &msg, sizeof(msg)) != 0)
+            goto done;
+
+        switch (msg.func)
+        {
+            case VE_FUNC_RET:
+            {
+                if (arg_out)
+                    *arg_out = msg.arg;
+
+                ret = 0;
+                goto done;
+            }
+            case VE_FUNC_ERR:
+            {
+                goto done;
+            }
+            default:
+            {
+                uint64_t arg = 0;
+
+                if (_handle_call(fd, msg.func, msg.arg, &arg) == 0)
+                {
+                    msg.func = VE_FUNC_RET;
+                    msg.arg = arg;
+                }
+                else
+                {
+                    msg.func = VE_FUNC_ERR;
+                    msg.arg = 0;
+                }
+
+                if (ve_send_n(fd, &msg, sizeof(msg)) != 0)
+                    goto done;
+
+                /* Go back to waiting for return from original call. */
+                continue;
+            }
+        }
+    }
+
+done:
+    return ret;
+}
+
+int ve_handle_calls(int fd)
+{
+    int ret = -1;
+
+    if (fd < 0)
+        goto done;
+
+    for (;;)
+    {
+        ve_call_msg_t msg;
+        uint64_t arg = 0;
+
+        ve_puts("ve_handle_calls(): wait");
+
+        if (ve_recv_n(fd, &msg, sizeof(msg)) != 0)
+            goto done;
+
+        ve_put_uint("ve_handle_calls(): func=", msg.func);
+
+        if (_handle_call(fd, msg.func, msg.arg, &arg) == 0)
+        {
+            msg.func = VE_FUNC_RET;
+            msg.arg = arg;
+        }
+        else
+        {
+            msg.func = VE_FUNC_ERR;
+            msg.arg = 0;
+        }
+
+        if (ve_send_n(fd, &msg, sizeof(msg)) != 0)
+            goto done;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}

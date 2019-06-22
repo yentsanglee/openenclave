@@ -104,4 +104,19 @@ int ve_recv_msg(int fd, ve_msg_t* msg);
 
 int ve_recv_msg_by_type(int fd, ve_msg_type_t type, void* data, size_t size);
 
+typedef enum _ve_func
+{
+    VE_FUNC_RET,
+    VE_FUNC_ERR,
+    VE_FUNC_PING,
+} ve_func_t;
+
+typedef struct _ve_call_msg
+{
+    uint64_t func;
+    uint64_t arg;
+} ve_call_msg_t;
+
+int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out);
+
 #endif /* _VE_MSG_H */
