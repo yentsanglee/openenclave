@@ -108,6 +108,7 @@ typedef enum _ve_func
 {
     VE_FUNC_RET,
     VE_FUNC_ERR,
+    VE_FUNC_INIT,
     VE_FUNC_PING,
 } ve_func_t;
 
@@ -116,6 +117,19 @@ typedef struct _ve_call_msg
     uint64_t func;
     uint64_t arg;
 } ve_call_msg_t;
+
+typedef struct _ve_init_arg
+{
+    /* Child's end of the socket pair that the parent created. */
+    int sock;
+
+    /* Host's shared memory heap. */
+    int shmid;
+    void* shmaddr;
+
+    /* Return value from function. */
+    int ret;
+} ve_init_arg_t;
 
 int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out);
 

@@ -84,6 +84,43 @@ done:
     return ret;
 }
 
+int _init_child_v2(int child_fd, int child_sock)
+{
+    int ret = -1;
+    ve_init_arg_t* arg = NULL;
+
+    if (!(arg = ve_host_calloc(1, sizeof(ve_init_arg_t))))
+        goto done;
+
+    arg->sock = child_sock;
+    arg->shmid = globals.shmid;
+    arg->shmaddr = globals.shmaddr;
+
+    *((uint64_t*)globals.shmaddr) = 0xffffffffffffffff;
+
+    if (ve_call(child_fd, VE_FUNC_INIT, (uint64_t)arg, NULL) != 0)
+        goto done;
+
+    if (arg->ret != 0)
+        goto done;
+
+    /* Check that child was able to write to shared memory. */
+    if (*((uint64_t*)globals.shmaddr) != VE_SHMADDR_MAGIC)
+    {
+        puterr("shared memory crosscheck failed");
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+
+    if (arg)
+        ve_host_free(arg);
+
+    return ret;
+}
+
 static int _init_child(int child_fd, int child_sock)
 {
     int ret = -1;
