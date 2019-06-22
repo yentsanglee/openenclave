@@ -48,6 +48,8 @@ typedef struct _ve_add_thread_arg
     int ret;
 } ve_add_thread_arg_t;
 
+const char* ve_func_name(ve_func_t func);
+
 void* ve_malloc(size_t size);
 
 void ve_free(void* ptr);
@@ -56,13 +58,9 @@ ssize_t ve_read(int fd, void* buf, size_t count);
 
 ssize_t ve_write(int fd, const void* buf, size_t count);
 
-void ve_debug(const char* str);
-
 int ve_recv_n(int fd, void* buf, size_t count);
 
 int ve_send_n(int fd, const void* buf, size_t count);
-
-const char* ve_func_name(ve_func_t func);
 
 int ve_call_send(int fd, uint64_t func, uint64_t arg_in);
 

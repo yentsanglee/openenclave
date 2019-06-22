@@ -20,13 +20,14 @@ void ve_debug(const char* str)
     puts(str);
 }
 
-static int _handle_ping(uint64_t arg_in, uint64_t* arg_out)
+static void _handle_ping(uint64_t arg_in, uint64_t* arg_out)
 {
-    printf("host pinged\n");
+    extern int gettid(void);
 
-    *arg_out = arg_in;
+    printf("host: ping: pid=%d\n", getpid());
 
-    return 0;
+    if (arg_out)
+        *arg_out = arg_in;
 }
 
 static int _handle_call(uint64_t func, uint64_t arg_in, uint64_t* arg_out)
@@ -35,7 +36,8 @@ static int _handle_call(uint64_t func, uint64_t arg_in, uint64_t* arg_out)
     {
         case VE_FUNC_PING:
         {
-            return _handle_ping(arg_in, arg_out);
+            _handle_ping(arg_in, arg_out);
+            return 0;
         }
         default:
         {
@@ -82,6 +84,10 @@ int ve_call_recv(int fd, uint64_t* arg_out)
 
         if (ve_recv_n(fd, &msg, sizeof(msg)) != 0)
             goto done;
+
+#if defined(TRACE_CALLS)
+        printf("HOST:%s\n", ve_func_name(msg.func));
+#endif
 
         switch (msg.func)
         {

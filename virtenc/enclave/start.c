@@ -16,14 +16,20 @@
 void ve_call_init_functions(void);
 void ve_call_fini_functions(void);
 
+static bool _called_constructor = false;
+
 __attribute__((constructor)) static void constructor(void)
 {
-    ve_put("constructor()\n");
+    _called_constructor = true;
 }
 
 static int _main(void)
 {
-    ve_put("main()\n");
+    if (!_called_constructor)
+    {
+        ve_put_err("constructor not called");
+        ve_exit(1);
+    }
 
     /* Wait here to be initialized and to receive the main socket. */
     if (ve_handle_init() != 0)

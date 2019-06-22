@@ -414,6 +414,10 @@ int main(int argc, const char* argv[])
             err("host: _ping_thread() failed");
     }
 
+    /* Ping the main thread. */
+    if (_call_ping(globals.sock) != 0)
+        err("host: failed to ping main thread");
+
     /* Terminate the enclave process. */
     if (_terminate_enclave_process() != 0)
         err("failed to terminate child");
@@ -422,7 +426,7 @@ int main(int argc, const char* argv[])
     if (_get_child_exit_status(pid, &status) != 0)
         err("failed to get child exit status");
 
-    printf("child exit status: %d\n", status);
+    printf("host: child exit status: %d\n", status);
 
     close(OE_STDIN_FILENO);
     close(OE_STDOUT_FILENO);

@@ -21,19 +21,13 @@
 #include "trace.h"
 #include "waitpid.h"
 
-void ve_debug(const char* str)
-{
-    ve_put(str);
-    ve_put_nl();
-}
-
 static int _thread(void* arg_)
 {
     thread_arg_t* arg = (thread_arg_t*)arg_;
 
     if (ve_handle_calls(arg->sock) != 0)
     {
-        ve_puts("_thread(): ve_handle_calls() failed");
+        ve_put("_thread(): ve_handle_calls() failed\n");
         ve_exit(1);
     }
 
@@ -82,7 +76,7 @@ static int _create_new_thread(thread_arg_t* arg)
         if (rval == -1)
             goto done;
 
-        ve_put_int("enclave: new thread: rval=", rval);
+        ve_put_int("encl: new thread: rval=", rval);
     }
 
     ret = 0;
@@ -91,15 +85,11 @@ done:
     return ret;
 }
 
-static int _handle_add_thread(int fd, uint64_t arg_in)
+static void _handle_add_thread(uint64_t arg_in)
 {
-    int ret = -1;
     int sock = -1;
     ve_add_thread_arg_t* arg = (ve_add_thread_arg_t*)arg_in;
     thread_arg_t* thread_arg;
-
-    if (!arg)
-        goto done;
 
     arg->ret = -1;
 
@@ -128,14 +118,11 @@ static int _handle_add_thread(int fd, uint64_t arg_in)
         goto done;
 
     arg->ret = 0;
-    ret = 0;
 
 done:
 
     if (sock != -1)
         ve_close(sock);
-
-    return ret;
 }
 
 int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
@@ -184,7 +171,7 @@ int ve_handle_init(void)
 
         if (arg.magic != VE_INIT_ARG_MAGIC)
         {
-            ve_puts("ve_handle_init(): bad magic number");
+            ve_put("ve_handle_init(): bad magic number\n");
             goto done;
         }
     }
@@ -195,7 +182,7 @@ int ve_handle_init(void)
 
         if (_attach_host_heap(&globals, arg.shmid, arg.shmaddr) != 0)
         {
-            ve_put("_attach_host_heap() failed");
+            ve_put("_attach_host_heap() failed\n");
             retval = -1;
         }
     }
@@ -210,71 +197,8 @@ done:
     return ret;
 }
 
-#if 0
-int ve_handle_messages(void)
+static void _handle_terminate(void)
 {
-    int ret = -1;
-#if 0
-    /* ATTN: These both crashes with clang using -O1 and -fsanitize=address */
-    //ve_msg_t msg = VE_MSG_INITIALIZER;
-    ve_msg_t msg = { 0 };
-#else
-    /* Really no need to initialize this. */
-    ve_msg_t msg;
-#endif
-
-    for (;;)
-    {
-        if (ve_recv_msg(globals.sock, &msg) != 0)
-            goto done;
-
-        switch (msg.type)
-        {
-            case VE_MSG_TERMINATE:
-            {
-                ve_msg_terminate_out_t out = {0};
-
-                /* Release thread stack memory and sockets . */
-                for (size_t i = 0; i < globals.num_threads; i++)
-                {
-                    ve_free(globals.threads[i].stack);
-                    ve_close(globals.threads[i].sock);
-                }
-
-                ve_put_int("main: exit: ", ve_gettid());
-
-                if (ve_send_msg(globals.sock, msg.type, &out, sizeof(out)) != 0)
-                    ve_put_err("failed to send message");
-
-                ve_close(globals.sock);
-                ve_msg_free(&msg);
-                ve_shmdt(globals.shmaddr);
-                ve_exit(0);
-                break;
-            }
-            default:
-            {
-                goto done;
-            }
-        }
-
-        ve_msg_free(&msg);
-    }
-
-    ret = 0;
-
-done:
-
-    ve_msg_free(&msg);
-
-    return ret;
-}
-#endif
-
-static int _handle_terminate(void)
-{
-    int ret = -1;
-
     /* Wait on the exit status of each thread. */
     for (size_t i = 0; i < globals.num_threads; i++)
     {
@@ -283,8 +207,8 @@ static int _handle_terminate(void)
 
         if ((pid = ve_waitpid(-1, &status, 0)) < 0)
         {
-            ve_puts("enclave: error: failed to wait for thread");
-            goto done;
+            ve_put("encl: error: failed to wait for thread\n");
+            ve_exit(1);
         }
     }
 
@@ -304,33 +228,27 @@ static int _handle_terminate(void)
     ve_close(OE_STDOUT_FILENO);
     ve_close(OE_STDERR_FILENO);
 
-    ret = 0;
-
     /* No response is expected. */
     ve_exit(0);
-
-done:
-    return ret;
 }
 
-static int _handle_ping(int fd, uint64_t arg_in, uint64_t* arg_out)
+static void _handle_ping(int fd, uint64_t arg_in, uint64_t* arg_out)
 {
-    ve_put_int("enclave: ping: tid=d", ve_gettid());
+    uint64_t arg;
 
-    (void)fd;
+    ve_put_int("encl: ping: tid=d", ve_gettid());
 
-    *arg_out = arg_in;
+    if (ve_call(fd, VE_FUNC_PING, arg_in, &arg) != 0)
+        ve_put("encl: ve_call() failed\n");
 
-    return 0;
+    if (arg_out)
+        *arg_out = arg;
 }
 
-static int _handle_terminate_thread(int fd, uint64_t arg_in)
+static void _handle_terminate_thread(void)
 {
-    ve_put_int("enclave: terminating thread: tid=", ve_gettid());
-
+    ve_put_int("encl: thread exit: tid=", ve_gettid());
     ve_exit(0);
-
-    return 0;
 }
 
 static int _handle_call(
@@ -343,19 +261,28 @@ static int _handle_call(
     {
         case VE_FUNC_PING:
         {
-            return _handle_ping(fd, arg_in, arg_out);
+            _handle_ping(fd, arg_in, arg_out);
+            return 0;
         }
         case VE_FUNC_ADD_THREAD:
         {
-            return _handle_add_thread(fd, arg_in);
+            if (!arg_in)
+                return -1;
+
+            _handle_add_thread(arg_in);
+            return 0;
         }
         case VE_FUNC_TERMINATE:
         {
-            return _handle_terminate();
+            /* does not return. */
+            _handle_terminate();
+            return 0;
         }
         case VE_FUNC_TERMINATE_THREAD:
         {
-            return _handle_terminate_thread(fd, arg_in);
+            /* does not return. */
+            _handle_terminate_thread();
+            return 0;
         }
         default:
         {
@@ -448,7 +375,9 @@ int ve_handle_calls(int fd)
         if (ve_recv_n(fd, &msg_in, sizeof(msg_in)) != 0)
             goto done;
 
+#if defined(TRACE_CALLS)
         ve_put_str("ENCLAVE:", ve_func_name(msg_in.func));
+#endif
 
         if (_handle_call(fd, msg_in.func, msg_in.arg, &arg) == 0)
         {
