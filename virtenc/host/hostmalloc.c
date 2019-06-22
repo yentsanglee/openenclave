@@ -17,14 +17,20 @@
 #undef M_MMAP_THRESHOLD
 #endif
 
+static pthread_spinlock_t _lock;
+static pthread_once_t _once = PTHREAD_ONCE_INIT;
+
+static void _init_lock_once(void)
+{
+    pthread_spin_init(&_lock, PTHREAD_PROCESS_PRIVATE);
+}
+
 static void* sbrk(intptr_t increment)
 {
     void* ret = (void*)-1;
     static uint8_t* _brk_value;
-    static pthread_spinlock_t _lock;
 
-    pthread_spin_init(&_lock, PTHREAD_PROCESS_PRIVATE);
-
+    pthread_once(&_once, _init_lock_once);
     pthread_spin_lock(&_lock);
 
     /* Initialize the first time. */
@@ -60,7 +66,6 @@ static void* sbrk(intptr_t increment)
 done:
 
     pthread_spin_unlock(&_lock);
-    pthread_spin_destroy(&_lock);
 
     return ret;
 }

@@ -435,7 +435,7 @@ int main(int argc, const char* argv[])
     close(OE_STDOUT_FILENO);
     close(OE_STDERR_FILENO);
 
-    /* ATTN: close sockets and release shared memory. */
+    pthread_spin_destroy(&globals.threads_lock);
 
     return 0;
 }
