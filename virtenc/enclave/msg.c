@@ -23,7 +23,7 @@
 
 static int _thread(void* arg_)
 {
-    thread_arg_t* arg = (thread_arg_t*)arg_;
+    thread_t* arg = (thread_t*)arg_;
 
     if (ve_handle_calls(arg->sock) != 0)
     {
@@ -34,7 +34,7 @@ static int _thread(void* arg_)
     return 0;
 }
 
-static int _create_new_thread(thread_arg_t* arg)
+static int _create_new_thread(thread_t* arg)
 {
     int ret = -1;
     uint8_t* stack;
@@ -89,7 +89,7 @@ static void _handle_add_thread(uint64_t arg_in)
 {
     int sock = -1;
     ve_add_thread_arg_t* arg = (ve_add_thread_arg_t*)arg_in;
-    thread_arg_t* thread_arg;
+    thread_t* thread;
 
     arg->ret = -1;
 
@@ -104,17 +104,17 @@ static void _handle_add_thread(uint64_t arg_in)
     /* Add this new thread to the global list. */
     ve_lock(&globals.threads.lock);
     {
-        thread_arg = &globals.threads.data[globals.threads.size];
-        thread_arg->sock = sock;
-        thread_arg->tcs = arg->tcs;
-        thread_arg->stack_size = arg->stack_size;
+        thread = &globals.threads.data[globals.threads.size];
+        thread->sock = sock;
+        thread->tcs = arg->tcs;
+        thread->stack_size = arg->stack_size;
         globals.threads.size++;
         sock = -1;
     }
     ve_unlock(&globals.threads.lock);
 
     /* Create the new thread. */
-    if (_create_new_thread(thread_arg) != 0)
+    if (_create_new_thread(thread) != 0)
         goto done;
 
     arg->ret = 0;

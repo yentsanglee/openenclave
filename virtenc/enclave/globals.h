@@ -9,18 +9,18 @@
 
 #define MAX_THREADS 1024
 
-typedef struct _thread_arg
+typedef struct _thread
 {
     int sock;
     void* stack;
     size_t stack_size;
     uint32_t tcs;
     int tid;
-} thread_arg_t;
+} thread_t;
 
 typedef struct _threads
 {
-    thread_arg_t data[MAX_THREADS];
+    thread_t data[MAX_THREADS];
     size_t size;
     ve_lock_t lock;
 } threads_t;
