@@ -9,28 +9,36 @@
 
 #define MAX_THREADS 1024
 
-typedef struct _thread_info
+#define HOST_HEAP_SIZE (1024 * 1024)
+
+typedef struct _thread
 {
     int sock;
     int child_sock;
     uint32_t tcs;
-} thread_info_t;
+} thread_t;
 
-#define HOST_HEAP_SIZE (1024 * 1024)
+typedef struct _threads
+{
+    thread_t data[MAX_THREADS];
+    size_t size;
+    pthread_spinlock_t lock;
+} threads_t;
+
+/* Host heap memory shared with child processes. */
+typedef struct _heap
+{
+    int shmid;
+    void* shmaddr;
+    size_t shmsize;
+} heap_t;
 
 typedef struct _globals
 {
     int sock;
     int child_sock;
-
-    thread_info_t threads[MAX_THREADS];
-    pthread_spinlock_t threads_lock;
-    size_t num_threads;
-
-    /* Host heap memory shared with child processes. */
-    int shmid;
-    void* shmaddr;
-    size_t shmsize;
+    threads_t threads;
+    heap_t heap;
 } globals_t;
 
 extern globals_t globals;

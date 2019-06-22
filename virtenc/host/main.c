@@ -67,9 +67,9 @@ static int _create_host_heap(globals_t* globals, size_t heap_size)
     if ((shmaddr = shmat(shmid, NULL, 0)) == (void*)-1)
         goto done;
 
-    globals->shmid = shmid;
-    globals->shmaddr = shmaddr;
-    globals->shmsize = heap_size;
+    globals->heap.shmid = shmid;
+    globals->heap.shmaddr = shmaddr;
+    globals->heap.shmsize = heap_size;
     shmid = -1;
     shmaddr = NULL;
 
@@ -94,10 +94,10 @@ static int _init_child(int child_fd, int child_sock)
 
     arg.magic = VE_INIT_ARG_MAGIC;
     arg.sock = child_sock;
-    arg.shmid = globals.shmid;
-    arg.shmaddr = globals.shmaddr;
+    arg.shmid = globals.heap.shmid;
+    arg.shmaddr = globals.heap.shmaddr;
 
-    *((uint64_t*)globals.shmaddr) = 0xffffffffffffffff;
+    *((uint64_t*)globals.heap.shmaddr) = 0xffffffffffffffff;
 
     /* Send the message to the child's standard input. */
     if (ve_send_n(child_fd, &arg, sizeof(arg)) != 0)
@@ -111,7 +111,7 @@ static int _init_child(int child_fd, int child_sock)
         goto done;
 
     /* Check that child was able to write to shared memory. */
-    if (*((uint64_t*)globals.shmaddr) != VE_SHMADDR_MAGIC)
+    if (*((uint64_t*)globals.heap.shmaddr) != VE_SHMADDR_MAGIC)
     {
         puterr("shared memory crosscheck failed");
         goto done;
@@ -189,10 +189,10 @@ static int _terminate_enclave_process(void)
     int ret = -1;
 
     /* Terminate the enclave threads. */
-    for (size_t i = 0; i < globals.num_threads; i++)
+    for (size_t i = 0; i < globals.threads.size; i++)
     {
-        const int sock = globals.threads[i].sock;
-        const int child_sock = globals.threads[i].child_sock;
+        const int sock = globals.threads.data[i].sock;
+        const int child_sock = globals.threads.data[i].child_sock;
 
         if (ve_call_send(sock, VE_FUNC_TERMINATE_THREAD, 0) != 0)
         {
@@ -233,7 +233,7 @@ int _add_enclave_thread(int tcs, size_t stack_size)
     ve_add_thread_arg_t* arg = NULL;
 
     /* Fail if no more threads. */
-    if (globals.num_threads == MAX_THREADS)
+    if (globals.threads.size == MAX_THREADS)
         goto done;
 
     /* Create the socket pair. */
@@ -264,14 +264,14 @@ int _add_enclave_thread(int tcs, size_t stack_size)
     if (arg->ret != 0)
         goto done;
 
-    pthread_spin_lock(&globals.threads_lock);
+    pthread_spin_lock(&globals.threads.lock);
     {
-        globals.threads[globals.num_threads].sock = socks[0];
-        globals.threads[globals.num_threads].child_sock = socks[1];
-        globals.threads[globals.num_threads].tcs = tcs;
-        globals.num_threads++;
+        globals.threads.data[globals.threads.size].sock = socks[0];
+        globals.threads.data[globals.threads.size].child_sock = socks[1];
+        globals.threads.data[globals.threads.size].tcs = tcs;
+        globals.threads.size++;
     }
-    pthread_spin_unlock(&globals.threads_lock);
+    pthread_spin_unlock(&globals.threads.lock);
 
     socks[0] = -1;
     socks[1] = -1;
@@ -296,18 +296,18 @@ static int _lookup_thread_sock(uint64_t tcs)
 {
     int sock = -1;
 
-    pthread_spin_lock(&globals.threads_lock);
+    pthread_spin_lock(&globals.threads.lock);
     {
-        for (size_t i = 0; i < globals.num_threads; i++)
+        for (size_t i = 0; i < globals.threads.size; i++)
         {
-            if (globals.threads[i].tcs == tcs)
+            if (globals.threads.data[i].tcs == tcs)
             {
-                sock = globals.threads[i].sock;
+                sock = globals.threads.data[i].sock;
                 break;
             }
         }
     }
-    pthread_spin_unlock(&globals.threads_lock);
+    pthread_spin_unlock(&globals.threads.lock);
 
     return sock;
 }
@@ -385,7 +385,7 @@ int main(int argc, const char* argv[])
         exit(1);
     }
 
-    pthread_spin_init(&globals.threads_lock, PTHREAD_PROCESS_PRIVATE);
+    pthread_spin_init(&globals.threads.lock, PTHREAD_PROCESS_PRIVATE);
 
     /* Create shared memory before fork-exec. */
     if (_create_host_heap(&globals, HOST_HEAP_SIZE) != 0)
@@ -435,7 +435,7 @@ int main(int argc, const char* argv[])
     close(OE_STDOUT_FILENO);
     close(OE_STDERR_FILENO);
 
-    pthread_spin_destroy(&globals.threads_lock);
+    pthread_spin_destroy(&globals.threads.lock);
 
     return 0;
 }
