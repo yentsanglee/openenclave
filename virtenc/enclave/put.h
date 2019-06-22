@@ -9,18 +9,18 @@
 
 void ve_put(const char* s);
 
-void ve_put_nl(void);
+void ve_put_n(void);
 
-void ve_put_str(const char* s, const char* x);
+void ve_put_s(const char* s, const char* x);
 
-void ve_put_oct(const char* s, uint64_t x);
+void ve_put_o(const char* s, uint64_t x);
 
-void ve_put_uint(const char* s, uint64_t x);
+void ve_put_u(const char* s, uint64_t x);
 
-void ve_put_int(const char* s, int64_t x);
+void ve_put_i(const char* s, int64_t x);
 
-void ve_put_hex(const char* s, uint64_t x);
+void ve_put_x(const char* s, uint64_t x);
 
-void ve_put_err(const char* s);
+void ve_put_e(const char* s);
 
 #endif /* _VE_PUT_H */

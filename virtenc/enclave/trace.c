@@ -18,6 +18,6 @@ void __ve_trace(const char* file, unsigned int line)
     ve_put("(");
     ve_put(ve_uint64_decstr(&buf, line, NULL));
     ve_put(")");
-    ve_put_nl();
+    ve_put_n();
     ve_unlock(&_lock);
 }

@@ -27,17 +27,17 @@ static int _main(void)
 {
     if (!_called_constructor)
     {
-        ve_put_err("constructor not called");
+        ve_put_e("constructor not called");
         ve_exit(1);
     }
 
     /* Wait here to be initialized and to receive the main socket. */
     if (ve_handle_init() != 0)
-        ve_put_err("ve_handle_init() failed");
+        ve_put_e("ve_handle_init() failed");
 
     /* Handle messages over the main socket. */
     if (ve_handle_calls(globals.sock) != 0)
-        ve_put_err("enclave: ve_handle_calls() failed");
+        ve_put_e("enclave: ve_handle_calls() failed");
 
     return 0;
 }
