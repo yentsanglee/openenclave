@@ -146,6 +146,7 @@ int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
         goto done;
     }
 
+    /* Save so it can be released on process exit. */
     globals->shmaddr = rval;
 
     *((uint64_t*)rval) = VE_SHMADDR_MAGIC;
