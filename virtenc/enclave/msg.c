@@ -3,8 +3,8 @@
 
 #include "msg.h"
 #include <openenclave/internal/syscall/unistd.h>
-#include "close.h"
 #include "globals.h"
+#include "io.h"
 #include "ioctl.h"
 #include "malloc.h"
 #include "print.h"

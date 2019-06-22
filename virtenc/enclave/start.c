@@ -3,8 +3,8 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/internal/syscall/unistd.h>
-#include "close.h"
 #include "globals.h"
+#include "io.h"
 #include "malloc.h"
 #include "msg.h"
 #include "print.h"

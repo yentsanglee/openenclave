@@ -54,10 +54,6 @@ void* ve_malloc(size_t size);
 
 void ve_free(void* ptr);
 
-ssize_t ve_read(int fd, void* buf, size_t count);
-
-ssize_t ve_write(int fd, const void* buf, size_t count);
-
 int ve_recv_n(int fd, void* buf, size_t count);
 
 int ve_send_n(int fd, const void* buf, size_t count);
