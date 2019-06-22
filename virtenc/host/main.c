@@ -7,6 +7,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -263,14 +264,14 @@ int _add_enclave_thread(int tcs, size_t stack_size)
     if (arg->ret != 0)
         goto done;
 
-    ve_lock(&globals.threads_lock);
+    pthread_spin_lock(&globals.threads_lock);
     {
         globals.threads[globals.num_threads].sock = socks[0];
         globals.threads[globals.num_threads].child_sock = socks[1];
         globals.threads[globals.num_threads].tcs = tcs;
         globals.num_threads++;
     }
-    ve_unlock(&globals.threads_lock);
+    pthread_spin_unlock(&globals.threads_lock);
 
     socks[0] = -1;
     socks[1] = -1;
@@ -295,7 +296,7 @@ static int _lookup_thread_sock(uint64_t tcs)
 {
     int sock = -1;
 
-    ve_lock(&globals.threads_lock);
+    pthread_spin_lock(&globals.threads_lock);
     {
         for (size_t i = 0; i < globals.num_threads; i++)
         {
@@ -306,7 +307,7 @@ static int _lookup_thread_sock(uint64_t tcs)
             }
         }
     }
-    ve_unlock(&globals.threads_lock);
+    pthread_spin_unlock(&globals.threads_lock);
 
     return sock;
 }
@@ -383,6 +384,8 @@ int main(int argc, const char* argv[])
         fprintf(stderr, "Usage: %s program\n", argv[0]);
         exit(1);
     }
+
+    pthread_spin_init(&globals.threads_lock, PTHREAD_PROCESS_PRIVATE);
 
     /* Create shared memory before fork-exec. */
     if (_create_host_heap(&globals, HOST_HEAP_SIZE) != 0)

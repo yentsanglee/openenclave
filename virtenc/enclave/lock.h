@@ -7,10 +7,10 @@
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
 
-typedef volatile uint32_t ve_lock_t;
+typedef volatile int ve_lock_t;
 
-int ve_lock(ve_lock_t* lock);
+void ve_lock(ve_lock_t* lock);
 
-int ve_unlock(ve_lock_t* lock);
+void ve_unlock(ve_lock_t* lock);
 
 #endif /* _VE_LOCK_H */

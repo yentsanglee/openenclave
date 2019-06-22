@@ -21,13 +21,14 @@ SOURCES += msg.c
 SOURCES += sendfd.c
 SOURCES += malloc.c
 SOURCES += hostmalloc.c
-SOURCES += ../common/lock.c
 SOURCES += ../common/msg.c
+
+LDFLAGS += -lpthread
 
 DEFINES += -DHOST
 
 all:
-	$(CC) -o main $(CFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAG) $(SOURCES)
+	$(CC) -o main $(CFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAGS) $(SOURCES)
 
 clean:
 	rm -rf main

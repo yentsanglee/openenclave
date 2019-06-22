@@ -3,9 +3,9 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../common/lock.h"
 #include "globals.h"
 #include "malloc.h"
 
@@ -21,9 +21,11 @@ static void* sbrk(intptr_t increment)
 {
     void* ret = (void*)-1;
     static uint8_t* _brk_value;
-    static ve_lock_t _lock;
+    static pthread_spinlock_t _lock;
 
-    ve_lock(&_lock);
+    pthread_spin_init(&_lock, PTHREAD_PROCESS_PRIVATE);
+
+    pthread_spin_lock(&_lock);
 
     /* Initialize the first time. */
     if (_brk_value == NULL)
@@ -57,7 +59,8 @@ static void* sbrk(intptr_t increment)
 
 done:
 
-    ve_unlock(&_lock);
+    pthread_spin_unlock(&_lock);
+    pthread_spin_destroy(&_lock);
 
     return ret;
 }

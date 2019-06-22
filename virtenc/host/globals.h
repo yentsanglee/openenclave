@@ -4,8 +4,8 @@
 #ifndef _VE_HOST_GLOBALS_H
 #define _VE_HOST_GLOBALS_H
 
+#include <pthread.h>
 #include <stddef.h>
-#include "../common/lock.h"
 
 #define MAX_THREADS 1024
 
@@ -24,7 +24,7 @@ typedef struct _globals
     int child_sock;
 
     thread_info_t threads[MAX_THREADS];
-    ve_lock_t threads_lock;
+    pthread_spinlock_t threads_lock;
     size_t num_threads;
 
     /* Host heap memory shared with child processes. */
