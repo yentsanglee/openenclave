@@ -5,7 +5,6 @@
 #include <openenclave/internal/syscall/unistd.h>
 #include "globals.h"
 #include "io.h"
-#include "ioctl.h"
 #include "malloc.h"
 #include "print.h"
 #include "process.h"

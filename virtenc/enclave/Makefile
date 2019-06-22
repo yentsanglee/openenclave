@@ -36,7 +36,6 @@ SOURCES += init.c
 SOURCES += fini.c
 SOURCES += msg.c
 SOURCES += syscall.c
-SOURCES += ioctl.c
 SOURCES += recvfd.c
 SOURCES += socket.c
 SOURCES += sleep.c
