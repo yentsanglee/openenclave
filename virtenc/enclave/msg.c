@@ -94,7 +94,7 @@ static void _handle_add_thread(uint64_t arg_in)
     arg->ret = -1;
 
     /* If no more threads. */
-    if (globals.num_threads == MAX_THREADS)
+    if (globals.threads.size == MAX_THREADS)
         goto done;
 
     /* Receive the socket descriptor from the host. */
@@ -102,16 +102,16 @@ static void _handle_add_thread(uint64_t arg_in)
         goto done;
 
     /* Add this new thread to the global list. */
-    ve_lock(&globals.threads_lock);
+    ve_lock(&globals.threads.lock);
     {
-        thread_arg = &globals.threads[globals.num_threads];
+        thread_arg = &globals.threads.data[globals.threads.size];
         thread_arg->sock = sock;
         thread_arg->tcs = arg->tcs;
         thread_arg->stack_size = arg->stack_size;
-        globals.num_threads++;
+        globals.threads.size++;
         sock = -1;
     }
-    ve_unlock(&globals.threads_lock);
+    ve_unlock(&globals.threads.lock);
 
     /* Create the new thread. */
     if (_create_new_thread(thread_arg) != 0)
@@ -198,7 +198,7 @@ done:
 static void _handle_terminate(void)
 {
     /* Wait on the exit status of each thread. */
-    for (size_t i = 0; i < globals.num_threads; i++)
+    for (size_t i = 0; i < globals.threads.size; i++)
     {
         int pid;
         int status;
@@ -211,10 +211,10 @@ static void _handle_terminate(void)
     }
 
     /* Release resources held by threads. */
-    for (size_t i = 0; i < globals.num_threads; i++)
+    for (size_t i = 0; i < globals.threads.size; i++)
     {
-        ve_free(globals.threads[i].stack);
-        ve_close(globals.threads[i].sock);
+        ve_free(globals.threads.data[i].stack);
+        ve_close(globals.threads.data[i].sock);
     }
 
     /* Release resources held by the main thread. */

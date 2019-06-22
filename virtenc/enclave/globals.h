@@ -18,12 +18,17 @@ typedef struct _thread_arg
     int tid;
 } thread_arg_t;
 
+typedef struct _threads
+{
+    thread_arg_t data[MAX_THREADS];
+    size_t size;
+    ve_lock_t lock;
+} threads_t;
+
 typedef struct _globals
 {
     int sock;
-    thread_arg_t threads[MAX_THREADS];
-    size_t num_threads;
-    ve_lock_t threads_lock;
+    threads_t threads;
 
     /* Shared memory between host and enclave. */
     void* shmaddr;
