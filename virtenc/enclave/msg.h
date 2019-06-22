@@ -6,11 +6,7 @@
 
 #include "../common/msg.h"
 
-int ve_msg_print(const char* data);
-
 int ve_handle_init(void);
-
-int ve_handle_messages(void);
 
 int ve_handle_calls(int fd);
 

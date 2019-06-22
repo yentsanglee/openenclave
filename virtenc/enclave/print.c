@@ -183,26 +183,26 @@ static void _put_s(const char* s)
 
 static void _put_o(uint64_t x)
 {
-    ve_intstr_buf_t buf;
-    ve_put(ve_uint64_octstr(&buf, x, NULL));
+    ve_ostr_buf buf;
+    ve_put(ve_ostr(&buf, x, NULL));
 }
 
 static void _put_d(int64_t x)
 {
-    ve_intstr_buf_t buf;
-    ve_put(ve_int64_decstr(&buf, x, NULL));
+    ve_dstr_buf buf;
+    ve_put(ve_dstr(&buf, x, NULL));
 }
 
 static void _put_u(uint64_t x)
 {
-    ve_intstr_buf_t buf;
-    ve_put(ve_uint64_decstr(&buf, x, NULL));
+    ve_ustr_buf buf;
+    ve_put(ve_ustr(&buf, x, NULL));
 }
 
 static void _put_x(uint64_t x)
 {
-    ve_intstr_buf_t buf;
-    ve_put(ve_uint64_hexstr(&buf, x, NULL));
+    ve_xstr_buf buf;
+    ve_put(ve_xstr(&buf, x, NULL));
 }
 
 void ve_print(const char* format, ...)

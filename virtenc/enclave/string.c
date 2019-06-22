@@ -83,7 +83,7 @@ static __inline__ char oe_get_hex_char(uint64_t x, size_t i)
     return (char)((nibble < 10) ? ('0' + nibble) : ('a' + (nibble - 10)));
 }
 
-const char* ve_uint64_octstr(ve_intstr_buf_t* buf, uint64_t x, size_t* size)
+const char* ve_ostr(ve_ostr_buf* buf, uint64_t x, size_t* size)
 {
     char* p;
     char* end = buf->data + sizeof(buf->data) - 1;
@@ -102,7 +102,7 @@ const char* ve_uint64_octstr(ve_intstr_buf_t* buf, uint64_t x, size_t* size)
     return p;
 }
 
-const char* ve_uint64_decstr(ve_intstr_buf_t* buf, uint64_t x, size_t* size)
+const char* ve_ustr(ve_ustr_buf* buf, uint64_t x, size_t* size)
 {
     char* p;
     char* end = buf->data + sizeof(buf->data) - 1;
@@ -121,7 +121,7 @@ const char* ve_uint64_decstr(ve_intstr_buf_t* buf, uint64_t x, size_t* size)
     return p;
 }
 
-const char* ve_uint64_hexstr(ve_intstr_buf_t* buf, uint64_t x, size_t* size)
+const char* ve_xstr(ve_xstr_buf* buf, uint64_t x, size_t* size)
 {
     for (size_t i = 0; i < 16; i++)
         buf->data[15 - i] = oe_get_hex_char(x, i);
@@ -140,7 +140,7 @@ const char* ve_uint64_hexstr(ve_intstr_buf_t* buf, uint64_t x, size_t* size)
     return p;
 }
 
-const char* ve_int64_decstr(ve_intstr_buf_t* buf, int64_t x, size_t* size)
+const char* ve_dstr(ve_dstr_buf* buf, int64_t x, size_t* size)
 {
     char* p;
     int neg = 0;
