@@ -5,13 +5,11 @@
 #include <openenclave/internal/syscall/unistd.h>
 #include "clone.h"
 #include "close.h"
-#include "exit.h"
-#include "getpid.h"
-#include "gettid.h"
 #include "globals.h"
 #include "ioctl.h"
 #include "malloc.h"
 #include "print.h"
+#include "process.h"
 #include "recvfd.h"
 #include "shm.h"
 #include "signal.h"
@@ -19,7 +17,6 @@
 #include "syscall.h"
 #include "time.h"
 #include "trace.h"
-#include "waitpid.h"
 
 static int _thread(void* arg_)
 {

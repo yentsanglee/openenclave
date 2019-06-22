@@ -47,15 +47,12 @@ SOURCES += clone.S
 SOURCES += sbrk.c
 SOURCES += start.c
 SOURCES += print.c
-SOURCES += getpid.c
-SOURCES += gettid.c
 SOURCES += malloc.c
-SOURCES += abort.c
 SOURCES += read.c
 SOURCES += write.c
 SOURCES += shm.c
-SOURCES += waitpid.c
 SOURCES += lock.c
+SOURCES += process.c
 SOURCES += ../common/msg.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles

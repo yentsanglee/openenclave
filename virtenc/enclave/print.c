@@ -3,8 +3,8 @@
 
 #include "print.h"
 #include <openenclave/internal/syscall/unistd.h>
-#include "exit.h"
 #include "lock.h"
+#include "process.h"
 #include "string.h"
 #include "syscall.h"
 

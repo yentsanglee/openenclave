@@ -5,11 +5,11 @@
 #include <openenclave/internal/syscall/unistd.h>
 #include "clone.h"
 #include "close.h"
-#include "exit.h"
 #include "globals.h"
 #include "malloc.h"
 #include "msg.h"
 #include "print.h"
+#include "process.h"
 #include "sbrk.h"
 #include "time.h"
 #include "trace.h"
