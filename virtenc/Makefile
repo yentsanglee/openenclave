@@ -32,6 +32,3 @@ run:
 
 vg:
 	valgrind $(VALGRIND_OPTS) ./host/main ./enclave/main
-
-r:
-	./host/main ./enclave/main

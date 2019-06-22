@@ -30,67 +30,11 @@ void ve_debug(const char* str)
 static int _thread(void* arg_)
 {
     thread_arg_t* arg = (thread_arg_t*)arg_;
-    ve_msg_t msg;
 
-    for (;;)
+    if (ve_handle_calls(arg->sock) != 0)
     {
-        if (ve_recv_msg(arg->sock, &msg) != 0)
-        {
-            ve_put("_thread(): failed to recv message\n");
-            continue;
-        }
-
-        switch (msg.type)
-        {
-            case VE_MSG_PING_THREAD:
-            {
-                const ve_msg_ping_thread_in_t* in;
-                ve_msg_ping_thread_out_t out = {0};
-
-                if (msg.size != sizeof(ve_msg_ping_thread_in_t))
-                    ve_put_err("failed to send message");
-
-                in = (const ve_msg_ping_thread_in_t*)msg.data;
-
-                ve_put_int("thread: ping: tid=", ve_gettid());
-
-                if (!in->str || ve_strcmp(in->str, "ping") != 0)
-                    out.ret = -1;
-
-                out.value = in->value;
-
-                if (ve_send_msg(arg->sock, msg.type, &out, sizeof(out)) != 0)
-                    ve_put_err("failed to send message");
-
-                break;
-            }
-            case VE_MSG_TERMINATE:
-            {
-                ve_msg_terminate_out_t out = {0};
-
-                ve_put_int("thread: exit: ", ve_gettid());
-
-                if (ve_send_msg(arg->sock, msg.type, &out, sizeof(out)) != 0)
-                    ve_put_err("failed to send message");
-
-#if 0
-                /* Close the standard descriptors. */
-                ve_close(OE_STDIN_FILENO);
-                ve_close(OE_STDOUT_FILENO);
-                ve_close(OE_STDERR_FILENO);
-#endif
-
-                ve_exit(0);
-                break;
-            }
-            default:
-            {
-                ve_put("thread: unknown message\n");
-                break;
-            }
-        }
-
-        ve_msg_free(&msg);
+        ve_puts("_thread(): ve_handle_calls() failed");
+        ve_exit(1);
     }
 
     return 0;
@@ -120,13 +64,12 @@ static int _create_new_thread(thread_arg_t* arg)
     {
         int flags = 0;
         int rval;
-        uint8_t* stack_bottom = stack + arg->stack_size;
+        uint8_t* child_stack = stack + arg->stack_size;
 
         flags |= VE_CLONE_VM;
         flags |= VE_CLONE_FS;
         flags |= VE_CLONE_FILES;
         flags |= VE_CLONE_SIGHAND;
-        // flags |= VE_CLONE_THREAD;
         flags |= VE_CLONE_SYSVSEM;
         flags |= VE_CLONE_DETACHED;
         flags |= VE_SIGCHLD;
@@ -134,12 +77,12 @@ static int _create_new_thread(thread_arg_t* arg)
         flags |= VE_SIGCHLD;
         // flags |= VE_CLONE_CHILD_SETTID;
 
-        if ((rval = ve_clone(
-                 _thread, stack_bottom, flags, arg, &arg->tid, NULL, NULL)) ==
-            -1)
-        {
+        rval = ve_clone(_thread, child_stack, flags, arg, &arg->tid);
+
+        if (rval == -1)
             goto done;
-        }
+
+        ve_put_int("enclave: new thread: rval=", rval);
     }
 
     ret = 0;
@@ -267,6 +210,7 @@ done:
     return ret;
 }
 
+#if 0
 int ve_handle_messages(void)
 {
     int ret = -1;
@@ -325,26 +269,11 @@ done:
 
     return ret;
 }
+#endif
 
-static int _handle_terminate(int fd, uint64_t arg_in)
+static int _handle_terminate(void)
 {
     int ret = -1;
-    ve_terminate_arg_t* arg = (ve_terminate_arg_t*)arg_in;
-
-    if (!arg)
-        goto done;
-
-    arg->ret = -1;
-
-    /* Release thread stack memory and sockets . */
-    for (size_t i = 0; i < globals.num_threads; i++)
-    {
-        ve_free(globals.threads[i].stack);
-        ve_close(globals.threads[i].sock);
-    }
-
-    ve_close(globals.sock);
-    ve_shmdt(globals.shmaddr);
 
     /* Wait on the exit status of each thread. */
     for (size_t i = 0; i < globals.num_threads; i++)
@@ -359,12 +288,22 @@ static int _handle_terminate(int fd, uint64_t arg_in)
         }
     }
 
+    /* Release resources held by threads. */
+    for (size_t i = 0; i < globals.num_threads; i++)
+    {
+        ve_free(globals.threads[i].stack);
+        ve_close(globals.threads[i].sock);
+    }
+
+    /* Release resources held by the main thread. */
+    ve_close(globals.sock);
+    ve_shmdt(globals.shmaddr);
+
     /* Close the standard descriptors. */
     ve_close(OE_STDIN_FILENO);
     ve_close(OE_STDOUT_FILENO);
     ve_close(OE_STDERR_FILENO);
 
-    arg->ret = 0;
     ret = 0;
 
     /* No response is expected. */
@@ -376,11 +315,20 @@ done:
 
 static int _handle_ping(int fd, uint64_t arg_in, uint64_t* arg_out)
 {
-    ve_puts("enclave pinged");
+    ve_put_int("enclave: ping: tid=d", ve_gettid());
 
     (void)fd;
 
     *arg_out = arg_in;
+
+    return 0;
+}
+
+static int _handle_terminate_thread(int fd, uint64_t arg_in)
+{
+    ve_put_int("enclave: terminating thread: tid=", ve_gettid());
+
+    ve_exit(0);
 
     return 0;
 }
@@ -403,7 +351,11 @@ static int _handle_call(
         }
         case VE_FUNC_TERMINATE:
         {
-            return _handle_terminate(fd, arg_in);
+            return _handle_terminate();
+        }
+        case VE_FUNC_TERMINATE_THREAD:
+        {
+            return _handle_terminate_thread(fd, arg_in);
         }
         default:
         {

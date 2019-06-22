@@ -182,60 +182,41 @@ done:
     return ret;
 }
 
-static int _terminate_main_thread(void)
-{
-    int ret = -1;
-    ve_terminate_arg_t* arg;
-    const int sock = globals.sock;
-    const int child_sock = globals.child_sock;
-
-    if (!(arg = ve_host_calloc(1, sizeof(ve_terminate_arg_t))))
-        goto done;
-
-    if (ve_call_send(sock, VE_FUNC_TERMINATE, (uint64_t)arg) != 0)
-        goto done;
-
-    close(sock);
-    close(child_sock);
-
-    ret = 0;
-
-done:
-
-    if (arg)
-        ve_host_free(arg);
-
-    return ret;
-}
-
 /* Should be called when there is only one surviving thread in the system. */
-static int _terminate_child(void)
+static int _terminate_enclave_process(void)
 {
     int ret = -1;
 
-    const ve_msg_type_t type = VE_MSG_TERMINATE;
-    /* Terminate child threads. */
+    /* Terminate the enclave threads. */
     for (size_t i = 0; i < globals.num_threads; i++)
     {
         const int sock = globals.threads[i].sock;
         const int child_sock = globals.threads[i].child_sock;
-        ve_msg_terminate_out_t out;
 
-        if (ve_send_msg(sock, type, NULL, 0) != 0)
+        if (ve_call_send(sock, VE_FUNC_TERMINATE_THREAD, 0) != 0)
+        {
+            puterr("ve_call_send() failed: VE_FUNC_TERMINATE_THREAD");
             goto done;
-
-        if (ve_recv_msg_by_type(sock, type, &out, sizeof(out)) != 0)
-            goto done;
-
-        if (out.ret != 0)
-            goto done;
+        }
 
         close(sock);
         close(child_sock);
     }
 
-    if (_terminate_main_thread() != 0)
-        goto done;
+    /* Terminate the main enclave thread. */
+    {
+        const int sock = globals.sock;
+        const int child_sock = globals.child_sock;
+
+        if (ve_call_send(sock, VE_FUNC_TERMINATE, 0) != 0)
+        {
+            puterr("_call_terminate() failed");
+            goto done;
+        }
+
+        close(sock);
+        close(child_sock);
+    }
 
     ret = 0;
 
@@ -243,7 +224,7 @@ done:
     return ret;
 }
 
-int _add_child_thread(int tcs, size_t stack_size)
+int _add_enclave_thread(int tcs, size_t stack_size)
 {
     int ret = -1;
     int socks[2] = {-1, -1};
@@ -310,17 +291,10 @@ done:
     return ret;
 }
 
-int _ping_thread(int tcs)
+static int _lookup_thread_sock(uint64_t tcs)
 {
-    int ret = -1;
-    ve_msg_ping_thread_in_t in = {0};
-    ve_msg_ping_thread_out_t out;
-    const ve_msg_type_t type = VE_MSG_PING_THREAD;
     int sock = -1;
-    const char MESSAGE[] = "ping";
-    char* str = NULL;
 
-    /* Select the thread to ping. */
     ve_lock(&globals.threads_lock);
     {
         for (size_t i = 0; i < globals.num_threads; i++)
@@ -334,44 +308,43 @@ int _ping_thread(int tcs)
     }
     ve_unlock(&globals.threads_lock);
 
-    /* If the the thread not found. */
-    if (sock == -1)
+    return sock;
+}
+
+static int _call_ping(int sock)
+{
+    int ret = -1;
+    const uint64_t VALUE = 12345;
+    uint64_t value;
+
+    if (ve_call(sock, VE_FUNC_PING, VALUE, &value) != 0)
         goto done;
 
-    /* Set the value. */
-    srand((unsigned int)sock);
-    in.value = rand();
-
-    /* Pass a string in shared memory. */
-    {
-        if (!(str = ve_host_malloc(sizeof(MESSAGE))))
-            goto done;
-
-        strcpy(str, MESSAGE);
-
-        in.str = str;
-    }
-
-    /* Send the message */
-    if (ve_send_msg(sock, type, &in, sizeof(in)) != 0)
-        goto done;
-
-    /* Receive the response. */
-    if (ve_recv_msg_by_type(sock, type, &out, sizeof(out)) != 0)
-        goto done;
-
-    if (out.ret != 0)
-        goto done;
-
-    if (out.value != in.value)
+    if (value != VALUE)
         goto done;
 
     ret = 0;
 
 done:
+    return ret;
+}
 
-    if (str)
-        ve_host_free(str);
+int _ping_thread(int tcs)
+{
+    int ret = -1;
+    int sock;
+
+    /* If a thread with this TCS was not found. */
+    if ((sock = _lookup_thread_sock(tcs)) == -1)
+        goto done;
+
+    /* Ping the thread. */
+    if (_call_ping(sock) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
 
     return ret;
 }
@@ -420,13 +393,13 @@ int main(int argc, const char* argv[])
         err("failed to execute %s", argv[1]);
 
     /* Add threads to the child process. */
-    if (_add_child_thread(0, STACK_SIZE) != 0)
+    if (_add_enclave_thread(0, STACK_SIZE) != 0)
         err("failed to add child thread");
 
-    if (_add_child_thread(1, STACK_SIZE) != 0)
+    if (_add_enclave_thread(1, STACK_SIZE) != 0)
         err("failed to add child thread");
 
-    if (_add_child_thread(2, STACK_SIZE) != 0)
+    if (_add_enclave_thread(2, STACK_SIZE) != 0)
         err("failed to add child thread");
 
     /* Ping each of the threads. */
@@ -441,8 +414,8 @@ int main(int argc, const char* argv[])
             err("host: _ping_thread() failed");
     }
 
-    /* Terminate the child process. */
-    if (_terminate_child() != 0)
+    /* Terminate the enclave process. */
+    if (_terminate_enclave_process() != 0)
         err("failed to terminate child");
 
     /* Wait for child to exit. */

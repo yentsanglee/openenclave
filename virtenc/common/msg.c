@@ -3,15 +3,6 @@
 
 #include "msg.h"
 
-void ve_msg_free(ve_msg_t* msg)
-{
-    if (msg && msg->data)
-    {
-        ve_free(msg->data);
-        msg->data = NULL;
-    }
-}
-
 int ve_recv_n(int fd, void* buf, size_t count)
 {
     int ret = -1;
@@ -64,102 +55,6 @@ done:
     return ret;
 }
 
-int ve_send_msg(int fd, ve_msg_type_t type, const void* data, size_t size)
-{
-    int ret = -1;
-    ve_msg_header_t msg;
-
-    if (size && !data)
-        goto done;
-
-    msg.magic = VE_MSG_MAGIC;
-    msg.type = type;
-    msg.size = size;
-
-    if (ve_send_n(fd, &msg, sizeof(ve_msg_header_t)) != 0)
-        goto done;
-
-    if (size && ve_send_n(fd, data, size) != 0)
-        goto done;
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
-int ve_recv_msg(int fd, ve_msg_t* msg)
-{
-    int ret = -1;
-    ve_msg_header_t header;
-    void* data = NULL;
-
-    if (msg)
-    {
-        msg->type = VE_MSG_NONE;
-        msg->data = NULL;
-        msg->size = 0;
-    }
-
-    if (fd < 0 || !msg)
-        goto done;
-
-    if (ve_recv_n(fd, &header, sizeof(ve_msg_header_t)) != 0)
-        goto done;
-
-    if (header.magic != VE_MSG_MAGIC)
-        goto done;
-
-    if (!(header.type >= __VE_MSG_MIN || header.type <= __VE_MSG_MAX))
-        goto done;
-
-    if (header.size)
-    {
-        if (!(data = ve_malloc(header.size)))
-            goto done;
-
-        if (ve_recv_n(fd, data, header.size) != 0)
-            goto done;
-    }
-
-    msg->type = header.type;
-    msg->size = header.size;
-    msg->data = data;
-    data = NULL;
-
-    ret = 0;
-
-done:
-
-    if (data)
-        ve_free(data);
-
-    return ret;
-}
-
-int ve_recv_msg_by_type(int fd, ve_msg_type_t type, void* data, size_t size)
-{
-    int ret = -1;
-    ve_msg_header_t msg;
-
-    if (ve_recv_n(fd, &msg, sizeof(ve_msg_header_t)) != 0)
-        goto done;
-
-    if (msg.magic != VE_MSG_MAGIC)
-        goto done;
-
-    if (msg.type != type || msg.size != size)
-        goto done;
-
-    if (ve_recv_n(fd, data, size) != 0)
-        goto done;
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
 const char* ve_func_name(ve_func_t func)
 {
     switch (func)
@@ -172,6 +67,8 @@ const char* ve_func_name(ve_func_t func)
             return "INIT";
         case VE_FUNC_ADD_THREAD:
             return "ADD_THREAD";
+        case VE_FUNC_TERMINATE_THREAD:
+            return "TERMINATE_THREAD";
         case VE_FUNC_TERMINATE:
             return "TERMINATE";
         case VE_FUNC_PING:
