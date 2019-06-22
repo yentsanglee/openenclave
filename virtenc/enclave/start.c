@@ -9,9 +9,10 @@
 #include "globals.h"
 #include "malloc.h"
 #include "msg.h"
-#include "put.h"
+#include "print.h"
 #include "sbrk.h"
 #include "time.h"
+#include "trace.h"
 
 void ve_call_init_functions(void);
 void ve_call_fini_functions(void);
@@ -27,17 +28,23 @@ static int _main(void)
 {
     if (!_called_constructor)
     {
-        ve_put_e("constructor not called");
+        ve_puts("constructor not called");
         ve_exit(1);
     }
 
     /* Wait here to be initialized and to receive the main socket. */
     if (ve_handle_init() != 0)
-        ve_put_e("ve_handle_init() failed");
+    {
+        ve_puts("ve_handle_init() failed");
+        ve_exit(1);
+    }
 
     /* Handle messages over the main socket. */
     if (ve_handle_calls(globals.sock) != 0)
-        ve_put_e("enclave: ve_handle_calls() failed");
+    {
+        ve_puts("enclave: ve_handle_calls() failed");
+        ve_exit(1);
+    }
 
     return 0;
 }

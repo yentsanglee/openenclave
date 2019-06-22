@@ -11,7 +11,7 @@
 #include "globals.h"
 #include "ioctl.h"
 #include "malloc.h"
-#include "put.h"
+#include "print.h"
 #include "recvfd.h"
 #include "shm.h"
 #include "signal.h"
@@ -76,7 +76,7 @@ static int _create_new_thread(thread_arg_t* arg)
         if (rval == -1)
             goto done;
 
-        ve_put_i("encl: new thread: rval=", rval);
+        ve_print("encl: new thread: rval=%d\n", rval);
     }
 
     ret = 0;
@@ -136,15 +136,13 @@ int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
     /* Attach the host's shared memory heap. */
     if ((rval = ve_shmat(shmid, shmaddr, VE_SHM_RND)) == (void*)-1)
     {
-        /* ATTN: send response on failure? */
-        ve_put_u("error: ve_shmat(1) failed: shmaddr=", (uint64_t)shmaddr);
+        ve_print("error: ve_shmat(1) failed: shmaddr=%p", shmaddr);
         goto done;
     }
 
     if (rval != shmaddr)
     {
-        /* ATTN: send response on failure? */
-        ve_put_u("error: ve_shmat(2) failed: shmaddr=", (uint64_t)shmaddr);
+        ve_print("error: ve_shmat(2) failed: shmaddr=%p", shmaddr);
         goto done;
     }
 
@@ -236,7 +234,7 @@ static void _handle_ping(int fd, uint64_t arg_in, uint64_t* arg_out)
 {
     uint64_t arg;
 
-    ve_put_i("encl: ping: tid=d", ve_gettid());
+    ve_print("encl: ping: tid=%d\n", ve_gettid());
 
     if (ve_call(fd, VE_FUNC_PING, arg_in, &arg) != 0)
         ve_put("encl: ve_call() failed\n");
@@ -247,7 +245,7 @@ static void _handle_ping(int fd, uint64_t arg_in, uint64_t* arg_out)
 
 static void _handle_terminate_thread(void)
 {
-    ve_put_i("encl: thread exit: tid=", ve_gettid());
+    ve_print("encl: thread exit: tid=%d\n", ve_gettid());
     ve_exit(0);
 }
 

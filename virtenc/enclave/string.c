@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 #include "string.h"
-#include "put.h"
 
 size_t ve_strlen(const char* s)
 {
