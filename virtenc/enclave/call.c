@@ -14,7 +14,7 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
     {
         case VE_FUNC_PING:
         {
-            ve_handle_call_ping(fd, buf->arg1, &buf->retval);
+            ve_handle_call_ping(fd, buf);
             return 0;
         }
         case VE_FUNC_ADD_THREAD:
@@ -22,19 +22,19 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
             if (!buf->arg1)
                 return -1;
 
-            ve_handle_call_add_thread(buf->arg1);
+            ve_handle_call_add_thread(fd, buf);
             return 0;
         }
         case VE_FUNC_TERMINATE:
         {
             /* does not return. */
-            ve_handle_call_terminate();
+            ve_handle_call_terminate(fd, buf);
             return 0;
         }
         case VE_FUNC_TERMINATE_THREAD:
         {
             /* does not return. */
-            ve_handle_call_terminate_thread();
+            ve_handle_call_terminate_thread(fd, buf);
             return 0;
         }
         default:

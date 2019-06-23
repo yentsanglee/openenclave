@@ -7,6 +7,6 @@
 #include <openenclave/bits/types.h>
 #include "../common/call.h"
 
-void ve_handle_call_ping(uint64_t arg_in, uint64_t* arg_out);
+void ve_handle_call_ping(ve_call_buf_t* buf);
 
 #endif /* _VE_HOST_CALL_H */

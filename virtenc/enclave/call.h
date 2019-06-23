@@ -7,13 +7,13 @@
 #include <openenclave/bits/types.h>
 #include "../common/call.h"
 
-void ve_handle_call_add_thread(uint64_t arg_in);
+void ve_handle_call_ping(int fd, ve_call_buf_t* buf);
 
-void ve_handle_call_terminate(void);
+void ve_handle_call_add_thread(int fd, ve_call_buf_t* buf);
 
-void ve_handle_call_ping(int fd, uint64_t arg_in, uint64_t* arg_out);
+void ve_handle_call_terminate(int fd, ve_call_buf_t* buf);
 
-void ve_handle_call_terminate_thread(void);
+void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf);
 
 void* ve_call_malloc(size_t size);
 

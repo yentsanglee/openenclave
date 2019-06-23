@@ -12,7 +12,7 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
     {
         case VE_FUNC_PING:
         {
-            ve_handle_call_ping(buf->arg1, &buf->retval);
+            ve_handle_call_ping(buf);
             return 0;
         }
         default:

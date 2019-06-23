@@ -374,14 +374,13 @@ done:
     return ret;
 }
 
-void ve_handle_call_ping(uint64_t arg_in, uint64_t* arg_out)
+void ve_handle_call_ping(ve_call_buf_t* buf)
 {
     extern int gettid(void);
 
     printf("host: ping: pid=%d\n", getpid());
 
-    if (arg_out)
-        *arg_out = arg_in;
+    buf->retval = buf->arg1;
 }
 
 int main(int argc, const char* argv[])

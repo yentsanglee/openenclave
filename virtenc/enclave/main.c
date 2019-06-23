@@ -94,11 +94,13 @@ done:
     return ret;
 }
 
-void ve_handle_call_add_thread(uint64_t arg_in)
+void ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
 {
     int sock = -1;
-    ve_add_thread_arg_t* arg = (ve_add_thread_arg_t*)arg_in;
+    ve_add_thread_arg_t* arg = (ve_add_thread_arg_t*)buf->arg1;
     thread_t* thread;
+
+    OE_UNUSED(fd);
 
     arg->retval = -1;
 
@@ -205,8 +207,11 @@ done:
     return ret;
 }
 
-void ve_handle_call_terminate(void)
+void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
 {
+    OE_UNUSED(fd);
+    OE_UNUSED(buf);
+
     /* Wait on the exit status of each thread. */
     for (size_t i = 0; i < globals.threads.size; i++)
     {
@@ -240,21 +245,23 @@ void ve_handle_call_terminate(void)
     ve_exit(0);
 }
 
-void ve_handle_call_ping(int fd, uint64_t arg1, uint64_t* retval)
+void ve_handle_call_ping(int fd, ve_call_buf_t* buf)
 {
     uint64_t tmp_retval;
 
     ve_print("encl: ping: tid=%d\n", ve_gettid());
 
-    if (ve_call1(fd, VE_FUNC_PING, &tmp_retval, arg1) != 0)
+    if (ve_call1(fd, VE_FUNC_PING, &tmp_retval, buf->arg1) != 0)
         ve_put("encl: ve_call() failed\n");
 
-    if (retval)
-        *retval = tmp_retval;
+    buf->retval = buf->arg1;
 }
 
-void ve_handle_call_terminate_thread(void)
+void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
 {
+    OE_UNUSED(fd);
+    OE_UNUSED(buf);
+
     ve_print("encl: thread exit: tid=%d\n", ve_gettid());
     ve_exit(0);
 }
