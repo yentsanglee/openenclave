@@ -122,7 +122,6 @@ int ve_call_recv(int fd, uint64_t* retval)
                 else
                 {
                     out.func = VE_FUNC_ERR;
-                    out.retval = 0;
                 }
 
                 if (ve_writen(fd, &out, sizeof(out)) != 0)

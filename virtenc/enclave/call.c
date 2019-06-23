@@ -63,30 +63,29 @@ int ve_handle_calls(int fd)
 
     for (;;)
     {
-        ve_call_buf_t buf_in;
-        ve_call_buf_t buf_out;
+        ve_call_buf_t in;
+        ve_call_buf_t out;
 
-        if (ve_readn(fd, &buf_in, sizeof(buf_in)) != 0)
+        if (ve_readn(fd, &in, sizeof(in)) != 0)
             goto done;
 
 #if defined(TRACE_CALLS)
-        ve_print("[ENCLAVE:%s]", ve_func_name(buf_in.func));
+        ve_print("[ENCLAVE:%s]", ve_func_name(in.func));
 #endif
 
-        ve_call_buf_clear(&buf_out);
+        ve_call_buf_clear(&out);
 
-        if (_handle_call(fd, &buf_in) == 0)
+        if (_handle_call(fd, &in) == 0)
         {
-            buf_out.func = VE_FUNC_RET;
-            buf_out.retval = buf_in.retval;
+            out.func = VE_FUNC_RET;
+            out.retval = in.retval;
         }
         else
         {
-            buf_out.func = VE_FUNC_ERR;
-            buf_out.retval = 0;
+            out.func = VE_FUNC_ERR;
         }
 
-        if (ve_writen(fd, &buf_out, sizeof(buf_out)) != 0)
+        if (ve_writen(fd, &out, sizeof(out)) != 0)
             goto done;
     }
 
