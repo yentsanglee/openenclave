@@ -1,20 +1,34 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "msg.h"
+#include <openenclave/bits/defs.h>
 #include <openenclave/internal/syscall/unistd.h>
+#include "../common/call.h"
 #include "globals.h"
 #include "io.h"
 #include "malloc.h"
 #include "print.h"
 #include "process.h"
 #include "recvfd.h"
+#include "sbrk.h"
 #include "shm.h"
 #include "signal.h"
 #include "string.h"
-#include "syscall.h"
 #include "time.h"
 #include "trace.h"
+
+void ve_call_init_functions(void);
+
+void ve_call_fini_functions(void);
+
+int ve_handle_calls(int fd);
+
+static bool _called_constructor = false;
+
+__attribute__((constructor)) static void constructor(void)
+{
+    _called_constructor = true;
+}
 
 static int _thread(void* arg_)
 {
@@ -80,7 +94,7 @@ done:
     return ret;
 }
 
-static void _handle_add_thread(uint64_t arg_in)
+void ve_handle_add_thread_call(uint64_t arg_in)
 {
     int sock = -1;
     ve_add_thread_arg_t* arg = (ve_add_thread_arg_t*)arg_in;
@@ -191,7 +205,7 @@ done:
     return ret;
 }
 
-static void _handle_terminate(void)
+void ve_handle_terminate_call(void)
 {
     /* Wait on the exit status of each thread. */
     for (size_t i = 0; i < globals.threads.size; i++)
@@ -226,7 +240,7 @@ static void _handle_terminate(void)
     ve_exit(0);
 }
 
-static void _handle_ping(int fd, uint64_t arg_in, uint64_t* arg_out)
+void ve_handle_ping_call(int fd, uint64_t arg_in, uint64_t* arg_out)
 {
     uint64_t arg;
 
@@ -239,157 +253,48 @@ static void _handle_ping(int fd, uint64_t arg_in, uint64_t* arg_out)
         *arg_out = arg;
 }
 
-static void _handle_terminate_thread(void)
+void ve_handle_terminate_thread_call(void)
 {
     ve_print("encl: thread exit: tid=%d\n", ve_gettid());
     ve_exit(0);
 }
 
-static int _handle_call(
-    int fd,
-    uint64_t func,
-    uint64_t arg_in,
-    uint64_t* arg_out)
+static int _main(void)
 {
-    switch (func)
+    if (!_called_constructor)
     {
-        case VE_FUNC_PING:
-        {
-            _handle_ping(fd, arg_in, arg_out);
-            return 0;
-        }
-        case VE_FUNC_ADD_THREAD:
-        {
-            if (!arg_in)
-                return -1;
-
-            _handle_add_thread(arg_in);
-            return 0;
-        }
-        case VE_FUNC_TERMINATE:
-        {
-            /* does not return. */
-            _handle_terminate();
-            return 0;
-        }
-        case VE_FUNC_TERMINATE_THREAD:
-        {
-            /* does not return. */
-            _handle_terminate_thread();
-            return 0;
-        }
-        default:
-        {
-            return -1;
-        }
+        ve_puts("constructor not called");
+        ve_exit(1);
     }
+
+    /* Wait here to be initialized and to receive the main socket. */
+    if (ve_handle_init() != 0)
+    {
+        ve_puts("ve_handle_init() failed");
+        ve_exit(1);
+    }
+
+    /* Handle messages over the main socket. */
+    if (ve_handle_calls(globals.sock) != 0)
+    {
+        ve_puts("enclave: ve_handle_calls() failed");
+        ve_exit(1);
+    }
+
+    return 0;
 }
 
-int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
+#if defined(BUILD_STATIC)
+void _start(void)
 {
-    int ret = -1;
-
-    if (arg_out)
-        *arg_out = 0;
-
-    if (fd < 0)
-        goto done;
-
-    /* Send request. */
-    {
-        ve_call_msg_t msg = {func, arg_in};
-
-        if (ve_writen(fd, &msg, sizeof(msg)) != 0)
-            goto done;
-    }
-
-    /* Receive response. */
-    for (;;)
-    {
-        ve_call_msg_t msg;
-
-        if (ve_readn(fd, &msg, sizeof(msg)) != 0)
-            goto done;
-
-        switch (msg.func)
-        {
-            case VE_FUNC_RET:
-            {
-                if (arg_out)
-                    *arg_out = msg.arg;
-
-                ret = 0;
-                goto done;
-            }
-            case VE_FUNC_ERR:
-            {
-                goto done;
-            }
-            default:
-            {
-                uint64_t arg = 0;
-
-                if (_handle_call(fd, msg.func, msg.arg, &arg) == 0)
-                {
-                    msg.func = VE_FUNC_RET;
-                    msg.arg = arg;
-                }
-                else
-                {
-                    msg.func = VE_FUNC_ERR;
-                    msg.arg = 0;
-                }
-
-                if (ve_writen(fd, &msg, sizeof(msg)) != 0)
-                    goto done;
-
-                /* Go back to waiting for return from original call. */
-                continue;
-            }
-        }
-    }
-
-done:
-    return ret;
+    ve_call_init_functions();
+    int rval = _main();
+    ve_call_fini_functions();
+    ve_exit(rval);
 }
-
-int ve_handle_calls(int fd)
+#else
+int main(void)
 {
-    int ret = -1;
-
-    if (fd < 0)
-        goto done;
-
-    for (;;)
-    {
-        ve_call_msg_t msg_in;
-        ve_call_msg_t msg_out;
-        uint64_t arg = 0;
-
-        if (ve_readn(fd, &msg_in, sizeof(msg_in)) != 0)
-            goto done;
-
-#if defined(TRACE_CALLS)
-        ve_put_s("ENCLAVE:", ve_func_name(msg_in.func));
+    ve_exit(_main());
+}
 #endif
-
-        if (_handle_call(fd, msg_in.func, msg_in.arg, &arg) == 0)
-        {
-            msg_out.func = VE_FUNC_RET;
-            msg_out.arg = arg;
-        }
-        else
-        {
-            msg_out.func = VE_FUNC_ERR;
-            msg_out.arg = 0;
-        }
-
-        if (ve_writen(fd, &msg_out, sizeof(msg_out)) != 0)
-            goto done;
-    }
-
-    ret = 0;
-
-done:
-    return ret;
-}

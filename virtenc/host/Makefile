@@ -17,12 +17,11 @@ CFLAGS += -m64
 #CFLAGS += -fno-omit-frame-pointer
 
 SOURCES += main.c
-SOURCES += msg.c
+SOURCES += call.c
 SOURCES += sendfd.c
 SOURCES += malloc.c
 SOURCES += hostmalloc.c
 SOURCES += io.c
-SOURCES += ../common/msg.c
 
 LDFLAGS += -lpthread
 

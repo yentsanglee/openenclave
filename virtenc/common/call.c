@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "msg.h"
-
 const char* ve_func_name(ve_func_t func)
 {
     switch (func)

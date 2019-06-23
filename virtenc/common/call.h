@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _VE_MSG_H
-#define _VE_MSG_H
+#ifndef _VE_CALL_H
+#define _VE_CALL_H
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
@@ -56,4 +56,4 @@ int ve_call_recv(int fd, uint64_t* arg_out);
 
 int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out);
 
-#endif /* _VE_MSG_H */
+#endif /* _VE_CALL_H */

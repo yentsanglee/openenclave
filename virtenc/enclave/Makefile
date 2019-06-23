@@ -34,7 +34,6 @@ INCLUDES += -I$(ROOT)/include
 SOURCES += string.c
 SOURCES += init.c
 SOURCES += fini.c
-SOURCES += msg.c
 SOURCES += syscall.c
 SOURCES += recvfd.c
 SOURCES += socket.c
@@ -43,14 +42,14 @@ SOURCES += nanosleep.c
 SOURCES += globals.c
 SOURCES += clone.S
 SOURCES += sbrk.c
-SOURCES += start.c
+SOURCES += main.c
 SOURCES += print.c
 SOURCES += malloc.c
 SOURCES += shm.c
 SOURCES += lock.c
 SOURCES += process.c
 SOURCES += io.c
-SOURCES += ../common/msg.c
+SOURCES += call.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles
 
@@ -68,9 +67,6 @@ static:
 
 dynamic:
 	$(CC) -o main $(DYNAMIC_CFLAGS) $(INCLUDES) $(DYNAMIC_LDFLAGS) $(SOURCES)
-
-xxx:
-	$(CC) -c $(DYNAMIC_CFLAGS) $(INCLUDES) $(DYNAMIC_LDFLAGS) -S msg.c
 
 clean:
 	rm -rf main

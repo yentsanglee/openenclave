@@ -1,20 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "../common/msg.h"
+#include "../common/call.h"
 #include <stdio.h>
 #include <unistd.h>
 #include "io.h"
 
-static void _handle_ping(uint64_t arg_in, uint64_t* arg_out)
-{
-    extern int gettid(void);
-
-    printf("host: ping: pid=%d\n", getpid());
-
-    if (arg_out)
-        *arg_out = arg_in;
-}
+void ve_handle_ping_call(uint64_t arg_in, uint64_t* arg_out);
 
 static int _handle_call(uint64_t func, uint64_t arg_in, uint64_t* arg_out)
 {
@@ -22,7 +14,7 @@ static int _handle_call(uint64_t func, uint64_t arg_in, uint64_t* arg_out)
     {
         case VE_FUNC_PING:
         {
-            _handle_ping(arg_in, arg_out);
+            ve_handle_ping_call(arg_in, arg_out);
             return 0;
         }
         default:
@@ -132,3 +124,5 @@ int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
 done:
     return ret;
 }
+
+#include "../common/call.c"

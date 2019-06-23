@@ -3,7 +3,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/internal/syscall/unistd.h>
-#include "../common/msg.h"
+#include "../common/call.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -197,7 +197,7 @@ static int _terminate_enclave_process(void)
 
         if (ve_call_send(sock, VE_FUNC_TERMINATE_THREAD, 0) != 0)
         {
-            puterr("ve_call_send() failed: VE_FUNC_TERMINATE_THREAD");
+            puterr("ve_call_recv() failed: VE_FUNC_TERMINATE_THREAD");
             goto done;
         }
 
@@ -371,6 +371,16 @@ static int _get_child_exit_status(int pid, int* status_out)
 
 done:
     return ret;
+}
+
+void ve_handle_ping_call(uint64_t arg_in, uint64_t* arg_out)
+{
+    extern int gettid(void);
+
+    printf("host: ping: pid=%d\n", getpid());
+
+    if (arg_out)
+        *arg_out = arg_in;
 }
 
 int main(int argc, const char* argv[])
