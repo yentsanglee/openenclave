@@ -11,7 +11,7 @@ unsigned ve_sleep(unsigned int seconds)
     struct oe_timespec tv = {.tv_sec = seconds, .tv_nsec = 0};
 
     if (ve_nanosleep(&tv, &tv))
-        return tv.tv_sec;
+        return (unsigned)tv.tv_sec;
 
     return 0;
 }

@@ -12,14 +12,14 @@ static ve_lock_t _lock;
 
 void ve_put(const char* s)
 {
-    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)s, ve_strlen(s));
+    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
 }
 
 void ve_puts(const char* s)
 {
     ve_lock(&_lock);
     const char nl = '\n';
-    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)s, ve_strlen(s));
+    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
     ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)&nl, 1);
     ve_unlock(&_lock);
 }
@@ -178,7 +178,7 @@ static void _put_s(const char* s)
     if (!s)
         s = "(null)";
 
-    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)s, ve_strlen(s));
+    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
 }
 
 static void _put_o(uint64_t x)
@@ -237,7 +237,7 @@ void ve_print(const char* format, ...)
                 }
                 case TYPE_c:
                 {
-                    _put_c(oe_va_arg(ap, int));
+                    _put_c((char)oe_va_arg(ap, int));
                     break;
                 }
                 case TYPE_o:

@@ -10,7 +10,7 @@ size_t ve_strlen(const char* s)
     while (*p)
         p++;
 
-    return p - s;
+    return (size_t)(p - s);
 }
 
 int ve_strcmp(const char* s1, const char* s2)
@@ -181,7 +181,7 @@ void* ve_memset(void* s, int c, size_t n)
     volatile uint8_t* p = (volatile uint8_t*)s;
 
     while (n--)
-        *p++ = c;
+        *p++ = (uint8_t)c;
 
     return s;
 }
@@ -191,7 +191,7 @@ void* memset(void* s, int c, size_t n)
     volatile uint8_t* p = (volatile uint8_t*)s;
 
     while (n--)
-        *p++ = c;
+        *p++ = (uint8_t)c;
 
     return s;
 }

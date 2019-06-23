@@ -27,7 +27,7 @@ static int __futexwait(volatile int* uaddr, int val, int priv)
     if (priv)
         futex_op |= FUTEX_PRIVATE_FLAG;
 
-    return ve_syscall6(OE_SYS_futex, (long)uaddr, futex_op, val, 0, 0, 0);
+    return (int)ve_syscall6(OE_SYS_futex, (long)uaddr, futex_op, val, 0, 0, 0);
 }
 
 static int __wake(volatile int* uaddr, int val, int priv)
@@ -38,7 +38,7 @@ static int __wake(volatile int* uaddr, int val, int priv)
     if (priv)
         futex_op |= FUTEX_PRIVATE_FLAG;
 
-    return ve_syscall6(OE_SYS_futex, (long)uaddr, futex_op, val, 0, 0, 0);
+    return (int)ve_syscall6(OE_SYS_futex, (long)uaddr, futex_op, val, 0, 0, 0);
 }
 
 #define __lock __ve_lock

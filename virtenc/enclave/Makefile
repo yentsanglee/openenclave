@@ -1,8 +1,13 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
+USE_CLANG=1
+
+ifdef USE_CLANG
 CC = clang-7
-#CC = gcc
+else
+CC = gcc
+endif
 
 #SANITIZE=1
 
@@ -19,6 +24,25 @@ CFLAGS += -nostdinc
 #CFLAGS += -fno-builtin
 #CFLAGS += -lgcc
 #CFLAGS += -ffreestanding
+CFLAGS += -mxsave
+CFLAGS += -Wall
+CFLAGS += -Werror
+CFLAGS += -Wpointer-arith
+CFLAGS += -Wconversion
+CFLAGS += -Wextra
+CFLAGS += -Wno-missing-field-initializers
+CFLAGS += -fno-strict-aliasing
+CFLAGS += -fno-stack-protector
+CFLAGS += -ftls-model=local-exec
+CFLAGS += -fno-builtin-malloc
+CFLAGS += -fno-builtin-calloc
+CFLAGS += -fno-builtin
+
+ifdef USE_CLANG
+CFLAGS += -mllvm
+CFLAGS += -x86-speculative-load-hardening
+endif
+
 CFLAGS += -I.
 CFLAGS += -I$(ROOT)/include
 

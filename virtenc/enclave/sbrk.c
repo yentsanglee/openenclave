@@ -35,7 +35,7 @@ void* ve_sbrk(intptr_t increment)
     {
         long rval;
         void* old_brk_value;
-        const long addr = (long)(_brk_value + increment);
+        const long addr = (long)((intptr_t)_brk_value + increment);
 
         if ((rval = ve_syscall1(OE_SYS_brk, addr)) == -1)
             goto done;

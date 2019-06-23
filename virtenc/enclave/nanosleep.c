@@ -8,5 +8,5 @@
 
 int ve_nanosleep(const struct oe_timespec* req, struct oe_timespec* rem)
 {
-    return ve_syscall2(OE_SYS_nanosleep, (long)req, (long)rem);
+    return (int)ve_syscall2(OE_SYS_nanosleep, (long)req, (long)rem);
 }

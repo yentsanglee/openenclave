@@ -14,7 +14,7 @@ long ve_syscall0(long n)
                          : "=a"(ret)
                          : "a"(n)
                          : "rcx", "r11", "memory");
-    return ret;
+    return (long)ret;
 }
 
 long ve_syscall1(long n, long x1)
@@ -26,7 +26,7 @@ long ve_syscall1(long n, long x1)
                          : "a"(n), "D"(x1)
                          : "rcx", "r11", "memory");
 
-    return ret;
+    return (long)ret;
 }
 
 long ve_syscall2(long n, long x1, long x2)
@@ -38,7 +38,7 @@ long ve_syscall2(long n, long x1, long x2)
                          : "a"(n), "D"(x1), "S"(x2)
                          : "rcx", "r11", "memory");
 
-    return ret;
+    return (long)ret;
 }
 
 long ve_syscall3(long n, long x1, long x2, long x3)
@@ -50,7 +50,7 @@ long ve_syscall3(long n, long x1, long x2, long x3)
                          : "a"(n), "D"(x1), "S"(x2), "d"(x3)
                          : "rcx", "r11", "memory");
 
-    return ret;
+    return (long)ret;
 }
 
 long ve_syscall4(long n, long x1, long x2, long x3, long x4)
@@ -63,7 +63,7 @@ long ve_syscall4(long n, long x1, long x2, long x3, long x4)
                          : "a"(n), "D"(x1), "S"(x2), "d"(x3), "r"(r10)
                          : "rcx", "r11", "memory");
 
-    return ret;
+    return (long)ret;
 }
 
 long ve_syscall5(long n, long x1, long x2, long x3, long x4, long x5)
@@ -76,7 +76,7 @@ long ve_syscall5(long n, long x1, long x2, long x3, long x4, long x5)
                          : "a"(n), "D"(x1), "S"(x2), "d"(x3), "r"(r10), "r"(r8)
                          : "rcx", "r11", "memory");
 
-    return ret;
+    return (long)ret;
 }
 
 long ve_syscall6(long n, long x1, long x2, long x3, long x4, long x5, long x6)
@@ -92,7 +92,7 @@ long ve_syscall6(long n, long x1, long x2, long x3, long x4, long x5, long x6)
         : "a"(n), "D"(x1), "S"(x2), "d"(x3), "r"(r10), "r"(r8), "r"(r9)
         : "rcx", "r11", "memory");
 
-    return ret;
+    return (long)ret;
 }
 
 #if 0

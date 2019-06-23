@@ -170,7 +170,7 @@ int ve_handle_init(void)
 {
     int ret = -1;
     ve_init_arg_t arg;
-    uint64_t retval = 0;
+    int retval = 0;
 
     /* Receive request from standard input. */
     {

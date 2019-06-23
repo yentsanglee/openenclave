@@ -17,12 +17,11 @@ ssize_t ve_write(int fd, const void* buf, size_t count)
 
 int ve_close(int fd)
 {
-    return ve_syscall1(OE_SYS_close, (long)fd);
+    return (int)ve_syscall1(OE_SYS_close, fd);
 }
 
 int ve_ioctl(int fd, unsigned long request, ...)
 {
-    int ret = -1;
     long x1;
     long x2;
     long x3;
@@ -40,9 +39,7 @@ int ve_ioctl(int fd, unsigned long request, ...)
     x6 = (long)oe_va_arg(ap, long);
     oe_va_end(ap);
 
-    ret = ve_syscall6(OE_SYS_ioctl, x1, x2, x3, x4, x5, x6);
-
-    return ret;
+    return (int)ve_syscall6(OE_SYS_ioctl, x1, x2, x3, x4, x5, x6);
 }
 
 #include "../common/io.c"

@@ -92,7 +92,7 @@ static int _init_child(int child_fd, int child_sock)
 {
     int ret = -1;
     ve_init_arg_t arg;
-    uint64_t retval;
+    int retval;
 
     arg.magic = VE_INIT_ARG_MAGIC;
     arg.sock = child_sock;
@@ -109,7 +109,7 @@ static int _init_child(int child_fd, int child_sock)
     if (ve_readn(globals.sock, &retval, sizeof(retval)) != 0)
         goto done;
 
-    if (retval != 0)
+    if (retval == -1)
         goto done;
 
     /* Check that child was able to write to shared memory. */

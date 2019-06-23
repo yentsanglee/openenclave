@@ -23,7 +23,7 @@ int ve_recv_fd(int sock)
     uint32_t magic = 0;
     OE_ALIGNED(sizeof(uint64_t)) char cmsg_buf[CMSG_SPACE(sizeof(int))];
     struct ve_cmsghdr* cmsg = (struct ve_cmsghdr*)cmsg_buf;
-    const size_t cmsg_len = CMSG_LEN(sizeof(int));
+    const ve_socklen_t cmsg_len = CMSG_LEN(sizeof(int));
 
     if (sock < 0)
         goto done;

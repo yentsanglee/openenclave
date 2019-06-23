@@ -18,7 +18,7 @@ int ve_readn(int fd, void* buf, size_t count)
             goto done;
 
         p += r;
-        n -= r;
+        n -= (size_t)r;
     }
 
     ret = 0;
@@ -44,7 +44,7 @@ int ve_writen(int fd, const void* buf, size_t count)
             goto done;
 
         p += r;
-        n -= r;
+        n -= (size_t)r;
     }
 
     ret = 0;
