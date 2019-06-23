@@ -19,9 +19,6 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
         }
         case VE_FUNC_ADD_THREAD:
         {
-            if (!buf->arg1)
-                return -1;
-
             ve_handle_call_add_thread(fd, buf);
             return 0;
         }

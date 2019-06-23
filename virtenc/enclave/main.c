@@ -104,6 +104,9 @@ void ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
 
     arg->retval = -1;
 
+    if (!arg)
+        goto done;
+
     /* If no more threads. */
     if (globals.threads.size == MAX_THREADS)
         goto done;
