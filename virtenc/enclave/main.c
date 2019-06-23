@@ -163,7 +163,7 @@ static int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
     ret = 0;
 
 done:
-    return 0;
+    return ret;
 }
 
 int ve_handle_init(void)
@@ -296,5 +296,6 @@ void _start(void)
 int main(void)
 {
     ve_exit(_main());
+    return 0;
 }
 #endif

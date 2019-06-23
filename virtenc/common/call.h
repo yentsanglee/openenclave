@@ -39,6 +39,7 @@ typedef struct _ve_call_buf
     uint64_t arg6;
 } ve_call_buf_t;
 
+/* Prevent clang from replacing this with crashing struct initialization. */
 OE_INLINE void ve_call_buf_clear(volatile ve_call_buf_t* buf)
 {
     buf->func = 0;

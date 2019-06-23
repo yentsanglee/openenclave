@@ -19,6 +19,8 @@ CFLAGS += -nostdinc
 #CFLAGS += -fno-builtin
 #CFLAGS += -lgcc
 #CFLAGS += -ffreestanding
+CFLAGS += -I.
+CFLAGS += -I$(ROOT)/include
 
 DYNAMIC_CFLAGS += $(CFLAGS)
 
@@ -27,9 +29,6 @@ DYNAMIC_CFLAGS += -fsanitize=address
 DYNAMIC_CFLAGS += -fno-omit-frame-pointer
 DYNAMIC_CFLAGS += -fsanitize=leak
 endif
-
-INCLUDES += -I.
-INCLUDES += -I$(ROOT)/include
 
 SOURCES += string.c
 SOURCES += init.c
@@ -63,10 +62,10 @@ STATIC_LDFLAGS += -nodefaultlibs
 all: static dynamic
 
 static:
-	$(CC) -DBUILD_STATIC -o main.static $(CFLAGS) $(INCLUDES) $(STATIC_LDFLAGS) $(SOURCES)
+	$(CC) -DBUILD_STATIC -o main.static $(CFLAGS) $(STATIC_LDFLAGS) $(SOURCES)
 
 dynamic:
-	$(CC) -o main $(DYNAMIC_CFLAGS) $(INCLUDES) $(DYNAMIC_LDFLAGS) $(SOURCES)
+	$(CC) -o main $(DYNAMIC_CFLAGS) $(DYNAMIC_LDFLAGS) $(SOURCES)
 
 clean:
 	rm -rf main
