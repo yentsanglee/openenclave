@@ -20,7 +20,7 @@ typedef struct _thread
 {
     int sock;
     int child_sock;
-    uint32_t tcs;
+    uint64_t tcs;
 } thread_t;
 
 struct _ve_enclave
@@ -127,7 +127,6 @@ done:
     return ret;
 }
 
-/* Should be called when there is only one surviving thread in the system. */
 static int _terminate_enclave_process(ve_enclave_t* enclave)
 {
     int ret = -1;
@@ -168,7 +167,7 @@ done:
 
 static int _add_enclave_thread(
     ve_enclave_t* enclave,
-    int tcs,
+    uint64_t tcs,
     size_t stack_size)
 {
     int ret = -1;
@@ -260,47 +259,6 @@ done:
     return sock;
 }
 
-static int _call_ping(int sock)
-{
-    int ret = -1;
-    const uint64_t VALUE = 12345;
-    uint64_t retval;
-
-    if (ve_call1(sock, VE_FUNC_PING, &retval, VALUE) != 0)
-        goto done;
-
-    if (retval != VALUE)
-        goto done;
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
-static int _ping_thread(ve_enclave_t* enclave, int tcs)
-{
-    int ret = -1;
-    int sock;
-
-    if (!enclave)
-        goto done;
-
-    /* If a thread with this TCS was not found. */
-    if ((sock = _lookup_thread_sock(enclave, tcs)) == -1)
-        goto done;
-
-    /* Ping the enclave thread. */
-    if (_call_ping(sock) != 0)
-        goto done;
-
-    ret = 0;
-
-done:
-
-    return ret;
-}
-
 static int _get_child_exit_status(int pid, int* status_out)
 {
     int ret = -1;
@@ -327,12 +285,12 @@ void ve_handle_call_ping(ve_call_buf_t* buf)
 {
     extern int gettid(void);
 
-    printf("host: ping: pid=%d value=%lu\n", getpid(), buf->arg1);
+    printf("host: ping: pid=%d value=%lx\n", getpid(), buf->arg1);
 
     buf->retval = buf->arg1;
 }
 
-int ve_create_enclave(const char* path, ve_enclave_t** enclave_out)
+int ve_enclave_create(const char* path, ve_enclave_t** enclave_out)
 {
     int ret = -1;
     ve_enclave_t* enclave = NULL;
@@ -362,22 +320,6 @@ int ve_create_enclave(const char* path, ve_enclave_t** enclave_out)
     if (_add_enclave_thread(enclave, 2, STACK_SIZE) != 0)
         goto done;
 
-    /* Ping each of the threads. */
-    {
-        if (_ping_thread(enclave, 0) != 0)
-            goto done;
-
-        if (_ping_thread(enclave, 1) != 0)
-            goto done;
-
-        if (_ping_thread(enclave, 2) != 0)
-            goto done;
-    }
-
-    /* Ping the main thread. */
-    if (_call_ping(enclave->sock) != 0)
-        goto done;
-
     *enclave_out = enclave;
     enclave = 0;
 
@@ -393,7 +335,7 @@ done:
     return ret;
 }
 
-int ve_terminate_enclave(ve_enclave_t* enclave)
+int ve_enclave_terminate(ve_enclave_t* enclave)
 {
     int ret = -1;
     int status;
@@ -414,6 +356,36 @@ int ve_terminate_enclave(ve_enclave_t* enclave)
     printf("host: child exit status: %d\n", status);
 
     free(enclave);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int ve_enclave_ping(ve_enclave_t* enclave, uint64_t tcs, uint64_t ping_value)
+{
+    int ret = -1;
+    uint64_t retval;
+    int sock;
+
+    if (!enclave)
+        goto done;
+
+    if (tcs == (uint64_t)-1)
+    {
+        sock = enclave->sock;
+    }
+    else if ((sock = _lookup_thread_sock(enclave, tcs)) == -1)
+    {
+        goto done;
+    }
+
+    if (ve_call1(sock, VE_FUNC_PING, &retval, ping_value) != 0)
+        goto done;
+
+    if (retval != ping_value)
+        goto done;
 
     ret = 0;
 

@@ -9,8 +9,10 @@
 
 typedef struct _ve_enclave ve_enclave_t;
 
-int ve_create_enclave(const char* path, ve_enclave_t** enclave_out);
+int ve_enclave_create(const char* path, ve_enclave_t** enclave_out);
 
-int ve_terminate_enclave(ve_enclave_t* enclave);
+int ve_enclave_terminate(ve_enclave_t* enclave);
+
+int ve_enclave_ping(ve_enclave_t* enclave, uint64_t tcs, uint64_t ping_value);
 
 #endif /* _VE_HOST_ENCLAVE_H */

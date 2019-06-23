@@ -24,10 +24,20 @@ int main(int argc, const char* argv[])
     if (ve_heap_create(VE_HEAP_SIZE) != 0)
         err("failed to allocate shared memory");
 
-    if (ve_create_enclave(argv[1], &enclave) != 0)
+    if (ve_enclave_create(argv[1], &enclave) != 0)
         err("failed to create enclave");
 
-    if (ve_terminate_enclave(enclave) != 0)
+    /* Ping the main thread. */
+    if (ve_enclave_ping(enclave, (uint64_t)-1, 0xF00DF00D) != 0)
+        err("failed to ping enclave");
+
+    for (uint64_t tcs = 0; tcs < 3; tcs++)
+    {
+        if (ve_enclave_ping(enclave, tcs, 0xF00DF00D) != 0)
+            err("failed to ping enclave");
+    }
+
+    if (ve_enclave_terminate(enclave) != 0)
         err("failed to create enclave");
 
     close(STDIN_FILENO);

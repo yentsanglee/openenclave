@@ -8,7 +8,7 @@
 
 #define VE_HEAP_SIZE (1024 * 1024)
 
-/* Host heap memory shared with child processes. */
+/* Shared-memory heap shared with enclaves. */
 typedef struct _ve_heap
 {
     int shmid;
@@ -16,8 +16,8 @@ typedef struct _ve_heap
     size_t shmsize;
 } ve_heap_t;
 
-int ve_heap_create(size_t heap_size);
-
 extern ve_heap_t __ve_heap;
+
+int ve_heap_create(size_t heap_size);
 
 #endif /* _VE_HOST_HEAP_H */

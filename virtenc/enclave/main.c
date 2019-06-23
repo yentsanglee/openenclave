@@ -278,7 +278,7 @@ void ve_handle_call_ping(int fd, ve_call_buf_t* buf)
 {
     uint64_t retval = 0;
 
-    ve_print("encl: ping: tid=%d value=%lu\n", ve_gettid(), buf->arg1);
+    ve_print("encl: ping: tid=%d value=%lx\n", ve_gettid(), buf->arg1);
 
     test_malloc(fd);
 
