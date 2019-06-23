@@ -20,6 +20,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#include "call.h"
 #include "globals.h"
 #include "hostmalloc.h"
 #include "io.h"
@@ -250,7 +251,7 @@ int _add_enclave_thread(int tcs, size_t stack_size)
         arg->stack_size = stack_size;
     }
 
-    /* Send ther request. */
+    /* Send the request. */
     if (ve_call_send(globals.sock, VE_FUNC_ADD_THREAD, (uint64_t)arg) != 0)
         goto done;
 
@@ -340,7 +341,7 @@ int _ping_thread(int tcs)
     if ((sock = _lookup_thread_sock(tcs)) == -1)
         goto done;
 
-    /* Ping the thread. */
+    /* Ping the enclave thread. */
     if (_call_ping(sock) != 0)
         goto done;
 
