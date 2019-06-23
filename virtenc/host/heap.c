@@ -2,24 +2,8 @@
 // Licensed under the MIT License.
 
 #include "heap.h"
-#include <errno.h>
 #include <fcntl.h>
-#include <pthread.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stropts.h>
-#include <sys/ioctl.h>
-#include <sys/ipc.h>
 #include <sys/shm.h>
-#include <sys/socket.h>
-#include <sys/wait.h>
-#include <time.h>
-#include <unistd.h>
-#include "hostmalloc.h"
-#include "io.h"
-#include "trace.h"
 
 ve_heap_t __ve_heap;
 

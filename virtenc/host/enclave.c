@@ -3,29 +3,38 @@
 
 #include "enclave.h"
 #include <errno.h>
-#include <fcntl.h>
-#include <openenclave/bits/defs.h>
-#include <openenclave/internal/syscall/unistd.h>
 #include <pthread.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <stropts.h>
-#include <sys/ioctl.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
-#include <time.h>
 #include <unistd.h>
 #include "call.h"
 #include "heap.h"
 #include "hostmalloc.h"
 #include "io.h"
-#include "trace.h"
 
-extern const char* arg0;
+#define MAX_THREADS 1024
+
+typedef struct _thread
+{
+    int sock;
+    int child_sock;
+    uint32_t tcs;
+} thread_t;
+
+struct _ve_enclave
+{
+    int pid;
+    int sock;
+    int child_sock;
+
+    thread_t threads[MAX_THREADS];
+    size_t threads_size;
+    pthread_spinlock_t threads_lock;
+};
+
+extern const char* __ve_arg0;
 
 static int _init_child(ve_enclave_t* enclave, int child_fd, int child_sock)
 {
@@ -89,7 +98,7 @@ static pid_t _exec(const char* path, ve_enclave_t* enclave)
         char* argv[2] = {(char*)path, NULL};
         execv(path, argv);
 
-        fprintf(stderr, "%s: execv() failed\n", arg0);
+        fprintf(stderr, "%s: execv() failed\n", __ve_arg0);
         abort();
     }
 
@@ -157,7 +166,10 @@ done:
     return ret;
 }
 
-int _add_enclave_thread(ve_enclave_t* enclave, int tcs, size_t stack_size)
+static int _add_enclave_thread(
+    ve_enclave_t* enclave,
+    int tcs,
+    size_t stack_size)
 {
     int ret = -1;
     int socks[2] = {-1, -1};
@@ -266,7 +278,7 @@ done:
     return ret;
 }
 
-int _ping_thread(ve_enclave_t* enclave, int tcs)
+static int _ping_thread(ve_enclave_t* enclave, int tcs)
 {
     int ret = -1;
     int sock;

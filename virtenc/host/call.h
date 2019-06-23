@@ -4,7 +4,6 @@
 #ifndef _VE_HOST_CALL_H
 #define _VE_HOST_CALL_H
 
-#include <openenclave/bits/types.h>
 #include "../common/call.h"
 
 void ve_handle_call_ping(ve_call_buf_t* buf);

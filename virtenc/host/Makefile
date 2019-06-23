@@ -24,6 +24,7 @@ SOURCES += hostmalloc.c
 SOURCES += io.c
 SOURCES += enclave.c
 SOURCES += heap.c
+SOURCES += err.c
 
 LDFLAGS += -lpthread
 
