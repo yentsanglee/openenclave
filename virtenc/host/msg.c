@@ -4,21 +4,7 @@
 #include "../common/msg.h"
 #include <stdio.h>
 #include <unistd.h>
-
-ssize_t ve_read(int fd, void* buf, size_t count)
-{
-    return read(fd, buf, count);
-}
-
-ssize_t ve_write(int fd, const void* buf, size_t count)
-{
-    return write(fd, buf, count);
-}
-
-void ve_debug(const char* str)
-{
-    puts(str);
-}
+#include "io.h"
 
 static void _handle_ping(uint64_t arg_in, uint64_t* arg_out)
 {
@@ -57,7 +43,7 @@ int ve_call_send(int fd, uint64_t func, uint64_t arg_in)
     {
         ve_call_msg_t msg = {func, arg_in};
 
-        if (ve_send_n(fd, &msg, sizeof(msg)) != 0)
+        if (ve_writen(fd, &msg, sizeof(msg)) != 0)
             goto done;
     }
 
@@ -82,7 +68,7 @@ int ve_call_recv(int fd, uint64_t* arg_out)
     {
         ve_call_msg_t msg;
 
-        if (ve_recv_n(fd, &msg, sizeof(msg)) != 0)
+        if (ve_readn(fd, &msg, sizeof(msg)) != 0)
             goto done;
 
 #if defined(TRACE_CALLS)
@@ -118,7 +104,7 @@ int ve_call_recv(int fd, uint64_t* arg_out)
                     msg.arg = 0;
                 }
 
-                if (ve_send_n(fd, &msg, sizeof(msg)) != 0)
+                if (ve_writen(fd, &msg, sizeof(msg)) != 0)
                     goto done;
 
                 /* Go back to waiting for return from original call. */

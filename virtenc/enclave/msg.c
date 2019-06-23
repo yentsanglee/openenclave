@@ -120,7 +120,7 @@ done:
         ve_close(sock);
 }
 
-int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
+static int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
 {
     int ret = -1;
     void* rval;
@@ -160,7 +160,7 @@ int ve_handle_init(void)
 
     /* Receive request from standard input. */
     {
-        if (ve_recv_n(OE_STDIN_FILENO, &arg, sizeof(arg)) != 0)
+        if (ve_readn(OE_STDIN_FILENO, &arg, sizeof(arg)) != 0)
             goto done;
 
         if (arg.magic != VE_INIT_ARG_MAGIC)
@@ -182,7 +182,7 @@ int ve_handle_init(void)
     }
 
     /* Send response back on the socket. */
-    if (ve_send_n(globals.sock, &retval, sizeof(retval)) != 0)
+    if (ve_writen(globals.sock, &retval, sizeof(retval)) != 0)
         goto done;
 
     ret = retval;
@@ -299,7 +299,7 @@ int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
     {
         ve_call_msg_t msg = {func, arg_in};
 
-        if (ve_send_n(fd, &msg, sizeof(msg)) != 0)
+        if (ve_writen(fd, &msg, sizeof(msg)) != 0)
             goto done;
     }
 
@@ -308,7 +308,7 @@ int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
     {
         ve_call_msg_t msg;
 
-        if (ve_recv_n(fd, &msg, sizeof(msg)) != 0)
+        if (ve_readn(fd, &msg, sizeof(msg)) != 0)
             goto done;
 
         switch (msg.func)
@@ -340,7 +340,7 @@ int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
                     msg.arg = 0;
                 }
 
-                if (ve_send_n(fd, &msg, sizeof(msg)) != 0)
+                if (ve_writen(fd, &msg, sizeof(msg)) != 0)
                     goto done;
 
                 /* Go back to waiting for return from original call. */
@@ -366,7 +366,7 @@ int ve_handle_calls(int fd)
         ve_call_msg_t msg_out;
         uint64_t arg = 0;
 
-        if (ve_recv_n(fd, &msg_in, sizeof(msg_in)) != 0)
+        if (ve_readn(fd, &msg_in, sizeof(msg_in)) != 0)
             goto done;
 
 #if defined(TRACE_CALLS)
@@ -384,7 +384,7 @@ int ve_handle_calls(int fd)
             msg_out.arg = 0;
         }
 
-        if (ve_send_n(fd, &msg_out, sizeof(msg_out)) != 0)
+        if (ve_writen(fd, &msg_out, sizeof(msg_out)) != 0)
             goto done;
     }
 

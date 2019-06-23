@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include "globals.h"
 #include "hostmalloc.h"
+#include "io.h"
 #include "trace.h"
 
 const char* arg0;
@@ -100,11 +101,11 @@ static int _init_child(int child_fd, int child_sock)
     *((uint64_t*)globals.heap.shmaddr) = 0xffffffffffffffff;
 
     /* Send the message to the child's standard input. */
-    if (ve_send_n(child_fd, &arg, sizeof(arg)) != 0)
+    if (ve_writen(child_fd, &arg, sizeof(arg)) != 0)
         goto done;
 
     /* Receive the message on the socket. */
-    if (ve_recv_n(globals.sock, &retval, sizeof(retval)) != 0)
+    if (ve_readn(globals.sock, &retval, sizeof(retval)) != 0)
         goto done;
 
     if (retval != 0)

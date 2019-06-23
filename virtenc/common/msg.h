@@ -50,14 +50,6 @@ typedef struct _ve_add_thread_arg
 
 const char* ve_func_name(ve_func_t func);
 
-void* ve_malloc(size_t size);
-
-void ve_free(void* ptr);
-
-int ve_recv_n(int fd, void* buf, size_t count);
-
-int ve_send_n(int fd, const void* buf, size_t count);
-
 int ve_call_send(int fd, uint64_t func, uint64_t arg_in);
 
 int ve_call_recv(int fd, uint64_t* arg_out);

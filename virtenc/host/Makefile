@@ -21,6 +21,7 @@ SOURCES += msg.c
 SOURCES += sendfd.c
 SOURCES += malloc.c
 SOURCES += hostmalloc.c
+SOURCES += io.c
 SOURCES += ../common/msg.c
 
 LDFLAGS += -lpthread

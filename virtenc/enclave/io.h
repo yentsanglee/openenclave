@@ -22,6 +22,10 @@ ssize_t ve_read(int fd, void* buf, size_t count);
 
 ssize_t ve_write(int fd, const void* buf, size_t count);
 
+int ve_readn(int fd, void* buf, size_t count);
+
+int ve_writen(int fd, const void* buf, size_t count);
+
 int ve_close(int fd);
 
 int ve_ioctl(int fd, unsigned long request, ...);
