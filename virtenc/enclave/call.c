@@ -3,7 +3,10 @@
 
 #include "../common/call.h"
 #include "call.h"
+#include "globals.h"
 #include "io.h"
+
+#include "../common/call.c"
 
 static int _handle_call(
     int fd,
@@ -154,4 +157,12 @@ done:
     return ret;
 }
 
-#include "../common/call.c"
+void* ve_call_malloc(size_t size)
+{
+    void* ret = NULL;
+
+    if (ve_call(globals.sock, VE_FUNC_MALLOC, size, (uint64_t*)&ret) != 0)
+        return NULL;
+
+    return ret;
+}

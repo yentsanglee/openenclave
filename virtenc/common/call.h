@@ -20,6 +20,11 @@ typedef enum _ve_func
     VE_FUNC_TERMINATE,
     VE_FUNC_ADD_THREAD,
     VE_FUNC_TERMINATE_THREAD,
+    VE_FUNC_MALLOC,
+    VE_FUNC_CALLOC,
+    VE_FUNC_REALLOC,
+    VE_FUNC_MEMALIGN,
+    VE_FUNC_FREE,
 } ve_func_t;
 
 typedef struct _ve_call_msg

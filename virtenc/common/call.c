@@ -19,6 +19,16 @@ const char* ve_func_name(ve_func_t func)
             return "TERMINATE";
         case VE_FUNC_PING:
             return "PING";
+        case VE_FUNC_MALLOC:
+            return "MALLOC";
+        case VE_FUNC_CALLOC:
+            return "CALLOC";
+        case VE_FUNC_REALLOC:
+            return "REALLOC";
+        case VE_FUNC_MEMALIGN:
+            return "MEMALIGN";
+        case VE_FUNC_FREE:
+            return "FREE";
     }
 
     return "UNKNOWN";
