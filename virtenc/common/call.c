@@ -33,3 +33,132 @@ const char* ve_func_name(ve_func_t func)
 
     return "UNKNOWN";
 }
+
+int ve_call_send(
+    int fd,
+    uint64_t func,
+    uint64_t arg1,
+    uint64_t arg2,
+    uint64_t arg3,
+    uint64_t arg4,
+    uint64_t arg5,
+    uint64_t arg6)
+{
+    int ret = -1;
+
+    if (fd < 0)
+        goto done;
+
+    /* Send request. */
+    {
+        ve_call_buf_t buf;
+
+        buf.func = func;
+        buf.retval = 0;
+        buf.arg1 = arg1;
+        buf.arg2 = arg2;
+        buf.arg3 = arg3;
+        buf.arg4 = arg4;
+        buf.arg5 = arg5;
+        buf.arg6 = arg6;
+
+        if (ve_writen(fd, &buf, sizeof(buf)) != 0)
+            goto done;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int ve_call_recv(int fd, uint64_t* retval)
+{
+    int ret = -1;
+
+    if (retval)
+        *retval = 0;
+
+    if (fd < 0)
+        goto done;
+
+    /* Receive response. */
+    for (;;)
+    {
+        ve_call_buf_t buf;
+
+        if (ve_readn(fd, &buf, sizeof(buf)) != 0)
+            goto done;
+
+#if defined(TRACE_CALLS)
+        ve_print("HOST:%s\n", ve_func_name(buf.func));
+#endif
+
+        switch (buf.func)
+        {
+            case VE_FUNC_RET:
+            {
+                if (retval)
+                    *retval = buf.retval;
+
+                ret = 0;
+                goto done;
+            }
+            case VE_FUNC_ERR:
+            {
+                goto done;
+            }
+            default:
+            {
+                uint64_t retval = 0;
+
+                if (_handle_call(fd, buf.func, buf.arg1, &retval) == 0)
+                {
+                    buf.func = VE_FUNC_RET;
+                    buf.retval = retval;
+                }
+                else
+                {
+                    buf.func = VE_FUNC_ERR;
+                    buf.retval = 0;
+                }
+
+                if (ve_writen(fd, &buf, sizeof(buf)) != 0)
+                    goto done;
+
+                /* Go back to waiting for return from original call. */
+                continue;
+            }
+        }
+    }
+
+done:
+    return ret;
+}
+
+int ve_call(
+    int fd,
+    uint64_t func,
+    uint64_t* retval,
+    uint64_t arg1,
+    uint64_t arg2,
+    uint64_t arg3,
+    uint64_t arg4,
+    uint64_t arg5,
+    uint64_t arg6)
+{
+    int ret = -1;
+
+    if (ve_call_send(fd, func, arg1, arg2, arg3, arg4, arg5, arg6) != 0)
+    {
+        goto done;
+    }
+
+    if (ve_call_recv(fd, retval) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}

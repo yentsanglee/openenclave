@@ -5,28 +5,24 @@
 #include "call.h"
 #include "globals.h"
 #include "io.h"
+#include "string.h"
+#include "trace.h"
 
-#include "../common/call.c"
-
-static int _handle_call(
-    int fd,
-    uint64_t func,
-    uint64_t arg_in,
-    uint64_t* arg_out)
+static int _handle_call(int fd, uint64_t func, uint64_t arg1, uint64_t* arg_out)
 {
     switch (func)
     {
         case VE_FUNC_PING:
         {
-            ve_handle_call_ping(fd, arg_in, arg_out);
+            ve_handle_call_ping(fd, arg1, arg_out);
             return 0;
         }
         case VE_FUNC_ADD_THREAD:
         {
-            if (!arg_in)
+            if (!arg1)
                 return -1;
 
-            ve_handle_call_add_thread(arg_in);
+            ve_handle_call_add_thread(arg1);
             return 0;
         }
         case VE_FUNC_TERMINATE:
@@ -48,6 +44,16 @@ static int _handle_call(
     }
 }
 
+void* ve_call_malloc(size_t size)
+{
+    uint64_t retval = 0;
+
+    if (ve_call1(globals.sock, VE_FUNC_MALLOC, &retval, size) != 0)
+        return NULL;
+
+    return (void*)retval;
+}
+
 int ve_handle_calls(int fd)
 {
     int ret = -1;
@@ -57,112 +63,40 @@ int ve_handle_calls(int fd)
 
     for (;;)
     {
-        ve_call_msg_t msg_in;
-        ve_call_msg_t msg_out;
-        uint64_t arg = 0;
+        ve_call_buf_t buf_in;
+        ve_call_buf_t buf_out;
+        uint64_t retval = 0;
 
-        if (ve_readn(fd, &msg_in, sizeof(msg_in)) != 0)
+        if (ve_readn(fd, &buf_in, sizeof(buf_in)) != 0)
             goto done;
 
 #if defined(TRACE_CALLS)
-        ve_put_s("ENCLAVE:", ve_func_name(msg_in.func));
+        ve_print("[ENCLAVE:%s]", ve_func_name(buf_in.func));
 #endif
 
-        if (_handle_call(fd, msg_in.func, msg_in.arg, &arg) == 0)
+        // ve_memset(&buf_out, 0, sizeof(buf_out));
+        ve_call_buf_clear(&buf_out);
+
+        if (_handle_call(fd, buf_in.func, buf_in.arg1, &retval) == 0)
         {
-            msg_out.func = VE_FUNC_RET;
-            msg_out.arg = arg;
+            buf_out.func = VE_FUNC_RET;
+            buf_out.retval = retval;
         }
         else
         {
-            msg_out.func = VE_FUNC_ERR;
-            msg_out.arg = 0;
+            buf_out.func = VE_FUNC_ERR;
+            buf_out.retval = 0;
         }
 
-        if (ve_writen(fd, &msg_out, sizeof(msg_out)) != 0)
+        if (ve_writen(fd, &buf_out, sizeof(buf_out)) != 0)
             goto done;
     }
 
     ret = 0;
 
 done:
+    VE_TRACE;
     return ret;
 }
 
-int ve_call(int fd, uint64_t func, uint64_t arg_in, uint64_t* arg_out)
-{
-    int ret = -1;
-
-    if (arg_out)
-        *arg_out = 0;
-
-    if (fd < 0)
-        goto done;
-
-    /* Send request. */
-    {
-        ve_call_msg_t msg = {func, arg_in};
-
-        if (ve_writen(fd, &msg, sizeof(msg)) != 0)
-            goto done;
-    }
-
-    /* Receive response. */
-    for (;;)
-    {
-        ve_call_msg_t msg;
-
-        if (ve_readn(fd, &msg, sizeof(msg)) != 0)
-            goto done;
-
-        switch (msg.func)
-        {
-            case VE_FUNC_RET:
-            {
-                if (arg_out)
-                    *arg_out = msg.arg;
-
-                ret = 0;
-                goto done;
-            }
-            case VE_FUNC_ERR:
-            {
-                goto done;
-            }
-            default:
-            {
-                uint64_t arg = 0;
-
-                if (_handle_call(fd, msg.func, msg.arg, &arg) == 0)
-                {
-                    msg.func = VE_FUNC_RET;
-                    msg.arg = arg;
-                }
-                else
-                {
-                    msg.func = VE_FUNC_ERR;
-                    msg.arg = 0;
-                }
-
-                if (ve_writen(fd, &msg, sizeof(msg)) != 0)
-                    goto done;
-
-                /* Go back to waiting for return from original call. */
-                continue;
-            }
-        }
-    }
-
-done:
-    return ret;
-}
-
-void* ve_call_malloc(size_t size)
-{
-    void* ret = NULL;
-
-    if (ve_call(globals.sock, VE_FUNC_MALLOC, size, (uint64_t*)&ret) != 0)
-        return NULL;
-
-    return ret;
-}
+#include "../common/call.c"

@@ -196,7 +196,7 @@ static int _terminate_enclave_process(void)
         const int sock = globals.threads.data[i].sock;
         const int child_sock = globals.threads.data[i].child_sock;
 
-        if (ve_call_send(sock, VE_FUNC_TERMINATE_THREAD, 0) != 0)
+        if (ve_call_send0(sock, VE_FUNC_TERMINATE_THREAD) != 0)
         {
             puterr("ve_call_recv() failed: VE_FUNC_TERMINATE_THREAD");
             goto done;
@@ -211,7 +211,7 @@ static int _terminate_enclave_process(void)
         const int sock = globals.sock;
         const int child_sock = globals.child_sock;
 
-        if (ve_call_send(sock, VE_FUNC_TERMINATE, 0) != 0)
+        if (ve_call_send0(sock, VE_FUNC_TERMINATE) != 0)
         {
             puterr("_call_terminate() failed");
             goto done;
@@ -252,7 +252,7 @@ int _add_enclave_thread(int tcs, size_t stack_size)
     }
 
     /* Send the request. */
-    if (ve_call_send(globals.sock, VE_FUNC_ADD_THREAD, (uint64_t)arg) != 0)
+    if (ve_call_send1(globals.sock, VE_FUNC_ADD_THREAD, (uint64_t)arg) != 0)
         goto done;
 
     /* Send the fd to the enclave after send but before receive. */
@@ -263,7 +263,7 @@ int _add_enclave_thread(int tcs, size_t stack_size)
     if (ve_call_recv(globals.sock, NULL) != 0)
         goto done;
 
-    if (arg->ret != 0)
+    if (arg->retval != 0)
         goto done;
 
     pthread_spin_lock(&globals.threads.lock);
@@ -318,12 +318,12 @@ static int _call_ping(int sock)
 {
     int ret = -1;
     const uint64_t VALUE = 12345;
-    uint64_t value;
+    uint64_t retval;
 
-    if (ve_call(sock, VE_FUNC_PING, VALUE, &value) != 0)
+    if (ve_call1(sock, VE_FUNC_PING, &retval, VALUE) != 0)
         goto done;
 
-    if (value != VALUE)
+    if (retval != VALUE)
         goto done;
 
     ret = 0;

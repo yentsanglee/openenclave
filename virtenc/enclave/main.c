@@ -100,7 +100,7 @@ void ve_handle_call_add_thread(uint64_t arg_in)
     ve_add_thread_arg_t* arg = (ve_add_thread_arg_t*)arg_in;
     thread_t* thread;
 
-    arg->ret = -1;
+    arg->retval = -1;
 
     /* If no more threads. */
     if (globals.threads.size == MAX_THREADS)
@@ -126,7 +126,7 @@ void ve_handle_call_add_thread(uint64_t arg_in)
     if (_create_new_thread(thread) != 0)
         goto done;
 
-    arg->ret = 0;
+    arg->retval = 0;
 
 done:
 
@@ -240,17 +240,17 @@ void ve_handle_call_terminate(void)
     ve_exit(0);
 }
 
-void ve_handle_call_ping(int fd, uint64_t arg_in, uint64_t* arg_out)
+void ve_handle_call_ping(int fd, uint64_t arg1, uint64_t* retval)
 {
-    uint64_t arg;
+    uint64_t tmp_retval;
 
     ve_print("encl: ping: tid=%d\n", ve_gettid());
 
-    if (ve_call(fd, VE_FUNC_PING, arg_in, &arg) != 0)
+    if (ve_call1(fd, VE_FUNC_PING, &tmp_retval, arg1) != 0)
         ve_put("encl: ve_call() failed\n");
 
-    if (arg_out)
-        *arg_out = arg;
+    if (retval)
+        *retval = tmp_retval;
 }
 
 void ve_handle_call_terminate_thread(void)
