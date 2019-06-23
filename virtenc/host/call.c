@@ -6,13 +6,13 @@
 #include <unistd.h>
 #include "io.h"
 
-static int _handle_call(int fd, uint64_t func, uint64_t arg1, uint64_t* retval)
+static int _handle_call(int fd, ve_call_buf_t* buf)
 {
-    switch (func)
+    switch (buf->func)
     {
         case VE_FUNC_PING:
         {
-            ve_handle_call_ping(arg1, retval);
+            ve_handle_call_ping(buf->arg1, &buf->retval);
             return 0;
         }
         default:

@@ -110,12 +110,9 @@ int ve_call_recv(int fd, uint64_t* retval)
             }
             default:
             {
-                uint64_t retval = 0;
-
-                if (_handle_call(fd, buf.func, buf.arg1, &retval) == 0)
+                if (_handle_call(fd, &buf) == 0)
                 {
                     buf.func = VE_FUNC_RET;
-                    buf.retval = retval;
                 }
                 else
                 {

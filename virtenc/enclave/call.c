@@ -8,21 +8,21 @@
 #include "string.h"
 #include "trace.h"
 
-static int _handle_call(int fd, uint64_t func, uint64_t arg1, uint64_t* arg_out)
+static int _handle_call(int fd, ve_call_buf_t* buf)
 {
-    switch (func)
+    switch (buf->func)
     {
         case VE_FUNC_PING:
         {
-            ve_handle_call_ping(fd, arg1, arg_out);
+            ve_handle_call_ping(fd, buf->arg1, &buf->retval);
             return 0;
         }
         case VE_FUNC_ADD_THREAD:
         {
-            if (!arg1)
+            if (!buf->arg1)
                 return -1;
 
-            ve_handle_call_add_thread(arg1);
+            ve_handle_call_add_thread(buf->arg1);
             return 0;
         }
         case VE_FUNC_TERMINATE:
@@ -65,7 +65,6 @@ int ve_handle_calls(int fd)
     {
         ve_call_buf_t buf_in;
         ve_call_buf_t buf_out;
-        uint64_t retval = 0;
 
         if (ve_readn(fd, &buf_in, sizeof(buf_in)) != 0)
             goto done;
@@ -74,13 +73,12 @@ int ve_handle_calls(int fd)
         ve_print("[ENCLAVE:%s]", ve_func_name(buf_in.func));
 #endif
 
-        // ve_memset(&buf_out, 0, sizeof(buf_out));
         ve_call_buf_clear(&buf_out);
 
-        if (_handle_call(fd, buf_in.func, buf_in.arg1, &retval) == 0)
+        if (_handle_call(fd, &buf_in) == 0)
         {
             buf_out.func = VE_FUNC_RET;
-            buf_out.retval = retval;
+            buf_out.retval = buf_in.retval;
         }
         else
         {
