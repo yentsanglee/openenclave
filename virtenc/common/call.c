@@ -85,21 +85,21 @@ int ve_call_recv(int fd, uint64_t* retval)
     /* Receive response. */
     for (;;)
     {
-        ve_call_buf_t buf;
+        ve_call_buf_t in;
 
-        if (ve_readn(fd, &buf, sizeof(buf)) != 0)
+        if (ve_readn(fd, &in, sizeof(in)) != 0)
             goto done;
 
 #if defined(TRACE_CALLS)
-        ve_print("HOST:%s\n", ve_func_name(buf.func));
+        ve_print("HOST:%s\n", ve_func_name(in.func));
 #endif
 
-        switch (buf.func)
+        switch (in.func)
         {
             case VE_FUNC_RET:
             {
                 if (retval)
-                    *retval = buf.retval;
+                    *retval = in.retval;
 
                 ret = 0;
                 goto done;
@@ -110,17 +110,22 @@ int ve_call_recv(int fd, uint64_t* retval)
             }
             default:
             {
-                if (_handle_call(fd, &buf) == 0)
+                ve_call_buf_t out;
+
+                ve_call_buf_clear(&out);
+
+                if (_handle_call(fd, &in) == 0)
                 {
-                    buf.func = VE_FUNC_RET;
+                    out.func = VE_FUNC_RET;
+                    out.retval = in.retval;
                 }
                 else
                 {
-                    buf.func = VE_FUNC_ERR;
-                    buf.retval = 0;
+                    out.func = VE_FUNC_ERR;
+                    out.retval = 0;
                 }
 
-                if (ve_writen(fd, &buf, sizeof(buf)) != 0)
+                if (ve_writen(fd, &out, sizeof(out)) != 0)
                     goto done;
 
                 /* Go back to waiting for return from original call. */
