@@ -378,7 +378,7 @@ void ve_handle_call_ping(ve_call_buf_t* buf)
 {
     extern int gettid(void);
 
-    printf("host: ping: pid=%d\n", getpid());
+    printf("host: ping: pid=%d value=%lu\n", getpid(), buf->arg1);
 
     buf->retval = buf->arg1;
 }
