@@ -3,7 +3,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/internal/syscall/unistd.h>
-#include "../common/call.h"
+#include "call.h"
 #include "globals.h"
 #include "io.h"
 #include "malloc.h"
@@ -94,7 +94,7 @@ done:
     return ret;
 }
 
-void ve_handle_add_thread_call(uint64_t arg_in)
+void ve_handle_call_add_thread(uint64_t arg_in)
 {
     int sock = -1;
     ve_add_thread_arg_t* arg = (ve_add_thread_arg_t*)arg_in;
@@ -205,7 +205,7 @@ done:
     return ret;
 }
 
-void ve_handle_terminate_call(void)
+void ve_handle_call_terminate(void)
 {
     /* Wait on the exit status of each thread. */
     for (size_t i = 0; i < globals.threads.size; i++)
@@ -240,7 +240,7 @@ void ve_handle_terminate_call(void)
     ve_exit(0);
 }
 
-void ve_handle_ping_call(int fd, uint64_t arg_in, uint64_t* arg_out)
+void ve_handle_call_ping(int fd, uint64_t arg_in, uint64_t* arg_out)
 {
     uint64_t arg;
 
@@ -253,7 +253,7 @@ void ve_handle_ping_call(int fd, uint64_t arg_in, uint64_t* arg_out)
         *arg_out = arg;
 }
 
-void ve_handle_terminate_thread_call(void)
+void ve_handle_call_terminate_thread(void)
 {
     ve_print("encl: thread exit: tid=%d\n", ve_gettid());
     ve_exit(0);

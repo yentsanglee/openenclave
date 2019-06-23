@@ -1,12 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "../common/call.h"
+#include "call.h"
 #include <stdio.h>
 #include <unistd.h>
 #include "io.h"
-
-void ve_handle_ping_call(uint64_t arg_in, uint64_t* arg_out);
 
 static int _handle_call(uint64_t func, uint64_t arg_in, uint64_t* arg_out)
 {
@@ -14,7 +12,7 @@ static int _handle_call(uint64_t func, uint64_t arg_in, uint64_t* arg_out)
     {
         case VE_FUNC_PING:
         {
-            ve_handle_ping_call(arg_in, arg_out);
+            ve_handle_call_ping(arg_in, arg_out);
             return 0;
         }
         default:

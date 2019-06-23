@@ -1,13 +1,9 @@
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
+
 #include "../common/call.h"
+#include "call.h"
 #include "io.h"
-
-void ve_handle_add_thread_call(uint64_t arg_in);
-
-void ve_handle_terminate_call(void);
-
-void ve_handle_ping_call(int fd, uint64_t arg_in, uint64_t* arg_out);
-
-void ve_handle_terminate_thread_call(void);
 
 static int _handle_call(
     int fd,
@@ -19,7 +15,7 @@ static int _handle_call(
     {
         case VE_FUNC_PING:
         {
-            ve_handle_ping_call(fd, arg_in, arg_out);
+            ve_handle_call_ping(fd, arg_in, arg_out);
             return 0;
         }
         case VE_FUNC_ADD_THREAD:
@@ -27,19 +23,19 @@ static int _handle_call(
             if (!arg_in)
                 return -1;
 
-            ve_handle_add_thread_call(arg_in);
+            ve_handle_call_add_thread(arg_in);
             return 0;
         }
         case VE_FUNC_TERMINATE:
         {
             /* does not return. */
-            ve_handle_terminate_call();
+            ve_handle_call_terminate();
             return 0;
         }
         case VE_FUNC_TERMINATE_THREAD:
         {
             /* does not return. */
-            ve_handle_terminate_thread_call();
+            ve_handle_call_terminate_thread();
             return 0;
         }
         default:

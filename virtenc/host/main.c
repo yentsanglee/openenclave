@@ -373,7 +373,7 @@ done:
     return ret;
 }
 
-void ve_handle_ping_call(uint64_t arg_in, uint64_t* arg_out)
+void ve_handle_call_ping(uint64_t arg_in, uint64_t* arg_out)
 {
     extern int gettid(void);
 
