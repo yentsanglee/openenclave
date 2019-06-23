@@ -6,7 +6,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-#include "globals.h"
+#include "heap.h"
 #include "malloc.h"
 
 #if defined(M_TRIM_THRESHOLD)
@@ -35,7 +35,7 @@ static void* sbrk(intptr_t increment)
 
     /* Initialize the first time. */
     if (_brk_value == NULL)
-        _brk_value = (uint8_t*)globals.heap.shmaddr;
+        _brk_value = (uint8_t*)__ve_heap.shmaddr;
 
     /* If increment is zero, then return the current break value. */
     if (increment == 0)
@@ -48,8 +48,8 @@ static void* sbrk(intptr_t increment)
     {
         uint8_t* old_brk_value = _brk_value;
         uint8_t* new_brk_value = _brk_value + increment;
-        uint8_t* start = (uint8_t*)globals.heap.shmaddr;
-        uint8_t* end = start + globals.heap.shmsize;
+        uint8_t* start = (uint8_t*)__ve_heap.shmaddr;
+        uint8_t* end = start + __ve_heap.shmsize;
 
         /* If the shared memory heap is exhausted. */
         if (!(new_brk_value >= start && new_brk_value <= end))
