@@ -151,9 +151,7 @@ int ve_call(
     int ret = -1;
 
     if (ve_call_send(fd, func, arg1, arg2, arg3, arg4, arg5, arg6) != 0)
-    {
         goto done;
-    }
 
     if (ve_call_recv(fd, retval) != 0)
         goto done;

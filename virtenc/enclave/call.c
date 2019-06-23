@@ -24,13 +24,11 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
         }
         case VE_FUNC_TERMINATE:
         {
-            /* does not return. */
             ve_handle_call_terminate(fd, buf);
             return 0;
         }
         case VE_FUNC_TERMINATE_THREAD:
         {
-            /* does not return. */
             ve_handle_call_terminate_thread(fd, buf);
             return 0;
         }
@@ -41,14 +39,52 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
     }
 }
 
-void* ve_call_malloc(size_t size)
+void* ve_call_malloc(int fd, size_t size)
 {
     uint64_t retval = 0;
 
-    if (ve_call1(globals.sock, VE_FUNC_MALLOC, &retval, size) != 0)
+    if (ve_call1(fd, VE_FUNC_MALLOC, &retval, size) != 0)
         return NULL;
 
     return (void*)retval;
+}
+
+void* ve_call_calloc(int fd, size_t nmemb, size_t size)
+{
+    uint64_t retval = 0;
+
+    if (ve_call2(fd, VE_FUNC_CALLOC, &retval, nmemb, size) != 0)
+        return NULL;
+
+    return (void*)retval;
+}
+
+void* ve_call_realloc(int fd, void* ptr, size_t size)
+{
+    uint64_t retval = 0;
+
+    if (ve_call2(fd, VE_FUNC_REALLOC, &retval, (uint64_t)ptr, size) != 0)
+        return NULL;
+
+    return (void*)retval;
+}
+
+void* ve_call_memalign(int fd, size_t alignment, size_t size)
+{
+    uint64_t retval = 0;
+
+    if (ve_call2(fd, VE_FUNC_MEMALIGN, &retval, alignment, size) != 0)
+        return NULL;
+
+    return (void*)retval;
+}
+
+int ve_call_free(int fd, void* ptr)
+{
+    if (ve_call1(fd, VE_FUNC_FREE, NULL, (uint64_t)ptr) != 0)
+        return -1;
+
+    return 0;
 }
 
 int ve_handle_calls(int fd)

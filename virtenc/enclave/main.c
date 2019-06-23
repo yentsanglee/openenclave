@@ -112,7 +112,7 @@ void ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
         goto done;
 
     /* Receive the socket descriptor from the host. */
-    if ((sock = ve_recv_fd(globals.sock)) < 0)
+    if ((sock = ve_recv_fd(g_sock)) < 0)
         goto done;
 
     /* Add this new thread to the global list. */
@@ -191,7 +191,7 @@ int ve_handle_init(void)
 
     /* Handle the request. */
     {
-        globals.sock = arg.sock;
+        g_sock = arg.sock;
 
         if (_attach_host_heap(&globals, arg.shmid, arg.shmaddr) != 0)
         {
@@ -201,7 +201,7 @@ int ve_handle_init(void)
     }
 
     /* Send response back on the socket. */
-    if (ve_writen(globals.sock, &retval, sizeof(retval)) != 0)
+    if (ve_writen(g_sock, &retval, sizeof(retval)) != 0)
         goto done;
 
     ret = retval;
@@ -236,7 +236,7 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
     }
 
     /* Release resources held by the main thread. */
-    ve_close(globals.sock);
+    ve_close(g_sock);
     ve_shmdt(globals.shmaddr);
 
     /* Close the standard descriptors. */
@@ -248,16 +248,44 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
     ve_exit(0);
 }
 
+void test_malloc(int fd)
+{
+    char* p;
+    size_t n = 32;
+
+    if (!(p = ve_call_calloc(fd, 1, n)))
+    {
+        ve_puts("ve_call_calloc() failed\n");
+        ve_exit(1);
+    }
+
+    ve_strlcpy(p, "hello world!", n);
+
+    if (ve_strcmp(p, "hello world!") != 0)
+    {
+        ve_puts("ve_call_calloc() failed\n");
+        ve_exit(1);
+    }
+
+    if (ve_call_free(fd, p) != 0)
+    {
+        ve_puts("ve_call_free() failed\n");
+        ve_exit(1);
+    }
+}
+
 void ve_handle_call_ping(int fd, ve_call_buf_t* buf)
 {
-    uint64_t tmp_retval;
+    uint64_t retval = 0;
 
-    ve_print("encl: ping: tid=%d\n", ve_gettid());
+    ve_print("encl: ping: tid=%d value=%lu\n", ve_gettid(), buf->arg1);
 
-    if (ve_call1(fd, VE_FUNC_PING, &tmp_retval, buf->arg1) != 0)
+    test_malloc(fd);
+
+    if (ve_call1(fd, VE_FUNC_PING, &retval, buf->arg1) != 0)
         ve_put("encl: ve_call() failed\n");
 
-    buf->retval = buf->arg1;
+    buf->retval = retval;
 }
 
 void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
@@ -285,7 +313,7 @@ static int _main(void)
     }
 
     /* Handle messages over the main socket. */
-    if (ve_handle_calls(globals.sock) != 0)
+    if (ve_handle_calls(g_sock) != 0)
     {
         ve_puts("enclave: ve_handle_calls() failed");
         ve_exit(1);

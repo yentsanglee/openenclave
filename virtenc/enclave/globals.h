@@ -27,7 +27,6 @@ typedef struct _threads
 
 typedef struct _globals
 {
-    int sock;
     threads_t threads;
 
     /* Shared memory between host and enclave. */
@@ -35,5 +34,8 @@ typedef struct _globals
 } globals_t;
 
 extern globals_t globals;
+
+/* Socket used to communicate with the parent host process. */
+extern int g_sock;
 
 #endif /* _VE_ENCLAVE_GLOBALS_H */

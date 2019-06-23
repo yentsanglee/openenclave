@@ -4,3 +4,5 @@
 #include "globals.h"
 
 globals_t globals;
+
+int g_sock = -1;

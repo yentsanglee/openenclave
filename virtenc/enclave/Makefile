@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-USE_CLANG=1
+#USE_CLANG=1
 
 ifdef USE_CLANG
 CC = clang-7
@@ -86,7 +86,7 @@ STATIC_LDFLAGS += -nodefaultlibs
 all: static dynamic
 
 static:
-	$(CC) -DBUILD_STATIC -o main.static $(CFLAGS) $(STATIC_LDFLAGS) $(SOURCES)
+	gcc -DBUILD_STATIC -o main.static $(CFLAGS) $(STATIC_LDFLAGS) $(SOURCES)
 
 dynamic:
 	$(CC) -o main $(DYNAMIC_CFLAGS) $(DYNAMIC_LDFLAGS) $(SOURCES)

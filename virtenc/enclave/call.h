@@ -15,14 +15,14 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf);
 
 void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf);
 
-void* ve_call_malloc(size_t size);
+void* ve_call_malloc(int fd, size_t size);
 
-void* ve_call_calloc(size_t nmemb, size_t size);
+void* ve_call_calloc(int fd, size_t nmemb, size_t size);
 
-void* ve_call_realloc(void* ptr, size_t size);
+void* ve_call_realloc(int fd, void* ptr, size_t size);
 
-void* ve_call_memalign(size_t alignment, size_t size);
+void* ve_call_memalign(int fd, size_t alignment, size_t size);
 
-void ve_call_free(void* ptr);
+int ve_call_free(int fd, void* ptr);
 
 #endif /* _VE_ENCLAVE_CALL_H */
