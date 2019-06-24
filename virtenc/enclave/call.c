@@ -107,10 +107,7 @@ int ve_handle_calls(int fd)
         ve_call_buf_t out;
 
         if (ve_readn(fd, &in, sizeof(in)) != 0)
-        {
-            ve_print("ffffffffffffffffffff1\n");
             goto done;
-        }
 
 #if defined(TRACE_CALLS)
         ve_print("[ENCLAVE:%s]", ve_func_name(in.func));
@@ -131,10 +128,7 @@ int ve_handle_calls(int fd)
         out.pid = (uint64_t)__ve_pid;
 
         if (ve_writen(fd, &out, sizeof(out)) != 0)
-        {
-            ve_print("ffffffffffffffffffff2\n");
             goto done;
-        }
     }
 
     ret = 0;

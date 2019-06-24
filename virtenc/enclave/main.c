@@ -206,11 +206,13 @@ done:
 
 void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
 {
+    size_t i;
+
     OE_UNUSED(fd);
     OE_UNUSED(buf);
 
     /* Wait on the exit status of each thread. */
-    for (size_t i = 0; i < globals.threads.size; i++)
+    for (i = 0; i < globals.threads.size; i++)
     {
         int pid;
         int status;
@@ -223,7 +225,7 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
     }
 
     /* Release resources held by threads. */
-    for (size_t i = 0; i < globals.threads.size; i++)
+    for (i = 0; i < globals.threads.size; i++)
     {
         ve_free(globals.threads.data[i].stack);
         ve_close(globals.threads.data[i].sock);

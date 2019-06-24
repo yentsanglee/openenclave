@@ -123,7 +123,9 @@ const char* ve_ustr(ve_ustr_buf* buf, uint64_t x, size_t* size)
 
 const char* ve_xstr(ve_xstr_buf* buf, uint64_t x, size_t* size)
 {
-    for (size_t i = 0; i < 16; i++)
+    size_t i;
+
+    for (i = 0; i < 16; i++)
         buf->data[15 - i] = oe_get_hex_char(x, i);
 
     buf->data[16] = '\0';

@@ -21,7 +21,8 @@ CFLAGS += -O3
 CFLAGS += -fPIE
 CFLAGS += -m64
 CFLAGS += -nostdinc
-CFLAGS += -std=c90
+#CFLAGS += -std=gnu89
+#CFLAGS += -std=c90
 #CFLAGS += -fno-builtin
 #CFLAGS += -lgcc
 #CFLAGS += -ffreestanding
@@ -71,10 +72,10 @@ SOURCES += main.c
 SOURCES += print.c
 SOURCES += malloc.c
 SOURCES += shm.c
-SOURCES += lock.c
 SOURCES += process.c
 SOURCES += io.c
 SOURCES += call.c
+SOURCES += lock.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles
 
