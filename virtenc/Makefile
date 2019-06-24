@@ -32,3 +32,9 @@ run:
 
 vg:
 	valgrind $(VALGRIND_OPTS) ./host/main ./enclave/main
+
+d:
+	./host/main ./enclave/main
+
+s:
+	./host/main ./enclave/main.static

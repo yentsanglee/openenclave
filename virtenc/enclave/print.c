@@ -24,6 +24,11 @@ void ve_puts(const char* s)
     ve_unlock(&_lock);
 }
 
+void ve_putc(char c)
+{
+    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)&c, 1);
+}
+
 typedef enum type
 {
     TYPE_none,

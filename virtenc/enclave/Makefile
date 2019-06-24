@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-USE_CLANG=1
+#USE_CLANG=1
 
 ifdef USE_CLANG
 CC = clang-7
@@ -35,7 +35,7 @@ CFLAGS += -Wextra
 CFLAGS += -Wno-missing-field-initializers
 CFLAGS += -fno-strict-aliasing
 CFLAGS += -fno-stack-protector
-CFLAGS += -ftls-model=local-exec
+#CFLAGS += -ftls-model=local-exec
 CFLAGS += -fno-builtin-malloc
 CFLAGS += -fno-builtin-calloc
 CFLAGS += -fno-builtin
@@ -57,6 +57,7 @@ DYNAMIC_CFLAGS += -fno-omit-frame-pointer
 DYNAMIC_CFLAGS += -fsanitize=leak
 endif
 
+SOURCES += assert.c
 SOURCES += string.c
 SOURCES += init.c
 SOURCES += fini.c
@@ -77,6 +78,7 @@ SOURCES += io.c
 SOURCES += call.c
 SOURCES += lock.c
 SOURCES += settings.c
+SOURCES += hexdump.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles
 

@@ -3,8 +3,10 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/internal/syscall/unistd.h>
+#include "assert.h"
 #include "call.h"
 #include "globals.h"
+#include "hexdump.h"
 #include "io.h"
 #include "malloc.h"
 #include "print.h"
@@ -17,6 +19,11 @@
 #include "string.h"
 #include "time.h"
 #include "trace.h"
+
+#define VE_PAGE_SIZE 4096
+
+__thread int __ve_thread_pid;
+//__thread uint64_t __xxx[8];
 
 void ve_call_init_functions(void);
 
@@ -35,6 +42,13 @@ static int _thread(void* arg_)
 {
     thread_t* arg = (thread_t*)arg_;
 
+    __ve_thread_pid = ve_getpid();
+
+#if 0
+    __ve_tls = arg->tls;
+    __ve_tls_size = arg->tls_size;
+#endif
+
     if (ve_handle_calls(arg->sock) != 0)
     {
         ve_put("_thread(): ve_handle_calls() failed\n");
@@ -47,16 +61,16 @@ static int _thread(void* arg_)
 static int _create_new_thread(thread_t* arg)
 {
     int ret = -1;
-    uint8_t* stack;
+    uint8_t* stack = NULL;
+    uint8_t* tls = NULL;
+    const size_t TLS_SIZE = 8 * VE_PAGE_SIZE;
 
     if (!arg)
         goto done;
 
     /* Allocate and zero-fill the stack. */
     {
-        const size_t STACK_ALIGNMENT = 4096;
-
-        if (!(stack = ve_memalign(STACK_ALIGNMENT, arg->stack_size)))
+        if (!(stack = ve_memalign(VE_PAGE_SIZE, arg->stack_size)))
             goto done;
 
         ve_memset(stack, 0, arg->stack_size);
@@ -64,11 +78,23 @@ static int _create_new_thread(thread_t* arg)
         arg->stack = stack;
     }
 
+    /* Allocate a TLS for this thread. */
+    {
+        if (!(tls = ve_memalign(VE_PAGE_SIZE, TLS_SIZE)))
+            goto done;
+
+        ve_memset(tls, 0, TLS_SIZE);
+
+        arg->tls = tls;
+        arg->tls_size = TLS_SIZE;
+    }
+
     /* Create the new thread. */
     {
         int flags = 0;
         int rval;
         uint8_t* child_stack = stack + arg->stack_size;
+        uint8_t* child_tls = tls + TLS_SIZE;
 
         flags |= VE_CLONE_VM;
         flags |= VE_CLONE_FS;
@@ -79,9 +105,17 @@ static int _create_new_thread(thread_t* arg)
         flags |= VE_SIGCHLD;
         flags |= VE_CLONE_PARENT_SETTID;
         flags |= VE_SIGCHLD;
-        // flags |= VE_CLONE_CHILD_SETTID;
+        flags |= VE_CLONE_CHILD_SETTID;
+        flags |= VE_CLONE_SETTLS;
 
-        rval = ve_clone(_thread, child_stack, flags, arg, &arg->tid);
+        rval = ve_clone(
+            _thread,
+            child_stack,
+            flags,
+            arg,
+            &arg->ptid,
+            child_tls,
+            &arg->ctid);
 
         if (rval == -1)
             goto done;
@@ -89,9 +123,18 @@ static int _create_new_thread(thread_t* arg)
         ve_print("encl: new thread: rval=%d\n", rval);
     }
 
+    stack = NULL;
+    tls = NULL;
     ret = 0;
 
 done:
+
+    if (stack)
+        ve_free(stack);
+
+    if (tls)
+        ve_free(tls);
+
     return ret;
 }
 
@@ -147,13 +190,21 @@ static int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
     /* Attach the host's shared memory heap. */
     if ((rval = ve_shmat(shmid, shmaddr, VE_SHM_RND)) == (void*)-1)
     {
-        ve_print("error: ve_shmat(1) failed: shmaddr=%p", shmaddr);
+        ve_print(
+            "error: ve_shmat(1) failed: rval=%p shmid=%d shmaddr=%p\n",
+            rval,
+            shmid,
+            shmaddr);
         goto done;
     }
 
     if (rval != shmaddr)
     {
-        ve_print("error: ve_shmat(2) failed: shmaddr=%p", shmaddr);
+        ve_print(
+            "error: ve_shmat(2) failed: rval=%p shmid=%d shmaddr=%p\n",
+            rval,
+            shmid,
+            shmaddr);
         goto done;
     }
 
@@ -171,6 +222,8 @@ int ve_handle_init(void)
     int ret = -1;
     ve_init_arg_t arg;
     int retval = 0;
+
+    //__ve_thread_pid = ve_getpid();
 
     /* Receive request from standard input. */
     {
@@ -198,6 +251,8 @@ int ve_handle_init(void)
     /* Send response back on the socket. */
     if (ve_writen(g_sock, &retval, sizeof(retval)) != 0)
         goto done;
+
+    __ve_thread_pid = ve_getpid();
 
     ret = retval;
 
@@ -228,6 +283,7 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
     /* Release resources held by threads. */
     for (i = 0; i < globals.threads.size; i++)
     {
+        ve_free(globals.threads.data[i].tls);
         ve_free(globals.threads.data[i].stack);
         ve_close(globals.threads.data[i].sock);
     }
@@ -276,6 +332,10 @@ void ve_handle_call_ping(int fd, ve_call_buf_t* buf)
     uint64_t retval = 0;
 
     ve_print("encl: ping: value=%lx [%u]\n", buf->arg1, ve_getpid());
+
+    ve_assert(__ve_thread_pid == ve_getpid());
+
+    ve_print("__ve_thread_pid=%d\n", __ve_thread_pid);
 
     test_malloc(fd);
 

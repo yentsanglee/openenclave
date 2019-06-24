@@ -14,8 +14,11 @@ typedef struct _thread
     int sock;
     void* stack;
     size_t stack_size;
+    void* tls;
+    size_t tls_size;
     uint64_t tcs;
-    int tid;
+    int ptid;
+    int ctid;
 } thread_t;
 
 typedef struct _threads

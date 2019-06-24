@@ -11,6 +11,8 @@ void ve_put(const char* s);
 
 void ve_puts(const char* s);
 
+void ve_putc(char c);
+
 OE_PRINTF_FORMAT(1, 2)
 void ve_print(const char* format, ...);
 
