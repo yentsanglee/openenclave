@@ -329,7 +329,7 @@ static void echod_client(uint16_t port, uint64_t value)
             error_exit("recv_n() failed: errno=%d", errno);
 
         if (tmp != value)
-            error_exit("comparision failed");
+            error_exit("comparison failed");
     }
 
     close(sock);
@@ -346,7 +346,7 @@ functions are supported.
 **<stdio.h>**
 -------------
 
-For the **<stdio.h>** header, the I/O subsustem adds support for the following
+For the **<stdio.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -392,7 +392,7 @@ functions.
 **<stdlib.h>**
 -------------
 
-For the **<stdlib.h>** header, the I/O subsustem adds support for the following
+For the **<stdlib.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -403,7 +403,7 @@ functions.
 **<fcntl.h>**
 -------------
 
-For the **<fcntl.h>** header, the I/O subsustem adds support for the following
+For the **<fcntl.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -415,7 +415,7 @@ functions.
 **<unistd.h>**
 -------------
 
-For the **<unistd.h>** header, the I/O subsustem adds support for the following
+For the **<unistd.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -449,7 +449,7 @@ functions.
 **<netdb.h>**
 -------------
 
-For the **<netdb.h>** header, the I/O subsustem adds support for the following
+For the **<netdb.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -462,7 +462,7 @@ functions.
 **<socket.h>**
 -------------
 
-For the **<socket.h>** header, the I/O subsustem adds support for the following
+For the **<socket.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -489,7 +489,7 @@ functions.
 **<select.h>**
 -------------
 
-For the **<select.h>** header, the I/O subsustem adds support for the following
+For the **<select.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -504,7 +504,7 @@ functions.
 **<dirent.h>**
 -------------
 
-For the **<dirent.h>** header, the I/O subsustem adds support for the following
+For the **<dirent.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -520,7 +520,7 @@ functions.
 **<poll.h>**
 -------------
 
-For the **<poll.h>** header, the I/O subsustem adds support for the following
+For the **<poll.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -531,7 +531,7 @@ functions.
 **<poll.h>**
 -------------
 
-For the **<poll.h>** header, the I/O subsustem adds support for the following
+For the **<poll.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -542,7 +542,7 @@ functions.
 **<ioctl.h>**
 -------------
 
-For the **<ioctl.h>** header, the I/O subsustem adds support for the following
+For the **<ioctl.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -553,7 +553,7 @@ functions.
 **<mount.h>**
 -------------
 
-For the **<mount.h>** header, the I/O subsustem adds support for the following
+For the **<mount.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -566,7 +566,7 @@ functions.
 **<uname.h>**
 -------------
 
-For the **<uname.h>** header, the I/O subsustem adds support for the following
+For the **<uname.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -578,7 +578,7 @@ functions.
 **<sys/uio.h>**
 -------------
 
-For the **<sys/uio.h>** header, the I/O subsustem adds support for the following
+For the **<sys/uio.h>** header, the I/O subsystem adds support for the following
 functions.
 
 | Function          | Limitations                                              |
@@ -590,7 +590,7 @@ functions.
 **<sys/stat.h>**
 -------------
 
-For the **<sys/stat.h>** header, the I/O subsustem adds support for the
+For the **<sys/stat.h>** header, the I/O subsystem adds support for the
 following functions.
 
 | Function          | Limitations                                              |
@@ -602,7 +602,7 @@ following functions.
 **<arpa/inet.h>**
 -------------
 
-For the **<arpa/inet.h>** header, the I/O subsustem adds support for the
+For the **<arpa/inet.h>** header, the I/O subsystem adds support for the
 following functions.
 
 | Function          | Limitations                                              |
