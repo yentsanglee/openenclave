@@ -33,8 +33,8 @@ struct _ve_enclave
     int child_sock;
 
     thread_t threads[MAX_THREADS];
-    size_t threads_size;
-    pthread_spinlock_t threads_lock;
+    size_t nthreads;
+    pthread_spinlock_t lock;
 };
 
 extern const char* __ve_arg0;
@@ -71,7 +71,7 @@ done:
     return ret;
 }
 
-static pid_t _exec(const char* path, ve_enclave_t* enclave)
+static pid_t _fork_exec_enclave(const char* path, ve_enclave_t* enclave)
 {
     pid_t ret = -1;
     pid_t pid;
@@ -146,7 +146,7 @@ static int _terminate_enclave_process(ve_enclave_t* enclave)
         goto done;
 
     /* Terminate the enclave threads. */
-    for (size_t i = 0; i < enclave->threads_size; i++)
+    for (size_t i = 0; i < enclave->nthreads; i++)
     {
         const int sock = enclave->threads[i].sock;
         const int child_sock = enclave->threads[i].child_sock;
@@ -186,7 +186,7 @@ static int _add_enclave_thread(
     extern int send_fd(int sock, int fd);
 
     /* Fail if no more threads. */
-    if (enclave->threads_size == MAX_THREADS)
+    if (enclave->nthreads == MAX_THREADS)
         goto done;
 
     /* Create the socket pair. */
@@ -209,14 +209,14 @@ static int _add_enclave_thread(
             goto done;
     }
 
-    pthread_spin_lock(&enclave->threads_lock);
+    pthread_spin_lock(&enclave->lock);
     {
-        enclave->threads[enclave->threads_size].sock = socks[0];
-        enclave->threads[enclave->threads_size].child_sock = socks[1];
-        enclave->threads[enclave->threads_size].tcs = tcs;
-        enclave->threads_size++;
+        enclave->threads[enclave->nthreads].sock = socks[0];
+        enclave->threads[enclave->nthreads].child_sock = socks[1];
+        enclave->threads[enclave->nthreads].tcs = tcs;
+        enclave->nthreads++;
     }
-    pthread_spin_unlock(&enclave->threads_lock);
+    pthread_spin_unlock(&enclave->lock);
 
     socks[0] = -1;
     socks[1] = -1;
@@ -241,9 +241,9 @@ static int _lookup_thread_sock(ve_enclave_t* enclave, uint64_t tcs)
     if (!enclave)
         goto done;
 
-    pthread_spin_lock(&enclave->threads_lock);
+    pthread_spin_lock(&enclave->lock);
     {
-        for (size_t i = 0; i < enclave->threads_size; i++)
+        for (size_t i = 0; i < enclave->nthreads; i++)
         {
             if (enclave->threads[i].tcs == tcs)
             {
@@ -252,7 +252,7 @@ static int _lookup_thread_sock(ve_enclave_t* enclave, uint64_t tcs)
             }
         }
     }
-    pthread_spin_unlock(&enclave->threads_lock);
+    pthread_spin_unlock(&enclave->lock);
 
 done:
     return sock;
@@ -306,9 +306,9 @@ int ve_enclave_create(const char* path, ve_enclave_t** enclave_out)
     if (!(enclave = calloc(1, sizeof(ve_enclave_t))))
         goto done;
 
-    pthread_spin_init(&enclave->threads_lock, PTHREAD_PROCESS_PRIVATE);
+    pthread_spin_init(&enclave->lock, PTHREAD_PROCESS_PRIVATE);
 
-    if ((enclave->pid = _exec(path, enclave)) == -1)
+    if ((enclave->pid = _fork_exec_enclave(path, enclave)) == -1)
         goto done;
 
     ve_enclave_settings_t settings;
@@ -359,7 +359,7 @@ int ve_enclave_terminate(ve_enclave_t* enclave)
 
     printf("host: child exit status: %d\n", status);
 
-    pthread_spin_destroy(&enclave->threads_lock);
+    pthread_spin_destroy(&enclave->lock);
 
     free(enclave);
 
