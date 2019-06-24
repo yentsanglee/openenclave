@@ -76,6 +76,7 @@ SOURCES += process.c
 SOURCES += io.c
 SOURCES += call.c
 SOURCES += lock.c
+SOURCES += settings.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles
 

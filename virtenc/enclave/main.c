@@ -11,6 +11,7 @@
 #include "process.h"
 #include "recvfd.h"
 #include "sbrk.h"
+#include "settings.h"
 #include "shm.h"
 #include "signal.h"
 #include "string.h"
@@ -293,14 +294,12 @@ void ve_handle_get_settings(int fd, ve_call_buf_t* buf)
     if (settings)
     {
         /* ATTN: get this from the enclave information struct. */
-        settings->num_heap_pages = 1024;
-        settings->num_stack_pages = 256;
-        settings->num_tcs = 8;
+        *settings = __ve_enclave_settings;
         buf->retval = 0;
     }
     else
     {
-        buf->retval = 0;
+        buf->retval = (uint64_t)-1;
     }
 }
 

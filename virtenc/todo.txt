@@ -3,8 +3,12 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
+    (A) Support enclave host-map (keyed by enclave-pid).
+
+    (A) Support free-enclave-thread selection.
+
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
     (B) Limit enclave heap size to value given by the enclave settings.
 
-    (C) Fix static build crashes with clang compiler.
+    (B) Block enclave re-entrancy.
