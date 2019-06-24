@@ -8,6 +8,8 @@
 #include "string.h"
 #include "trace.h"
 
+extern int __ve_pid;
+
 static int _handle_call(int fd, ve_call_buf_t* buf)
 {
     switch (buf->func)
@@ -30,6 +32,11 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
         case VE_FUNC_TERMINATE_THREAD:
         {
             ve_handle_call_terminate_thread(fd, buf);
+            return 0;
+        }
+        case VE_FUNC_GET_SETTINGS:
+        {
+            ve_handle_get_settings(fd, buf);
             return 0;
         }
         default:
@@ -100,7 +107,10 @@ int ve_handle_calls(int fd)
         ve_call_buf_t out;
 
         if (ve_readn(fd, &in, sizeof(in)) != 0)
+        {
+            ve_print("ffffffffffffffffffff1\n");
             goto done;
+        }
 
 #if defined(TRACE_CALLS)
         ve_print("[ENCLAVE:%s]", ve_func_name(in.func));
@@ -118,14 +128,18 @@ int ve_handle_calls(int fd)
             out.func = VE_FUNC_ERR;
         }
 
+        out.pid = (uint64_t)__ve_pid;
+
         if (ve_writen(fd, &out, sizeof(out)) != 0)
+        {
+            ve_print("ffffffffffffffffffff2\n");
             goto done;
+        }
     }
 
     ret = 0;
 
 done:
-    VE_TRACE;
     return ret;
 }
 

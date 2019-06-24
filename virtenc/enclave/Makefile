@@ -37,6 +37,7 @@ CFLAGS += -ftls-model=local-exec
 CFLAGS += -fno-builtin-malloc
 CFLAGS += -fno-builtin-calloc
 CFLAGS += -fno-builtin
+CFLAGS += -DBUILD_ENCLAVE
 
 ifdef USE_CLANG
 CFLAGS += -mllvm

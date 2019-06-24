@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -15,6 +16,8 @@
 #include "io.h"
 
 #define MAX_THREADS 1024
+
+#define VE_PAGE_SIZE 4096
 
 typedef struct _thread
 {
@@ -281,11 +284,13 @@ done:
     return ret;
 }
 
+extern int __ve_pid;
+
 void ve_handle_call_ping(ve_call_buf_t* buf)
 {
     extern int gettid(void);
 
-    printf("host: ping: pid=%d value=%lx\n", getpid(), buf->arg1);
+    printf("host: ping: value=%lx\n", buf->arg1);
 
     buf->retval = buf->arg1;
 }
@@ -294,7 +299,7 @@ int ve_enclave_create(const char* path, ve_enclave_t** enclave_out)
 {
     int ret = -1;
     ve_enclave_t* enclave = NULL;
-    const size_t STACK_SIZE = 4096 * 256;
+    size_t stack_size;
 
     if (!path)
         goto done;
@@ -310,15 +315,20 @@ int ve_enclave_create(const char* path, ve_enclave_t** enclave_out)
     if ((enclave->pid = _exec(path, enclave)) == -1)
         goto done;
 
+    ve_enclave_settings_t settings;
+
+    /* Get the enclave settings. */
+    if (ve_enclave_get_settings(enclave, &settings) != 0)
+        goto done;
+
+    stack_size = settings.num_stack_pages * VE_PAGE_SIZE;
+
     /* Add threads to the child process. */
-    if (_add_enclave_thread(enclave, 0, STACK_SIZE) != 0)
-        goto done;
-
-    if (_add_enclave_thread(enclave, 1, STACK_SIZE) != 0)
-        goto done;
-
-    if (_add_enclave_thread(enclave, 2, STACK_SIZE) != 0)
-        goto done;
+    for (uint64_t i = 0; i < settings.num_tcs; i++)
+    {
+        if (_add_enclave_thread(enclave, i, stack_size) != 0)
+            goto done;
+    }
 
     *enclave_out = enclave;
     enclave = 0;
@@ -390,5 +400,41 @@ int ve_enclave_ping(ve_enclave_t* enclave, uint64_t tcs, uint64_t ping_value)
     ret = 0;
 
 done:
+    return ret;
+}
+
+int ve_enclave_get_settings(ve_enclave_t* enclave, ve_enclave_settings_t* buf)
+{
+    int ret = -1;
+    uint64_t retval;
+    int sock;
+    ve_enclave_settings_t* settings = NULL;
+
+    if (buf)
+        memset(buf, 0, sizeof(ve_enclave_settings_t));
+
+    if (!enclave || !buf)
+        goto done;
+
+    if (!(settings = ve_host_calloc(1, sizeof(ve_enclave_settings_t))))
+        goto done;
+
+    sock = enclave->sock;
+
+    if (ve_call1(sock, VE_FUNC_GET_SETTINGS, &retval, (uint64_t)settings) != 0)
+        goto done;
+
+    if (retval != 0)
+        goto done;
+
+    *buf = *settings;
+
+    ret = 0;
+
+done:
+
+    if (settings)
+        ve_host_free(settings);
+
     return ret;
 }

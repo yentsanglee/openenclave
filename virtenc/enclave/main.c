@@ -278,7 +278,7 @@ void ve_handle_call_ping(int fd, ve_call_buf_t* buf)
 {
     uint64_t retval = 0;
 
-    ve_print("encl: ping: tid=%d value=%lx\n", ve_gettid(), buf->arg1);
+    ve_print("encl: ping: value=%lx [%u]\n", buf->arg1, ve_getpid());
 
     test_malloc(fd);
 
@@ -286,6 +286,26 @@ void ve_handle_call_ping(int fd, ve_call_buf_t* buf)
         ve_put("encl: ve_call() failed\n");
 
     buf->retval = retval;
+}
+
+void ve_handle_get_settings(int fd, ve_call_buf_t* buf)
+{
+    ve_enclave_settings_t* settings = (ve_enclave_settings_t*)buf->arg1;
+
+    OE_UNUSED(fd);
+
+    if (settings)
+    {
+        /* ATTN: get this from the enclave information struct. */
+        settings->num_heap_pages = 1024;
+        settings->num_stack_pages = 256;
+        settings->num_tcs = 8;
+        buf->retval = 0;
+    }
+    else
+    {
+        buf->retval = 0;
+    }
 }
 
 void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
@@ -297,6 +317,8 @@ void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
     ve_exit(0);
 }
 
+int __ve_pid;
+
 static int _main(void)
 {
     if (!_called_constructor)
@@ -304,6 +326,15 @@ static int _main(void)
         ve_puts("constructor not called");
         ve_exit(1);
     }
+
+    /* Save the process id into a global. */
+    if ((__ve_pid = ve_getpid()) < 0)
+    {
+        ve_puts("ve_getpid() failed");
+        ve_exit(1);
+    }
+
+    ve_print("encl: pid=%d\n", __ve_pid);
 
     /* Wait here to be initialized and to receive the main socket. */
     if (ve_handle_init() != 0)
@@ -315,7 +346,7 @@ static int _main(void)
     /* Handle messages over the main socket. */
     if (ve_handle_calls(g_sock) != 0)
     {
-        ve_puts("enclave: ve_handle_calls() failed");
+        ve_puts("encl: ve_handle_calls() failed");
         ve_exit(1);
     }
 

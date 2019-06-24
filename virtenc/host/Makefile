@@ -13,6 +13,7 @@ CFLAGS += -Werror
 CFLAGS += -g
 CFLAGS += -fPIE
 CFLAGS += -m64
+CFLAGS += -I.
 #CFLAGS += -fsanitize=address
 #CFLAGS += -fno-omit-frame-pointer
 

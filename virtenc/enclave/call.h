@@ -25,4 +25,6 @@ void* ve_call_memalign(int fd, size_t alignment, size_t size);
 
 int ve_call_free(int fd, void* ptr);
 
+void ve_handle_get_settings(int fd, ve_call_buf_t* buf);
+
 #endif /* _VE_ENCLAVE_CALL_H */

@@ -25,10 +25,13 @@ typedef enum _ve_func
     VE_FUNC_REALLOC,
     VE_FUNC_MEMALIGN,
     VE_FUNC_FREE,
+    VE_FUNC_GET_SETTINGS,
 } ve_func_t;
 
 typedef struct _ve_call_buf
 {
+    /* The process id of the sender. */
+    uint64_t pid;
     uint64_t func;
     uint64_t retval;
     uint64_t arg1;
@@ -39,17 +42,28 @@ typedef struct _ve_call_buf
     uint64_t arg6;
 } ve_call_buf_t;
 
+typedef struct _ve_enclave_settings
+{
+    uint64_t num_heap_pages;
+    uint64_t num_stack_pages;
+    uint64_t num_tcs;
+} ve_enclave_settings_t;
+
 /* Prevent clang from replacing this with crashing struct initialization. */
 OE_INLINE void ve_call_buf_clear(volatile ve_call_buf_t* buf)
 {
-    buf->func = 0;
-    buf->retval = 0;
-    buf->arg1 = 0;
-    buf->arg2 = 0;
-    buf->arg3 = 0;
-    buf->arg4 = 0;
-    buf->arg5 = 0;
-    buf->arg6 = 0;
+    if (buf)
+    {
+        buf->pid = 0;
+        buf->func = 0;
+        buf->retval = 0;
+        buf->arg1 = 0;
+        buf->arg2 = 0;
+        buf->arg3 = 0;
+        buf->arg4 = 0;
+        buf->arg5 = 0;
+        buf->arg6 = 0;
+    }
 }
 
 typedef struct _ve_init_arg
