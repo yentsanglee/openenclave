@@ -1,8 +1,10 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-(A) The host should fetch the number of TCS entries from the enclave.
+    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-(A) Set the stack size to the value given by the enclave settings.
+    BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
-(B) Limit enclave heap size to value given by the enclave settings.
+    (B) Limit enclave heap size to value given by the enclave settings.
+
+    (C) Fix static build crashes with clang compiler.

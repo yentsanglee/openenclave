@@ -21,6 +21,7 @@ CFLAGS += -O3
 CFLAGS += -fPIE
 CFLAGS += -m64
 CFLAGS += -nostdinc
+CFLAGS += -std=c90
 #CFLAGS += -fno-builtin
 #CFLAGS += -lgcc
 #CFLAGS += -ffreestanding

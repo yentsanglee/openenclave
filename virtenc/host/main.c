@@ -47,12 +47,6 @@ int main1(int argc, const char* argv[])
     if (ve_enclave_ping(enclave, (uint64_t)-1, 0xF00DF00D) != 0)
         err("failed to ping enclave");
 
-#if 0
-    /* Ping the main thread. */
-    if (ve_enclave_ping(enclave2, (uint64_t)-1, 0xF00DF00D) != 0)
-        err("failed to ping enclave");
-#endif
-
     for (uint64_t tcs = 0; tcs < settings.num_tcs; tcs++)
     {
         if (ve_enclave_ping(enclave, tcs, 0xF00DF00D) != 0)
@@ -109,5 +103,5 @@ int main2(int argc, const char* argv[])
 
 int main(int argc, const char* argv[])
 {
-    return main2(argc, argv);
+    return main1(argc, argv);
 }
