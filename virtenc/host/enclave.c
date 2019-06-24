@@ -93,6 +93,7 @@ static pid_t _exec(const char* path, ve_enclave_t* enclave)
     /* If child. */
     if (pid == 0)
     {
+        char* argv[2] = {(char*)path, NULL};
         dup2(fds[0], STDIN_FILENO);
 
         /* Close all non-standard file descriptors except socks[1]. */
@@ -106,7 +107,6 @@ static pid_t _exec(const char* path, ve_enclave_t* enclave)
             }
         }
 
-        char* argv[2] = {(char*)path, NULL};
         execv(path, argv);
 
         fprintf(stderr, "%s: execv() failed\n", __ve_arg0);
