@@ -10,7 +10,7 @@
 const char* __ve_arg0;
 int __ve_pid;
 
-int main(int argc, const char* argv[])
+int main1(int argc, const char* argv[])
 {
     __ve_arg0 = argv[0];
     ve_enclave_t* enclave = NULL;
@@ -47,6 +47,12 @@ int main(int argc, const char* argv[])
     if (ve_enclave_ping(enclave, (uint64_t)-1, 0xF00DF00D) != 0)
         err("failed to ping enclave");
 
+#if 0
+    /* Ping the main thread. */
+    if (ve_enclave_ping(enclave2, (uint64_t)-1, 0xF00DF00D) != 0)
+        err("failed to ping enclave");
+#endif
+
     for (uint64_t tcs = 0; tcs < settings.num_tcs; tcs++)
     {
         if (ve_enclave_ping(enclave, tcs, 0xF00DF00D) != 0)
@@ -61,4 +67,47 @@ int main(int argc, const char* argv[])
     close(STDERR_FILENO);
 
     return 0;
+}
+
+int main2(int argc, const char* argv[])
+{
+    __ve_arg0 = argv[0];
+    ve_enclave_t* enclave = NULL;
+    ve_enclave_t* enclave2 = NULL;
+
+    if (argc != 2)
+    {
+        fprintf(stderr, "Usage: %s program\n", argv[0]);
+        return 1;
+    }
+
+    if ((__ve_pid = getpid()) < 0)
+        err("getpid() failed");
+
+    /* Create the host heap to be shared with enclaves. */
+    if (ve_heap_create(VE_HEAP_SIZE) != 0)
+        err("failed to allocate shared memory");
+
+    if (ve_enclave_create(argv[1], &enclave) != 0)
+        err("failed to create enclave");
+
+    if (ve_enclave_create(argv[1], &enclave2) != 0)
+        err("failed to create enclave");
+
+    if (ve_enclave_terminate(enclave) != 0)
+        err("failed to terminate enclave");
+
+    if (ve_enclave_terminate(enclave2) != 0)
+        err("failed to terminate enclave");
+
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
+    return 0;
+}
+
+int main(int argc, const char* argv[])
+{
+    return main2(argc, argv);
 }

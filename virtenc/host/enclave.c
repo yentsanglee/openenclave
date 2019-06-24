@@ -94,9 +94,17 @@ static pid_t _exec(const char* path, ve_enclave_t* enclave)
     if (pid == 0)
     {
         dup2(fds[0], STDIN_FILENO);
-        close(fds[0]);
-        close(fds[1]);
-        close(socks[0]);
+
+        /* Close all non-standard file descriptors except socks[1]. */
+        {
+            const int max_fd = getdtablesize();
+
+            for (int i = STDERR_FILENO + 1; i <= max_fd; i++)
+            {
+                if (i != socks[1])
+                    close(i);
+            }
+        }
 
         char* argv[2] = {(char*)path, NULL};
         execv(path, argv);
@@ -353,8 +361,6 @@ int ve_enclave_terminate(ve_enclave_t* enclave)
     if (!enclave)
         goto done;
 
-    pthread_spin_destroy(&enclave->threads_lock);
-
     /* Terminate the enclave process. */
     if (_terminate_enclave_process(enclave) != 0)
         goto done;
@@ -364,6 +370,8 @@ int ve_enclave_terminate(ve_enclave_t* enclave)
         goto done;
 
     printf("host: child exit status: %d\n", status);
+
+    pthread_spin_destroy(&enclave->threads_lock);
 
     free(enclave);
 
