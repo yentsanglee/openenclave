@@ -9,8 +9,6 @@
 
 #define VE_INIT_ARG_MAGIC 0x3b146763853147ce
 
-#define VE_SHMADDR_MAGIC 0xc500f4b6cd2c4f42
-
 typedef enum _ve_func
 {
     VE_FUNC_RET,
@@ -78,13 +76,6 @@ typedef struct _ve_init_arg
     void* shmaddr;
 
 } ve_init_arg_t;
-
-typedef struct _ve_add_thread_arg
-{
-    uint64_t tcs;
-    uint64_t stack_size;
-    int retval;
-} ve_add_thread_arg_t;
 
 const char* ve_func_name(ve_func_t func);
 

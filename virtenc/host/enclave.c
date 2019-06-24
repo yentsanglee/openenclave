@@ -184,7 +184,6 @@ static int _add_enclave_thread(
     int ret = -1;
     int socks[2] = {-1, -1};
     extern int send_fd(int sock, int fd);
-    ve_add_thread_arg_t* arg = NULL;
 
     /* Fail if no more threads. */
     if (enclave->threads_size == MAX_THREADS)
@@ -194,17 +193,8 @@ static int _add_enclave_thread(
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, socks) == -1)
         goto done;
 
-    /* Create the call argument. */
-    {
-        if (!(arg = ve_host_calloc(1, sizeof(ve_add_thread_arg_t))))
-            goto done;
-
-        arg->tcs = tcs;
-        arg->stack_size = stack_size;
-    }
-
     /* Send the request. */
-    if (ve_call_send1(enclave->sock, VE_FUNC_ADD_THREAD, (uint64_t)arg) != 0)
+    if (ve_call_send2(enclave->sock, VE_FUNC_ADD_THREAD, tcs, stack_size) != 0)
         goto done;
 
     /* Send the fd to the enclave after send but before receive. */
@@ -212,11 +202,12 @@ static int _add_enclave_thread(
         goto done;
 
     /* Receive the response. */
-    if (ve_call_recv(enclave->sock, NULL) != 0)
-        goto done;
+    {
+        uint64_t retval;
 
-    if (arg->retval != 0)
-        goto done;
+        if (ve_call_recv(enclave->sock, &retval) != 0 || retval != 0)
+            goto done;
+    }
 
     pthread_spin_lock(&enclave->threads_lock);
     {
@@ -239,9 +230,6 @@ done:
 
     if (socks[1] != -1)
         close(socks[1]);
-
-    if (arg)
-        ve_host_free(arg);
 
     return ret;
 }

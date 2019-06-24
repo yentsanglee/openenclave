@@ -97,15 +97,11 @@ done:
 void ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
 {
     int sock = -1;
-    ve_add_thread_arg_t* arg = (ve_add_thread_arg_t*)buf->arg1;
     thread_t* thread;
 
     OE_UNUSED(fd);
 
-    arg->retval = -1;
-
-    if (!arg)
-        goto done;
+    buf->retval = (uint64_t)-1;
 
     /* If no more threads. */
     if (globals.threads.size == MAX_THREADS)
@@ -120,8 +116,8 @@ void ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
     {
         thread = &globals.threads.data[globals.threads.size];
         thread->sock = sock;
-        thread->tcs = arg->tcs;
-        thread->stack_size = arg->stack_size;
+        thread->tcs = (uint64_t)buf->arg1;
+        thread->stack_size = (uint64_t)buf->arg2;
         globals.threads.size++;
         sock = -1;
     }
@@ -131,7 +127,7 @@ void ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
     if (_create_new_thread(thread) != 0)
         goto done;
 
-    arg->retval = 0;
+    buf->retval = 0;
 
 done:
 
@@ -162,8 +158,6 @@ static int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
 
     /* Save so it can be released on process exit. */
     globals->shmaddr = rval;
-
-    *((uint64_t*)rval) = VE_SHMADDR_MAGIC;
 
     ret = 0;
 
