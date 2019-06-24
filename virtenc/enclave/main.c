@@ -12,6 +12,7 @@
 #include "print.h"
 #include "process.h"
 #include "recvfd.h"
+#include "register.h"
 #include "sbrk.h"
 #include "settings.h"
 #include "shm.h"
@@ -23,7 +24,18 @@
 #define VE_PAGE_SIZE 4096
 
 __thread int __ve_thread_pid;
-//__thread uint64_t __xxx[8];
+
+#if 0
+__thread uint64_t __xxx[8];
+__thread uint64_t __yyy[8];
+__thread uint64_t __zzz[8];
+
+__thread uint32_t __thread_var;
+__thread void* __thread_tls;
+__thread size_t __thread_tls_size;
+#endif
+
+__thread uint64_t __thread_value = 0xbaadf00dbaadf00d;
 
 void ve_call_init_functions(void);
 
@@ -44,10 +56,7 @@ static int _thread(void* arg_)
 
     __ve_thread_pid = ve_getpid();
 
-#if 0
-    __ve_tls = arg->tls;
-    __ve_tls_size = arg->tls_size;
-#endif
+    ve_print("_thread: fs:  %p\n", ve_get_fs_register_base());
 
     if (ve_handle_calls(arg->sock) != 0)
     {
@@ -58,43 +67,59 @@ static int _thread(void* arg_)
     return 0;
 }
 
-static int _create_new_thread(thread_t* arg)
+static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
 {
     int ret = -1;
     uint8_t* stack = NULL;
-    uint8_t* tls = NULL;
-    const size_t TLS_SIZE = 8 * VE_PAGE_SIZE;
+    thread_blocks_t* blocks = NULL;
+    thread_t* thread;
 
-    if (!arg)
-        goto done;
+    /* Allocate the thread blocks (guard + tls + thread). */
+    {
+        if (!(blocks = ve_memalign(VE_PAGE_SIZE, sizeof(thread_blocks_t))))
+            goto done;
+
+        ve_memset(&blocks->tls, 0, sizeof(tls_t));
+        ve_memset(&blocks->thread, 0, sizeof(thread_t));
+
+        thread = &blocks->thread;
+    }
 
     /* Allocate and zero-fill the stack. */
     {
-        if (!(stack = ve_memalign(VE_PAGE_SIZE, arg->stack_size)))
+        if (!(stack = ve_memalign(VE_PAGE_SIZE, stack_size)))
             goto done;
 
-        ve_memset(stack, 0, arg->stack_size);
-
-        arg->stack = stack;
+        ve_memset(stack, 0, stack_size);
     }
 
-    /* Allocate a TLS for this thread. */
+    /* Copy the base fields from the parent thread. */
     {
-        if (!(tls = ve_memalign(VE_PAGE_SIZE, TLS_SIZE)))
+        thread_t* parent_thread = ve_thread_self();
+
+        if (!parent_thread)
             goto done;
 
-        ve_memset(tls, 0, TLS_SIZE);
+        ve_memcpy(&thread->base, parent_thread, sizeof(thread_base_t));
+    }
 
-        arg->tls = tls;
-        arg->tls_size = TLS_SIZE;
+    /* Initilize the thread. */
+    {
+        thread->base.self = &thread->base;
+        thread->next = NULL;
+        thread->blocks = blocks;
+        thread->tcs = tcs;
+        thread->stack = stack;
+        thread->stack_size = stack_size;
+        thread->sock = sock;
     }
 
     /* Create the new thread. */
     {
         int flags = 0;
         int rval;
-        uint8_t* child_stack = stack + arg->stack_size;
-        uint8_t* child_tls = tls + TLS_SIZE;
+        uint8_t* child_stack = stack + thread->stack_size;
+        void* child_tls = thread;
 
         flags |= VE_CLONE_VM;
         flags |= VE_CLONE_FS;
@@ -112,10 +137,10 @@ static int _create_new_thread(thread_t* arg)
             _thread,
             child_stack,
             flags,
-            arg,
-            &arg->ptid,
+            thread,
+            &thread->ptid,
             child_tls,
-            &arg->ctid);
+            &thread->ctid);
 
         if (rval == -1)
             goto done;
@@ -123,8 +148,16 @@ static int _create_new_thread(thread_t* arg)
         ve_print("encl: new thread: rval=%d\n", rval);
     }
 
+    /* Prepend the thread to the global linked list. */
+    {
+        ve_lock(&globals.lock);
+        thread->next = globals.threads;
+        globals.threads = thread;
+        ve_unlock(&globals.lock);
+    }
+
     stack = NULL;
-    tls = NULL;
+    blocks = NULL;
     ret = 0;
 
 done:
@@ -132,8 +165,8 @@ done:
     if (stack)
         ve_free(stack);
 
-    if (tls)
-        ve_free(tls);
+    if (blocks)
+        ve_free(blocks);
 
     return ret;
 }
@@ -141,36 +174,25 @@ done:
 void ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
 {
     int sock = -1;
-    thread_t* thread;
 
     OE_UNUSED(fd);
 
     buf->retval = (uint64_t)-1;
 
-    /* If no more threads. */
-    if (globals.threads.size == MAX_THREADS)
-        goto done;
-
     /* Receive the socket descriptor from the host. */
     if ((sock = ve_recv_fd(g_sock)) < 0)
         goto done;
 
-    /* Add this new thread to the global list. */
-    ve_lock(&globals.threads.lock);
-    {
-        thread = &globals.threads.data[globals.threads.size];
-        thread->sock = sock;
-        thread->tcs = (uint64_t)buf->arg1;
-        thread->stack_size = (uint64_t)buf->arg2;
-        globals.threads.size++;
-        sock = -1;
-    }
-    ve_unlock(&globals.threads.lock);
-
     /* Create the new thread. */
-    if (_create_new_thread(thread) != 0)
-        goto done;
+    {
+        uint64_t tcs = buf->arg1;
+        size_t stack_size = (size_t)buf->arg2;
 
+        if (_create_new_thread(sock, tcs, stack_size) != 0)
+            goto done;
+    }
+
+    sock = -1;
     buf->retval = 0;
 
 done:
@@ -183,12 +205,13 @@ static int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
 {
     int ret = -1;
     void* rval;
+    const int shmflg = VE_SHM_RND | VE_SHM_REMAP;
 
     if (shmid == -1 || shmaddr == NULL || shmaddr == (void*)-1)
         goto done;
 
     /* Attach the host's shared memory heap. */
-    if ((rval = ve_shmat(shmid, shmaddr, VE_SHM_RND)) == (void*)-1)
+    if ((rval = ve_shmat(shmid, shmaddr, shmflg)) == (void*)-1)
     {
         ve_print(
             "error: ve_shmat(1) failed: rval=%p shmid=%d shmaddr=%p\n",
@@ -223,7 +246,7 @@ int ve_handle_init(void)
     ve_init_arg_t arg;
     int retval = 0;
 
-    //__ve_thread_pid = ve_getpid();
+    __ve_thread_pid = ve_getpid();
 
     /* Receive request from standard input. */
     {
@@ -252,8 +275,6 @@ int ve_handle_init(void)
     if (ve_writen(g_sock, &retval, sizeof(retval)) != 0)
         goto done;
 
-    __ve_thread_pid = ve_getpid();
-
     ret = retval;
 
 done:
@@ -262,13 +283,13 @@ done:
 
 void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
 {
-    size_t i;
+    thread_t* p;
 
     OE_UNUSED(fd);
     OE_UNUSED(buf);
 
     /* Wait on the exit status of each thread. */
-    for (i = 0; i < globals.threads.size; i++)
+    for (p = globals.threads; p; p = p->next)
     {
         int pid;
         int status;
@@ -281,11 +302,10 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
     }
 
     /* Release resources held by threads. */
-    for (i = 0; i < globals.threads.size; i++)
+    for (p = globals.threads; p; p = p->next)
     {
-        ve_free(globals.threads.data[i].tls);
-        ve_free(globals.threads.data[i].stack);
-        ve_close(globals.threads.data[i].sock);
+        ve_free(p->stack);
+        ve_close(p->sock);
     }
 
     /* Release resources held by the main thread. */
@@ -336,6 +356,8 @@ void ve_handle_call_ping(int fd, ve_call_buf_t* buf)
     ve_assert(__ve_thread_pid == ve_getpid());
 
     ve_print("__ve_thread_pid=%d\n", __ve_thread_pid);
+    __thread_value = 0xbaadf00dbaadf00d;
+    ve_print("__ve_thread_value=%lu\n", __thread_value);
 
     test_malloc(fd);
 
@@ -367,6 +389,12 @@ void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
 {
     OE_UNUSED(fd);
     OE_UNUSED(buf);
+
+    ve_print("__ve_thread_pid=%d\n", __ve_thread_pid);
+
+#if 1
+    ve_dump_thread(ve_thread_self());
+#endif
 
     ve_print("encl: thread exit: tid=%d\n", ve_gettid());
     ve_exit(0);

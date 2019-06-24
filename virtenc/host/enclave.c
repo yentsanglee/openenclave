@@ -98,7 +98,7 @@ static pid_t _fork_exec_enclave(const char* path, ve_enclave_t* enclave)
 
         /* Close all non-standard file descriptors except socks[1]. */
         {
-            const int max_fd = getdtablesize();
+            const int max_fd = getdtablesize() - 1;
 
             for (int i = STDERR_FILENO + 1; i <= max_fd; i++)
             {

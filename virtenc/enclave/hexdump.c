@@ -14,15 +14,20 @@ static char _hexchar(uint8_t x)
 void ve_hexdump(const void* data, size_t size)
 {
     const uint8_t* p = (const uint8_t*)data;
-    static ve_lock_t _lock;
     size_t i;
 
-    ve_lock(&_lock);
+    ve_lock(&__ve_print_lock);
 
     for (i = 0; i < size; i++)
     {
-        const char c1 = _hexchar((p[i] & 0xf0) >> 4);
-        const char c2 = _hexchar(p[i] & 0x0f);
+        char c1 = _hexchar((p[i] & 0xf0) >> 4);
+        char c2 = _hexchar(p[i] & 0x0f);
+
+        if (c1 == '0' && c2 == '0')
+        {
+            c1 = '.';
+            c2 = '.';
+        }
 
         ve_putc(c1);
         ve_putc(c2);
@@ -35,5 +40,5 @@ void ve_hexdump(const void* data, size_t size)
 
     ve_putc('\n');
 
-    ve_unlock(&_lock);
+    ve_unlock(&__ve_print_lock);
 }

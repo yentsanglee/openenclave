@@ -5,32 +5,12 @@
 #define _VE_ENCLAVE_GLOBALS_H
 
 #include <openenclave/bits/types.h>
-#include "lock.h"
-
-#define MAX_THREADS 1024
-
-typedef struct _thread
-{
-    int sock;
-    void* stack;
-    size_t stack_size;
-    void* tls;
-    size_t tls_size;
-    uint64_t tcs;
-    int ptid;
-    int ctid;
-} thread_t;
-
-typedef struct _threads
-{
-    thread_t data[MAX_THREADS];
-    size_t size;
-    ve_lock_t lock;
-} threads_t;
+#include "thread.h"
 
 typedef struct _globals
 {
-    threads_t threads;
+    thread_t* threads;
+    ve_lock_t lock;
 
     /* Shared memory between host and enclave. */
     void* shmaddr;

@@ -79,6 +79,8 @@ SOURCES += call.c
 SOURCES += lock.c
 SOURCES += settings.c
 SOURCES += hexdump.c
+SOURCES += register.c
+SOURCES += thread.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles
 

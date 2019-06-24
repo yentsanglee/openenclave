@@ -8,7 +8,7 @@
 #include "string.h"
 #include "syscall.h"
 
-static ve_lock_t _lock;
+ve_lock_t __ve_print_lock;
 
 void ve_put(const char* s)
 {
@@ -17,11 +17,11 @@ void ve_put(const char* s)
 
 void ve_puts(const char* s)
 {
-    ve_lock(&_lock);
+    ve_lock(&__ve_print_lock);
     const char nl = '\n';
     ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
     ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)&nl, 1);
-    ve_unlock(&_lock);
+    ve_unlock(&__ve_print_lock);
 }
 
 void ve_putc(char c)
@@ -212,7 +212,7 @@ static void _put_x(uint64_t x)
 
 void ve_print(const char* format, ...)
 {
-    ve_lock(&_lock);
+    ve_lock(&__ve_print_lock);
 
     oe_va_list ap;
     const char* p = format;
@@ -313,5 +313,5 @@ void ve_print(const char* format, ...)
 
     oe_va_end(ap);
 
-    ve_unlock(&_lock);
+    ve_unlock(&__ve_print_lock);
 }
