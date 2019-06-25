@@ -2,6 +2,8 @@
 // Licensed under the MIT License.
 
 #include "process.h"
+#include "globals.h"
+#include "print.h"
 #include "syscall.h"
 
 void ve_exit(int status)
@@ -31,4 +33,9 @@ int ve_getpid(void)
 int ve_waitpid(int pid, int* status, int options)
 {
     return (int)ve_syscall4(OE_SYS_wait4, pid, (long)status, options, 0);
+}
+
+void* ve_get_baseaddr(void)
+{
+    return (uint8_t*)&__ve_self - __ve_self;
 }

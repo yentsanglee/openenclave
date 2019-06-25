@@ -21,10 +21,15 @@ extern globals_t globals;
 /* Socket used to communicate with the host process. */
 extern int g_sock;
 
-/* TLS information sent by the host. */
+/* TLS information from the host. */
+extern size_t g_tdata_rva;
 extern size_t g_tdata_size;
 extern size_t g_tdata_align;
+extern size_t g_tbss_rva;
 extern size_t g_tbss_size;
 extern size_t g_tbss_align;
+
+/* Holds relative virtual address of this variable itself (from the host). */
+extern uint64_t __ve_self;
 
 #endif /* _VE_ENCLAVE_GLOBALS_H */

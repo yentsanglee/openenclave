@@ -57,4 +57,7 @@ int ve_waitpid(int pid, int* status, int options);
 
 int ve_clone(int (*fn)(void*), void* child_stack, int flags, void* arg, ...);
 
+/* Get the real base address of this process. */
+void* ve_get_baseaddr(void);
+
 #endif /* _VE_PROCESS_H */

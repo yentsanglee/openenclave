@@ -40,10 +40,7 @@ typedef struct _thread
     int ptid;
     int ctid;
     int unused;
-    uint8_t padding[3972];
 } thread_t;
-
-OE_STATIC_ASSERT(sizeof(thread_t) == VE_PAGE_SIZE);
 
 void ve_dump_thread(thread_t* thread);
 

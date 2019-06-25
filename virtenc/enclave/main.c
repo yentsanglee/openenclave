@@ -24,9 +24,11 @@
 
 #define VE_PAGE_SIZE 4096
 
-__thread int __ve_thread_pid;
-
 __thread uint64_t __thread_value = 0xbaadf00dbaadf00d;
+
+__thread uint64_t __thread_value2 = 0xaabbccddeeff1122;
+
+__thread int __ve_thread_pid = (int)0xDDDDDDDD;
 
 void ve_call_init_functions(void);
 
@@ -41,22 +43,10 @@ __attribute__((constructor)) static void constructor(void)
     _called_constructor = true;
 }
 
-static int _thread(void* arg_)
-{
-    thread_t* arg = (thread_t*)arg_;
-
-    __ve_thread_pid = ve_getpid();
-
-    if (ve_handle_calls(arg->sock) != 0)
-    {
-        ve_put("_thread(): ve_handle_calls() failed\n");
-        ve_exit(1);
-    }
-
-    return 0;
-}
-
-static int ve_get_tls(thread_t* thread, const void** tls, size_t* tls_size)
+static int ve_get_tls(
+    const thread_t* thread,
+    const void** tls,
+    size_t* tls_size)
 {
     int ret = -1;
     const uint8_t* p;
@@ -97,6 +87,38 @@ done:
     return ret;
 }
 
+void ve_dump_tls()
+{
+    const void* tls;
+    size_t tls_size;
+
+    ve_print("=== _dump_tls()\n");
+
+    if (ve_get_tls(ve_thread_self(), &tls, &tls_size) != 0)
+    {
+        ve_puts("ve_get_tls() failed");
+        ve_exit(1);
+    }
+
+    ve_hexdump(tls, tls_size);
+    ve_print("\n");
+}
+
+static int _thread(void* arg_)
+{
+    thread_t* arg = (thread_t*)arg_;
+
+    __ve_thread_pid = ve_getpid();
+
+    if (ve_handle_calls(arg->sock) != 0)
+    {
+        ve_put("_thread(): ve_handle_calls() failed\n");
+        ve_exit(1);
+    }
+
+    return 0;
+}
+
 static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
 {
     int ret = -1;
@@ -116,6 +138,10 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
     if (ve_get_tls(main_thread, &main_tls, &main_tls_size) != 0)
         goto done;
 
+    /* Fail if the tdata section will not fit into tls. */
+    if (main_tls_size < g_tdata_size)
+        goto done;
+
     /* Calculate the TLS size the new thread (rounded to the page size). */
     tls_size = oe_round_up_to_multiple(main_tls_size, VE_PAGE_SIZE);
 
@@ -131,6 +157,14 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
 
     /* Set thread pointer into the middle of the allocation. */
     thread = (thread_t*)((uint8_t*)tls + tls_size);
+
+    /* Copy tdata section onto the new_tls. */
+    {
+        void* tdata = (uint8_t*)ve_get_baseaddr() + g_tdata_rva;
+        uint8_t* dest = (uint8_t*)thread - main_tls_size;
+
+        ve_memcpy(dest, tdata, g_tdata_size);
+    }
 
     /* Allocate and zero-fill the stack. */
     {
@@ -302,10 +336,13 @@ int ve_handle_init(void)
     }
 
     /* Save the TLS information. */
+    g_tdata_rva = arg.tdata_rva;
     g_tdata_size = arg.tdata_size;
     g_tdata_align = arg.tdata_align;
+    g_tbss_rva = arg.tbss_rva;
     g_tbss_size = arg.tbss_size;
     g_tbss_align = arg.tbss_align;
+    __ve_self = arg.self_rva;
 
     /* Handle the request. */
     {
@@ -476,22 +513,6 @@ static int _main(void)
         ve_puts("ve_handle_init() failed");
         ve_exit(1);
     }
-
-#if 1
-    {
-        const void* tls;
-        size_t tls_size;
-        thread_t* thread = ve_thread_self();
-
-        if (ve_get_tls(thread, &tls, &tls_size) != 0)
-        {
-            ve_puts("ve_get_tls() failed");
-            ve_exit(1);
-        }
-
-        ve_hexdump(tls, tls_size + 64);
-    }
-#endif
 
     /* Handle messages over the main socket. */
     if (ve_handle_calls(g_sock) != 0)
