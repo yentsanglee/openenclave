@@ -379,10 +379,12 @@ void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
     OE_UNUSED(fd);
     OE_UNUSED(buf);
 
+#if 0
     const uint8_t arr[8] = {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
 
     for (size_t i = 0; i < OE_COUNTOF(arr); i++)
         __arr[i] = arr[i];
+#endif
 
 #if 0
     ve_dump_thread(ve_thread_self());

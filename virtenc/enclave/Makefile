@@ -24,7 +24,7 @@ CFLAGS += -nostdinc
 #CFLAGS += -std=gnu89
 #CFLAGS += -std=c90
 #CFLAGS += -fno-builtin
-#CFLAGS += -lgcc
+CFLAGS += -lgcc
 #CFLAGS += -ffreestanding
 CFLAGS += -mxsave
 CFLAGS += -Wall
