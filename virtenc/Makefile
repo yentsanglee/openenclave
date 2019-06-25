@@ -23,18 +23,15 @@ clean:
 	$(MAKE) -C enclave clean
 	$(MAKE) -C host clean
 
-run:
-	@ echo "********************************************"
-	./host/main ./enclave/main.static
+run: run-dynamic run-static
+
+run-dynamic:
 	@ echo "********************************************"
 	./host/main ./enclave/main
+
+run-static:
 	@ echo "********************************************"
+	./host/main ./enclave/main.static
 
 vg:
 	valgrind $(VALGRIND_OPTS) ./host/main ./enclave/main
-
-d:
-	./host/main ./enclave/main
-
-s:
-	./host/main ./enclave/main.static

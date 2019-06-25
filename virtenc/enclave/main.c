@@ -24,9 +24,9 @@
 
 #define VE_PAGE_SIZE 4096
 
-__thread uint64_t __thread_value = 0xbaadf00dbaadf00d;
+#define THREAD_VALUE_INITIALIZER 0xaabbccddeeff1122
 
-__thread uint64_t __thread_value2 = 0xaabbccddeeff1122;
+__thread uint64_t __thread_value = THREAD_VALUE_INITIALIZER;
 
 __thread int __ve_thread_pid = (int)0xDDDDDDDD;
 
@@ -109,6 +109,14 @@ static int _thread(void* arg_)
     thread_t* arg = (thread_t*)arg_;
 
     __ve_thread_pid = ve_getpid();
+
+    if (__thread_value != THREAD_VALUE_INITIALIZER)
+    {
+        ve_put("__thread_value != THREAD_VALUE_INITIALIZER");
+        ve_exit(1);
+    }
+
+    __thread_value = 0;
 
     if (ve_handle_calls(arg->sock) != 0)
     {

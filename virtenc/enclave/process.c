@@ -8,7 +8,8 @@
 
 void ve_exit(int status)
 {
-    ve_syscall1(OE_SYS_exit, status);
+    for (;;)
+        ve_syscall1(OE_SYS_exit, status);
 }
 
 __attribute__((__noreturn__)) void ve_abort(void)

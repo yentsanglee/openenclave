@@ -3,12 +3,8 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-    (A) Support enclave host-map (keyed by enclave-pid).
-
-    (A) Support free-enclave-thread selection.
+    (A) Fix hang with thread's calling ve_exit().
 
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-
-    (B) Limit enclave heap size to value given by the enclave settings.
 
     (B) Block enclave re-entrancy.
