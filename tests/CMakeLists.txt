@@ -92,5 +92,9 @@ if (OE_SGX AND UNIX)
    add_subdirectory(qeidentity)
    add_subdirectory(report)
    add_subdirectory(attestation_cert_apis)
+
+   # TLS tests that run only on Linux
+   add_subdirectory(mbedssl)
+   add_subdirectory(mbedssl2)
    add_subdirectory(tls_e2e)
 endif()
