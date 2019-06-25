@@ -136,7 +136,6 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
     const void* main_tls;
     size_t main_tls_size;
     void* tls = NULL;
-    size_t tls_size;
 
     /* Get the main thread. */
     if (!(main_thread = ve_thread_self()))
@@ -150,41 +149,17 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
     if (main_tls_size < g_tdata_size)
         goto done;
 
-#if 0
-    /* Calculate TLS size of the new thread (rounded to the page size). */
-    tls_size = oe_round_up_to_multiple(main_tls_size, VE_PAGE_SIZE);
-#else
-    tls_size = main_tls_size;
-#endif
-
     /* Allocate TLS followed by the thread. */
-    {
-        /* Allocate an extra 16 bytes to suppress false Valgrind error. */
-        const size_t alloc_size = tls_size + sizeof(thread_t);
-
-#if 0
-        if (!(tls = ve_memalign(VE_PAGE_SIZE, alloc_size)))
-            goto done;
-
-        ve_memset(tls, 0, alloc_size);
-#else
-        if (!(tls = ve_calloc(1, alloc_size)))
-            goto done;
-#endif
-    }
+    if (!(tls = ve_calloc(1, main_tls_size + sizeof(thread_t))))
+        goto done;
 
     /* Set thread pointer into the middle of the allocation. */
-    thread = (thread_t*)((uint8_t*)tls + tls_size);
+    thread = (thread_t*)((uint8_t*)tls + main_tls_size);
 
     /* Copy tdata section onto the new_tls. */
     {
         void* tdata = (uint8_t*)ve_get_baseaddr() + g_tdata_rva;
-#if 0
-        uint8_t* dest = (uint8_t*)thread - main_tls_size;
-        ve_memcpy(dest, tdata, g_tdata_size);
-#else
         ve_memcpy(tls, tdata, g_tdata_size);
-#endif
     }
 
     /* Allocate and zero-fill the stack. */
@@ -203,7 +178,7 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
         thread->base.self = &thread->base;
         thread->next = NULL;
         thread->tls = tls;
-        thread->tls_size = tls_size;
+        thread->tls_size = main_tls_size;
         thread->tcs = tcs;
         thread->stack = stack;
         thread->stack_size = stack_size;
@@ -215,11 +190,7 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
         int flags = 0;
         int rval;
         uint8_t* child_stack = stack + thread->stack_size;
-#if 0
-        void* child_tls = thread;
-#else
-        void* child_tls = (uint8_t*)tls + tls_size;
-#endif
+        void* child_tls = (uint8_t*)tls + main_tls_size;
 
         flags |= VE_CLONE_VM;
         flags |= VE_CLONE_FS;
