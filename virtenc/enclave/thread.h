@@ -40,6 +40,8 @@ typedef struct _thread
     int ptid;
     int ctid;
     int unused;
+    uint64_t unused2;
+    uint64_t unused3;
 } thread_t;
 
 void ve_dump_thread(thread_t* thread);

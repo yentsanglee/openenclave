@@ -28,7 +28,7 @@
 
 __thread uint64_t __thread_value = THREAD_VALUE_INITIALIZER;
 
-__thread int __ve_thread_pid = (int)0xDDDDDDDD;
+__thread int __ve_thread_pid;
 
 void ve_call_init_functions(void);
 
@@ -146,21 +146,31 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
     if (ve_get_tls(main_thread, &main_tls, &main_tls_size) != 0)
         goto done;
 
-    /* Fail if the tdata section will not fit into tls. */
+    /* Fail if the tdata section will not fit into the TLS. */
     if (main_tls_size < g_tdata_size)
         goto done;
 
-    /* Calculate the TLS size the new thread (rounded to the page size). */
+#if 0
+    /* Calculate TLS size of the new thread (rounded to the page size). */
     tls_size = oe_round_up_to_multiple(main_tls_size, VE_PAGE_SIZE);
+#else
+    tls_size = main_tls_size;
+#endif
 
     /* Allocate TLS followed by the thread. */
     {
+        /* Allocate an extra 16 bytes to suppress false Valgrind error. */
         const size_t alloc_size = tls_size + sizeof(thread_t);
 
+#if 0
         if (!(tls = ve_memalign(VE_PAGE_SIZE, alloc_size)))
             goto done;
 
         ve_memset(tls, 0, alloc_size);
+#else
+        if (!(tls = ve_calloc(1, alloc_size)))
+            goto done;
+#endif
     }
 
     /* Set thread pointer into the middle of the allocation. */
@@ -169,9 +179,12 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
     /* Copy tdata section onto the new_tls. */
     {
         void* tdata = (uint8_t*)ve_get_baseaddr() + g_tdata_rva;
+#if 0
         uint8_t* dest = (uint8_t*)thread - main_tls_size;
-
         ve_memcpy(dest, tdata, g_tdata_size);
+#else
+        ve_memcpy(tls, tdata, g_tdata_size);
+#endif
     }
 
     /* Allocate and zero-fill the stack. */
@@ -202,7 +215,11 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
         int flags = 0;
         int rval;
         uint8_t* child_stack = stack + thread->stack_size;
+#if 0
         void* child_tls = thread;
+#else
+        void* child_tls = (uint8_t*)tls + tls_size;
+#endif
 
         flags |= VE_CLONE_VM;
         flags |= VE_CLONE_FS;
