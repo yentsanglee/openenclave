@@ -8,20 +8,20 @@
 
 void ve_dump_thread(thread_t* thread)
 {
-    thread_blocks_t* block = thread->blocks;
+    thread_env_t* env = thread->env;
 
-    if (block)
+    if (env)
     {
         ve_print("=== DUMP THREAD (%p):\n", thread);
         ve_put("TLS:\n");
-        ve_hexdump(&block->tls, sizeof(block->tls));
+        ve_hexdump(&env->tls, sizeof(env->tls));
         ve_put("THREAD:\n");
         ve_print("self=%p\n", thread->base.self);
         ve_print("dtv=%lx\n", thread->base.dtv);
         ve_print("sysinfo=%lx\n", thread->base.sysinfo);
         ve_print("canary=%lx\n", thread->base.canary);
         ve_print("canary2=%lx\n", thread->base.canary2);
-        ve_hexdump(&block->thread, sizeof(block->thread));
+        ve_hexdump(&env->thread, sizeof(env->thread));
     }
 }
 

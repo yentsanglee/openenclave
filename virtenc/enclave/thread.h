@@ -31,7 +31,7 @@ typedef struct _thread
 
     /* Internal implementation. */
     struct _thread* next;
-    struct _thread_blocks* blocks;
+    struct _thread_env* env;
     void* stack;
     size_t stack_size;
     uint64_t tcs;
@@ -51,13 +51,13 @@ typedef struct _tls
 
 OE_STATIC_ASSERT((sizeof(tls_t) % VE_PAGE_SIZE) == 0);
 
-typedef struct _thread_blocks
+typedef struct _thread_env
 {
     tls_t tls;
     thread_t thread;
-} thread_blocks_t;
+} thread_env_t;
 
-OE_STATIC_ASSERT((sizeof(thread_blocks_t) % VE_PAGE_SIZE) == 0);
+OE_STATIC_ASSERT((sizeof(thread_env_t) % VE_PAGE_SIZE) == 0);
 
 void ve_dump_thread(thread_t* thread);
 

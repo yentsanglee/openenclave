@@ -25,15 +25,7 @@
 
 __thread int __ve_thread_pid;
 
-#if 0
-__thread uint64_t __xxx[8];
-__thread uint64_t __yyy[8];
-__thread uint64_t __zzz[8];
-
-__thread uint32_t __thread_var;
-__thread void* __thread_tls;
-__thread size_t __thread_tls_size;
-#endif
+__thread uint8_t __arr[8] = {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
 
 __thread uint64_t __thread_value = 0xbaadf00dbaadf00d;
 
@@ -56,8 +48,6 @@ static int _thread(void* arg_)
 
     __ve_thread_pid = ve_getpid();
 
-    ve_print("_thread: fs:  %p\n", ve_get_fs_register_base());
-
     if (ve_handle_calls(arg->sock) != 0)
     {
         ve_put("_thread(): ve_handle_calls() failed\n");
@@ -71,18 +61,18 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
 {
     int ret = -1;
     uint8_t* stack = NULL;
-    thread_blocks_t* blocks = NULL;
+    thread_env_t* env = NULL;
     thread_t* thread;
 
-    /* Allocate the thread blocks (guard + tls + thread). */
+    /* Allocate the thread environment (TLS + thread). */
     {
-        if (!(blocks = ve_memalign(VE_PAGE_SIZE, sizeof(thread_blocks_t))))
+        if (!(env = ve_memalign(VE_PAGE_SIZE, sizeof(thread_env_t))))
             goto done;
 
-        ve_memset(&blocks->tls, 0, sizeof(tls_t));
-        ve_memset(&blocks->thread, 0, sizeof(thread_t));
+        ve_memset(&env->tls, 0, sizeof(tls_t));
+        ve_memset(&env->thread, 0, sizeof(thread_t));
 
-        thread = &blocks->thread;
+        thread = &env->thread;
     }
 
     /* Allocate and zero-fill the stack. */
@@ -107,7 +97,7 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
     {
         thread->base.self = &thread->base;
         thread->next = NULL;
-        thread->blocks = blocks;
+        thread->env = env;
         thread->tcs = tcs;
         thread->stack = stack;
         thread->stack_size = stack_size;
@@ -157,7 +147,7 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
     }
 
     stack = NULL;
-    blocks = NULL;
+    env = NULL;
     ret = 0;
 
 done:
@@ -165,8 +155,8 @@ done:
     if (stack)
         ve_free(stack);
 
-    if (blocks)
-        ve_free(blocks);
+    if (env)
+        ve_free(env);
 
     return ret;
 }
@@ -302,10 +292,13 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
     }
 
     /* Release resources held by threads. */
-    for (p = globals.threads; p; p = p->next)
+    for (p = globals.threads; p;)
     {
-        ve_free(p->stack);
+        thread_t* next = p->next;
         ve_close(p->sock);
+        ve_free(p->stack);
+        ve_free(p->env);
+        p = next;
     }
 
     /* Release resources held by the main thread. */
@@ -355,10 +348,6 @@ void ve_handle_call_ping(int fd, ve_call_buf_t* buf)
 
     ve_assert(__ve_thread_pid == ve_getpid());
 
-    ve_print("__ve_thread_pid=%d\n", __ve_thread_pid);
-    __thread_value = 0xbaadf00dbaadf00d;
-    ve_print("__ve_thread_value=%lu\n", __thread_value);
-
     test_malloc(fd);
 
     if (ve_call1(fd, VE_FUNC_PING, &retval, buf->arg1) != 0)
@@ -390,9 +379,12 @@ void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
     OE_UNUSED(fd);
     OE_UNUSED(buf);
 
-    ve_print("__ve_thread_pid=%d\n", __ve_thread_pid);
+    const uint8_t arr[8] = {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
 
-#if 1
+    for (size_t i = 0; i < OE_COUNTOF(arr); i++)
+        __arr[i] = arr[i];
+
+#if 0
     ve_dump_thread(ve_thread_self());
 #endif
 
