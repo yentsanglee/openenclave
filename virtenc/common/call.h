@@ -67,14 +67,13 @@ OE_INLINE void ve_call_buf_clear(volatile ve_call_buf_t* buf)
 typedef struct _ve_init_arg
 {
     uint64_t magic;
-
-    /* The enclave end of the socket pair. */
     int sock;
-
-    /* The host shared memory heap. */
     int shmid;
     void* shmaddr;
-
+    size_t tdata_size;
+    size_t tdata_align;
+    size_t tbss_size;
+    size_t tbss_align;
 } ve_init_arg_t;
 
 const char* ve_func_name(ve_func_t func);

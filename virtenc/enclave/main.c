@@ -3,6 +3,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/internal/syscall/unistd.h>
+#include <openenclave/internal/utils.h>
 #include "assert.h"
 #include "call.h"
 #include "globals.h"
@@ -24,8 +25,6 @@
 #define VE_PAGE_SIZE 4096
 
 __thread int __ve_thread_pid;
-
-__thread uint8_t __arr[8] = {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
 
 __thread uint64_t __thread_value = 0xbaadf00dbaadf00d;
 
@@ -57,23 +56,81 @@ static int _thread(void* arg_)
     return 0;
 }
 
+static int ve_get_tls(thread_t* thread, const void** tls, size_t* tls_size)
+{
+    int ret = -1;
+    const uint8_t* p;
+    size_t align = 0;
+
+    if (tls)
+        *tls = NULL;
+
+    if (tls_size)
+        *tls_size = 0;
+
+    if (!thread || !tls || !tls_size)
+        goto done;
+
+    if (g_tdata_size == 0 && g_tbss_size == 0)
+        goto done;
+
+    /* align = max(g_tdata_align, g_tbss_align) */
+    if (g_tdata_align > g_tbss_align)
+        align = g_tdata_align;
+    else
+        align = g_tbss_align;
+
+    /* Check that align is a power of two. */
+    if ((align & (align - 1)))
+        goto done;
+
+    p = (const uint8_t*)thread;
+    p -= oe_round_up_to_multiple(g_tdata_size, align);
+    p -= oe_round_up_to_multiple(g_tbss_size, align);
+
+    *tls = p;
+    *tls_size = (size_t)((const uint8_t*)thread - p);
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
 {
     int ret = -1;
     uint8_t* stack = NULL;
-    thread_env_t* env = NULL;
+    thread_t* main_thread;
     thread_t* thread;
+    const void* main_tls;
+    size_t main_tls_size;
+    void* tls = NULL;
+    size_t tls_size;
 
-    /* Allocate the thread environment (TLS + thread). */
+    /* Get the main thread. */
+    if (!(main_thread = ve_thread_self()))
+        goto done;
+
+    /* Get the TLS data from the main thread. */
+    if (ve_get_tls(main_thread, &main_tls, &main_tls_size) != 0)
+        goto done;
+
+    /* Calculate the TLS size the new thread (rounded to the page size). */
+    tls_size = oe_round_up_to_multiple(main_tls_size, VE_PAGE_SIZE);
+
+    /* Allocate TLS followed by the thread. */
     {
-        if (!(env = ve_memalign(VE_PAGE_SIZE, sizeof(thread_env_t))))
+        const size_t alloc_size = tls_size + sizeof(thread_t);
+
+        if (!(tls = ve_memalign(VE_PAGE_SIZE, alloc_size)))
             goto done;
 
-        ve_memset(&env->tls, 0, sizeof(tls_t));
-        ve_memset(&env->thread, 0, sizeof(thread_t));
-
-        thread = &env->thread;
+        ve_memset(tls, 0, alloc_size);
     }
+
+    /* Set thread pointer into the middle of the allocation. */
+    thread = (thread_t*)((uint8_t*)tls + tls_size);
 
     /* Allocate and zero-fill the stack. */
     {
@@ -84,20 +141,14 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
     }
 
     /* Copy the base fields from the parent thread. */
-    {
-        thread_t* parent_thread = ve_thread_self();
-
-        if (!parent_thread)
-            goto done;
-
-        ve_memcpy(&thread->base, parent_thread, sizeof(thread_base_t));
-    }
+    ve_memcpy(&thread->base, main_thread, sizeof(thread_base_t));
 
     /* Initilize the thread. */
     {
         thread->base.self = &thread->base;
         thread->next = NULL;
-        thread->env = env;
+        thread->tls = tls;
+        thread->tls_size = tls_size;
         thread->tcs = tcs;
         thread->stack = stack;
         thread->stack_size = stack_size;
@@ -147,7 +198,7 @@ static int _create_new_thread(int sock, uint64_t tcs, size_t stack_size)
     }
 
     stack = NULL;
-    env = NULL;
+    tls = NULL;
     ret = 0;
 
 done:
@@ -155,8 +206,8 @@ done:
     if (stack)
         ve_free(stack);
 
-    if (env)
-        ve_free(env);
+    if (tls)
+        ve_free(tls);
 
     return ret;
 }
@@ -250,6 +301,12 @@ int ve_handle_init(void)
         }
     }
 
+    /* Save the TLS information. */
+    g_tdata_size = arg.tdata_size;
+    g_tdata_align = arg.tdata_align;
+    g_tbss_size = arg.tbss_size;
+    g_tbss_align = arg.tbss_align;
+
     /* Handle the request. */
     {
         g_sock = arg.sock;
@@ -297,7 +354,7 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
         thread_t* next = p->next;
         ve_close(p->sock);
         ve_free(p->stack);
-        ve_free(p->env);
+        ve_free(p->tls);
         p = next;
     }
 
@@ -419,6 +476,22 @@ static int _main(void)
         ve_puts("ve_handle_init() failed");
         ve_exit(1);
     }
+
+#if 1
+    {
+        const void* tls;
+        size_t tls_size;
+        thread_t* thread = ve_thread_self();
+
+        if (ve_get_tls(thread, &tls, &tls_size) != 0)
+        {
+            ve_puts("ve_get_tls() failed");
+            ve_exit(1);
+        }
+
+        ve_hexdump(tls, tls_size + 64);
+    }
+#endif
 
     /* Handle messages over the main socket. */
     if (ve_handle_calls(g_sock) != 0)

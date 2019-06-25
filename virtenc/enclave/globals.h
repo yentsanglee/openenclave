@@ -18,7 +18,13 @@ typedef struct _globals
 
 extern globals_t globals;
 
-/* Socket used to communicate with the parent host process. */
+/* Socket used to communicate with the host process. */
 extern int g_sock;
+
+/* TLS information sent by the host. */
+extern size_t g_tdata_size;
+extern size_t g_tdata_align;
+extern size_t g_tbss_size;
+extern size_t g_tbss_align;
 
 #endif /* _VE_ENCLAVE_GLOBALS_H */

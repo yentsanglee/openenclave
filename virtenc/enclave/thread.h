@@ -31,7 +31,8 @@ typedef struct _thread
 
     /* Internal implementation. */
     struct _thread* next;
-    struct _thread_env* env;
+    void* tls;
+    size_t tls_size;
     void* stack;
     size_t stack_size;
     uint64_t tcs;
@@ -39,25 +40,10 @@ typedef struct _thread
     int ptid;
     int ctid;
     int unused;
-    uint8_t padding[3984];
+    uint8_t padding[3972];
 } thread_t;
 
 OE_STATIC_ASSERT(sizeof(thread_t) == VE_PAGE_SIZE);
-
-typedef struct _tls
-{
-    uint8_t data[VE_TLS_SIZE];
-} tls_t;
-
-OE_STATIC_ASSERT((sizeof(tls_t) % VE_PAGE_SIZE) == 0);
-
-typedef struct _thread_env
-{
-    tls_t tls;
-    thread_t thread;
-} thread_env_t;
-
-OE_STATIC_ASSERT((sizeof(thread_env_t) % VE_PAGE_SIZE) == 0);
 
 void ve_dump_thread(thread_t* thread);
 

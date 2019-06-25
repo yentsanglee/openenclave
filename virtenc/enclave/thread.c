@@ -8,21 +8,19 @@
 
 void ve_dump_thread(thread_t* thread)
 {
-    thread_env_t* env = thread->env;
+    if (!thread)
+        return;
 
-    if (env)
-    {
-        ve_print("=== DUMP THREAD (%p):\n", thread);
-        ve_put("TLS:\n");
-        ve_hexdump(&env->tls, sizeof(env->tls));
-        ve_put("THREAD:\n");
-        ve_print("self=%p\n", thread->base.self);
-        ve_print("dtv=%lx\n", thread->base.dtv);
-        ve_print("sysinfo=%lx\n", thread->base.sysinfo);
-        ve_print("canary=%lx\n", thread->base.canary);
-        ve_print("canary2=%lx\n", thread->base.canary2);
-        ve_hexdump(&env->thread, sizeof(env->thread));
-    }
+    if (!thread->tls)
+        return;
+
+    ve_print("=== DUMP THREAD (%p):\n", thread);
+
+    ve_put("TLS:\n");
+    ve_hexdump(thread->tls, thread->tls_size);
+
+    ve_put("THREAD:\n");
+    ve_hexdump(thread, sizeof(thread_t));
 }
 
 #define VE_ARCH_GET_FS 0x1003

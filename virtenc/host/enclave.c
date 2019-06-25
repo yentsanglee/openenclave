@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include "call.h"
+#include "elf.h"
 #include "heap.h"
 #include "hostmalloc.h"
 #include "io.h"
@@ -39,7 +40,11 @@ struct _ve_enclave
 
 extern const char* __ve_arg0;
 
-static int _init_child(ve_enclave_t* enclave, int child_fd, int child_sock)
+static int _init_child(
+    ve_enclave_t* enclave,
+    int child_fd,
+    int child_sock,
+    ve_tls_info_t* tls_info)
 {
     int ret = -1;
     ve_init_arg_t arg;
@@ -52,6 +57,10 @@ static int _init_child(ve_enclave_t* enclave, int child_fd, int child_sock)
     arg.sock = child_sock;
     arg.shmid = __ve_heap.shmid;
     arg.shmaddr = __ve_heap.shmaddr;
+    arg.tdata_size = tls_info->tdata_size;
+    arg.tdata_align = tls_info->tdata_align;
+    arg.tbss_size = tls_info->tbss_size;
+    arg.tbss_align = tls_info->tbss_align;
 
     /* Send the message to the child's standard input. */
     if (ve_writen(child_fd, &arg, sizeof(arg)) != 0)
@@ -71,7 +80,10 @@ done:
     return ret;
 }
 
-static pid_t _fork_exec_enclave(const char* path, ve_enclave_t* enclave)
+static pid_t _fork_exec_enclave(
+    const char* path,
+    ve_enclave_t* enclave,
+    ve_tls_info_t* tls_info)
 {
     pid_t ret = -1;
     pid_t pid;
@@ -116,7 +128,7 @@ static pid_t _fork_exec_enclave(const char* path, ve_enclave_t* enclave)
     enclave->sock = socks[0];
     enclave->child_sock = socks[1];
 
-    if (_init_child(enclave, fds[1], socks[1]) != 0)
+    if (_init_child(enclave, fds[1], socks[1], tls_info) != 0)
         goto done;
 
     ret = pid;
@@ -296,19 +308,23 @@ int ve_enclave_create(const char* path, ve_enclave_t** enclave_out)
     int ret = -1;
     ve_enclave_t* enclave = NULL;
     size_t stack_size;
+    ve_tls_info_t tls_info;
+
+    if (enclave_out)
+        *enclave_out = NULL;
 
     if (!path)
         goto done;
 
-    if (enclave_out)
-        *enclave_out = NULL;
+    if (ve_get_elf_tls_info(path, &tls_info) != 0)
+        goto done;
 
     if (!(enclave = calloc(1, sizeof(ve_enclave_t))))
         goto done;
 
     pthread_spin_init(&enclave->lock, PTHREAD_PROCESS_PRIVATE);
 
-    if ((enclave->pid = _fork_exec_enclave(path, enclave)) == -1)
+    if ((enclave->pid = _fork_exec_enclave(path, enclave, &tls_info)) == -1)
         goto done;
 
     ve_enclave_settings_t settings;

@@ -6,3 +6,8 @@
 globals_t globals;
 
 int g_sock = -1;
+
+size_t g_tdata_size;
+size_t g_tdata_align;
+size_t g_tbss_size;
+size_t g_tbss_align;

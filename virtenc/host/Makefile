@@ -26,6 +26,10 @@ SOURCES += io.c
 SOURCES += enclave.c
 SOURCES += heap.c
 SOURCES += err.c
+SOURCES += strings.c
+SOURCES += result.c
+SOURCES += safecrt.c
+SOURCES += elf.c
 
 LDFLAGS += -lpthread
 
