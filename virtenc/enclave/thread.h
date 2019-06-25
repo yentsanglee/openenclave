@@ -8,44 +8,21 @@
 #include <openenclave/internal/defs.h>
 #include "lock.h"
 
-#define VE_MAX_THREADS 1024
-#define VE_PAGE_SIZE 4096
-#define VE_TLS_SIZE (1 * VE_PAGE_SIZE)
-
-/* The thread ABI for Linux x86-64: do not change! */
-typedef struct _thread_base
+typedef struct _ve_thread
 {
-    struct _thread_base* self;
-    uint64_t dtv;
-    uint64_t unused1;
-    uint64_t unused2;
-    uint64_t sysinfo;
-    uint64_t canary;
-    uint64_t canary2;
-} thread_base_t;
+    void* __impl;
+} ve_thread_t;
 
-/* Represents a thread (the FS register points to instances of this) */
-typedef struct _thread
-{
-    thread_base_t base;
+int ve_thread_create(
+    ve_thread_t* thread,
+    int (*func)(void*),
+    void* arg,
+    size_t stack_size);
 
-    /* Internal implementation. */
-    struct _thread* next;
-    void* tls;
-    size_t tls_size;
-    void* stack;
-    size_t stack_size;
-    uint64_t tcs;
-    int sock;
-    int ptid;
-    int ctid;
-    int unused;
-    uint64_t unused2;
-    uint64_t unused3;
-} thread_t;
+ve_thread_t ve_thread_self(void);
 
-void ve_dump_thread(thread_t* thread);
+int ve_thread_set_destructor(void (*destructor)(void*), void* arg);
 
-thread_t* ve_thread_self(void);
+int ve_thread_join_all(void);
 
 #endif /* _VE_ENCLAVE_THREAD_H */

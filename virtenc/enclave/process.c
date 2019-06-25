@@ -21,6 +21,12 @@ __attribute__((__noreturn__)) void ve_abort(void)
         ;
 }
 
+__attribute__((__noreturn__)) void ve_panic(const char* msg)
+{
+    ve_puts(msg);
+    ve_abort();
+}
+
 int ve_gettid(void)
 {
     return (int)ve_syscall0(OE_SYS_gettid);

@@ -49,6 +49,8 @@ void ve_exit(int status);
 
 __attribute__((__noreturn__)) void ve_abort(void);
 
+__attribute__((__noreturn__)) void ve_panic(const char* msg);
+
 int ve_gettid(void);
 
 int ve_getpid(void);

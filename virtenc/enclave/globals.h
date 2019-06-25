@@ -9,9 +9,6 @@
 
 typedef struct _globals
 {
-    thread_t* threads;
-    ve_lock_t lock;
-
     /* Shared memory between host and enclave. */
     void* shmaddr;
 } globals_t;
