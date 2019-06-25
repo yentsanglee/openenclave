@@ -8,6 +8,8 @@
 
 void ve_exit(int status)
 {
+    ve_thread_set_retval(status);
+
     for (;;)
         ve_syscall1(OE_SYS_exit, status);
 }

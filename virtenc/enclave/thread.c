@@ -29,12 +29,12 @@ typedef struct _thread_base
 } thread_base_t;
 
 /* Represents a thread (the FS register points to instances of this) */
-typedef struct _thread
+struct _ve_thread
 {
     thread_base_t base;
 
     /* Internal implementation. */
-    struct _thread* next;
+    struct _ve_thread* next;
     void* tls;
     size_t tls_size;
     void* stack;
@@ -44,15 +44,16 @@ typedef struct _thread
     void* destructor_arg;
     int ptid;
     int ctid;
-} thread_t;
+    int retval;
+};
 
 /* Global array of threads. */
-static thread_t* _threads;
+static struct _ve_thread* _threads;
 static ve_lock_t _lock;
 
-static thread_t* _thread_self(void)
+static struct _ve_thread* _thread_self(void)
 {
-    thread_t* thread = NULL;
+    struct _ve_thread* thread = NULL;
     const long ARCH_GET_FS = 0x1003;
     ve_syscall2(OE_SYS_arch_prctl, ARCH_GET_FS, (long)&thread);
     return thread;
@@ -61,11 +62,28 @@ static thread_t* _thread_self(void)
 ve_thread_t ve_thread_self(void)
 {
     ve_thread_t thread;
-    thread.__impl = _thread_self();
+    thread = (ve_thread_t)_thread_self();
     return thread;
 }
 
-static int _get_tls(const thread_t* thread, const void** tls, size_t* tls_size)
+int ve_thread_set_retval(int retval)
+{
+    int ret = -1;
+    struct _ve_thread* thread;
+
+    if (!(thread = ve_thread_self()))
+        goto done;
+
+    thread->retval = retval;
+
+done:
+    return ret;
+}
+
+static int _get_tls(
+    const struct _ve_thread* thread,
+    const void** tls,
+    size_t* tls_size)
 {
     int ret = -1;
     const uint8_t* p;
@@ -108,7 +126,7 @@ done:
 
 typedef struct _thread_arg
 {
-    thread_t* thread;
+    struct _ve_thread* thread;
     int (*func)(void* arg);
     void* arg;
 } thread_arg_t;
@@ -116,7 +134,6 @@ typedef struct _thread_arg
 static int _thread_func(void* arg_)
 {
     thread_arg_t* arg = (thread_arg_t*)arg_;
-    int rval;
 
     /* Prepend the thread to the global linked list. */
     {
@@ -127,9 +144,9 @@ static int _thread_func(void* arg_)
     }
 
     /* Invoke the caller's thread routine. */
-    rval = arg->func(arg->arg);
+    arg->thread->retval = arg->func(arg->arg);
 
-    return rval;
+    return arg->thread->retval;
 }
 
 int ve_thread_create(
@@ -140,14 +157,14 @@ int ve_thread_create(
 {
     int ret = -1;
     uint8_t* stack = NULL;
-    thread_t* main_thread;
-    thread_t* thread;
+    struct _ve_thread* main_thread;
+    struct _ve_thread* thread;
     const void* main_tls;
     size_t main_tls_size;
     void* tls = NULL;
 
     if (thread_out)
-        thread_out->__impl = NULL;
+        *thread_out = NULL;
 
     if (!thread_out || !func || !stack_size)
         goto done;
@@ -169,12 +186,13 @@ int ve_thread_create(
         /* ATTN: Vaoid "unaddressable byte(s)" error in Valgrind. */
         const size_t EXTRA = 64;
 
-        if (!(tls = ve_calloc(1, main_tls_size + sizeof(thread_t) + EXTRA)))
+        if (!(tls = ve_calloc(
+                  1, main_tls_size + sizeof(struct _ve_thread) + EXTRA)))
             goto done;
     }
 
     /* Set thread pointer into the middle of the allocation. */
-    thread = (thread_t*)((uint8_t*)tls + main_tls_size);
+    thread = (struct _ve_thread*)((uint8_t*)tls + main_tls_size);
 
     /* Copy tdata section onto the new_tls. */
     {
@@ -250,7 +268,7 @@ int ve_thread_create(
         ve_print("encl: new thread: rval=%d\n", rval);
     }
 
-    thread_out->__impl = thread;
+    *thread_out = (ve_thread_t)thread;
 
     stack = NULL;
     tls = NULL;
@@ -270,7 +288,7 @@ done:
 int ve_thread_set_destructor(void (*destructor)(void*), void* arg)
 {
     int ret = -1;
-    thread_t* thread;
+    struct _ve_thread* thread;
 
     if (!destructor)
         goto done;
@@ -290,7 +308,7 @@ done:
 int ve_thread_join_all(void)
 {
     int ret = -1;
-    thread_t* p;
+    struct _ve_thread* p;
 
     /* Wait on the exit status of each thread. */
     for (p = _threads; p; p = p->next)
@@ -305,7 +323,7 @@ int ve_thread_join_all(void)
     /* Release resources held by threads. */
     for (p = _threads; p;)
     {
-        thread_t* next = p->next;
+        struct _ve_thread* next = p->next;
 
         if (p->destructor)
             (*p->destructor)(p->destructor_arg);
@@ -322,5 +340,31 @@ int ve_thread_join_all(void)
 
     ret = 0;
 
+    return ret;
+}
+
+int ve_thread_join(ve_thread_t thread, int* retval)
+{
+    int ret = -1;
+    int tid;
+    int status;
+
+    if (!thread)
+        goto done;
+
+    if ((tid = ve_waitpid(thread->ptid, &status, 0)) < 0)
+        goto done;
+
+    if (tid != thread->ptid)
+        goto done;
+
+    /* ATTN: free resources here. */
+
+    if (retval)
+        *retval = thread->retval;
+
+    ret = 0;
+
+done:
     return ret;
 }
