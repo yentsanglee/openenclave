@@ -3,6 +3,7 @@
 
 #include <openenclave/host.h>
 #include <openenclave/internal/raise.h>
+#include <openenclave/internal/utils.h>
 #include <pthread.h>
 #include "enclave.h"
 #include "heap.h"
@@ -21,33 +22,18 @@ struct _oe_enclave
 
 extern ve_heap_t __ve_heap;
 
-static int _initialize_host_once(void)
+static bool _create_enclave_once_okay = false;
+
+static void _create_enclave_once(void)
 {
-    int ret = -1;
-    static pthread_mutex_t _lock = PTHREAD_MUTEX_INITIALIZER;
-    static bool _initialized = false;
+    /* Create the host heap to be shared with enclaves. */
+    if (ve_heap_create(&__ve_heap, HEAP_SIZE) != 0)
+        goto done;
 
-    pthread_mutex_lock(&_lock);
-
-    if (!_initialized)
-    {
-        /* Create the host heap to be shared with enclaves. */
-        if (ve_heap_create(&__ve_heap, HEAP_SIZE) != 0)
-        {
-            pthread_mutex_unlock(&_lock);
-            goto done;
-        }
-
-        _initialized = true;
-    }
-
-    pthread_mutex_unlock(&_lock);
-
-    ret = 0;
+    _create_enclave_once_okay = true;
 
 done:
-
-    return ret;
+    return;
 }
 
 oe_result_t oe_create_enclave(
@@ -63,18 +49,31 @@ oe_result_t oe_create_enclave(
     oe_result_t result = OE_UNEXPECTED;
     oe_enclave_t* enclave = NULL;
     ve_enclave_t* virtual_enclave = NULL;
+    static pthread_once_t _once = PTHREAD_ONCE_INIT;
 
     if (enclave_out)
         *enclave_out = NULL;
 
+    /* Reject invalid parameters. */
     if (!path || !enclave_out || config || config_size > 0)
         OE_RAISE(OE_INVALID_PARAMETER);
 
+    /* If no debug mode flag. */
+    if (!(flags & OE_ENCLAVE_FLAG_DEBUG))
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Simulate mode not supported by virtual enclaves. */
     if ((flags & OE_ENCLAVE_FLAG_SIMULATE))
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    if (_initialize_host_once() != 0)
-        OE_RAISE(OE_FAILURE);
+    /* Call _create_enclave_once() the first time. */
+    {
+        if (pthread_once(&_once, _create_enclave_once) != 0)
+            OE_RAISE(OE_FAILURE);
+
+        if (!_create_enclave_once_okay)
+            OE_RAISE(OE_FAILURE);
+    }
 
     /* Create the virtual enclave. */
     if (ve_enclave_create(path, &__ve_heap, &virtual_enclave) != 0)
@@ -108,7 +107,7 @@ oe_result_t oe_terminate_enclave(oe_enclave_t* enclave)
 {
     oe_result_t result = OE_UNEXPECTED;
 
-    /* Check parameters */
+    /* Reject invalid parameters. */
     if (!enclave || enclave->magic != ENCLAVE_MAGIC)
         OE_RAISE(OE_INVALID_PARAMETER);
 
@@ -116,11 +115,13 @@ oe_result_t oe_terminate_enclave(oe_enclave_t* enclave)
     if (ve_enclave_terminate(enclave->virtual_enclave) != 0)
         OE_RAISE(OE_FAILURE);
 
-    /* Clear the contents of the enclave structure */
+    /* Clear the contents of the enclave structure. */
     memset(enclave, 0xdd, sizeof(oe_enclave_t));
 
     /* Free the enclave structure */
     free(enclave);
+
+    result = OE_OK;
 
 done:
     return result;

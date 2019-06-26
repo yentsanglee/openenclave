@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/host.h>
 #include <stdio.h>
 #include <unistd.h>
 #include "enclave.h"
@@ -108,7 +109,42 @@ int main2(int argc, const char* argv[])
     return 0;
 }
 
+int main3(int argc, const char* argv[])
+{
+    __ve_arg0 = argv[0];
+    oe_result_t result;
+    oe_enclave_t* enclave = NULL;
+
+    if (argc != 2)
+    {
+        fprintf(stderr, "Usage: %s program\n", argv[0]);
+        return 1;
+    }
+
+    if ((result = oe_create_enclave(
+             argv[1],
+             OE_ENCLAVE_TYPE_SGX,
+             OE_ENCLAVE_FLAG_DEBUG,
+             NULL,
+             0,
+             NULL,
+             0,
+             &enclave)) != OE_OK)
+    {
+        err("oe_create_enclave() failed: %u\n", result);
+    }
+
+    if ((result = oe_terminate_enclave(enclave)) != OE_OK)
+        err("oe_terminate_enclave() failed: %u\n", result);
+
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
+    return 0;
+}
+
 int main(int argc, const char* argv[])
 {
-    return main1(argc, argv);
+    return main3(argc, argv);
 }
