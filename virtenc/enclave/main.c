@@ -22,6 +22,8 @@
 #include "time.h"
 #include "trace.h"
 
+#define MAX_THREADS 1024
+
 #define VE_PAGE_SIZE 4096
 
 #define THREAD_VALUE_INITIALIZER 0xaabbccddeeff1122
@@ -37,6 +39,9 @@ void ve_call_fini_functions(void);
 int ve_handle_calls(int fd);
 
 static bool _called_constructor = false;
+
+static ve_thread_t _threads[MAX_THREADS];
+static size_t _nthreads;
 
 __attribute__((constructor)) static void constructor(void)
 {
@@ -98,10 +103,19 @@ void ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
 
         arg->sock = sock;
 
+        /* Create a new thread. */
         if (ve_thread_create(&thread, _thread_func, arg, stack_size) != 0)
         {
             ve_free(arg);
             goto done;
+        }
+
+        /* Add new thread to the list. */
+        {
+            if (_nthreads == MAX_THREADS)
+                ve_panic("too many threads");
+
+            _threads[_nthreads++] = thread;
         }
     }
 
@@ -209,7 +223,15 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
     OE_UNUSED(buf);
 
     /* Wait for all threads to gracefuly shutdown. */
-    ve_thread_join_all();
+    for (size_t i = 0; i < _nthreads; i++)
+    {
+        int retval;
+
+        if (ve_thread_join(_threads[i], &retval) != 0)
+            ve_panic("failed to join threads");
+
+        ve_print("encl: join: retval=%d\n", retval);
+    }
 
     /* Release resources held by the main thread. */
     ve_close(g_sock);
@@ -292,7 +314,7 @@ void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
     ve_close(fd);
 
     ve_print("encl: thread exit: tid=%d\n", ve_gettid());
-    ve_exit(0);
+    ve_exit(99);
 }
 
 int __ve_pid;

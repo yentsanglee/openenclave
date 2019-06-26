@@ -47,22 +47,11 @@ struct _ve_thread
     int retval;
 };
 
-/* Global array of threads. */
-static struct _ve_thread* _threads;
-static ve_lock_t _lock;
-
-static struct _ve_thread* _thread_self(void)
+ve_thread_t ve_thread_self(void)
 {
     struct _ve_thread* thread = NULL;
     const long ARCH_GET_FS = 0x1003;
     ve_syscall2(OE_SYS_arch_prctl, ARCH_GET_FS, (long)&thread);
-    return thread;
-}
-
-ve_thread_t ve_thread_self(void)
-{
-    ve_thread_t thread;
-    thread = (ve_thread_t)_thread_self();
     return thread;
 }
 
@@ -135,14 +124,6 @@ static int _thread_func(void* arg_)
 {
     thread_arg_t* arg = (thread_arg_t*)arg_;
 
-    /* Prepend the thread to the global linked list. */
-    {
-        ve_lock(&_lock);
-        arg->thread->next = _threads;
-        _threads = arg->thread;
-        ve_unlock(&_lock);
-    }
-
     /* Invoke the caller's thread routine. */
     arg->thread->retval = arg->func(arg->arg);
 
@@ -170,7 +151,7 @@ int ve_thread_create(
         goto done;
 
     /* Get the main thread. */
-    if (!(main_thread = _thread_self()))
+    if (!(main_thread = ve_thread_self()))
         goto done;
 
     /* Get the TLS data from the main thread. */
@@ -293,7 +274,7 @@ int ve_thread_set_destructor(void (*destructor)(void*), void* arg)
     if (!destructor)
         goto done;
 
-    if (!(thread = _thread_self()))
+    if (!(thread = ve_thread_self()))
         goto done;
 
     thread->destructor = destructor;
@@ -305,49 +286,14 @@ done:
     return ret;
 }
 
-int ve_thread_join_all(void)
-{
-    int ret = -1;
-    struct _ve_thread* p;
-
-    /* Wait on the exit status of each thread. */
-    for (p = _threads; p; p = p->next)
-    {
-        int pid;
-        int status;
-
-        if ((pid = ve_waitpid(-1, &status, 0)) < 0)
-            ve_panic("ve_waitpid() failed");
-    }
-
-    /* Release resources held by threads. */
-    for (p = _threads; p;)
-    {
-        struct _ve_thread* next = p->next;
-
-        if (p->destructor)
-            (*p->destructor)(p->destructor_arg);
-
-        ve_free(p->stack);
-
-        ve_free(p->__thread_arg);
-
-        /* This frees the tread_t struct. */
-        ve_free(p->tls);
-
-        p = next;
-    }
-
-    ret = 0;
-
-    return ret;
-}
-
 int ve_thread_join(ve_thread_t thread, int* retval)
 {
     int ret = -1;
     int tid;
     int status;
+
+    if (retval)
+        *retval = 0;
 
     if (!thread)
         goto done;
@@ -358,10 +304,21 @@ int ve_thread_join(ve_thread_t thread, int* retval)
     if (tid != thread->ptid)
         goto done;
 
-    /* ATTN: free resources here. */
+    /* Call any user installed destructor. */
+    if (thread->destructor)
+        (*thread->destructor)(thread->destructor_arg);
+
+    /* Free the stack. */
+    ve_free(thread->stack);
+
+    /* Free the wrapper thread argument. */
+    ve_free(thread->__thread_arg);
 
     if (retval)
         *retval = thread->retval;
+
+    /* This frees the TLS and the tread_t struct. */
+    ve_free(thread->tls);
 
     ret = 0;
 
