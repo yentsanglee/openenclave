@@ -20,6 +20,8 @@
 static pthread_spinlock_t _lock;
 static pthread_once_t _once = PTHREAD_ONCE_INIT;
 
+ve_heap_t __ve_heap;
+
 static void _init_lock_once(void)
 {
     pthread_spin_init(&_lock, PTHREAD_PROCESS_PRIVATE);

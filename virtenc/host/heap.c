@@ -3,17 +3,22 @@
 
 #include "heap.h"
 #include <fcntl.h>
+#include <string.h>
 #include <sys/shm.h>
 
-ve_heap_t __ve_heap;
-
 /* Create a shared-memory heap for making ecalls and ocalls. */
-int ve_heap_create(size_t heap_size)
+int ve_heap_create(ve_heap_t* heap, size_t heap_size)
 {
     int ret = -1;
     const int PERM = (S_IRUSR | S_IWUSR);
     int shmid = -1;
-    void* shmaddr = NULL;
+    void* shmaddr = (void*)-1;
+
+    if (heap)
+        memset(heap, 0, sizeof(ve_heap_t));
+
+    if (!heap || heap_size == 0)
+        goto done;
 
     if ((shmid = shmget(IPC_PRIVATE, heap_size, PERM)) == -1)
         goto done;
@@ -21,18 +26,18 @@ int ve_heap_create(size_t heap_size)
     if ((shmaddr = shmat(shmid, NULL, 0)) == (void*)-1)
         goto done;
 
-    __ve_heap.shmid = shmid;
-    __ve_heap.shmaddr = shmaddr;
-    __ve_heap.shmsize = heap_size;
+    heap->shmid = shmid;
+    heap->shmaddr = shmaddr;
+    heap->shmsize = heap_size;
 
     shmid = -1;
-    shmaddr = NULL;
+    shmaddr = (void*)-1;
 
     ret = 0;
 
 done:
 
-    if (shmaddr)
+    if (shmaddr != (void*)-1)
         shmdt(shmaddr);
 
     if (shmid != -1)

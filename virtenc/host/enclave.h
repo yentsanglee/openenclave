@@ -7,10 +7,14 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "call.h"
+#include "heap.h"
 
 typedef struct _ve_enclave ve_enclave_t;
 
-int ve_enclave_create(const char* path, ve_enclave_t** enclave_out);
+int ve_enclave_create(
+    const char* path,
+    ve_heap_t* heap,
+    ve_enclave_t** enclave_out);
 
 int ve_enclave_terminate(ve_enclave_t* enclave);
 

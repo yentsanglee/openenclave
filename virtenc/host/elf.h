@@ -9,15 +9,17 @@
 
 typedef struct _ve_elf_info
 {
+    /* Thread local storage .tdata section. */
     size_t tdata_rva;
     size_t tdata_size;
     size_t tdata_align;
 
+    /* Thread local storage .tbss section. */
     size_t tbss_rva;
     size_t tbss_size;
     size_t tbss_align;
 
-    /* Virtual address of the enclave's __ve_self variable. */
+    /* The relative virtual address of the enclave's __ve_self variable. */
     uint64_t self_rva;
 } ve_elf_info_t;
 

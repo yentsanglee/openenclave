@@ -7,8 +7,11 @@
 #include "err.h"
 #include "heap.h"
 
+#define VE_HEAP_SIZE (1024 * 1024)
+
 const char* __ve_arg0;
 int __ve_pid;
+extern ve_heap_t __ve_heap;
 
 int main1(int argc, const char* argv[])
 {
@@ -26,10 +29,10 @@ int main1(int argc, const char* argv[])
         err("getpid() failed");
 
     /* Create the host heap to be shared with enclaves. */
-    if (ve_heap_create(VE_HEAP_SIZE) != 0)
+    if (ve_heap_create(&__ve_heap, VE_HEAP_SIZE) != 0)
         err("failed to allocate shared memory");
 
-    if (ve_enclave_create(argv[1], &enclave) != 0)
+    if (ve_enclave_create(argv[1], &__ve_heap, &enclave) != 0)
         err("failed to create enclave");
 
     /* Get the enclave settings. */
@@ -79,13 +82,13 @@ int main2(int argc, const char* argv[])
         err("getpid() failed");
 
     /* Create the host heap to be shared with enclaves. */
-    if (ve_heap_create(VE_HEAP_SIZE) != 0)
+    if (ve_heap_create(&__ve_heap, VE_HEAP_SIZE) != 0)
         err("failed to allocate shared memory");
 
-    if (ve_enclave_create(argv[1], &enclave) != 0)
+    if (ve_enclave_create(argv[1], &__ve_heap, &enclave) != 0)
         err("failed to create enclave");
 
-    if (ve_enclave_create(argv[1], &enclave2) != 0)
+    if (ve_enclave_create(argv[1], &__ve_heap, &enclave2) != 0)
         err("failed to create enclave");
 
     if (ve_enclave_terminate(enclave) != 0)

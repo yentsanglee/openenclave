@@ -33,6 +33,8 @@ struct _ve_enclave
     int sock;
     int child_sock;
 
+    ve_heap_t* heap;
+
     thread_t threads[MAX_THREADS];
     size_t nthreads;
     pthread_spinlock_t lock;
@@ -55,8 +57,8 @@ static int _init_child(
 
     arg.magic = VE_INIT_ARG_MAGIC;
     arg.sock = child_sock;
-    arg.shmid = __ve_heap.shmid;
-    arg.shmaddr = __ve_heap.shmaddr;
+    arg.shmid = enclave->heap->shmid;
+    arg.shmaddr = enclave->heap->shmaddr;
     arg.tdata_rva = elf_info->tdata_rva;
     arg.tdata_size = elf_info->tdata_size;
     arg.tdata_align = elf_info->tdata_align;
@@ -306,7 +308,10 @@ void ve_handle_call_ping(ve_call_buf_t* buf)
     buf->retval = buf->arg1;
 }
 
-int ve_enclave_create(const char* path, ve_enclave_t** enclave_out)
+int ve_enclave_create(
+    const char* path,
+    ve_heap_t* heap,
+    ve_enclave_t** enclave_out)
 {
     int ret = -1;
     ve_enclave_t* enclave = NULL;
@@ -324,6 +329,8 @@ int ve_enclave_create(const char* path, ve_enclave_t** enclave_out)
 
     if (!(enclave = calloc(1, sizeof(ve_enclave_t))))
         goto done;
+
+    enclave->heap = heap;
 
     pthread_spin_init(&enclave->lock, PTHREAD_PROCESS_PRIVATE);
 
@@ -346,7 +353,7 @@ int ve_enclave_create(const char* path, ve_enclave_t** enclave_out)
     }
 
     *enclave_out = enclave;
-    enclave = 0;
+    enclave = NULL;
 
     ret = 0;
 
