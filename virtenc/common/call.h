@@ -24,6 +24,7 @@ typedef enum _ve_func
     VE_FUNC_MEMALIGN,
     VE_FUNC_FREE,
     VE_FUNC_GET_SETTINGS,
+    VE_FUNC_XOR,
 } ve_func_t;
 
 typedef struct _ve_call_buf

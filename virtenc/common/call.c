@@ -33,6 +33,8 @@ const char* ve_func_name(ve_func_t func)
             return "FREE";
         case VE_FUNC_GET_SETTINGS:
             return "GET_SETTINGS";
+        case VE_FUNC_XOR:
+            return "XOR";
     }
 
     return "UNKNOWN";

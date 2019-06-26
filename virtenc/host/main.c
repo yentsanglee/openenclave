@@ -56,6 +56,10 @@ int main1(int argc, const char* argv[])
             err("failed to ping enclave");
     }
 
+    /* Run the built-in xor test. */
+    if (ve_enclave_run_xor_test(enclave) != 0)
+        err("ve_enclave_run_xor_test() failed");
+
     if (ve_enclave_terminate(enclave) != 0)
         err("failed to terminate enclave");
 

@@ -30,6 +30,8 @@ SOURCES += strings.c
 SOURCES += result.c
 SOURCES += safecrt.c
 SOURCES += elf.c
+SOURCES += host.c
+SOURCES += rand.c
 
 LDFLAGS += -lpthread
 

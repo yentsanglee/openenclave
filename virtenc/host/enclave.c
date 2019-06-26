@@ -15,6 +15,7 @@
 #include "heap.h"
 #include "hostmalloc.h"
 #include "io.h"
+#include "rand.h"
 
 #define MAX_THREADS 1024
 
@@ -25,6 +26,7 @@ typedef struct _thread
     int sock;
     int child_sock;
     uint64_t tcs;
+    bool busy;
 } thread_t;
 
 struct _ve_enclave
@@ -457,6 +459,99 @@ done:
 
     if (settings)
         ve_host_free(settings);
+
+    return ret;
+}
+
+static thread_t* _assign_thread(ve_enclave_t* enclave)
+{
+    thread_t* thread = NULL;
+
+    pthread_spin_lock(&enclave->lock);
+    {
+        for (size_t i = 0; i < enclave->nthreads; i++)
+        {
+            if (!enclave->threads[i].busy)
+            {
+                thread = &enclave->threads[i];
+                thread->busy = true;
+                break;
+            }
+        }
+    }
+    pthread_spin_unlock(&enclave->lock);
+
+    return thread;
+}
+
+static void _release_thread(ve_enclave_t* enclave, thread_t* thread)
+{
+    if (thread)
+    {
+        pthread_spin_lock(&enclave->lock);
+        thread->busy = false;
+        pthread_spin_unlock(&enclave->lock);
+    }
+}
+
+int ve_enclave_call(
+    ve_enclave_t* enclave,
+    ve_func_t func,
+    uint64_t* retval,
+    uint64_t arg1,
+    uint64_t arg2,
+    uint64_t arg3,
+    uint64_t arg4,
+    uint64_t arg5,
+    uint64_t arg6)
+{
+    int ret = -1;
+    int sock = -1;
+    thread_t* thread = NULL;
+
+    if (!enclave || func == VE_FUNC_RET || func == VE_FUNC_ERR)
+        goto done;
+
+    if (!(thread = _assign_thread(enclave)))
+        goto done;
+
+    if ((sock = thread->sock) < 0)
+        goto done;
+
+    if (ve_call(sock, func, retval, arg1, arg2, arg3, arg4, arg5, arg6) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+
+    _release_thread(enclave, thread);
+
+    return ret;
+}
+
+int ve_enclave_run_xor_test(ve_enclave_t* enclave)
+{
+    int ret = -1;
+    uint64_t retval = -1;
+    uint64_t x1 = ve_rand();
+    uint64_t x2 = ve_rand();
+    uint64_t x3 = ve_rand();
+    uint64_t x4 = ve_rand();
+    uint64_t x5 = ve_rand();
+    uint64_t x6 = ve_rand();
+    uint64_t xor = (x1 ^ x2 ^ x3 ^ x4 ^ x5 ^ x6);
+    ve_func_t func = VE_FUNC_XOR;
+
+    if (ve_enclave_call(enclave, func, &retval, x1, x2, x3, x4, x5, x6) != 0)
+        goto done;
+
+    if (retval != xor)
+        goto done;
+
+    ret = 0;
+
+done:
 
     return ret;
 }

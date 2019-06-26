@@ -8,3 +8,5 @@
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
     (B) Block enclave re-entrancy.
+
+    (B) The type of func parameters should ve_func_t.
