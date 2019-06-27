@@ -324,23 +324,6 @@ int ve_handle_call_enclave_function(
     return 0;
 }
 
-oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)
-{
-    oe_result_t result = OE_UNEXPECTED;
-    int sock = __ve_thread_sock_tls;
-
-    if (sock < 0)
-        OE_RAISE(OE_INVALID_PARAMETER);
-
-    if (ve_call2(sock, VE_FUNC_OCALL, arg_out, func, (uint64_t)arg_in) != 0)
-        OE_RAISE(OE_FAILURE);
-
-    result = OE_OK;
-
-done:
-    return result;
-}
-
 oe_result_t oe_call_host_function_by_table_id(
     uint64_t table_id,
     uint64_t function_id,
@@ -375,8 +358,18 @@ oe_result_t oe_call_host_function_by_table_id(
         args->result = OE_UNEXPECTED;
     }
 
-    /* Call the host function with this address */
-    OE_CHECK(oe_ocall(OE_OCALL_CALL_HOST_FUNCTION, (uint64_t)args, NULL));
+    /* Call the host function with these arguments. */
+    {
+        int sock = __ve_thread_sock_tls;
+        ve_func_t func = VE_FUNC_CALL_HOST_FUNCTION;
+        uint64_t retval = 0;
+
+        if (ve_call1(sock, func, &retval, (uint64_t)args) != 0)
+            OE_RAISE(OE_FAILURE);
+
+        if (retval != 0)
+            OE_RAISE(OE_FAILURE);
+    }
 
     /* Check the result */
     OE_CHECK(args->result);

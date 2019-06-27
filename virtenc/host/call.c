@@ -39,9 +39,9 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
             ve_host_free((void*)buf->arg1);
             return 0;
         }
-        case VE_FUNC_OCALL:
+        case VE_FUNC_CALL_HOST_FUNCTION:
         {
-            return ve_handle_call_ocall(fd, buf);
+            return ve_handle_call_host_function(fd, buf);
         }
         default:
         {

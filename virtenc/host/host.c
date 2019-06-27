@@ -352,24 +352,8 @@ done:
     return result;
 }
 
-int ve_handle_call_ocall(int fd, ve_call_buf_t* buf)
+int ve_handle_call_host_function(int fd, ve_call_buf_t* buf)
 {
-    uint16_t func = (uint16_t)buf->arg1;
-    uint64_t arg_in = buf->arg2;
-
-    OE_UNUSED(fd);
-
-    switch (func)
-    {
-        case OE_OCALL_CALL_HOST_FUNCTION:
-        {
-            buf->retval =
-                (uint64_t)_handle_call_host_function(arg_in, _enclave_tls);
-            return 0;
-        }
-        default:
-        {
-            return -1;
-        }
-    }
+    buf->retval = (uint64_t)_handle_call_host_function(buf->arg1, _enclave_tls);
+    return 0;
 }
