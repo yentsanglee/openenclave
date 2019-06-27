@@ -110,5 +110,7 @@ static:
 dynamic:
 	$(CC) -o main $(DYNAMIC_CFLAGS) $(DYNAMIC_LDFLAGS) $(SOURCES)
 
+CLEAN = test_t.c test_t.h test_args.h
+
 clean:
-	rm -rf main
+	rm -rf main $(CLEAN)

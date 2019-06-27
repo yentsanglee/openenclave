@@ -51,8 +51,10 @@ all: test_u.c
 test_u.c: ../common/test.edl
 	oeedger8r --untrusted ../common/test.edl
 
+CLEAN = test_u.c test_u.h test_args.h
+
 clean:
-	rm -rf main test_u.c
+	rm -rf main $(CLEAN)
 
 run:
 	@ ./main ../enclave/main
