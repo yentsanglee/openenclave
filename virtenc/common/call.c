@@ -82,6 +82,7 @@ done:
     return ret;
 }
 
+#if 0
 int ve_call_recv(int fd, uint64_t* retval)
 {
     int ret = -1;
@@ -146,6 +147,7 @@ int ve_call_recv(int fd, uint64_t* retval)
 done:
     return ret;
 }
+#endif
 
 int ve_call(
     int fd,

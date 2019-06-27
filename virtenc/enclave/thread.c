@@ -47,7 +47,7 @@ struct _ve_thread
     size_t stack_size;
     int ptid;
     int ctid;
-    int retval;
+    int __retval;
 };
 
 static uint64_t _round_up_to_multiple(uint64_t x, uint64_t m)
@@ -71,7 +71,7 @@ int ve_thread_set_retval(int retval)
     if (!(thread = ve_thread_self()))
         goto done;
 
-    thread->retval = retval;
+    thread->__retval = retval;
 
 done:
     return ret;
@@ -128,9 +128,9 @@ static int _thread_func(void* arg_)
     ve_free(arg_);
 
     /* Invoke the caller's thread routine. */
-    arg.thread->retval = arg.func(arg.arg);
+    arg.thread->__retval = arg.func(arg.arg);
 
-    return arg.thread->retval;
+    return arg.thread->__retval;
 }
 
 int ve_thread_create(
@@ -290,7 +290,12 @@ int ve_thread_join(ve_thread_t thread, int* retval)
     ve_free(thread->stack);
 
     if (retval)
-        *retval = thread->retval;
+        *retval = VE_WEXITSTATUS(status);
+
+#if 0
+    if (retval)
+        *retval = thread->__retval;
+#endif
 
     /* This frees the TLS and the tread_t struct. */
     ve_free(thread->tls);

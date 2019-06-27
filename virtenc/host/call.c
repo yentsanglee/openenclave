@@ -50,4 +50,69 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
     }
 }
 
+int ve_call_recv(int fd, uint64_t* retval)
+{
+    int ret = -1;
+
+    if (retval)
+        *retval = 0;
+
+    if (fd < 0)
+        goto done;
+
+    /* Receive response. */
+    for (;;)
+    {
+        ve_call_buf_t in;
+
+        if (ve_readn(fd, &in, sizeof(in)) != 0)
+            goto done;
+
+#if defined(TRACE_CALLS)
+        ve_print("HOST:%s\n", ve_func_name(in.func));
+#endif
+
+        switch (in.func)
+        {
+            case VE_FUNC_RET:
+            {
+                if (retval)
+                    *retval = in.retval;
+
+                ret = 0;
+                goto done;
+            }
+            case VE_FUNC_ERR:
+            {
+                goto done;
+            }
+            default:
+            {
+                ve_call_buf_t out;
+
+                ve_call_buf_clear(&out);
+
+                if (_handle_call(fd, &in) == 0)
+                {
+                    out.func = VE_FUNC_RET;
+                    out.retval = in.retval;
+                }
+                else
+                {
+                    out.func = VE_FUNC_ERR;
+                }
+
+                if (ve_writen(fd, &out, sizeof(out)) != 0)
+                    goto done;
+
+                /* Go back to waiting for return from original call. */
+                continue;
+            }
+        }
+    }
+
+done:
+    return ret;
+}
+
 #include "../common/call.c"

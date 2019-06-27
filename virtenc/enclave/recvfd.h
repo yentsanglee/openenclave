@@ -4,6 +4,7 @@
 #ifndef _VE_RECVFD_H
 #define _VE_RECVFD_H
 
+/* Receive a file descriptor from another process over the given socket. */
 int ve_recv_fd(int sock);
 
 #endif /* _VE_RECVFD_H */

@@ -30,6 +30,8 @@
 #define VE_CLONE_NEWNET 0x40000000
 #define VE_CLONE_IO 0x80000000
 
+#define VE_WEXITSTATUS(status) (((status)&0xff00) >> 8)
+
 VE_NO_RETURN void ve_exit(int status);
 
 VE_NO_RETURN void ve_abort(void);
@@ -45,6 +47,7 @@ int ve_waitpid(int pid, int* status, int options);
 /* Get the real base address of this process. */
 void* ve_get_baseaddr(void);
 
+/* Create a new process (used to implement thread creation). */
 int ve_clone(
     int (*fn)(void*),
     void* child_stack,

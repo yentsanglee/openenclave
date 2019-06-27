@@ -14,8 +14,7 @@ struct ve_iovec
     size_t iov_len;
 };
 
-#if defined(__x86_64__)
-
+#if defined(__linux__)
 struct ve_msghdr
 {
     void* msg_name;
@@ -27,7 +26,9 @@ struct ve_msghdr
     ve_socklen_t __pad2;
     int msg_flags;
 };
+#endif
 
+#if defined(__linux__)
 struct ve_cmsghdr
 {
     ve_socklen_t cmsg_len;
@@ -35,9 +36,6 @@ struct ve_cmsghdr
     int cmsg_level;
     int cmsg_type;
 };
-
-#else
-#error "unsupported"
 #endif
 
 ssize_t ve_recvmsg(int sockfd, struct ve_msghdr* msg, int flags);

@@ -6,6 +6,7 @@
 
 #include "common.h"
 
+/* Supported syscalls. */
 #if defined(__x86_64__)
 #define VE_SYS_read 0
 #define VE_SYS_write 1

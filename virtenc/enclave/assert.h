@@ -4,10 +4,6 @@
 #ifndef _VE_ENCLAVE_ASSERT_H
 #define _VE_ENCLAVE_ASSERT_H
 
-#define assert ve_assert
-
-#define __assert_fail __ve_assert_fail
-
 void __ve_assert_fail(
     const char* expr,
     const char* file,

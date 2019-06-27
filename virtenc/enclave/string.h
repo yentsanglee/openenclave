@@ -6,26 +6,25 @@
 
 #include "common.h"
 
-typedef struct _fs_intstr_buf
-{
-    char data[32];
-} ve_intstr_buf_t;
-
+/* Buffer for octal uint64_t strings. */
 typedef struct _ve_ostr_buf
 {
     char data[23];
 } ve_ostr_buf;
 
+/* Buffer for int64_t strings. */
 typedef struct _ve_dstr_buf
 {
     char data[21];
 } ve_dstr_buf;
 
+/* Buffer for uint64_t strings. */
 typedef struct _ve_ustr_buf
 {
     char data[21];
 } ve_ustr_buf;
 
+/* Buffer for hex uint64_t strings. */
 typedef struct _ve_xstr_buf
 {
     char data[17];

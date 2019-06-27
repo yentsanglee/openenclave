@@ -6,6 +6,10 @@
 
 #include "common.h"
 
+#define VE_STDIN_FILENO 0
+#define VE_STDOUT_FILENO 1
+#define VE_STDERR_FILENO 2
+
 #define VE_I_SENDFD (('S' << 8) | 17)
 #define VE_I_RECVFD (('S' << 8) | 14)
 
@@ -28,9 +32,5 @@ int ve_writen(int fd, const void* buf, size_t count);
 int ve_close(int fd);
 
 int ve_ioctl(int fd, unsigned long request, ...);
-
-#define VE_STDIN_FILENO 0
-#define VE_STDOUT_FILENO 1
-#define VE_STDERR_FILENO 2
 
 #endif /* _VE_IO_H */

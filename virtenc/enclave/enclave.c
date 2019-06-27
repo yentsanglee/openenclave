@@ -278,12 +278,13 @@ done:
     return result;
 }
 
-int ve_handle_call_ecall(int fd, ve_call_buf_t* buf)
+int ve_handle_call_ecall(int fd, ve_call_buf_t* buf, int* exit_status)
 {
     uint16_t func = (uint16_t)buf->arg1;
     uint64_t arg_in = buf->arg2;
 
     OE_UNUSED(fd);
+    OE_UNUSED(exit_status);
 
     switch (func)
     {

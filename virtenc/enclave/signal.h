@@ -6,6 +6,8 @@
 
 #include "common.h"
 
+#if defined(__GNUC__)
 #define VE_SIGCHLD 17
+#endif
 
 #endif /* _VE_SIGNAL_H */

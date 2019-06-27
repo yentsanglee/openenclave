@@ -3,12 +3,17 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
+    (A) Add ve_errno type and set in syscall functions.
+
     (A) Fix hang with thread's calling ve_exit().
 
-    (A) Add a stack guard page.
+    (A) Implement enclave settings macro.
 
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
+    (B) Add a stack guard page.
+
     (B) Block enclave re-entrancy.
 
-    (B) The type of func parameters should ve_func_t.
+    (B) Change type of func parameters to ve_func_t.
+

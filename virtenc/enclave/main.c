@@ -34,8 +34,6 @@ static __thread int _pid_tls;
 
 __thread int __ve_thread_sock;
 
-int ve_handle_calls(int fd);
-
 static bool _called_constructor = false;
 
 static ve_thread_t _threads[MAX_THREADS];
@@ -49,6 +47,7 @@ __attribute__((constructor)) static void constructor(void)
 static int _thread_func(void* arg)
 {
     int sock = (int)(int64_t)arg;
+    int exit_status;
 
     __ve_thread_sock = sock;
 
@@ -59,17 +58,18 @@ static int _thread_func(void* arg)
 
     __thread_value = 0;
 
-    if (ve_handle_calls(sock) != 0)
+    if ((exit_status = ve_handle_calls(sock)) == -1)
         ve_panic("_thread(): ve_handle_calls() failed\n");
 
-    return 0;
+    return exit_status;
 }
 
-int ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
+int ve_handle_call_add_thread(int fd, ve_call_buf_t* buf, int* exit_status)
 {
     int sock = -1;
 
     OE_UNUSED(fd);
+    OE_UNUSED(exit_status);
 
     buf->retval = (uint64_t)-1;
 
@@ -200,7 +200,7 @@ done:
     return ret;
 }
 
-int ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
+int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
 {
     OE_UNUSED(fd);
     OE_UNUSED(buf);
@@ -225,10 +225,13 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
     ve_close(VE_STDOUT_FILENO);
     ve_close(VE_STDERR_FILENO);
 
-    /* No response is expected. */
+#if 0
     ve_exit(0);
+#endif
 
-    return 0;
+    /* Terminate. */
+    *exit_status = 88;
+    return 1;
 }
 
 void test_malloc(int fd)
@@ -257,9 +260,11 @@ void test_malloc(int fd)
     }
 }
 
-int ve_handle_call_ping(int fd, ve_call_buf_t* buf)
+int ve_handle_call_ping(int fd, ve_call_buf_t* buf, int* exit_status)
 {
     uint64_t retval = 0;
+
+    OE_UNUSED(exit_status);
 
     ve_print("encl: ping: value=%lx [%u]\n", buf->arg1, ve_getpid());
 
@@ -275,11 +280,12 @@ int ve_handle_call_ping(int fd, ve_call_buf_t* buf)
     return 0;
 }
 
-int ve_handle_get_settings(int fd, ve_call_buf_t* buf)
+int ve_handle_get_settings(int fd, ve_call_buf_t* buf, int* exit_status)
 {
     ve_enclave_settings_t* settings = (ve_enclave_settings_t*)buf->arg1;
 
     OE_UNUSED(fd);
+    OE_UNUSED(exit_status);
 
     if (settings)
     {
@@ -295,7 +301,10 @@ int ve_handle_get_settings(int fd, ve_call_buf_t* buf)
     return 0;
 }
 
-int ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
+int ve_handle_call_terminate_thread(
+    int fd,
+    ve_call_buf_t* buf,
+    int* exit_status)
 {
     OE_UNUSED(fd);
     OE_UNUSED(buf);
@@ -303,34 +312,28 @@ int ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
     ve_close(fd);
 
     ve_print("encl: thread exit: tid=%d\n", ve_gettid());
-    ve_exit(99);
 
-    return 0;
+    *exit_status = 0;
+
+    return 1;
 }
 
 static int _main(void)
 {
+    int exit_status;
+
     if (!_called_constructor)
-    {
-        ve_puts("constructor not called");
-        ve_exit(1);
-    }
+        ve_panic("constructor not called");
 
     /* Wait here to be initialized and to receive the main socket. */
     if (ve_handle_init() != 0)
-    {
-        ve_puts("ve_handle_init() failed");
-        ve_exit(1);
-    }
+        ve_panic("ve_handle_init() failed");
 
     /* Handle messages over the main socket. */
-    if (ve_handle_calls(__ve_sock) != 0)
-    {
-        ve_puts("encl: ve_handle_calls() failed");
-        ve_exit(1);
-    }
+    if ((exit_status = ve_handle_calls(__ve_sock)) == -1)
+        ve_panic("encl: ve_handle_calls() failed");
 
-    return 0;
+    return exit_status;
 }
 
 #if defined(BUILD_STATIC)
