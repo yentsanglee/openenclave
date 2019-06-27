@@ -33,6 +33,8 @@ __thread uint64_t __thread_value = THREAD_VALUE_INITIALIZER;
 
 __thread int __ve_thread_pid;
 
+__thread int __ve_thread_sock;
+
 void ve_call_init_functions(void);
 
 void ve_call_fini_functions(void);
@@ -49,33 +51,20 @@ __attribute__((constructor)) static void constructor(void)
     _called_constructor = true;
 }
 
-typedef struct _thread_arg
+static int _thread_func(void* arg)
 {
-    int sock;
-} thread_arg_t;
+    int sock = (int)(int64_t)arg;
 
-static void _thread_destructor(void* arg_)
-{
-    thread_arg_t* arg = (thread_arg_t*)arg_;
-    // ve_close(arg->sock);
-    ve_free(arg);
-}
-
-static int _thread_func(void* arg_)
-{
-    thread_arg_t* arg = (thread_arg_t*)arg_;
+    __ve_thread_sock = sock;
 
     __ve_thread_pid = ve_getpid();
-
-    if (ve_thread_set_destructor(_thread_destructor, arg) != 0)
-        ve_panic("ve_thread_set_destructor() failed");
 
     if (__thread_value != THREAD_VALUE_INITIALIZER)
         ve_panic("__thread_value != THREAD_VALUE_INITIALIZER");
 
     __thread_value = 0;
 
-    if (ve_handle_calls(arg->sock) != 0)
+    if (ve_handle_calls(sock) != 0)
         ve_panic("_thread(): ve_handle_calls() failed\n");
 
     return 0;
@@ -96,13 +85,8 @@ int ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
     /* Create the new thread. */
     {
         size_t stack_size = (size_t)buf->arg2;
-        thread_arg_t* arg;
         ve_thread_t thread;
-
-        if (!(arg = ve_calloc(1, sizeof(thread_arg_t))))
-            goto done;
-
-        arg->sock = sock;
+        void* arg = (void*)(int64_t)sock;
 
         /* Create a new thread. */
         if (ve_thread_create(&thread, _thread_func, arg, stack_size) != 0)

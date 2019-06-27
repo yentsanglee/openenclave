@@ -28,6 +28,13 @@ typedef struct _thread_base
     uint64_t canary2;
 } thread_base_t;
 
+typedef struct _thread_arg
+{
+    struct _ve_thread* thread;
+    int (*func)(void* arg);
+    void* arg;
+} thread_arg_t;
+
 /* Represents a thread (the FS register points to instances of this) */
 struct _ve_thread
 {
@@ -39,9 +46,7 @@ struct _ve_thread
     size_t tls_size;
     void* stack;
     size_t stack_size;
-    void* __thread_arg;
-    void (*destructor)(void*);
-    void* destructor_arg;
+    thread_arg_t* thread_arg;
     int ptid;
     int ctid;
     int retval;
@@ -53,6 +58,16 @@ ve_thread_t ve_thread_self(void)
     const long ARCH_GET_FS = 0x1003;
     ve_syscall2(OE_SYS_arch_prctl, ARCH_GET_FS, (long)&thread);
     return thread;
+}
+
+void* ve_thread_arg(void)
+{
+    ve_thread_t self = ve_thread_self();
+
+    if (self)
+        return self->thread_arg->arg;
+
+    return NULL;
 }
 
 int ve_thread_set_retval(int retval)
@@ -112,13 +127,6 @@ static int _get_tls(
 done:
     return ret;
 }
-
-typedef struct _thread_arg
-{
-    struct _ve_thread* thread;
-    int (*func)(void* arg);
-    void* arg;
-} thread_arg_t;
 
 static int _thread_func(void* arg_)
 {
@@ -230,7 +238,7 @@ int ve_thread_create(
             thread_arg->thread = thread;
             thread_arg->func = func;
             thread_arg->arg = arg;
-            thread->__thread_arg = thread_arg;
+            thread->thread_arg = thread_arg;
         }
 
         if ((rval = ve_clone(
@@ -266,26 +274,6 @@ done:
     return ret;
 }
 
-int ve_thread_set_destructor(void (*destructor)(void*), void* arg)
-{
-    int ret = -1;
-    struct _ve_thread* thread;
-
-    if (!destructor)
-        goto done;
-
-    if (!(thread = ve_thread_self()))
-        goto done;
-
-    thread->destructor = destructor;
-    thread->destructor_arg = arg;
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
 int ve_thread_join(ve_thread_t thread, int* retval)
 {
     int ret = -1;
@@ -304,15 +292,11 @@ int ve_thread_join(ve_thread_t thread, int* retval)
     if (tid != thread->ptid)
         goto done;
 
-    /* Call any user installed destructor. */
-    if (thread->destructor)
-        (*thread->destructor)(thread->destructor_arg);
-
     /* Free the stack. */
     ve_free(thread->stack);
 
     /* Free the wrapper thread argument. */
-    ve_free(thread->__thread_arg);
+    ve_free(thread->thread_arg);
 
     if (retval)
         *retval = thread->retval;

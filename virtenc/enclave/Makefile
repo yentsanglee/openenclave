@@ -80,7 +80,6 @@ SOURCES += settings.c
 SOURCES += hexdump.c
 SOURCES += register.c
 SOURCES += thread.c
-SOURCES += ecall.c
 SOURCES += test_t.c
 SOURCES += enclave.c
 SOURCES += test.c
