@@ -46,7 +46,6 @@ struct _ve_thread
     size_t tls_size;
     void* stack;
     size_t stack_size;
-    thread_arg_t* thread_arg;
     int ptid;
     int ctid;
     int retval;
@@ -58,16 +57,6 @@ ve_thread_t ve_thread_self(void)
     const long ARCH_GET_FS = 0x1003;
     ve_syscall2(OE_SYS_arch_prctl, ARCH_GET_FS, (long)&thread);
     return thread;
-}
-
-void* ve_thread_arg(void)
-{
-    ve_thread_t self = ve_thread_self();
-
-    if (self)
-        return self->thread_arg->arg;
-
-    return NULL;
 }
 
 int ve_thread_set_retval(int retval)
@@ -130,12 +119,14 @@ done:
 
 static int _thread_func(void* arg_)
 {
-    thread_arg_t* arg = (thread_arg_t*)arg_;
+    thread_arg_t arg = *(thread_arg_t*)arg_;
+
+    ve_free(arg_);
 
     /* Invoke the caller's thread routine. */
-    arg->thread->retval = arg->func(arg->arg);
+    arg.thread->retval = arg.func(arg.arg);
 
-    return arg->thread->retval;
+    return arg.thread->retval;
 }
 
 int ve_thread_create(
@@ -238,7 +229,6 @@ int ve_thread_create(
             thread_arg->thread = thread;
             thread_arg->func = func;
             thread_arg->arg = arg;
-            thread->thread_arg = thread_arg;
         }
 
         if ((rval = ve_clone(
@@ -294,9 +284,6 @@ int ve_thread_join(ve_thread_t thread, int* retval)
 
     /* Free the stack. */
     ve_free(thread->stack);
-
-    /* Free the wrapper thread argument. */
-    ve_free(thread->thread_arg);
 
     if (retval)
         *retval = thread->retval;
