@@ -27,3 +27,9 @@ prereqs/sgx-driver/*.bin
 virtenc/enclave/main
 virtenc/host/main
 virtenc/enclave/main.static
+virtenc/enclave/test_args.h
+virtenc/enclave/test_t.c
+virtenc/enclave/test_t.h
+virtenc/host/test_args.h
+virtenc/host/test_u.c
+virtenc/host/test_u.h
