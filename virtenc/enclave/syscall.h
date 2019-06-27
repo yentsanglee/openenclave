@@ -18,7 +18,7 @@
 #define VE_SYS_recvmsg 47
 #define VE_SYS_exit 60
 #define VE_SYS_wait4 61
-#define VE_SYS_nanosleep 101
+#define VE_SYS_nanosleep 35
 #define VE_SYS_arch_prctl 158
 #define VE_SYS_gettid 186
 #define VE_SYS_futex 202
