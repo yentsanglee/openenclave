@@ -138,12 +138,15 @@ int main3(int argc, const char* argv[])
     if (retval != 12345)
         err("test1() failed: expected retval=12345");
 
-#if 0
-    char buf[100];
-    buf[0] = '\0';
-    if ((result = test1(enclave, &retval, "hello", buf)) != OE_OK)
-        err("test1() failed: %s\n", oe_result_str(result));
-#endif
+    {
+        char buf[100] = {'\0'};
+
+        if ((result = test1(enclave, &retval, "hello", buf)) != OE_OK)
+            err("test1() failed: %s\n", oe_result_str(result));
+
+        if (strcmp(buf, "hello") != 0)
+            err("test1() failed: expected 'hello' string");
+    }
 
     if ((result = oe_terminate_enclave(enclave)) != OE_OK)
         err("oe_terminate_enclave() failed: %s\n", oe_result_str(result));
