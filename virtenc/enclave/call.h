@@ -18,11 +18,14 @@ int ve_handle_call_terminate_thread(
     ve_call_buf_t* buf,
     int* exit_status);
 
-int ve_handle_call_ecall(int fd, ve_call_buf_t* buf, int* exit_status);
-
 int ve_handle_get_settings(int fd, ve_call_buf_t* buf, int* exit_status);
 
 int ve_handle_init_enclave(int fd, ve_call_buf_t* buf, int* exit_status);
+
+int ve_handle_call_enclave_function(
+    int fd,
+    ve_call_buf_t* buf,
+    int* exit_status);
 
 void* ve_call_malloc(int fd, size_t size);
 

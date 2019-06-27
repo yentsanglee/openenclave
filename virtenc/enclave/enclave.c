@@ -299,28 +299,6 @@ done:
     return result;
 }
 
-int ve_handle_call_ecall(int fd, ve_call_buf_t* buf, int* exit_status)
-{
-    uint16_t func = (uint16_t)buf->arg1;
-    uint64_t arg_in = buf->arg2;
-
-    OE_UNUSED(fd);
-    OE_UNUSED(exit_status);
-
-    switch (func)
-    {
-        case OE_ECALL_CALL_ENCLAVE_FUNCTION:
-        {
-            buf->retval = (uint64_t)_handle_call_enclave_function(arg_in);
-            return 0;
-        }
-        default:
-        {
-            return -1;
-        }
-    }
-}
-
 int ve_handle_init_enclave(int fd, ve_call_buf_t* buf, int* exit_status)
 {
     OE_UNUSED(fd);
@@ -331,6 +309,18 @@ int ve_handle_init_enclave(int fd, ve_call_buf_t* buf, int* exit_status)
     _enclave = (oe_enclave_t*)buf->arg1;
     buf->retval = 0;
 
+    return 0;
+}
+
+int ve_handle_call_enclave_function(
+    int fd,
+    ve_call_buf_t* buf,
+    int* exit_status)
+{
+    OE_UNUSED(fd);
+    OE_UNUSED(exit_status);
+
+    buf->retval = (uint64_t)_handle_call_enclave_function(buf->arg1);
     return 0;
 }
 

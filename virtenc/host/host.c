@@ -211,33 +211,29 @@ oe_result_t oe_call_enclave_function_by_table_id(
         args->result = OE_UNEXPECTED;
     }
 
-#if 1
     /* Test call. */
     {
         if (ve_enclave_run_xor_test(ve) != 0)
             OE_RAISE(OE_FAILURE);
-        if (ve_enclave_run_xor_test(ve) != 0)
-            OE_RAISE(OE_FAILURE);
-        if (ve_enclave_run_xor_test(ve) != 0)
-            OE_RAISE(OE_FAILURE);
-        if (ve_enclave_run_xor_test(ve) != 0)
-            OE_RAISE(OE_FAILURE);
-        if (ve_enclave_run_xor_test(ve) != 0)
-            OE_RAISE(OE_FAILURE);
-        if (ve_enclave_run_xor_test(ve) != 0)
-            OE_RAISE(OE_FAILURE);
-        if (ve_enclave_run_xor_test(ve) != 0)
-            OE_RAISE(OE_FAILURE);
     }
-#endif
 
-    /* Perform the ECALL */
+    /* Call into the enclave. */
     {
-        uint64_t arg_out = 0;
+        ve_enclave_t* ve = enclave->venclave;
+        const ve_func_t func = VE_FUNC_CALL_ENCLAVE_FUNCTION;
+        uint64_t retval = 0;
 
-        OE_CHECK(oe_ecall(
-            enclave, OE_ECALL_CALL_ENCLAVE_FUNCTION, (uint64_t)args, &arg_out));
-        OE_CHECK((oe_result_t)arg_out);
+        _enclave_tls = enclave;
+
+        if (ve_enclave_call1(ve, func, &retval, (uint64_t)args) != 0)
+        {
+            _enclave_tls = NULL;
+            OE_RAISE(OE_FAILURE);
+        }
+
+        _enclave_tls = NULL;
+
+        OE_CHECK((oe_result_t)retval);
     }
 
     /* Check the result */

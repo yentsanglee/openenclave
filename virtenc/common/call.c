@@ -41,6 +41,8 @@ const char* ve_func_name(ve_func_t func)
             return "OCALL";
         case VE_FUNC_INIT_ENCLAVE:
             return "INIT_ENCLAVE";
+        case VE_FUNC_CALL_ENCLAVE_FUNCTION:
+            return "VE_FUNC_CALL_ENCLAVE_FUNCTION";
     }
 
     return "UNKNOWN";
