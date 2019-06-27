@@ -6,5 +6,5 @@
 ve_enclave_settings_t __ve_enclave_settings = {
     .num_heap_pages = 1024,
     .num_stack_pages = 256,
-    .num_tcs = 8,
+    .num_tcs = 2,
 };

@@ -27,6 +27,7 @@ typedef enum _ve_func
     VE_FUNC_XOR,
     VE_FUNC_ECALL,
     VE_FUNC_OCALL,
+    VE_FUNC_INIT_ENCLAVE,
 } ve_func_t;
 
 typedef struct _ve_call_buf

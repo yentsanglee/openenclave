@@ -26,4 +26,7 @@ extern size_t __ve_tbss_align;
 /* Holds relative virtual address of this variable itself (from the host). */
 extern uint64_t __ve_self;
 
+/* Socket for the current thread. */
+extern __thread int __ve_thread_sock_tls;
+
 #endif /* _VE_ENCLAVE_GLOBALS_H */

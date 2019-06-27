@@ -102,6 +102,19 @@ oe_result_t oe_create_enclave(
         enclave->venclave = venclave;
     }
 
+    /* Initialize the encalve */
+    {
+        ve_enclave_t* ve = enclave->venclave;
+        const ve_func_t func = VE_FUNC_INIT_ENCLAVE;
+        uint64_t retval;
+
+        if (ve_enclave_call1(ve, func, &retval, (long)enclave) != 0)
+            OE_RAISE(OE_FAILURE);
+
+        if (retval != 0)
+            OE_RAISE(OE_FAILURE);
+    }
+
     *enclave_out = enclave;
     enclave = NULL;
 

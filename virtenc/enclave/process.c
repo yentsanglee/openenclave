@@ -18,9 +18,6 @@ VE_NO_RETURN void ve_abort(void)
 {
     *((volatile int*)0) = 0;
     ve_exit(127);
-
-    for (;;)
-        ;
 }
 
 VE_NO_RETURN void ve_panic(const char* msg)

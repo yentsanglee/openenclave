@@ -30,8 +30,6 @@ __thread uint64_t _thread_value_tls = THREAD_VALUE;
 
 static __thread int _pid_tls;
 
-__thread int __ve_thread_sock_tls;
-
 static bool _called_constructor = false;
 
 static ve_thread_t _threads[MAX_THREADS];

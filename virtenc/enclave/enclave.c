@@ -6,20 +6,22 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/raise.h>
+#include "assert.h"
 #include "call.h"
 #include "globals.h"
 #include "hexdump.h"
 #include "lock.h"
 #include "malloc.h"
 #include "print.h"
+#include "process.h"
 #include "string.h"
 #include "thread.h"
 #include "trace.h"
 
-extern __thread int __ve_thread_sock_tls;
-
 extern const oe_ecall_func_t __oe_ecalls_table[];
 extern const size_t __oe_ecalls_table_size;
+
+static oe_enclave_t* _enclave;
 
 typedef struct _ecall_table
 {
@@ -29,6 +31,25 @@ typedef struct _ecall_table
 
 static ecall_table_t _ecall_tables[OE_MAX_ECALL_TABLES];
 static ve_lock_t _ecall_tables_lock;
+
+void oe_abort(void)
+{
+    ve_abort();
+}
+
+void __oe_assert_fail(
+    const char* expr,
+    const char* file,
+    int line,
+    const char* func)
+{
+    __ve_assert_fail(expr, file, line, func);
+}
+
+oe_enclave_t* oe_get_enclave(void)
+{
+    return _enclave;
+}
 
 void* oe_host_malloc(size_t size)
 {
@@ -298,6 +319,19 @@ int ve_handle_call_ecall(int fd, ve_call_buf_t* buf, int* exit_status)
             return -1;
         }
     }
+}
+
+int ve_handle_init_enclave(int fd, ve_call_buf_t* buf, int* exit_status)
+{
+    OE_UNUSED(fd);
+    OE_UNUSED(exit_status);
+
+    ve_print("ve_handle_init_enclave=%lx\n", buf->arg1);
+
+    _enclave = (oe_enclave_t*)buf->arg1;
+    buf->retval = 0;
+
+    return 0;
 }
 
 oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)

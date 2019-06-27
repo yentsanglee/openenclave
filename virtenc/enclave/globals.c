@@ -16,3 +16,5 @@ size_t __ve_tbss_size;
 size_t __ve_tbss_align;
 
 uint64_t __ve_self;
+
+__thread int __ve_thread_sock_tls;

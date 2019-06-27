@@ -41,6 +41,10 @@ static int _handle_call(int fd, ve_call_buf_t* buf, int* exit_status)
         {
             return ve_handle_call_ecall(fd, buf, exit_status);
         }
+        case VE_FUNC_INIT_ENCLAVE:
+        {
+            return ve_handle_init_enclave(fd, buf, exit_status);
+        }
         case VE_FUNC_XOR:
         {
             uint64_t x1 = buf->arg1;

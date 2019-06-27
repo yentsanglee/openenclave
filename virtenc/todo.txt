@@ -3,17 +3,19 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-    (A) Add ve_errno type and set in syscall functions.
-
-    (A) Fix hang with thread's calling ve_exit().
+    (A) Fix hang when threads call ve_exit (hanging in ve_join).
 
     (A) Implement enclave settings macro.
+
+    (A) Call atexit handlers on termination.
+
+    (A) Call fini functions on termination.
 
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
     (B) Add a stack guard page.
 
-    (B) Block enclave re-entrancy.
-
     (B) Change type of func parameters to ve_func_t.
+
+    (B) Add ve_errno type and set in syscall functions.
 
