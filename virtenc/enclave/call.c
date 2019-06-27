@@ -10,8 +10,6 @@
 #include "string.h"
 #include "trace.h"
 
-extern int __ve_pid;
-
 static int _handle_call(int fd, ve_call_buf_t* buf, int* exit_status)
 {
     if (exit_status)

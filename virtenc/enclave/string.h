@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _VE_STRING_H
-#define _VE_STRING_H
+#ifndef _VE_ENCLAVE_STRING_H
+#define _VE_ENCLAVE_STRING_H
 
 #include "common.h"
 
@@ -52,4 +52,4 @@ void* ve_memcpy(void* dest, const void* src, size_t n);
 
 int ve_memcmp(const void* s1, const void* s2, size_t n);
 
-#endif /* _VE_STRING_H */
+#endif /* _VE_ENCLAVE_STRING_H */

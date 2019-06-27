@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _VE_PROCESS_H
-#define _VE_PROCESS_H
+#ifndef _VE_ENCLAVE_PROCESS_H
+#define _VE_ENCLAVE_PROCESS_H
 
 #include "common.h"
 
@@ -61,4 +61,4 @@ void ve_call_init_functions(void);
 
 void ve_call_fini_functions(void);
 
-#endif /* _VE_PROCESS_H */
+#endif /* _VE_ENCLAVE_PROCESS_H */

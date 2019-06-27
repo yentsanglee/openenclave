@@ -9,12 +9,12 @@
 #define ARCH_GET_FS 0x1003
 #define ARCH_GET_GS 0x1004
 
-void ve_set_fs_register_base(const void* ptr)
+void ve_set_fs(const void* ptr)
 {
     ve_syscall2(VE_SYS_arch_prctl, ARCH_SET_FS, (long)ptr);
 }
 
-void* ve_get_fs_register_base(void)
+void* ve_get_fs(void)
 {
     void* ptr = NULL;
     ve_syscall2(VE_SYS_arch_prctl, ARCH_GET_FS, (long)&ptr);

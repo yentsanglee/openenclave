@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _VE_SYSCALL_H
-#define _VE_SYSCALL_H
+#ifndef _VE_ENCLAVE_SYSCALL_H
+#define _VE_ENCLAVE_SYSCALL_H
 
 #include "common.h"
 
@@ -38,4 +38,4 @@ long ve_syscall5(long n, long x1, long x2, long x3, long x4, long x5);
 
 long ve_syscall6(long n, long x1, long x2, long x3, long x4, long x5, long x6);
 
-#endif /* _VE_SYSCALL_H */
+#endif /* _VE_ENCLAVE_SYSCALL_H */

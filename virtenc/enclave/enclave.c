@@ -16,7 +16,7 @@
 #include "thread.h"
 #include "trace.h"
 
-extern __thread int __ve_thread_sock;
+extern __thread int __ve_thread_sock_tls;
 
 extern const oe_ecall_func_t __oe_ecalls_table[];
 extern const size_t __oe_ecalls_table_size;
@@ -32,22 +32,22 @@ static ve_lock_t _ecall_tables_lock;
 
 void* oe_host_malloc(size_t size)
 {
-    return ve_call_malloc(__ve_thread_sock, size);
+    return ve_call_malloc(__ve_thread_sock_tls, size);
 }
 
 void* oe_host_calloc(size_t nmemb, size_t size)
 {
-    return ve_call_calloc(__ve_thread_sock, nmemb, size);
+    return ve_call_calloc(__ve_thread_sock_tls, nmemb, size);
 }
 
 void* oe_host_realloc(void* ptr, size_t size)
 {
-    return ve_call_realloc(__ve_thread_sock, ptr, size);
+    return ve_call_realloc(__ve_thread_sock_tls, ptr, size);
 }
 
 void oe_host_free(void* ptr)
 {
-    ve_call_free(__ve_thread_sock, ptr);
+    ve_call_free(__ve_thread_sock_tls, ptr);
 }
 
 // Function used by oeedger8r for allocating ocall buffers.
@@ -303,7 +303,7 @@ int ve_handle_call_ecall(int fd, ve_call_buf_t* buf, int* exit_status)
 oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)
 {
     oe_result_t result = OE_UNEXPECTED;
-    int sock = __ve_thread_sock;
+    int sock = __ve_thread_sock_tls;
 
     if (sock < 0)
         OE_RAISE(OE_INVALID_PARAMETER);

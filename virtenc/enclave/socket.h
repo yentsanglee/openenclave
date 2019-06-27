@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _VE_SOCKET_H
-#define _VE_SOCKET_H
+#ifndef _VE_ENCLAVE_SOCKET_H
+#define _VE_ENCLAVE_SOCKET_H
 
 #include "common.h"
 
@@ -40,4 +40,4 @@ struct ve_cmsghdr
 
 ssize_t ve_recvmsg(int sockfd, struct ve_msghdr* msg, int flags);
 
-#endif /* _VE_SOCKET_H */
+#endif /* _VE_ENCLAVE_SOCKET_H */

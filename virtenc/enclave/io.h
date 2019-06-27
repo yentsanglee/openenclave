@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _VE_IO_H
-#define _VE_IO_H
+#ifndef _VE_ENCLAVE_IO_H
+#define _VE_ENCLAVE_IO_H
 
 #include "common.h"
 
@@ -33,4 +33,4 @@ int ve_close(int fd);
 
 int ve_ioctl(int fd, unsigned long request, ...);
 
-#endif /* _VE_IO_H */
+#endif /* _VE_ENCLAVE_IO_H */

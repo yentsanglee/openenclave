@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _VE_PRINT_H
-#define _VE_PRINT_H
+#ifndef _VE_ENCLAVE_PRINT_H
+#define _VE_ENCLAVE_PRINT_H
 
 #include "common.h"
 #include "lock.h"
@@ -20,4 +20,4 @@ void ve_vprint(const char* format, ve_va_list ap);
 
 extern ve_lock_t __ve_print_lock;
 
-#endif /* _VE_PRINT_H */
+#endif /* _VE_ENCLAVE_PRINT_H */

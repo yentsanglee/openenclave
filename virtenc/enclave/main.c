@@ -24,15 +24,13 @@
 
 #define MAX_THREADS 1024
 
-#define VE_PAGE_SIZE 4096
+#define THREAD_VALUE 0xaabbccddeeff1122
 
-#define THREAD_VALUE_INITIALIZER 0xaabbccddeeff1122
-
-__thread uint64_t __thread_value = THREAD_VALUE_INITIALIZER;
+__thread uint64_t _thread_value_tls = THREAD_VALUE;
 
 static __thread int _pid_tls;
 
-__thread int __ve_thread_sock;
+__thread int __ve_thread_sock_tls;
 
 static bool _called_constructor = false;
 
@@ -49,14 +47,14 @@ static int _thread_func(void* arg)
     int sock = (int)(int64_t)arg;
     int exit_status;
 
-    __ve_thread_sock = sock;
+    __ve_thread_sock_tls = sock;
 
     _pid_tls = ve_getpid();
 
-    if (__thread_value != THREAD_VALUE_INITIALIZER)
-        ve_panic("__thread_value != THREAD_VALUE_INITIALIZER");
+    if (_thread_value_tls != THREAD_VALUE)
+        ve_panic("_thread_value_tls != THREAD_VALUE");
 
-    __thread_value = 0;
+    _thread_value_tls = 0;
 
     if ((exit_status = ve_handle_calls(sock)) == -1)
         ve_panic("_thread(): ve_handle_calls() failed\n");
@@ -150,7 +148,7 @@ done:
     return ret;
 }
 
-int ve_handle_init(void)
+static int _handle_init(void)
 {
     int ret = -1;
     ve_init_arg_t arg;
@@ -326,7 +324,7 @@ static int _main(void)
         ve_panic("constructor not called");
 
     /* Wait here to be initialized and to receive the main socket. */
-    if (ve_handle_init() != 0)
+    if (_handle_init() != 0)
         ve_panic("ve_handle_init() failed");
 
     /* Handle messages over the main socket. */
@@ -347,7 +345,6 @@ void _start(void)
 #else
 int main(void)
 {
-    ve_exit(_main());
-    return 0;
+    return _main();
 }
 #endif
