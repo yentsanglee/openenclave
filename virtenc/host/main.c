@@ -131,17 +131,22 @@ int main3(int argc, const char* argv[])
         err("oe_create_enclave() failed: %s\n", oe_result_str(result));
     }
 
-    int retval = 99;
-    if ((result = test0(enclave, &retval)) != OE_OK)
-        err("test1() failed: %s\n", oe_result_str(result));
+    /* call test_ecall() */
+    {
+        uint64_t retval = 0;
 
-    if (retval != 12345)
-        err("test1() failed: expected retval=12345");
+        if ((result = test_ecall(enclave, &retval, 12345)) != OE_OK)
+            err("test1() failed: %s\n", oe_result_str(result));
 
-    printf("retval=%d\n", retval);
+        if (retval != 12345)
+            err("test1() failed: expected retval=12345");
+
+        printf("retval=%ld\n", retval);
+    }
 
     {
         char buf[100] = {'\0'};
+        int retval;
 
         if ((result = test1(enclave, &retval, "hello", buf)) != OE_OK)
             err("test1() failed: %s\n", oe_result_str(result));

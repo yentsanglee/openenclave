@@ -7,16 +7,16 @@
 #include "string.h"
 #include "test_t.h"
 
-int test0(void)
+uint64_t test_ecall(uint64_t x)
 {
     uint64_t retval;
 
-    if (test_ocall(&retval, 12345) != OE_OK)
+    if (test_ocall(&retval, x) != OE_OK)
         ve_panic("test_ocall() failed");
 
     ve_print("retval=%lu\n", retval);
 
-    return (int)retval;
+    return retval;
 }
 
 int test1(char* in, char out[100])

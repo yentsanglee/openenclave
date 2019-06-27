@@ -4,7 +4,8 @@
 enclave {
     trusted {
 
-        public int test0();
+        public uint64_t test_ecall(uint64_t x);
+
         public int test1([string, in] char* in, [out] char out[100]);
     };
 

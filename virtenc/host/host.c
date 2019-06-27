@@ -250,9 +250,6 @@ oe_result_t oe_call_enclave_function(
     size_t output_buffer_size,
     size_t* output_bytes_written)
 {
-    if (output_buffer && output_buffer_size)
-        memset(output_buffer, 0, output_buffer_size);
-
     return oe_call_enclave_function_by_table_id(
         enclave,
         OE_UINT64_MAX,
