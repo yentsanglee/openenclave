@@ -3,7 +3,8 @@
 
 #include "globals.h"
 
-globals_t globals;
+const void* __ve_shmaddr;
+size_t __ve_shmsize;
 
 int g_sock = -1;
 

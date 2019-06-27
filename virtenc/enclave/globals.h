@@ -7,14 +7,8 @@
 #include "common.h"
 #include "thread.h"
 
-typedef struct _globals
-{
-    /* Shared memory between host and enclave. */
-    const void* shmaddr;
-    size_t shmsize;
-} globals_t;
-
-extern globals_t globals;
+extern const void* __ve_shmaddr;
+extern size_t __ve_shmsize;
 
 /* Socket used to communicate with the host process. */
 extern int g_sock;

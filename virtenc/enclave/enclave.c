@@ -94,8 +94,8 @@ bool oe_is_within_enclave(const void* ptr, size_t size)
 {
     const uint64_t min = (uint64_t)ptr;
     const uint64_t max = (uint64_t)ptr + size;
-    const uint64_t lo = (uint64_t)globals.shmaddr;
-    const uint64_t hi = (uint64_t)globals.shmaddr + globals.shmsize;
+    const uint64_t lo = (uint64_t)__ve_shmaddr;
+    const uint64_t hi = (uint64_t)__ve_shmaddr + __ve_shmsize;
 
     if (min >= lo && min < hi)
         return false;
@@ -110,8 +110,8 @@ bool oe_is_outside_enclave(const void* ptr, size_t size)
 {
     const uint64_t min = (uint64_t)ptr;
     const uint64_t max = (uint64_t)ptr + size;
-    const uint64_t lo = (uint64_t)globals.shmaddr;
-    const uint64_t hi = (uint64_t)globals.shmaddr + globals.shmsize;
+    const uint64_t lo = (uint64_t)__ve_shmaddr;
+    const uint64_t hi = (uint64_t)__ve_shmaddr + __ve_shmsize;
 
     if (min < lo || min >= hi)
         return false;
