@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 #include "thread.h"
-#include <openenclave/internal/utils.h>
 #include "globals.h"
 #include "hexdump.h"
 #include "malloc.h"
@@ -51,11 +50,16 @@ struct _ve_thread
     int retval;
 };
 
+static uint64_t _round_up_to_multiple(uint64_t x, uint64_t m)
+{
+    return (x + m - 1) / m * m;
+}
+
 ve_thread_t ve_thread_self(void)
 {
     struct _ve_thread* thread = NULL;
     const long ARCH_GET_FS = 0x1003;
-    ve_syscall2(OE_SYS_arch_prctl, ARCH_GET_FS, (long)&thread);
+    ve_syscall2(VE_SYS_arch_prctl, ARCH_GET_FS, (long)&thread);
     return thread;
 }
 
@@ -105,8 +109,8 @@ static int _get_tls(
         goto done;
 
     p = (const uint8_t*)thread;
-    p -= oe_round_up_to_multiple(g_tdata_size, align);
-    p -= oe_round_up_to_multiple(g_tbss_size, align);
+    p -= _round_up_to_multiple(g_tdata_size, align);
+    p -= _round_up_to_multiple(g_tbss_size, align);
 
     *tls = p;
     *tls_size = (size_t)((const uint8_t*)thread - p);

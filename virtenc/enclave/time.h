@@ -4,10 +4,15 @@
 #ifndef _VE_TIME_H
 #define _VE_TIME_H
 
-#include <openenclave/corelibc/time.h>
 #include "common.h"
 
-int ve_nanosleep(const struct oe_timespec* req, struct oe_timespec* rem);
+struct ve_timespec
+{
+    time_t tv_sec;
+    long tv_nsec;
+};
+
+int ve_nanosleep(const struct ve_timespec* req, struct ve_timespec* rem);
 
 unsigned ve_sleep(unsigned int seconds);
 

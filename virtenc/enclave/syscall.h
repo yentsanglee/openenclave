@@ -4,8 +4,24 @@
 #ifndef _VE_SYSCALL_H
 #define _VE_SYSCALL_H
 
-#include <openenclave/internal/syscall/sys/syscall.h>
 #include "common.h"
+
+#if defined(__x86_64__)
+#define VE_SYS_read 0
+#define VE_SYS_write 1
+#define VE_SYS_close 3
+#define VE_SYS_brk 12
+#define VE_SYS_ioctl 16
+#define VE_SYS_shmat 30
+#define VE_SYS_getpid 39
+#define VE_SYS_recvmsg 47
+#define VE_SYS_exit 60
+#define VE_SYS_wait4 61
+#define VE_SYS_nanosleep 101
+#define VE_SYS_arch_prctl 158
+#define VE_SYS_gettid 186
+#define VE_SYS_futex 202
+#endif
 
 long ve_syscall0(long n);
 

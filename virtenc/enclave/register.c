@@ -11,12 +11,12 @@
 
 void ve_set_fs_register_base(const void* ptr)
 {
-    ve_syscall2(OE_SYS_arch_prctl, ARCH_SET_FS, (long)ptr);
+    ve_syscall2(VE_SYS_arch_prctl, ARCH_SET_FS, (long)ptr);
 }
 
 void* ve_get_fs_register_base(void)
 {
     void* ptr = NULL;
-    ve_syscall2(OE_SYS_arch_prctl, ARCH_GET_FS, (long)&ptr);
+    ve_syscall2(VE_SYS_arch_prctl, ARCH_GET_FS, (long)&ptr);
     return ptr;
 }

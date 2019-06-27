@@ -4,6 +4,6 @@
 #ifndef _VE_ENCLAVE_STDLIB_H
 #define _VE_ENCLAVE_STDLIB_H
 
-#include <openenclave/bits/types.h>
+#include "../common.h"
 
 #endif /* _VE_ENCLAVE_STDLIB_H */

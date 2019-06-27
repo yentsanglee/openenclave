@@ -12,7 +12,7 @@ __attribute__((__noreturn__)) void ve_exit(int status)
     ve_thread_set_retval(status);
 
     for (;;)
-        ve_syscall1(OE_SYS_exit, status);
+        ve_syscall1(VE_SYS_exit, status);
 }
 
 __attribute__((__noreturn__)) void ve_abort(void)
@@ -32,17 +32,17 @@ __attribute__((__noreturn__)) void ve_panic(const char* msg)
 
 int ve_gettid(void)
 {
-    return (int)ve_syscall0(OE_SYS_gettid);
+    return (int)ve_syscall0(VE_SYS_gettid);
 }
 
 int ve_getpid(void)
 {
-    return (int)ve_syscall0(OE_SYS_getpid);
+    return (int)ve_syscall0(VE_SYS_getpid);
 }
 
 int ve_waitpid(int pid, int* status, int options)
 {
-    return (int)ve_syscall4(OE_SYS_wait4, pid, (long)status, options, 0);
+    return (int)ve_syscall4(VE_SYS_wait4, pid, (long)status, options, 0);
 }
 
 void* ve_get_baseaddr(void)

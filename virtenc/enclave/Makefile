@@ -83,7 +83,6 @@ SOURCES += enclave.c
 SOURCES += test.c
 SOURCES += safecrt.c
 SOURCES += -DOE_BUILD_ENCLAVE
-SOURCES += log.c
 SOURCES += result.c
 SOURCES += memmove.c
 

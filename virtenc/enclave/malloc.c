@@ -2,8 +2,7 @@
 // Licensed under the MIT License.
 
 #include "malloc.h"
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
+#include "common.h"
 #include "print.h"
 #include "process.h"
 #include "sbrk.h"

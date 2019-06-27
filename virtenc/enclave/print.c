@@ -2,7 +2,8 @@
 // Licensed under the MIT License.
 
 #include "print.h"
-#include <openenclave/internal/syscall/unistd.h>
+#include "common.h"
+#include "io.h"
 #include "lock.h"
 #include "process.h"
 #include "string.h"
@@ -12,21 +13,21 @@ ve_lock_t __ve_print_lock;
 
 void ve_put(const char* s)
 {
-    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
+    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
 }
 
 void ve_puts(const char* s)
 {
     ve_lock(&__ve_print_lock);
     const char nl = '\n';
-    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
-    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)&nl, 1);
+    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
+    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)&nl, 1);
     ve_unlock(&__ve_print_lock);
 }
 
 void ve_putc(char c)
 {
-    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)&c, 1);
+    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)&c, 1);
 }
 
 typedef enum type
@@ -175,7 +176,7 @@ static const char* _parse(const char* p, type_t* type)
 
 static void _put_c(char c)
 {
-    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)&c, 1);
+    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)&c, 1);
 }
 
 static void _put_s(const char* s)
@@ -183,7 +184,7 @@ static void _put_s(const char* s)
     if (!s)
         s = "(null)";
 
-    ve_syscall3(OE_SYS_write, OE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
+    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
 }
 
 static void _put_o(uint64_t x)
@@ -210,7 +211,7 @@ static void _put_x(uint64_t x)
     ve_put(ve_xstr(&buf, x, NULL));
 }
 
-void ve_vprint(const char* format, oe_va_list ap)
+void ve_vprint(const char* format, ve_va_list ap)
 {
     ve_lock(&__ve_print_lock);
 
@@ -229,28 +230,28 @@ void ve_vprint(const char* format, oe_va_list ap)
                 case TYPE_none:
                 {
                     /* Skip unknown argument type. */
-                    oe_va_arg(ap, uint64_t);
+                    ve_va_arg(ap, uint64_t);
                     break;
                 }
                 case TYPE_s:
                 {
-                    _put_s(oe_va_arg(ap, char*));
+                    _put_s(ve_va_arg(ap, char*));
                     break;
                 }
                 case TYPE_c:
                 {
-                    _put_c((char)oe_va_arg(ap, int));
+                    _put_c((char)ve_va_arg(ap, int));
                     break;
                 }
                 case TYPE_o:
                 {
-                    _put_o(oe_va_arg(ap, unsigned int));
+                    _put_o(ve_va_arg(ap, unsigned int));
                     break;
                 }
                 case TYPE_d:
                 case TYPE_i:
                 {
-                    _put_d(oe_va_arg(ap, int));
+                    _put_d(ve_va_arg(ap, int));
                     break;
                 }
                 case TYPE_ld:
@@ -258,46 +259,46 @@ void ve_vprint(const char* format, oe_va_list ap)
                 case TYPE_lld:
                 case TYPE_lli:
                 {
-                    _put_d(oe_va_arg(ap, int64_t));
+                    _put_d(ve_va_arg(ap, int64_t));
                     break;
                 }
                 case TYPE_u:
                 {
-                    _put_u(oe_va_arg(ap, unsigned int));
+                    _put_u(ve_va_arg(ap, unsigned int));
                     break;
                 }
                 case TYPE_lu:
                 case TYPE_llu:
                 {
-                    _put_u(oe_va_arg(ap, uint64_t));
+                    _put_u(ve_va_arg(ap, uint64_t));
                     break;
                 }
                 case TYPE_x:
                 case TYPE_X:
                 {
-                    _put_x(oe_va_arg(ap, unsigned int));
+                    _put_x(ve_va_arg(ap, unsigned int));
                     break;
                 }
                 case TYPE_lx:
                 case TYPE_llx:
                 {
-                    _put_x(oe_va_arg(ap, uint64_t));
+                    _put_x(ve_va_arg(ap, uint64_t));
                     break;
                 }
                 case TYPE_zd:
                 case TYPE_zi:
                 {
-                    _put_d(oe_va_arg(ap, int64_t));
+                    _put_d(ve_va_arg(ap, int64_t));
                     break;
                 }
                 case TYPE_zu:
                 {
-                    _put_u(oe_va_arg(ap, uint64_t));
+                    _put_u(ve_va_arg(ap, uint64_t));
                     break;
                 }
                 case TYPE_p:
                 {
-                    _put_x(oe_va_arg(ap, uint64_t));
+                    _put_x(ve_va_arg(ap, uint64_t));
                     break;
                 }
             }
@@ -313,9 +314,9 @@ void ve_vprint(const char* format, oe_va_list ap)
 
 void ve_print(const char* format, ...)
 {
-    oe_va_list ap;
+    ve_va_list ap;
 
-    oe_va_start(ap, format);
+    ve_va_start(ap, format);
     ve_vprint(format, ap);
-    oe_va_end(ap);
+    ve_va_end(ap);
 }

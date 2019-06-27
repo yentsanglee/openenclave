@@ -1,11 +1,9 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/internal/syscall/unistd.h>
-#include <openenclave/internal/utils.h>
 #include "assert.h"
 #include "call.h"
+#include "common.h"
 #include "globals.h"
 #include "hexdump.h"
 #include "io.h"
@@ -165,7 +163,7 @@ int ve_handle_init(void)
 
     /* Receive request from standard input. */
     {
-        if (ve_readn(OE_STDIN_FILENO, &arg, sizeof(arg)) != 0)
+        if (ve_readn(VE_STDIN_FILENO, &arg, sizeof(arg)) != 0)
             goto done;
 
         if (arg.magic != VE_INIT_ARG_MAGIC)
@@ -227,9 +225,9 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
     ve_shmdt(globals.shmaddr);
 
     /* Close the standard descriptors. */
-    ve_close(OE_STDIN_FILENO);
-    ve_close(OE_STDOUT_FILENO);
-    ve_close(OE_STDERR_FILENO);
+    ve_close(VE_STDIN_FILENO);
+    ve_close(VE_STDOUT_FILENO);
+    ve_close(VE_STDERR_FILENO);
 
     /* No response is expected. */
     ve_exit(0);

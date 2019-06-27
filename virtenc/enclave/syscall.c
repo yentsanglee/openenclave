@@ -2,9 +2,7 @@
 // Licensed under the MIT License.
 
 #include "syscall.h"
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
-#include <openenclave/corelibc/stdarg.h>
+#include "common.h"
 
 long ve_syscall0(long n)
 {

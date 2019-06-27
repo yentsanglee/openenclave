@@ -29,4 +29,8 @@ int ve_close(int fd);
 
 int ve_ioctl(int fd, unsigned long request, ...);
 
+#define VE_STDIN_FILENO 0
+#define VE_STDOUT_FILENO 1
+#define VE_STDERR_FILENO 2
+
 #endif /* _VE_IO_H */

@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include "../common/call.h"
-#include <openenclave/internal/calls.h>
 #include "call.h"
+#include "common.h"
 #include "globals.h"
 #include "io.h"
 #include "malloc.h"

@@ -128,6 +128,18 @@ oe_result_t oe_get_enclave_status(void)
     return OE_OK;
 }
 
+oe_result_t oe_log(log_level_t level, const char* fmt, ...)
+{
+    ve_va_list ap;
+
+    ve_va_start(ap, fmt);
+    ve_print("oe_log: %u: ", level);
+    ve_vprint(fmt, ap);
+    ve_va_end(ap);
+
+    return OE_OK;
+}
+
 oe_result_t oe_register_ecall_function_table(
     uint64_t table_id,
     const oe_ecall_func_t* ecalls,
