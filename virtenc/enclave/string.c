@@ -76,7 +76,7 @@ size_t ve_strlcat(char* dest, const char* src, size_t size)
     return n;
 }
 
-static __inline__ char oe_get_hex_char(uint64_t x, size_t i)
+static char oe_get_hex_char(uint64_t x, size_t i)
 {
     uint64_t nbits = (uint64_t)i * 4;
     char nibble = (char)((x & (0x000000000000000fUL << nbits)) >> nbits);

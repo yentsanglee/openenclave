@@ -30,11 +30,11 @@
 #define VE_CLONE_NEWNET 0x40000000
 #define VE_CLONE_IO 0x80000000
 
-__attribute__((__noreturn__)) void ve_exit(int status);
+VE_NO_RETURN void ve_exit(int status);
 
-__attribute__((__noreturn__)) void ve_abort(void);
+VE_NO_RETURN void ve_abort(void);
 
-__attribute__((__noreturn__)) void ve_panic(const char* msg);
+VE_NO_RETURN void ve_panic(const char* msg);
 
 int ve_gettid(void);
 

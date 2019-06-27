@@ -15,4 +15,8 @@
 #define ve_va_copy __builtin_va_copy
 #endif
 
+#if defined(__GNUC__)
+#define VE_NO_RETURN __attribute__((__noreturn__))
+#endif
+
 #endif /* _VE_ENCLAVE_COMMON_H */

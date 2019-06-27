@@ -7,7 +7,7 @@
 #include "syscall.h"
 #include "time.h"
 
-__attribute__((__noreturn__)) void ve_exit(int status)
+VE_NO_RETURN void ve_exit(int status)
 {
     ve_thread_set_retval(status);
 
@@ -15,7 +15,7 @@ __attribute__((__noreturn__)) void ve_exit(int status)
         ve_syscall1(VE_SYS_exit, status);
 }
 
-__attribute__((__noreturn__)) void ve_abort(void)
+VE_NO_RETURN void ve_abort(void)
 {
     *((volatile int*)0) = 0;
     ve_exit(127);
@@ -24,7 +24,7 @@ __attribute__((__noreturn__)) void ve_abort(void)
         ;
 }
 
-__attribute__((__noreturn__)) void ve_panic(const char* msg)
+VE_NO_RETURN void ve_panic(const char* msg)
 {
     ve_puts(msg);
     ve_abort();
