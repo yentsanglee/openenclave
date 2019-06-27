@@ -4,8 +4,7 @@
 #ifndef _VE_PROCESS_H
 #define _VE_PROCESS_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
+#include "common.h"
 
 #define VE_CLONE_VM 0x00000100
 #define VE_CLONE_FS 0x00000200

@@ -4,9 +4,8 @@
 #ifndef _VE_TIME_H
 #define _VE_TIME_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
 #include <openenclave/corelibc/time.h>
+#include "common.h"
 
 int ve_nanosleep(const struct oe_timespec* req, struct oe_timespec* rem);
 

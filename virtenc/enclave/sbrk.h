@@ -4,8 +4,7 @@
 #ifndef _VE_SBRK_H
 #define _VE_SBRK_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
+#include "common.h"
 
 void* ve_sbrk(intptr_t increment);
 

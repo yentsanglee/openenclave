@@ -4,7 +4,7 @@
 #ifndef _VE_STRING_H
 #define _VE_STRING_H
 
-#include <openenclave/bits/types.h>
+#include "common.h"
 
 typedef struct _fs_intstr_buf
 {

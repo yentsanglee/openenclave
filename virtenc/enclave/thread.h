@@ -4,8 +4,7 @@
 #ifndef _VE_ENCLAVE_THREAD_H
 #define _VE_ENCLAVE_THREAD_H
 
-#include <openenclave/bits/types.h>
-#include <openenclave/internal/defs.h>
+#include "common.h"
 #include "lock.h"
 
 typedef struct _ve_thread* ve_thread_t;

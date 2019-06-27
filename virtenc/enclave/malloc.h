@@ -4,8 +4,7 @@
 #ifndef _VE_MALLOC_H
 #define _VE_MALLOC_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
+#include "common.h"
 
 void* ve_malloc(size_t size);
 

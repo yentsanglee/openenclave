@@ -4,9 +4,7 @@
 #ifndef _VE_SOCKET_H
 #define _VE_SOCKET_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
-#include <openenclave/internal/syscall/sys/uio.h>
+#include "common.h"
 
 typedef uint32_t ve_socklen_t;
 

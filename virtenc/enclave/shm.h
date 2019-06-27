@@ -4,8 +4,7 @@
 #ifndef _VE_SHM_H
 #define _VE_SHM_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
+#include "common.h"
 
 #define VE_SHM_RND 020000
 #define VE_SHM_RDONLY 010000

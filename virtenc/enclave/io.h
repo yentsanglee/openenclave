@@ -4,8 +4,7 @@
 #ifndef _VE_IO_H
 #define _VE_IO_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
+#include "common.h"
 
 #define VE_I_SENDFD (('S' << 8) | 17)
 #define VE_I_RECVFD (('S' << 8) | 14)

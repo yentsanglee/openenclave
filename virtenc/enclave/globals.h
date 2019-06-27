@@ -4,7 +4,7 @@
 #ifndef _VE_ENCLAVE_GLOBALS_H
 #define _VE_ENCLAVE_GLOBALS_H
 
-#include <openenclave/bits/types.h>
+#include "common.h"
 #include "thread.h"
 
 typedef struct _globals

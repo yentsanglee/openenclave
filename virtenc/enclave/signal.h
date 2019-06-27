@@ -4,8 +4,7 @@
 #ifndef _VE_SIGNAL_H
 #define _VE_SIGNAL_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
+#include "common.h"
 
 #define VE_SIGCHLD 17
 

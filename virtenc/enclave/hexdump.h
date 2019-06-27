@@ -4,8 +4,7 @@
 #ifndef _VE_ENCLAVE_HEXDUMP_H
 #define _VE_ENCLAVE_HEXDUMP_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
+#include "common.h"
 
 void ve_hexdump(const void* data, size_t size);
 

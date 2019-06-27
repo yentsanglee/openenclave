@@ -4,8 +4,7 @@
 #ifndef _VE_LOCK_H
 #define _VE_LOCK_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
+#include "common.h"
 
 typedef volatile int ve_lock_t;
 

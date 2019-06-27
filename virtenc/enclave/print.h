@@ -4,9 +4,7 @@
 #ifndef _VE_PRINT_H
 #define _VE_PRINT_H
 
-#include <openenclave/bits/defs.h>
-#include <openenclave/bits/types.h>
-#include <openenclave/corelibc/stdarg.h>
+#include "common.h"
 #include "lock.h"
 
 void ve_put(const char* s);
