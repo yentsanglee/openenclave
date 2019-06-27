@@ -1,12 +1,14 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-CC = clang-7
-#CC = gcc
+#CC = clang-7
+CC = gcc
 
 ROOT = $(CURDIR)/../..
 
 INCLUDES += -I$(ROOT)/include
+
+SANITIZE=1
 
 CFLAGS += -Wall
 CFLAGS += -Werror
@@ -14,8 +16,12 @@ CFLAGS += -g
 CFLAGS += -fPIE
 CFLAGS += -m64
 CFLAGS += -I.
-#CFLAGS += -fsanitize=address
-#CFLAGS += -fno-omit-frame-pointer
+
+ifdef SANITIZE
+DYNAMIC_CFLAGS += -fsanitize=address
+DYNAMIC_CFLAGS += -fno-omit-frame-pointer
+DYNAMIC_CFLAGS += -fsanitize=leak
+endif
 
 SOURCES += main.c
 SOURCES += call.c
@@ -32,16 +38,21 @@ SOURCES += safecrt.c
 SOURCES += elf.c
 SOURCES += host.c
 SOURCES += rand.c
+SOURCES += test_u_wrap.c
+SOURCES += log.c
 
 LDFLAGS += -lpthread
 
 DEFINES += -DHOST
 
-all:
-	$(CC) -o main $(CFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAGS) $(SOURCES)
+all: test_u.c
+	$(CC) -o main $(CFLAGS) $(DEFINES) $(INCLUDES) $(SOURCES) $(LDFLAGS)
+
+test_u.c: ../common/test.edl
+	oeedger8r --untrusted ../common/test.edl
 
 clean:
-	rm -rf main
+	rm -rf main test_u.c
 
 run:
 	@ ./main ../enclave/main

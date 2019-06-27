@@ -5,12 +5,6 @@
 #include <openenclave/internal/trace.h>
 #include <stdio.h>
 
-void oe_log(log_level_t level, const char* fmt, ...)
-{
-    (void)level;
-    (void)fmt;
-}
-
 static int oe_fopen(FILE** fp, const char* path, const char* mode)
 {
     if (!fp)
@@ -82,7 +76,6 @@ int ve_get_elf_info(const char* path, ve_elf_info_t* buf)
         if (elf64_find_symbol_by_name(&elf, "__ve_self", &sym) != 0)
             goto done;
 
-        printf("SELF.RVA=%lu\n", sym.st_value);
         buf->self_rva = sym.st_value;
     }
 

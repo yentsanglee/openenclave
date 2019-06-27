@@ -210,14 +210,11 @@ static void _put_x(uint64_t x)
     ve_put(ve_xstr(&buf, x, NULL));
 }
 
-void ve_print(const char* format, ...)
+void ve_vprint(const char* format, oe_va_list ap)
 {
     ve_lock(&__ve_print_lock);
 
-    oe_va_list ap;
     const char* p = format;
-
-    oe_va_start(ap, format);
 
     while (*p)
     {
@@ -311,7 +308,14 @@ void ve_print(const char* format, ...)
         }
     }
 
-    oe_va_end(ap);
-
     ve_unlock(&__ve_print_lock);
+}
+
+void ve_print(const char* format, ...)
+{
+    oe_va_list ap;
+
+    oe_va_start(ap, format);
+    ve_vprint(format, ap);
+    oe_va_end(ap);
 }

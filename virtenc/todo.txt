@@ -5,6 +5,8 @@
 
     (A) Fix hang with thread's calling ve_exit().
 
+    (A) Add a stack guard page.
+
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
     (B) Block enclave re-entrancy.

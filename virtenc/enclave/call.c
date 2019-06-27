@@ -2,9 +2,11 @@
 // Licensed under the MIT License.
 
 #include "../common/call.h"
+#include <openenclave/internal/calls.h>
 #include "call.h"
 #include "globals.h"
 #include "io.h"
+#include "malloc.h"
 #include "string.h"
 #include "trace.h"
 
@@ -17,6 +19,7 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
         case VE_FUNC_PING:
         {
             ve_handle_call_ping(fd, buf);
+
             return 0;
         }
         case VE_FUNC_ADD_THREAD:
@@ -37,6 +40,11 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
         case VE_FUNC_GET_SETTINGS:
         {
             ve_handle_get_settings(fd, buf);
+            return 0;
+        }
+        case VE_FUNC_ECALL:
+        {
+            ve_handle_call_ecall(fd, buf);
             return 0;
         }
         case VE_FUNC_XOR:
@@ -121,7 +129,7 @@ int ve_handle_calls(int fd)
             goto done;
 
 #if defined(TRACE_CALLS)
-        ve_print("[ENCLAVE:%s]", ve_func_name(in.func));
+        ve_print("[ENCLAVE:%s]\n", ve_func_name(in.func));
 #endif
 
         ve_call_buf_clear(&out);

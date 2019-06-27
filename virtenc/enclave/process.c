@@ -5,6 +5,7 @@
 #include "globals.h"
 #include "print.h"
 #include "syscall.h"
+#include "time.h"
 
 void ve_exit(int status)
 {

@@ -16,14 +16,12 @@ ROOT = $(CURDIR)/../..
 CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -g
-#CFLAGS += -O1
-CFLAGS += -O3
-CFLAGS += -fPIE
+CFLAGS += -O1
+#CFLAGS += -O3
+#CFLAGS += -fPIE
+CFLAGS += -fPIC
 CFLAGS += -m64
 CFLAGS += -nostdinc
-#CFLAGS += -std=gnu89
-#CFLAGS += -std=c90
-#CFLAGS += -fno-builtin
 CFLAGS += -lgcc
 #CFLAGS += -ffreestanding
 CFLAGS += -mxsave
@@ -47,6 +45,7 @@ CFLAGS += -x86-speculative-load-hardening
 endif
 
 CFLAGS += -I.
+CFLAGS += -Iinclude
 CFLAGS += -I$(ROOT)/include
 
 DYNAMIC_CFLAGS += $(CFLAGS)
@@ -81,6 +80,15 @@ SOURCES += settings.c
 SOURCES += hexdump.c
 SOURCES += register.c
 SOURCES += thread.c
+SOURCES += ecall.c
+SOURCES += test_t.c
+SOURCES += enclave.c
+SOURCES += test.c
+SOURCES += safecrt.c
+SOURCES += -DOE_BUILD_ENCLAVE
+SOURCES += log.c
+SOURCES += result.c
+SOURCES += memmove.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles
 
@@ -91,7 +99,10 @@ STATIC_LDFLAGS += -Wl,-e_start
 STATIC_LDFLAGS += -nostdlib
 STATIC_LDFLAGS += -nodefaultlibs
 
-all: static dynamic
+all: test_t.c static dynamic
+
+test_t.c: ../common/test.edl
+	oeedger8r --trusted ../common/test.edl
 
 static:
 	$(CC) -DBUILD_STATIC -o main.static $(CFLAGS) $(STATIC_LDFLAGS) $(SOURCES)

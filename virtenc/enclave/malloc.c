@@ -4,6 +4,7 @@
 #include "malloc.h"
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include "print.h"
 #include "process.h"
 #include "sbrk.h"
 #include "string.h"
@@ -11,6 +12,8 @@
 #if defined(BUILD_STATIC)
 #define USE_DLMALLOC
 #endif
+
+#define USE_DLMALLOC
 
 #if defined(USE_DLMALLOC)
 

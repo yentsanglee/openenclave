@@ -25,6 +25,8 @@ typedef enum _ve_func
     VE_FUNC_FREE,
     VE_FUNC_GET_SETTINGS,
     VE_FUNC_XOR,
+    VE_FUNC_ECALL,
+    VE_FUNC_OCALL,
 } ve_func_t;
 
 typedef struct _ve_call_buf
@@ -71,6 +73,7 @@ typedef struct _ve_init_arg
     int sock;
     int shmid;
     void* shmaddr;
+    size_t shmsize;
     size_t tdata_rva;
     size_t tdata_size;
     size_t tdata_align;

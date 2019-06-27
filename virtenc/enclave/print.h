@@ -6,6 +6,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/stdarg.h>
 #include "lock.h"
 
 void ve_put(const char* s);
@@ -16,6 +17,8 @@ void ve_putc(char c);
 
 OE_PRINTF_FORMAT(1, 2)
 void ve_print(const char* format, ...);
+
+void ve_vprint(const char* format, oe_va_list ap);
 
 extern ve_lock_t __ve_print_lock;
 

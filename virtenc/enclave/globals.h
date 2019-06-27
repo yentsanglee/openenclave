@@ -10,7 +10,8 @@
 typedef struct _globals
 {
     /* Shared memory between host and enclave. */
-    void* shmaddr;
+    const void* shmaddr;
+    size_t shmsize;
 } globals_t;
 
 extern globals_t globals;

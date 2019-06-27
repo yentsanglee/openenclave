@@ -7,8 +7,7 @@
 #include "enclave.h"
 #include "err.h"
 #include "heap.h"
-
-#define VE_HEAP_SIZE (1024 * 1024)
+#include "test_u.h"
 
 const char* __ve_arg0;
 int __ve_pid;
@@ -121,21 +120,33 @@ int main3(int argc, const char* argv[])
         return 1;
     }
 
-    if ((result = oe_create_enclave(
+    if ((result = oe_create_test_enclave(
              argv[1],
              OE_ENCLAVE_TYPE_SGX,
              OE_ENCLAVE_FLAG_DEBUG,
              NULL,
              0,
-             NULL,
-             0,
              &enclave)) != OE_OK)
     {
-        err("oe_create_enclave() failed: %u\n", result);
+        err("oe_create_enclave() failed: %s\n", oe_result_str(result));
     }
 
+    int retval = 99;
+    if ((result = test0(enclave, &retval)) != OE_OK)
+        err("test1() failed: %s\n", oe_result_str(result));
+
+    if (retval != 12345)
+        err("test1() failed: expected retval=12345");
+
+#if 0
+    char buf[100];
+    buf[0] = '\0';
+    if ((result = test1(enclave, &retval, "hello", buf)) != OE_OK)
+        err("test1() failed: %s\n", oe_result_str(result));
+#endif
+
     if ((result = oe_terminate_enclave(enclave)) != OE_OK)
-        err("oe_terminate_enclave() failed: %u\n", result);
+        err("oe_terminate_enclave() failed: %s\n", oe_result_str(result));
 
     close(STDIN_FILENO);
     close(STDOUT_FILENO);

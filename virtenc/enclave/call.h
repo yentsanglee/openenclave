@@ -15,6 +15,8 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf);
 
 void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf);
 
+void ve_handle_call_ecall(int fd, ve_call_buf_t* buf);
+
 void* ve_call_malloc(int fd, size_t size);
 
 void* ve_call_calloc(int fd, size_t nmemb, size_t size);

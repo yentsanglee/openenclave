@@ -209,6 +209,11 @@ void* ve_memcpy(void* dest, const void* src, size_t n)
     return dest;
 }
 
+void* memcpy(void* dest, const void* src, size_t n)
+{
+    return ve_memcpy(dest, src, n);
+}
+
 int ve_memcmp(const void* s1, const void* s2, size_t n)
 {
     const unsigned char* p = (const unsigned char*)s1;

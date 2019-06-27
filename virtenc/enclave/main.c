@@ -19,6 +19,7 @@
 #include "shm.h"
 #include "signal.h"
 #include "string.h"
+#include "syscall.h"
 #include "time.h"
 #include "trace.h"
 
@@ -128,7 +129,11 @@ done:
         ve_close(sock);
 }
 
-static int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
+static int _attach_host_heap(
+    globals_t* globals,
+    int shmid,
+    const void* shmaddr,
+    size_t shmsize)
 {
     int ret = -1;
     void* rval;
@@ -159,7 +164,8 @@ static int _attach_host_heap(globals_t* globals, int shmid, const void* shmaddr)
     }
 
     /* Save so it can be released on process exit. */
-    globals->shmaddr = rval;
+    globals->shmaddr = shmaddr;
+    globals->shmsize = shmsize;
 
     ret = 0;
 
@@ -200,7 +206,8 @@ int ve_handle_init(void)
     {
         g_sock = arg.sock;
 
-        if (_attach_host_heap(&globals, arg.shmid, arg.shmaddr) != 0)
+        if (_attach_host_heap(&globals, arg.shmid, arg.shmaddr, arg.shmsize) !=
+            0)
         {
             ve_put("_attach_host_heap() failed\n");
             retval = -1;

@@ -35,6 +35,10 @@ const char* ve_func_name(ve_func_t func)
             return "GET_SETTINGS";
         case VE_FUNC_XOR:
             return "XOR";
+        case VE_FUNC_ECALL:
+            return "ECALL";
+        case VE_FUNC_OCALL:
+            return "OCALL";
     }
 
     return "UNKNOWN";

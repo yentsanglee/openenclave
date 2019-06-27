@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include "call.h"
 #include "elf.h"
+#include "err.h"
 #include "heap.h"
 #include "hostmalloc.h"
 #include "io.h"
@@ -61,6 +62,7 @@ static int _init_child(
     arg.sock = child_sock;
     arg.shmid = enclave->heap->shmid;
     arg.shmaddr = enclave->heap->shmaddr;
+    arg.shmsize = enclave->heap->shmsize;
     arg.tdata_rva = elf_info->tdata_rva;
     arg.tdata_size = elf_info->tdata_size;
     arg.tdata_align = elf_info->tdata_align;
@@ -533,6 +535,7 @@ done:
 int ve_enclave_run_xor_test(ve_enclave_t* enclave)
 {
     int ret = -1;
+
     uint64_t retval = -1;
     uint64_t x1 = ve_rand();
     uint64_t x2 = ve_rand();
