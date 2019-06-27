@@ -18,6 +18,7 @@
 #include "signal.h"
 #include "string.h"
 #include "syscall.h"
+#include "thread.h"
 #include "time.h"
 #include "trace.h"
 
@@ -73,7 +74,7 @@ int ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
     buf->retval = (uint64_t)-1;
 
     /* Receive the socket descriptor from the host. */
-    if ((sock = ve_recv_fd(g_sock)) < 0)
+    if ((sock = ve_recv_fd(__ve_sock)) < 0)
         goto done;
 
     /* Create the new thread. */
@@ -170,17 +171,17 @@ int ve_handle_init(void)
     }
 
     /* Save the TLS information. */
-    g_tdata_rva = arg.tdata_rva;
-    g_tdata_size = arg.tdata_size;
-    g_tdata_align = arg.tdata_align;
-    g_tbss_rva = arg.tbss_rva;
-    g_tbss_size = arg.tbss_size;
-    g_tbss_align = arg.tbss_align;
+    __ve_tdata_rva = arg.tdata_rva;
+    __ve_tdata_size = arg.tdata_size;
+    __ve_tdata_align = arg.tdata_align;
+    __ve_tbss_rva = arg.tbss_rva;
+    __ve_tbss_size = arg.tbss_size;
+    __ve_tbss_align = arg.tbss_align;
     __ve_self = arg.self_rva;
 
     /* Handle the request. */
     {
-        g_sock = arg.sock;
+        __ve_sock = arg.sock;
 
         if (_attach_host_heap(arg.shmid, arg.shmaddr, arg.shmsize) != 0)
         {
@@ -190,7 +191,7 @@ int ve_handle_init(void)
     }
 
     /* Send response back on the socket. */
-    if (ve_writen(g_sock, &retval, sizeof(retval)) != 0)
+    if (ve_writen(__ve_sock, &retval, sizeof(retval)) != 0)
         goto done;
 
     ret = retval;
@@ -216,7 +217,7 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
     }
 
     /* Release resources held by the main thread. */
-    ve_close(g_sock);
+    ve_close(__ve_sock);
     ve_shmdt(__ve_shmaddr);
 
     /* Close the standard descriptors. */
@@ -323,7 +324,7 @@ static int _main(void)
     }
 
     /* Handle messages over the main socket. */
-    if (ve_handle_calls(g_sock) != 0)
+    if (ve_handle_calls(__ve_sock) != 0)
     {
         ve_puts("encl: ve_handle_calls() failed");
         ve_exit(1);

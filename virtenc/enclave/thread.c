@@ -95,22 +95,22 @@ static int _get_tls(
     if (!thread || !tls || !tls_size)
         goto done;
 
-    if (g_tdata_size == 0 && g_tbss_size == 0)
+    if (__ve_tdata_size == 0 && __ve_tbss_size == 0)
         goto done;
 
-    /* align = max(g_tdata_align, g_tbss_align) */
-    if (g_tdata_align > g_tbss_align)
-        align = g_tdata_align;
+    /* align = max(__ve_tdata_align, __ve_tbss_align) */
+    if (__ve_tdata_align > __ve_tbss_align)
+        align = __ve_tdata_align;
     else
-        align = g_tbss_align;
+        align = __ve_tbss_align;
 
     /* Check that align is a power of two. */
     if ((align & (align - 1)))
         goto done;
 
     p = (const uint8_t*)thread;
-    p -= _round_up_to_multiple(g_tdata_size, align);
-    p -= _round_up_to_multiple(g_tbss_size, align);
+    p -= _round_up_to_multiple(__ve_tdata_size, align);
+    p -= _round_up_to_multiple(__ve_tbss_size, align);
 
     *tls = p;
     *tls_size = (size_t)((const uint8_t*)thread - p);
@@ -162,7 +162,7 @@ int ve_thread_create(
         goto done;
 
     /* Fail if the tdata section will not fit into the TLS. */
-    if (main_tls_size < g_tdata_size)
+    if (main_tls_size < __ve_tdata_size)
         goto done;
 
     /* Allocate TLS followed by the thread. */
@@ -180,8 +180,8 @@ int ve_thread_create(
 
     /* Copy tdata section onto the new_tls. */
     {
-        void* tdata = (uint8_t*)ve_get_baseaddr() + g_tdata_rva;
-        ve_memcpy(tls, tdata, g_tdata_size);
+        void* tdata = (uint8_t*)ve_get_baseaddr() + __ve_tdata_rva;
+        ve_memcpy(tls, tdata, __ve_tdata_size);
     }
 
     /* Allocate and zero-fill the stack. */

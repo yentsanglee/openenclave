@@ -5,6 +5,7 @@
 #include "globals.h"
 #include "print.h"
 #include "syscall.h"
+#include "thread.h"
 #include "time.h"
 
 VE_NO_RETURN void ve_exit(int status)

@@ -5,21 +5,23 @@
 #define _VE_ENCLAVE_GLOBALS_H
 
 #include "common.h"
-#include "thread.h"
 
+/* Memory shared by the host. */
 extern const void* __ve_shmaddr;
 extern size_t __ve_shmsize;
 
 /* Socket used to communicate with the host process. */
-extern int g_sock;
+extern int __ve_sock;
 
-/* TLS information from the host. */
-extern size_t g_tdata_rva;
-extern size_t g_tdata_size;
-extern size_t g_tdata_align;
-extern size_t g_tbss_rva;
-extern size_t g_tbss_size;
-extern size_t g_tbss_align;
+/* The .tdata section of this process (sent from the host). */
+extern size_t __ve_tdata_rva;
+extern size_t __ve_tdata_size;
+extern size_t __ve_tdata_align;
+
+/* The .tbss section of this process (sent from the host). */
+extern size_t __ve_tbss_rva;
+extern size_t __ve_tbss_size;
+extern size_t __ve_tbss_align;
 
 /* Holds relative virtual address of this variable itself (from the host). */
 extern uint64_t __ve_self;
