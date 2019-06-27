@@ -9,5 +9,6 @@ enclave {
     };
 
     untrusted {
+        uint64_t test_ocall(uint64_t x);
     };
 };

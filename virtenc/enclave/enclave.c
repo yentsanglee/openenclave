@@ -50,6 +50,18 @@ void oe_host_free(void* ptr)
     ve_call_free(__ve_thread_sock, ptr);
 }
 
+// Function used by oeedger8r for allocating ocall buffers.
+void* oe_allocate_ocall_buffer(size_t size)
+{
+    return oe_host_malloc(size);
+}
+
+// Function used by oeedger8r for freeing ocall buffers.
+void oe_free_ocall_buffer(void* buffer)
+{
+    oe_host_free(buffer);
+}
+
 char* oe_host_strndup(const char* str, size_t n)
 {
     char* p;
@@ -108,6 +120,12 @@ bool oe_is_outside_enclave(const void* ptr, size_t size)
         return false;
 
     return true;
+}
+
+oe_result_t oe_get_enclave_status(void)
+{
+    /* ATTN: implement! */
+    return OE_OK;
 }
 
 oe_result_t oe_register_ecall_function_table(

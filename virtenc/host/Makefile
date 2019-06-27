@@ -40,6 +40,7 @@ SOURCES += host.c
 SOURCES += rand.c
 SOURCES += test_u_wrap.c
 SOURCES += log.c
+SOURCES += test.c
 
 LDFLAGS += -lpthread
 

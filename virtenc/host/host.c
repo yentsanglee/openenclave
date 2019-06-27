@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/bits/safemath.h>
+#include <openenclave/edger8r/common.h>
 #include <openenclave/host.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/raise.h>
@@ -23,6 +25,8 @@ struct _oe_enclave
 extern ve_heap_t __ve_heap;
 
 static bool _create_enclave_once_okay = false;
+
+static __thread oe_enclave_t* _enclave_tls;
 
 static ve_enclave_t* _cast_enclave(oe_enclave_t* enclave)
 {
@@ -144,6 +148,8 @@ oe_result_t oe_ecall(
     oe_result_t result = OE_UNEXPECTED;
     ve_enclave_t* ve = _cast_enclave(enclave);
 
+    _enclave_tls = enclave;
+
     if (!ve)
         OE_RAISE(OE_INVALID_PARAMETER);
 
@@ -153,6 +159,8 @@ oe_result_t oe_ecall(
     result = OE_OK;
 
 done:
+    _enclave_tls = NULL;
+
     return result;
 }
 
@@ -254,4 +262,133 @@ oe_result_t oe_call_enclave_function(
         output_buffer,
         output_buffer_size,
         output_bytes_written);
+}
+
+typedef struct _ocall_table
+{
+    const oe_ocall_func_t* ocalls;
+    size_t num_ocalls;
+} ocall_table_t;
+
+static ocall_table_t _ocall_tables[OE_MAX_OCALL_TABLES];
+static pthread_mutex_t _ocall_tables_lock = PTHREAD_MUTEX_INITIALIZER;
+
+oe_result_t oe_register_ocall_function_table(
+    uint64_t table_id,
+    const oe_ocall_func_t* ocalls,
+    size_t num_ocalls)
+{
+    oe_result_t result = OE_UNEXPECTED;
+
+    if (table_id >= OE_MAX_OCALL_TABLES || !ocalls)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    pthread_mutex_lock(&_ocall_tables_lock);
+    _ocall_tables[table_id].ocalls = ocalls;
+    _ocall_tables[table_id].num_ocalls = num_ocalls;
+    pthread_mutex_unlock(&_ocall_tables_lock);
+
+    result = OE_OK;
+
+done:
+    return result;
+}
+
+static oe_result_t _handle_call_host_function(
+    uint64_t arg,
+    oe_enclave_t* enclave)
+{
+    oe_call_host_function_args_t* args_ptr = NULL;
+    oe_result_t result = OE_OK;
+    oe_ocall_func_t func = NULL;
+    size_t buffer_size = 0;
+    ocall_table_t ocall_table;
+
+    args_ptr = (oe_call_host_function_args_t*)arg;
+    if (args_ptr == NULL)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    // Input and output buffers must not be NULL.
+    if (args_ptr->input_buffer == NULL || args_ptr->output_buffer == NULL)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    // Resolve which ocall table to use.
+    if (args_ptr->table_id == OE_UINT64_MAX)
+    {
+        ocall_table.ocalls = enclave->ocall_table;
+        ocall_table.num_ocalls = enclave->ocall_table_size;
+    }
+    else
+    {
+        if (args_ptr->table_id >= OE_MAX_OCALL_TABLES)
+            OE_RAISE(OE_NOT_FOUND);
+
+        pthread_mutex_lock(&_ocall_tables_lock);
+        ocall_table.ocalls = _ocall_tables[args_ptr->table_id].ocalls;
+        ocall_table.num_ocalls = _ocall_tables[args_ptr->table_id].num_ocalls;
+        pthread_mutex_unlock(&_ocall_tables_lock);
+
+        if (!ocall_table.ocalls)
+            OE_RAISE(OE_NOT_FOUND);
+    }
+
+    // Fetch matching function.
+    if (args_ptr->function_id >= ocall_table.num_ocalls)
+        OE_RAISE(OE_NOT_FOUND);
+
+    func = ocall_table.ocalls[args_ptr->function_id];
+    if (func == NULL)
+    {
+        result = OE_NOT_FOUND;
+        goto done;
+    }
+
+    OE_CHECK(oe_safe_add_u64(
+        args_ptr->input_buffer_size,
+        args_ptr->output_buffer_size,
+        &buffer_size));
+
+    // Buffer sizes must be pointer aligned.
+    if ((args_ptr->input_buffer_size % OE_EDGER8R_BUFFER_ALIGNMENT) != 0)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    if ((args_ptr->output_buffer_size % OE_EDGER8R_BUFFER_ALIGNMENT) != 0)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    // Call the function.
+    func(
+        args_ptr->input_buffer,
+        args_ptr->input_buffer_size,
+        args_ptr->output_buffer,
+        args_ptr->output_buffer_size,
+        &args_ptr->output_bytes_written);
+
+    // The ocall succeeded.
+    args_ptr->result = OE_OK;
+    result = OE_OK;
+done:
+
+    return result;
+}
+
+int ve_handle_call_ocall(int fd, ve_call_buf_t* buf)
+{
+    uint16_t func = (uint16_t)buf->arg1;
+    uint64_t arg_in = buf->arg2;
+
+    OE_UNUSED(fd);
+
+    switch (func)
+    {
+        case OE_OCALL_CALL_HOST_FUNCTION:
+        {
+            buf->retval =
+                (uint64_t)_handle_call_host_function(arg_in, _enclave_tls);
+            return 0;
+        }
+        default:
+        {
+            return -1;
+        }
+    }
 }
