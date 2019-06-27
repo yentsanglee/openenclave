@@ -47,7 +47,6 @@ struct _ve_thread
     size_t stack_size;
     int ptid;
     int ctid;
-    int __retval;
 };
 
 static uint64_t _round_up_to_multiple(uint64_t x, uint64_t m)
@@ -61,20 +60,6 @@ ve_thread_t ve_thread_self(void)
     const long ARCH_GET_FS = 0x1003;
     ve_syscall2(VE_SYS_arch_prctl, ARCH_GET_FS, (long)&thread);
     return thread;
-}
-
-int ve_thread_set_retval(int retval)
-{
-    int ret = -1;
-    struct _ve_thread* thread;
-
-    if (!(thread = ve_thread_self()))
-        goto done;
-
-    thread->__retval = retval;
-
-done:
-    return ret;
 }
 
 static int _get_tls(
@@ -124,13 +109,14 @@ done:
 static int _thread_func(void* arg_)
 {
     thread_arg_t arg = *(thread_arg_t*)arg_;
+    int retval;
 
     ve_free(arg_);
 
     /* Invoke the caller's thread routine. */
-    arg.thread->__retval = arg.func(arg.arg);
+    retval = arg.func(arg.arg);
 
-    return arg.thread->__retval;
+    return retval;
 }
 
 int ve_thread_create(

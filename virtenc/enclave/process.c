@@ -10,8 +10,6 @@
 
 VE_NO_RETURN void ve_exit(int status)
 {
-    ve_thread_set_retval(status);
-
     for (;;)
         ve_syscall1(VE_SYS_exit, status);
 }

@@ -230,7 +230,7 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
 #endif
 
     /* Terminate. */
-    *exit_status = 88;
+    *exit_status = 0;
     return 1;
 }
 
