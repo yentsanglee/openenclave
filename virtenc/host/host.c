@@ -152,31 +152,6 @@ done:
     return result;
 }
 
-oe_result_t oe_ecall(
-    oe_enclave_t* enclave,
-    uint16_t func,
-    uint64_t arg_in,
-    uint64_t* arg_out)
-{
-    oe_result_t result = OE_UNEXPECTED;
-    ve_enclave_t* ve = _cast_enclave(enclave);
-
-    _enclave_tls = enclave;
-
-    if (!ve)
-        OE_RAISE(OE_INVALID_PARAMETER);
-
-    if (ve_enclave_call2(ve, VE_FUNC_ECALL, arg_out, func, (long)arg_in) != 0)
-        OE_RAISE(OE_FAILURE);
-
-    result = OE_OK;
-
-done:
-    _enclave_tls = NULL;
-
-    return result;
-}
-
 oe_result_t oe_call_enclave_function_by_table_id(
     oe_enclave_t* enclave,
     uint64_t table_id,
