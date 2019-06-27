@@ -18,34 +18,27 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
     {
         case VE_FUNC_PING:
         {
-            ve_handle_call_ping(fd, buf);
-
-            return 0;
+            return ve_handle_call_ping(fd, buf);
         }
         case VE_FUNC_ADD_THREAD:
         {
-            ve_handle_call_add_thread(fd, buf);
-            return 0;
+            return ve_handle_call_add_thread(fd, buf);
         }
         case VE_FUNC_TERMINATE:
         {
-            ve_handle_call_terminate(fd, buf);
-            return 0;
+            return ve_handle_call_terminate(fd, buf);
         }
         case VE_FUNC_TERMINATE_THREAD:
         {
-            ve_handle_call_terminate_thread(fd, buf);
-            return 0;
+            return ve_handle_call_terminate_thread(fd, buf);
         }
         case VE_FUNC_GET_SETTINGS:
         {
-            ve_handle_get_settings(fd, buf);
-            return 0;
+            return ve_handle_get_settings(fd, buf);
         }
         case VE_FUNC_ECALL:
         {
-            ve_handle_call_ecall(fd, buf);
-            return 0;
+            return ve_handle_call_ecall(fd, buf);
         }
         case VE_FUNC_XOR:
         {

@@ -168,8 +168,29 @@ done:
     return result;
 }
 
-void ve_handle_call_ecall(int fd, ve_call_buf_t* buf)
+int ve_handle_call_ecall(int fd, ve_call_buf_t* buf)
 {
-    (void)fd;
-    buf->retval = (uint64_t)_handle_call_enclave_function(buf->arg1);
+    int ret = -1;
+    uint16_t func = (uint16_t)buf->arg1;
+    uint64_t arg_in = buf->arg2;
+
+    OE_UNUSED(fd);
+
+    switch (func)
+    {
+        case OE_ECALL_CALL_ENCLAVE_FUNCTION:
+        {
+            buf->retval = (uint64_t)_handle_call_enclave_function(arg_in);
+            break;
+        }
+        default:
+        {
+            goto done;
+        }
+    }
+
+    ret = 0;
+
+done:
+    return ret;
 }

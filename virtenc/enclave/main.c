@@ -81,7 +81,7 @@ static int _thread_func(void* arg_)
     return 0;
 }
 
-void ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
+int ve_handle_call_add_thread(int fd, ve_call_buf_t* buf)
 {
     int sock = -1;
 
@@ -127,6 +127,8 @@ done:
 
     if (sock != -1)
         ve_close(sock);
+
+    return 0;
 }
 
 static int _attach_host_heap(
@@ -224,7 +226,7 @@ done:
     return ret;
 }
 
-void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
+int ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
 {
     OE_UNUSED(fd);
     OE_UNUSED(buf);
@@ -251,6 +253,8 @@ void ve_handle_call_terminate(int fd, ve_call_buf_t* buf)
 
     /* No response is expected. */
     ve_exit(0);
+
+    return 0;
 }
 
 void test_malloc(int fd)
@@ -279,7 +283,7 @@ void test_malloc(int fd)
     }
 }
 
-void ve_handle_call_ping(int fd, ve_call_buf_t* buf)
+int ve_handle_call_ping(int fd, ve_call_buf_t* buf)
 {
     uint64_t retval = 0;
 
@@ -293,9 +297,11 @@ void ve_handle_call_ping(int fd, ve_call_buf_t* buf)
         ve_put("encl: ve_call() failed\n");
 
     buf->retval = retval;
+
+    return 0;
 }
 
-void ve_handle_get_settings(int fd, ve_call_buf_t* buf)
+int ve_handle_get_settings(int fd, ve_call_buf_t* buf)
 {
     ve_enclave_settings_t* settings = (ve_enclave_settings_t*)buf->arg1;
 
@@ -311,9 +317,11 @@ void ve_handle_get_settings(int fd, ve_call_buf_t* buf)
     {
         buf->retval = (uint64_t)-1;
     }
+
+    return 0;
 }
 
-void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
+int ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
 {
     OE_UNUSED(fd);
     OE_UNUSED(buf);
@@ -322,6 +330,8 @@ void ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
 
     ve_print("encl: thread exit: tid=%d\n", ve_gettid());
     ve_exit(99);
+
+    return 0;
 }
 
 int __ve_pid;

@@ -138,6 +138,8 @@ int main3(int argc, const char* argv[])
     if (retval != 12345)
         err("test1() failed: expected retval=12345");
 
+    printf("retval=%d\n", retval);
+
     {
         char buf[100] = {'\0'};
 

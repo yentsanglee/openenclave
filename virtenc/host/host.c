@@ -24,6 +24,14 @@ extern ve_heap_t __ve_heap;
 
 static bool _create_enclave_once_okay = false;
 
+static ve_enclave_t* _cast_enclave(oe_enclave_t* enclave)
+{
+    if (!enclave || enclave->magic != ENCLAVE_MAGIC)
+        return NULL;
+
+    return enclave->venclave;
+}
+
 static void _create_enclave_once(void)
 {
     /* Create the host heap to be shared with enclaves. */
@@ -127,6 +135,27 @@ done:
     return result;
 }
 
+oe_result_t oe_ecall(
+    oe_enclave_t* enclave,
+    uint16_t func,
+    uint64_t arg_in,
+    uint64_t* arg_out)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    ve_enclave_t* ve = _cast_enclave(enclave);
+
+    if (!ve)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    if (ve_enclave_call2(ve, VE_FUNC_ECALL, arg_out, func, (long)arg_in) != 0)
+        OE_RAISE(OE_FAILURE);
+
+    result = OE_OK;
+
+done:
+    return result;
+}
+
 oe_result_t oe_call_enclave_function_by_table_id(
     oe_enclave_t* enclave,
     uint64_t table_id,
@@ -138,10 +167,11 @@ oe_result_t oe_call_enclave_function_by_table_id(
     size_t* output_bytes_written)
 {
     oe_result_t result = OE_UNEXPECTED;
+    ve_enclave_t* ve = _cast_enclave(enclave);
     oe_call_enclave_function_args_t* args = NULL;
 
     /* Reject invalid parameters */
-    if (!enclave || enclave->magic != ENCLAVE_MAGIC)
+    if (!ve)
         OE_RAISE(OE_INVALID_PARAMETER);
 
     /* Copy these args to the host heap. */
@@ -163,8 +193,6 @@ oe_result_t oe_call_enclave_function_by_table_id(
 #if 1
     /* Test call. */
     {
-        ve_enclave_t* ve = enclave->venclave;
-
         if (ve_enclave_run_xor_test(ve) != 0)
             OE_RAISE(OE_FAILURE);
         if (ve_enclave_run_xor_test(ve) != 0)
@@ -184,14 +212,11 @@ oe_result_t oe_call_enclave_function_by_table_id(
 
     /* Perform the ECALL */
     {
-        ve_enclave_t* ve = enclave->venclave;
-        uint64_t retval = 0;
+        uint64_t arg_out = 0;
 
-        if (ve_enclave_call1(ve, VE_FUNC_ECALL, &retval, (long)args) != 0)
-            OE_RAISE(OE_FAILURE);
-
-        if (retval != 0)
-            OE_CHECK(OE_FAILURE);
+        OE_CHECK(oe_ecall(
+            enclave, OE_ECALL_CALL_ENCLAVE_FUNCTION, (uint64_t)args, &arg_out));
+        OE_CHECK((oe_result_t)arg_out);
     }
 
     /* Check the result */
