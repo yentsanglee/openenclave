@@ -7,7 +7,7 @@
 #include "syscall.h"
 #include "time.h"
 
-void ve_exit(int status)
+__attribute__((__noreturn__)) void ve_exit(int status)
 {
     ve_thread_set_retval(status);
 
@@ -48,4 +48,36 @@ int ve_waitpid(int pid, int* status, int options)
 void* ve_get_baseaddr(void)
 {
     return (uint8_t*)&__ve_self - __ve_self;
+}
+
+void ve_call_fini_functions(void)
+{
+    void (**fn)(void);
+    extern void (*__fini_array_start)(void);
+    extern void (*__fini_array_end)(void);
+
+    for (fn = &__fini_array_end - 1; fn >= &__fini_array_start; fn--)
+    {
+        (*fn)();
+    }
+}
+
+void __libc_csu_fini(void)
+{
+    ve_call_fini_functions();
+}
+
+void ve_call_init_functions(void)
+{
+    void (**fn)(void);
+    extern void (*__init_array_start)(void);
+    extern void (*__init_array_end)(void);
+
+    for (fn = &__init_array_start; fn < &__init_array_end; fn++)
+        (*fn)();
+}
+
+void __libc_csu_init(void)
+{
+    ve_call_init_functions();
 }

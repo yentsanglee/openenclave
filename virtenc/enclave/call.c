@@ -137,8 +137,6 @@ int ve_handle_calls(int fd)
             out.func = VE_FUNC_ERR;
         }
 
-        out.pid = (uint64_t)__ve_pid;
-
         if (ve_writen(fd, &out, sizeof(out)) != 0)
             goto done;
     }

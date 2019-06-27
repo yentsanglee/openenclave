@@ -58,8 +58,6 @@ endif
 
 SOURCES += assert.c
 SOURCES += string.c
-SOURCES += init.c
-SOURCES += fini.c
 SOURCES += syscall.c
 SOURCES += recvfd.c
 SOURCES += socket.c

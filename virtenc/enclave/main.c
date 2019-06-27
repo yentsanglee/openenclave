@@ -31,13 +31,9 @@
 
 __thread uint64_t __thread_value = THREAD_VALUE_INITIALIZER;
 
-__thread int __ve_thread_pid;
+static __thread int _pid_tls;
 
 __thread int __ve_thread_sock;
-
-void ve_call_init_functions(void);
-
-void ve_call_fini_functions(void);
 
 int ve_handle_calls(int fd);
 
@@ -57,7 +53,7 @@ static int _thread_func(void* arg)
 
     __ve_thread_sock = sock;
 
-    __ve_thread_pid = ve_getpid();
+    _pid_tls = ve_getpid();
 
     if (__thread_value != THREAD_VALUE_INITIALIZER)
         ve_panic("__thread_value != THREAD_VALUE_INITIALIZER");
@@ -165,7 +161,7 @@ int ve_handle_init(void)
     ve_init_arg_t arg;
     int retval = 0;
 
-    __ve_thread_pid = ve_getpid();
+    _pid_tls = ve_getpid();
 
     /* Receive request from standard input. */
     {
@@ -273,7 +269,7 @@ int ve_handle_call_ping(int fd, ve_call_buf_t* buf)
 
     ve_print("encl: ping: value=%lx [%u]\n", buf->arg1, ve_getpid());
 
-    ve_assert(__ve_thread_pid == ve_getpid());
+    ve_assert(_pid_tls == ve_getpid());
 
     test_malloc(fd);
 
@@ -318,8 +314,6 @@ int ve_handle_call_terminate_thread(int fd, ve_call_buf_t* buf)
     return 0;
 }
 
-int __ve_pid;
-
 static int _main(void)
 {
     if (!_called_constructor)
@@ -327,15 +321,6 @@ static int _main(void)
         ve_puts("constructor not called");
         ve_exit(1);
     }
-
-    /* Save the process id into a global. */
-    if ((__ve_pid = ve_getpid()) < 0)
-    {
-        ve_puts("ve_getpid() failed");
-        ve_exit(1);
-    }
-
-    ve_print("encl: pid=%d\n", __ve_pid);
 
     /* Wait here to be initialized and to receive the main socket. */
     if (ve_handle_init() != 0)

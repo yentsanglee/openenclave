@@ -31,21 +31,7 @@
 #define VE_CLONE_NEWNET 0x40000000
 #define VE_CLONE_IO 0x80000000
 
-/* tls parameter for ve_clone. */
-struct ve_user_desc
-{
-    unsigned int entry_number;
-    unsigned long base_addr;
-    unsigned int limit;
-    unsigned int seg_32bit : 1;
-    unsigned int contents : 2;
-    unsigned int read_exec_only : 1;
-    unsigned int limit_in_pages : 1;
-    unsigned int seg_not_present : 1;
-    unsigned int useable : 1;
-};
-
-void ve_exit(int status);
+__attribute__((__noreturn__)) void ve_exit(int status);
 
 __attribute__((__noreturn__)) void ve_abort(void);
 
@@ -68,5 +54,9 @@ int ve_clone(
     int* ptid,
     void* tls,
     int* ctid);
+
+void ve_call_init_functions(void);
+
+void ve_call_fini_functions(void);
 
 #endif /* _VE_PROCESS_H */

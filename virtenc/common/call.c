@@ -63,7 +63,6 @@ int ve_call_send(
     {
         ve_call_buf_t buf;
 
-        buf.pid = (uint64_t)__ve_pid;
         buf.func = func;
         buf.retval = 0;
         buf.arg1 = arg1;
@@ -134,8 +133,6 @@ int ve_call_recv(int fd, uint64_t* retval)
                 {
                     out.func = VE_FUNC_ERR;
                 }
-
-                out.pid = (uint64_t)__ve_pid;
 
                 if (ve_writen(fd, &out, sizeof(out)) != 0)
                     goto done;

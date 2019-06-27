@@ -32,7 +32,6 @@ typedef enum _ve_func
 typedef struct _ve_call_buf
 {
     /* The process id of the sender. */
-    uint64_t pid;
     uint64_t func;
     uint64_t retval;
     uint64_t arg1;
@@ -55,7 +54,6 @@ OE_INLINE void ve_call_buf_clear(volatile ve_call_buf_t* buf)
 {
     if (buf)
     {
-        buf->pid = 0;
         buf->func = 0;
         buf->retval = 0;
         buf->arg1 = 0;
