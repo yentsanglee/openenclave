@@ -19,6 +19,4 @@ int ve_thread_create(
 
 int ve_thread_join(ve_thread_t thread, int* retval);
 
-int ve_thread_tid(ve_thread_t thread);
-
 #endif /* _VE_ENCLAVE_THREAD_H */

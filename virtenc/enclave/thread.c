@@ -40,7 +40,6 @@ struct _ve_thread
     thread_base_t base;
 
     /* Internal implementation. */
-    struct _ve_thread* next;
     void* tls;
     size_t tls_size;
     void* stack;
@@ -60,14 +59,6 @@ ve_thread_t ve_thread_self(void)
     const long ARCH_GET_FS = 0x1003;
     ve_syscall2(VE_SYS_arch_prctl, ARCH_GET_FS, (long)&thread);
     return thread;
-}
-
-int ve_thread_tid(ve_thread_t thread)
-{
-    if (!thread)
-        return -1;
-
-    return thread->ctid;
 }
 
 static int _get_tls(
@@ -192,7 +183,6 @@ int ve_thread_create(
     /* Initilize the thread. */
     {
         thread->base.self = &thread->base;
-        thread->next = NULL;
         thread->tls = tls;
         thread->tls_size = main_tls_size;
         thread->stack = stack;
@@ -285,11 +275,6 @@ int ve_thread_join(ve_thread_t thread, int* retval)
 
     if (retval)
         *retval = VE_WEXITSTATUS(status);
-
-#if 0
-    if (retval)
-        *retval = thread->__retval;
-#endif
 
     /* This frees the TLS and the tread_t struct. */
     ve_free(thread->tls);
