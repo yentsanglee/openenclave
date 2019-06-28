@@ -91,10 +91,18 @@ static const int ENOMEM = 12;
 #define STRUCT_MALLINFO_DECLARED
 
 #pragma GCC diagnostic push
-#ifdef __clang__
+
+#if defined(__clang__)
 #pragma GCC diagnostic ignored "-Wparentheses-equality"
+#pragma GCC diagnostic ignored "-Wnull-pointer-arithmetic"
+#pragma GCC diagnostic ignored "-Wshorten-64-to-32"
 #endif
+
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wconversion"
+
 #include "../../3rdparty/dlmalloc/dlmalloc/malloc.c"
+
 #pragma GCC diagnostic pop
 
 void* ve_host_malloc(size_t size)

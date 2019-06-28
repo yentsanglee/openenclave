@@ -63,6 +63,8 @@ oe_result_t oe_create_enclave(
     ve_enclave_t* venclave = NULL;
     static pthread_once_t _once = PTHREAD_ONCE_INIT;
 
+    OE_UNUSED(type);
+
     if (enclave_out)
         *enclave_out = NULL;
 
@@ -108,7 +110,7 @@ oe_result_t oe_create_enclave(
         const ve_func_t func = VE_FUNC_INIT_ENCLAVE;
         uint64_t retval;
 
-        if (ve_enclave_call1(ve, func, &retval, (long)enclave) != 0)
+        if (ve_enclave_call1(ve, func, &retval, (uint64_t)enclave) != 0)
             OE_RAISE(OE_FAILURE);
 
         if (retval != 0)
@@ -354,6 +356,8 @@ done:
 
 int ve_handle_call_host_function(int fd, ve_call_buf_t* buf)
 {
+    OE_UNUSED(fd);
+
     buf->retval = (uint64_t)_handle_call_host_function(buf->arg1, _enclave_tls);
     return 0;
 }

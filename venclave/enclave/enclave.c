@@ -432,3 +432,18 @@ int ve_handle_get_settings(int fd, ve_call_buf_t* buf, int* exit_status)
 
     return 0;
 }
+
+int oe_host_printf(const char* fmt, ...)
+{
+    ve_va_list ap;
+    ve_va_start(ap, fmt);
+    ve_vprint(fmt, ap);
+    ve_va_end(ap);
+
+    return 0;
+}
+
+size_t oe_strlcpy(char* dest, const char* src, size_t size)
+{
+    return ve_strlcpy(dest, src, size);
+}

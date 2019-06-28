@@ -104,7 +104,11 @@ OE_INLINE int ve_call_send1(int fd, ve_func_t func, uint64_t arg1)
     return ve_call_send(fd, func, arg1, 0, 0, 0, 0, 0);
 }
 
-OE_INLINE int ve_call_send2(int fd, ve_func_t func, uint64_t arg1, uint64_t arg2)
+OE_INLINE int ve_call_send2(
+    int fd,
+    ve_func_t func,
+    uint64_t arg1,
+    uint64_t arg2)
 {
     return ve_call_send(fd, func, arg1, arg2, 0, 0, 0, 0);
 }

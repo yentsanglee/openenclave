@@ -13,7 +13,5 @@
 
     (B) Add a stack guard page.
 
-    (B) Change type of func parameters to ve_func_t.
-
     (B) Add ve_errno type and set in syscall functions.
 

@@ -130,7 +130,12 @@ static pid_t _fork_exec_enclave(
 
         execv(path, argv);
 
-        fprintf(stderr, "%s: execv() failed\n", __ve_arg0);
+        fprintf(
+            stderr,
+            "%s(%u): %s(): execv() failed\n",
+            __FILE__,
+            __LINE__,
+            __FUNCTION__);
         abort();
     }
 
@@ -536,7 +541,7 @@ int ve_enclave_run_xor_test(ve_enclave_t* enclave)
 {
     int ret = -1;
 
-    uint64_t retval = -1;
+    uint64_t retval = (uint64_t)-1;
     uint64_t x1 = ve_rand();
     uint64_t x2 = ve_rand();
     uint64_t x3 = ve_rand();
