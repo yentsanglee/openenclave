@@ -322,6 +322,7 @@ int ve_handle_call_terminate_thread(
 void _main_sig_handler(int arg)
 {
     ve_write(VE_STDERR_FILENO, "sighandler\n", 11);
+    ve_exit(0);
     (void)arg;
 }
 
@@ -343,7 +344,7 @@ static int _main(void)
     if (!_called_constructor)
         ve_panic("constructor not called");
 
-#if 1
+#if 0
     test_signals();
 #endif
 
