@@ -3,13 +3,11 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-    (A) Fix hang when threads call ve_exit (hanging in ve_join).
+    (A) Fix hang one thread call ve_exit
 
-    (A) Implement enclave settings macro.
+    (A) Implement atexit()
 
-    (A) Call atexit handlers on termination.
-
-    (A) Call fini functions on termination.
+    (A) Call destructors from exit.
 
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 

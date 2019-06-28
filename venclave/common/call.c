@@ -48,7 +48,7 @@ const char* ve_func_name(ve_func_t func)
 
 int ve_call_send(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t arg1,
     uint64_t arg2,
     uint64_t arg3,
@@ -86,7 +86,7 @@ done:
 
 int ve_call(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t* retval,
     uint64_t arg1,
     uint64_t arg2,

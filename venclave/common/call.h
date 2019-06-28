@@ -86,7 +86,7 @@ const char* ve_func_name(ve_func_t func);
 
 int ve_call_send(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t arg1,
     uint64_t arg2,
     uint64_t arg3,
@@ -94,24 +94,24 @@ int ve_call_send(
     uint64_t arg5,
     uint64_t arg6);
 
-OE_INLINE int ve_call_send0(int fd, uint64_t func)
+OE_INLINE int ve_call_send0(int fd, ve_func_t func)
 {
     return ve_call_send(fd, func, 0, 0, 0, 0, 0, 0);
 }
 
-OE_INLINE int ve_call_send1(int fd, uint64_t func, uint64_t arg1)
+OE_INLINE int ve_call_send1(int fd, ve_func_t func, uint64_t arg1)
 {
     return ve_call_send(fd, func, arg1, 0, 0, 0, 0, 0);
 }
 
-OE_INLINE int ve_call_send2(int fd, uint64_t func, uint64_t arg1, uint64_t arg2)
+OE_INLINE int ve_call_send2(int fd, ve_func_t func, uint64_t arg1, uint64_t arg2)
 {
     return ve_call_send(fd, func, arg1, arg2, 0, 0, 0, 0);
 }
 
 OE_INLINE int ve_call_send3(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t arg1,
     uint64_t arg2,
     uint64_t arg3)
@@ -121,7 +121,7 @@ OE_INLINE int ve_call_send3(
 
 OE_INLINE int ve_call_send4(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t arg1,
     uint64_t arg2,
     uint64_t arg3,
@@ -132,7 +132,7 @@ OE_INLINE int ve_call_send4(
 
 OE_INLINE int ve_call_send5(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t arg1,
     uint64_t arg2,
     uint64_t arg3,
@@ -144,7 +144,7 @@ OE_INLINE int ve_call_send5(
 
 OE_INLINE int ve_call_send6(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t arg1,
     uint64_t arg2,
     uint64_t arg3,
@@ -159,7 +159,7 @@ int ve_call_recv(int fd, uint64_t* retval);
 
 int ve_call(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t* retval,
     uint64_t arg1,
     uint64_t arg2,
@@ -168,19 +168,19 @@ int ve_call(
     uint64_t arg5,
     uint64_t arg6);
 
-OE_INLINE int ve_call0(int fd, uint64_t func, uint64_t* retval)
+OE_INLINE int ve_call0(int fd, ve_func_t func, uint64_t* retval)
 {
     return ve_call(fd, func, retval, 0, 0, 0, 0, 0, 0);
 }
 
-OE_INLINE int ve_call1(int fd, uint64_t func, uint64_t* retval, uint64_t arg1)
+OE_INLINE int ve_call1(int fd, ve_func_t func, uint64_t* retval, uint64_t arg1)
 {
     return ve_call(fd, func, retval, arg1, 0, 0, 0, 0, 0);
 }
 
 OE_INLINE int ve_call2(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t* retval,
     uint64_t arg1,
     uint64_t arg2)
@@ -190,7 +190,7 @@ OE_INLINE int ve_call2(
 
 OE_INLINE int ve_call3(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t* retval,
     uint64_t arg1,
     uint64_t arg2,
@@ -201,7 +201,7 @@ OE_INLINE int ve_call3(
 
 OE_INLINE int ve_call4(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t* retval,
     uint64_t arg1,
     uint64_t arg2,
@@ -213,7 +213,7 @@ OE_INLINE int ve_call4(
 
 OE_INLINE int ve_call5(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t* retval,
     uint64_t arg1,
     uint64_t arg2,
@@ -226,7 +226,7 @@ OE_INLINE int ve_call5(
 
 OE_INLINE int ve_call6(
     int fd,
-    uint64_t func,
+    ve_func_t func,
     uint64_t* retval,
     uint64_t arg1,
     uint64_t arg2,
