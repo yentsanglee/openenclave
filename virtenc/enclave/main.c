@@ -264,6 +264,11 @@ int ve_handle_call_ping(int fd, ve_call_buf_t* buf, int* exit_status)
 
     ve_print("encl: ping: value=%lx [%u]\n", buf->arg1, ve_getpid());
 
+#if 0
+    if (ve_getpid() != __ve_main_pid)
+        ve_exit(99);
+#endif
+
     ve_assert(_pid_tls == ve_getpid());
 
     test_malloc(fd);
@@ -314,12 +319,28 @@ int ve_handle_call_terminate_thread(
     return 1;
 }
 
+void _main_sig_handler(int arg)
+{
+    ve_write(VE_STDERR_FILENO, "sighandler\n", 11);
+    (void)arg;
+}
+
 static int _main(void)
 {
     int exit_status;
 
+    __ve_main_pid = ve_getpid();
+
     if (!_called_constructor)
         ve_panic("constructor not called");
+
+    if (ve_signal(VE_SIGUSR1, _main_sig_handler) == VE_SIG_ERR)
+        ve_panic("ve_signal() failed");
+
+#if 0
+    if (ve_kill(__ve_main_pid, VE_SIGUSR1) != 0)
+        ve_panic("ve_kill() failed");
+#endif
 
     /* Wait here to be initialized and to receive the main socket. */
     if (_handle_init() != 0)

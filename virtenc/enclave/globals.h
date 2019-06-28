@@ -29,4 +29,7 @@ extern uint64_t __ve_self;
 /* Socket for the current thread. */
 extern __thread int __ve_thread_sock_tls;
 
+/* Process ID of main process. */
+extern int __ve_main_pid;
+
 #endif /* _VE_ENCLAVE_GLOBALS_H */

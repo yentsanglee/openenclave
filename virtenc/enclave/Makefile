@@ -84,6 +84,7 @@ SOURCES += safecrt.c
 SOURCES += -DOE_BUILD_ENCLAVE
 SOURCES += result.c
 SOURCES += memmove.c
+SOURCES += signal.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles
 

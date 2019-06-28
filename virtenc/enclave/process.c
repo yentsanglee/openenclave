@@ -4,12 +4,29 @@
 #include "process.h"
 #include "globals.h"
 #include "print.h"
+#include "signal.h"
 #include "syscall.h"
 #include "thread.h"
 #include "time.h"
 
 VE_NO_RETURN void ve_exit(int status)
 {
+#if 0
+    if (ve_getpid() != __ve_main_pid)
+    {
+ve_print("KILL=%d\n", __ve_main_pid);
+        if (ve_kill(__ve_main_pid, VE_SIGUSR1) != 0)
+        {
+            ve_print("KILL FAILED\n");
+        }
+        //ve_kill(__ve_main_pid, VE_SIGHUP);
+        //ve_kill(__ve_main_pid, VE_SIGQUIT);
+        //ve_kill(__ve_main_pid, VE_SIGILL);
+        //ve_kill(__ve_main_pid, VE_SIGABRT);
+    }
+
+ve_print("EXIT\n");
+#endif
     for (;;)
         ve_syscall1(VE_SYS_exit, status);
 }
