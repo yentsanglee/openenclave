@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/bits/properties.h>
 #include <openenclave/bits/safemath.h>
 #include <openenclave/edger8r/common.h>
 #include <openenclave/enclave.h>
@@ -400,4 +401,34 @@ oe_result_t oe_call_host_function(
         output_buffer,
         output_buffer_size,
         output_bytes_written);
+}
+
+extern volatile const oe_sgx_enclave_properties_t oe_enclave_properties_sgx;
+
+int ve_handle_get_settings(int fd, ve_call_buf_t* buf, int* exit_status)
+{
+    ve_enclave_settings_t* settings = (ve_enclave_settings_t*)buf->arg1;
+
+    OE_UNUSED(fd);
+    OE_UNUSED(exit_status);
+
+    if (settings)
+    {
+        settings->num_heap_pages =
+            oe_enclave_properties_sgx.header.size_settings.num_heap_pages;
+
+        settings->num_stack_pages =
+            oe_enclave_properties_sgx.header.size_settings.num_stack_pages;
+
+        settings->num_tcs =
+            oe_enclave_properties_sgx.header.size_settings.num_tcs;
+
+        buf->retval = 0;
+    }
+    else
+    {
+        buf->retval = (uint64_t)-1;
+    }
+
+    return 0;
 }

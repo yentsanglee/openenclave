@@ -73,7 +73,6 @@ SOURCES += process.c
 SOURCES += io.c
 SOURCES += call.c
 SOURCES += lock.c
-SOURCES += settings.c
 SOURCES += hexdump.c
 SOURCES += register.c
 SOURCES += thread.c

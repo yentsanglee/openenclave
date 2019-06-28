@@ -13,7 +13,6 @@
 #include "recvfd.h"
 #include "register.h"
 #include "sbrk.h"
-#include "settings.h"
 #include "shm.h"
 #include "signal.h"
 #include "string.h"
@@ -269,27 +268,6 @@ int ve_handle_call_ping(int fd, ve_call_buf_t* buf, int* exit_status)
         ve_put("encl: ve_call() failed\n");
 
     buf->retval = retval;
-
-    return 0;
-}
-
-int ve_handle_get_settings(int fd, ve_call_buf_t* buf, int* exit_status)
-{
-    ve_enclave_settings_t* settings = (ve_enclave_settings_t*)buf->arg1;
-
-    OE_UNUSED(fd);
-    OE_UNUSED(exit_status);
-
-    if (settings)
-    {
-        /* ATTN: get this from the enclave information struct. */
-        *settings = __ve_enclave_settings;
-        buf->retval = 0;
-    }
-    else
-    {
-        buf->retval = (uint64_t)-1;
-    }
 
     return 0;
 }
