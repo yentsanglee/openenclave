@@ -2,19 +2,21 @@
 // Licensed under the MIT License.
 
 #include <openenclave/enclave.h>
-#include "print.h"
-#include "process.h"
-#include "string.h"
-#include "test_t.h"
+#include <openenclave/internal/print.h>
+#include <openenclave/corelibc/string.h>
+#include "sample_t.h"
 
 uint64_t test_ecall(uint64_t x)
 {
     uint64_t retval;
 
     if (test_ocall(&retval, x) != OE_OK)
-        ve_panic("test_ocall() failed");
+    {
+        oe_host_printf("test_ocall() failed\n");
+        oe_abort();
+    }
 
-    ve_print("retval=%lu\n", retval);
+    oe_host_printf("retval=%lu\n", retval);
 
     return retval;
 }
@@ -22,7 +24,7 @@ uint64_t test_ecall(uint64_t x)
 int test1(char* in, char out[100])
 {
     if (in)
-        ve_strlcpy(out, in, 100);
+        oe_strlcpy(out, in, 100);
 
     return 0;
 }
