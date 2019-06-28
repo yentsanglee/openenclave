@@ -19,31 +19,27 @@ struct k_sigaction
     unsigned long flags;
     void (*restorer)(void);
     unsigned mask[2];
+    uint64_t padding[16];
 };
 
-static void _restorer(void)
-{
-    ve_write(2, "restore\n", 8);
-}
+extern void __ve_restore_rt(void);
 
 int ve_sigaction(
     int signum,
     const struct ve_sigaction* act,
     struct ve_sigaction* oldact)
 {
-    struct k_sigaction kact;
-    struct k_sigaction koldact;
+    __attribute__((aligned(16))) struct k_sigaction kact;
+    __attribute__((aligned(16))) struct k_sigaction koldact;
 
     ve_memset(&kact, 0, sizeof(kact));
     ve_memset(&koldact, 0, sizeof(koldact));
 
     kact.handler = act->sa_handler;
     kact.flags = (unsigned long)(act->sa_flags | SA_RESTORER);
-    kact.restorer = _restorer;
+    kact.restorer = __ve_restore_rt;
 #if 0
     ve_memcpy(&kact.mask, &act->sa_mask, _NSIG / 8);
-#else
-    ve_memset(&kact.mask, 0, sizeof(kact.mask));
 #endif
 
     int rval = (int)ve_syscall4(

@@ -16,7 +16,7 @@ ROOT = $(CURDIR)/../..
 CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -g
-CFLAGS += -O1
+#CFLAGS += -O1
 #CFLAGS += -O3
 #CFLAGS += -fPIE
 CFLAGS += -fPIC
@@ -85,6 +85,7 @@ SOURCES += -DOE_BUILD_ENCLAVE
 SOURCES += result.c
 SOURCES += memmove.c
 SOURCES += signal.c
+SOURCES += restore.S
 
 #DYNAMIC_LDFLAGS += -nostartfiles
 

@@ -325,6 +325,21 @@ void _main_sig_handler(int arg)
     (void)arg;
 }
 
+void test_signals(void)
+{
+    if (ve_signal(VE_SIGUSR1, _main_sig_handler) == VE_SIG_ERR)
+        ve_panic("ve_signal() failed");
+
+    ve_write(VE_STDERR_FILENO, "xxxx\n", 5);
+
+    if (ve_kill(__ve_main_pid, VE_SIGUSR1) != 0)
+        ve_panic("ve_kill() failed");
+
+    ve_write(VE_STDERR_FILENO, "yyyy\n", 5);
+
+    return;
+}
+
 static int _main(void)
 {
     int exit_status;
@@ -334,12 +349,8 @@ static int _main(void)
     if (!_called_constructor)
         ve_panic("constructor not called");
 
-    if (ve_signal(VE_SIGUSR1, _main_sig_handler) == VE_SIG_ERR)
-        ve_panic("ve_signal() failed");
-
-#if 0
-    if (ve_kill(__ve_main_pid, VE_SIGUSR1) != 0)
-        ve_panic("ve_kill() failed");
+#if 1
+    test_signals();
 #endif
 
     /* Wait here to be initialized and to receive the main socket. */
