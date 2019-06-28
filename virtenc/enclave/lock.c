@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "lock.h"
+#include "futex.h"
 #include "print.h"
 #include "syscall.h"
 
@@ -19,30 +20,10 @@ struct _libc
 
 static struct _libc libc = {true};
 
-static int __futexwait(volatile int* uaddr, int val, int priv)
-{
-    const int FUTEX_WAIT = 0;
-    int futex_op = FUTEX_WAIT;
-
-    if (priv)
-        futex_op |= FUTEX_PRIVATE_FLAG;
-
-    return (int)ve_syscall6(VE_SYS_futex, (long)uaddr, futex_op, val, 0, 0, 0);
-}
-
-static int __wake(volatile int* uaddr, int val, int priv)
-{
-    const int FUTEX_WAKE = 1;
-    int futex_op = FUTEX_WAKE;
-
-    if (priv)
-        futex_op |= FUTEX_PRIVATE_FLAG;
-
-    return (int)ve_syscall6(VE_SYS_futex, (long)uaddr, futex_op, val, 0, 0, 0);
-}
-
 #define __lock __ve_lock
 #define __unlock __ve_unlock
+#define __futexwait ve_futex_wait
+#define __wake ve_futex_wake
 
 #include "../../3rdparty/musl/musl/src/thread/__lock.c"
 
