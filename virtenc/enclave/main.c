@@ -260,11 +260,6 @@ int ve_handle_call_ping(int fd, ve_call_buf_t* buf, int* exit_status)
 
     ve_print("encl: ping: value=%lx [%u]\n", buf->arg1, ve_getpid());
 
-#if 0
-    if (ve_getpid() != __ve_main_pid)
-        ve_exit(99);
-#endif
-
     ve_assert(_pid_tls == ve_getpid());
 
     test_malloc(fd);
