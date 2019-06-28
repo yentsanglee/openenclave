@@ -158,19 +158,37 @@ oe_result_t oe_call_enclave_function_by_table_id(
     oe_enclave_t* enclave,
     uint64_t table_id,
     uint64_t function_id,
-    const void* input_buffer,
+    const void* input_buffer_,
     size_t input_buffer_size,
-    void* output_buffer,
+    void* output_buffer_,
     size_t output_buffer_size,
     size_t* output_bytes_written)
 {
     oe_result_t result = OE_UNEXPECTED;
     ve_enclave_t* ve = _cast_enclave(enclave);
     oe_call_enclave_function_args_t* args = NULL;
+    void* input_buffer = NULL;
+    void* output_buffer = NULL;
 
     /* Reject invalid parameters */
     if (!ve)
         OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Transfer the input buffer to host memory. */
+    if (input_buffer_ && input_buffer_size != 0)
+    {
+        if (!(input_buffer = ve_host_malloc(input_buffer_size)))
+            OE_RAISE(OE_OUT_OF_MEMORY);
+
+        memcpy(input_buffer, input_buffer_, input_buffer_size);
+    }
+
+    /* Allocate an output buffer */
+    if (output_buffer_ && output_buffer_size != 0)
+    {
+        if (!(output_buffer = ve_host_calloc(1, output_buffer_size)))
+            OE_RAISE(OE_OUT_OF_MEMORY);
+    }
 
     /* Copy these args to the host heap. */
     if (!(args = ve_host_calloc(1, sizeof(*args))))
@@ -213,6 +231,10 @@ oe_result_t oe_call_enclave_function_by_table_id(
         OE_CHECK((oe_result_t)retval);
     }
 
+    /* Copy the output buffer back. */
+    if (output_buffer_size)
+        memcpy(output_buffer_, output_buffer, output_buffer_size);
+
     /* Check the result */
     OE_CHECK(args->result);
 
@@ -220,6 +242,12 @@ oe_result_t oe_call_enclave_function_by_table_id(
     result = OE_OK;
 
 done:
+
+    if (input_buffer)
+        ve_host_free(input_buffer);
+
+    if (output_buffer)
+        ve_host_free(output_buffer);
 
     if (args)
         ve_host_free(args);
