@@ -10,4 +10,4 @@ target_include_directories(sample_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(sample_enc PRIVATE
     ${CMAKE_BINARY_DIR}/output/include/openenclave/libc)
 
-target_link_libraries(sample_enc oevenclave)
+target_link_libraries(sample_enc oevenclave oelibc_includes)
