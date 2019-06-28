@@ -86,6 +86,7 @@ SOURCES += result.c
 SOURCES += memmove.c
 SOURCES += signal.c
 SOURCES += restore.S
+SOURCES += futex.c
 
 #DYNAMIC_LDFLAGS += -nostartfiles
 

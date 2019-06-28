@@ -55,7 +55,7 @@ int ve_clone(
     void* arg,
     int* ptid,
     void* tls,
-    int* ctid);
+    volatile int* ctid);
 
 void ve_call_init_functions(void);
 

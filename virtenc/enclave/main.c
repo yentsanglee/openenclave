@@ -258,7 +258,8 @@ int ve_handle_call_ping(int fd, ve_call_buf_t* buf, int* exit_status)
 
     OE_UNUSED(exit_status);
 
-    ve_print("encl: ping: value=%lx [%u]\n", buf->arg1, ve_getpid());
+    ve_print(
+        "encl: ping: value=%lx [%u:%u]\n", buf->arg1, ve_getpid(), ve_gettid());
 
     ve_assert(_pid_tls == ve_getpid());
 
@@ -305,7 +306,13 @@ int ve_handle_call_terminate_thread(
 
     ve_print("encl: thread exit: tid=%d\n", ve_gettid());
 
-    *exit_status = 0;
+    *exit_status = 99;
+
+#if 0
+    uint32_t sec = (uint32_t)(2 + (ve_gettid() - __ve_main_pid) * 2);
+    ve_print("sec=%u\n", sec);
+    ve_sleep(sec);
+#endif
 
     return 1;
 }

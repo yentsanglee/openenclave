@@ -11,6 +11,10 @@
 
 VE_NO_RETURN void ve_exit(int status)
 {
+    /* If this is a thread, then set the return value. */
+    if (ve_getpid() != ve_gettid())
+        ve_thread_set_retval(status);
+
     for (;;)
         ve_syscall1(VE_SYS_exit, status);
 }

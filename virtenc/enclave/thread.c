@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "thread.h"
+#include "futex.h"
 #include "globals.h"
 #include "hexdump.h"
 #include "malloc.h"
@@ -27,13 +28,6 @@ typedef struct _thread_base
     uint64_t canary2;
 } thread_base_t;
 
-typedef struct _thread_arg
-{
-    struct _ve_thread* thread;
-    int (*func)(void* arg);
-    void* arg;
-} thread_arg_t;
-
 /* Represents a thread (the FS register points to instances of this) */
 struct _ve_thread
 {
@@ -45,8 +39,16 @@ struct _ve_thread
     void* stack;
     size_t stack_size;
     int ptid;
-    int ctid;
+    volatile int ctid;
+    int retval;
 };
+
+typedef struct _thread_arg
+{
+    struct _ve_thread* thread;
+    int (*func)(void* arg);
+    void* arg;
+} thread_arg_t;
 
 static uint64_t _round_up_to_multiple(uint64_t x, uint64_t m)
 {
@@ -108,14 +110,13 @@ done:
 static int _thread_func(void* arg_)
 {
     thread_arg_t arg = *(thread_arg_t*)arg_;
-    int retval;
 
     ve_free(arg_);
 
-    /* Invoke the caller's thread routine. */
-    retval = arg.func(arg.arg);
+    /* Invoke the caller's thread routine and save the return value. */
+    arg.thread->retval = arg.func(arg.arg);
 
-    return retval;
+    return 0;
 }
 
 int ve_thread_create(
@@ -203,11 +204,13 @@ int ve_thread_create(
         flags |= VE_CLONE_SIGHAND;
         flags |= VE_CLONE_SYSVSEM;
         flags |= VE_CLONE_DETACHED;
+        flags |= VE_CLONE_THREAD;
         flags |= VE_SIGCHLD;
         flags |= VE_CLONE_PARENT_SETTID;
         flags |= VE_SIGCHLD;
         flags |= VE_CLONE_CHILD_SETTID;
         flags |= VE_CLONE_SETTLS;
+        flags |= VE_CLONE_CHILD_CLEARTID;
 
         /* Create the thread argument structure. */
         {
@@ -255,8 +258,6 @@ done:
 int ve_thread_join(ve_thread_t thread, int* retval)
 {
     int ret = -1;
-    int tid;
-    int status;
 
     if (retval)
         *retval = 0;
@@ -264,22 +265,40 @@ int ve_thread_join(ve_thread_t thread, int* retval)
     if (!thread)
         goto done;
 
-    if ((tid = ve_waitpid(thread->ptid, &status, 0)) < 0)
-        goto done;
+    /* Wait for thread to return or exit and clear thread->ctid. */
+    while (thread->ctid)
+    {
+        ve_futex_wait(&thread->ctid, thread->ptid, 0);
+    }
 
-    if (tid != thread->ptid)
-        goto done;
+    if (retval)
+        *retval = thread->retval;
 
     /* Free the stack. */
     ve_free(thread->stack);
-
-    if (retval)
-        *retval = VE_WEXITSTATUS(status);
 
     /* This frees the TLS and the tread_t struct. */
     ve_free(thread->tls);
 
     ret = 0;
+
+done:
+    return ret;
+}
+
+int ve_thread_set_retval(int retval)
+{
+    int ret = -1;
+    ve_thread_t thread;
+
+    /* If not a thread. */
+    if ((ve_getpid() == ve_gettid()))
+        goto done;
+
+    if (!(thread = ve_thread_self()))
+        goto done;
+
+    thread->retval = retval;
 
 done:
     return ret;
