@@ -221,10 +221,6 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
     ve_close(VE_STDOUT_FILENO);
     ve_close(VE_STDERR_FILENO);
 
-#if 0
-    ve_exit(0);
-#endif
-
     /* Terminate. */
     *exit_status = 0;
     return 1;
@@ -321,9 +317,8 @@ int ve_handle_call_terminate_thread(
 
 void _main_sig_handler(int arg)
 {
-    ve_write(VE_STDERR_FILENO, "sighandler\n", 11);
-    ve_exit(0);
     (void)arg;
+    ve_write(VE_STDERR_FILENO, "sighandler\n", 11);
 }
 
 void test_signals(void)

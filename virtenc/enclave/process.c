@@ -11,7 +11,7 @@
 
 VE_NO_RETURN void ve_exit(int status)
 {
-#if 0
+#if 1
     if (ve_getpid() != __ve_main_pid)
         ve_kill(__ve_main_pid, VE_SIGUSR1);
 #endif

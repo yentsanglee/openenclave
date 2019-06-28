@@ -62,6 +62,14 @@ ve_thread_t ve_thread_self(void)
     return thread;
 }
 
+int ve_thread_tid(ve_thread_t thread)
+{
+    if (!thread)
+        return -1;
+
+    return thread->ctid;
+}
+
 static int _get_tls(
     const struct _ve_thread* thread,
     const void** tls,
