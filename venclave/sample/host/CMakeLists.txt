@@ -3,7 +3,7 @@
 
 oeedl_file(../sample.edl host gen)
 
-add_executable(sample_host host.c ${gen})
+add_executable(sample_host host.c sample_u_wrap.c)
 
 target_include_directories(
     sample_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

@@ -22,7 +22,6 @@ add_library(oevenclave STATIC
     hexdump.c
     register.c
     thread.c
-    test_t_wrap.c
     enclave.c
     safecrt.c
     result.c
