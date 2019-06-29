@@ -447,3 +447,23 @@ size_t oe_strlcpy(char* dest, const char* src, size_t size)
 {
     return ve_strlcpy(dest, src, size);
 }
+
+void* oe_malloc(size_t size)
+{
+    return ve_malloc(size);
+}
+
+void oe_free(void* ptr)
+{
+    return ve_free(ptr);
+}
+
+void* oe_calloc(size_t nmemb, size_t size)
+{
+    return ve_calloc(nmemb, size);
+}
+
+void* oe_realloc(void* ptr, size_t size)
+{
+    return ve_realloc(ptr, size);
+}

@@ -1,4 +1,0 @@
-#!/bin/bash
-BUILDDIR=/root/openenclave/build/venclave/sample
-ls ${BUILDDIR}
-${BUILDDIR}/host/sample_host ${BUILDDIR}/enc/sample_enc

@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/corelibc/stdlib.h>
 #include <openenclave/corelibc/string.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/print.h>
@@ -9,6 +10,10 @@
 uint64_t test_ecall(uint64_t x)
 {
     uint64_t retval;
+
+#if 0
+    oe_malloc(100);
+#endif
 
     if (test_ocall(&retval, x) != OE_OK)
     {
