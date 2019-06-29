@@ -10,10 +10,10 @@ add_test(vsample
 
 set(VALGRIND_OPTS
     --tool=memcheck
+    --error-exitcode=99
     --leak-check=full
-    #--show-leak-kinds=default
-    #--errors-for-leak-kinds=default
-    --error-exitcode=1
+    --show-leak-kinds=definite,possible
+    --errors-for-leak-kinds=definite,possible
     --trace-children=yes
     --soname-synonyms=somalloc=NONE
     --track-fds=yes
@@ -22,7 +22,6 @@ set(VALGRIND_OPTS
     --track-origins=yes
     --malloc-fill=0xAA
     --free-fill=0xDD)
-
 
 add_test(vsample-valgrind valgrind ${VALGRIND_OPTS}
     ${CMAKE_CURRENT_BINARY_DIR}/host/sample_host
