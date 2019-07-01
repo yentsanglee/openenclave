@@ -109,3 +109,8 @@ void* ve_memalign(size_t alignment, size_t size)
 {
     return memalign(alignment, size);
 }
+
+int ve_posix_memalign(void** memptr, size_t alignment, size_t size)
+{
+    return dlposix_memalign(memptr, alignment, size);
+}

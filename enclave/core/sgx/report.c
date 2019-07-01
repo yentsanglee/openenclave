@@ -20,6 +20,11 @@ OE_STATIC_ASSERT(sizeof(oe_identity_t) == 96);
 
 OE_STATIC_ASSERT(sizeof(oe_report_t) == 144);
 
+oe_result_t oe_ereport(
+    sgx_target_info_t* target_info_align_512,
+    sgx_report_data_t* report_data_align_128,
+    sgx_report_t* report_align_512);
+
 oe_result_t sgx_create_report(
     const void* report_data,
     size_t report_data_size,
@@ -54,10 +59,7 @@ oe_result_t sgx_create_report(
             &rd, sizeof(sgx_report_data_t), report_data, report_data_size));
 
     /* Invoke EREPORT instruction */
-    asm volatile("ENCLU"
-                 :
-                 : "a"(ENCLU_EREPORT), "b"(&ti), "c"(&rd), "d"(&r)
-                 : "memory");
+    OE_CHECK(oe_ereport(&ti, &rd, &r));
 
     /* Copy REPORT to caller's buffer */
     OE_CHECK(

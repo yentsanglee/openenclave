@@ -4,9 +4,9 @@
 add_subdirectory(host)
 add_subdirectory(enc)
 
-#add_test(vsample1
-#    ${CMAKE_CURRENT_BINARY_DIR}/host/vsample1_host
-#    ${CMAKE_CURRENT_BINARY_DIR}/enc/vsample1_enc)
+add_test(vsample1
+    ${CMAKE_CURRENT_BINARY_DIR}/host/vsample1_host
+    ${CMAKE_CURRENT_BINARY_DIR}/enc/vsample1_enc)
 
 set(VALGRIND_OPTS
     --tool=memcheck

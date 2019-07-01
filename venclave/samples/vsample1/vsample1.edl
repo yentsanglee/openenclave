@@ -7,6 +7,8 @@ enclave {
         public uint64_t test_ecall(uint64_t x);
 
         public int test1([string, in] char* in, [out] char out[100]);
+
+        public int test_time();
     };
 
     untrusted {

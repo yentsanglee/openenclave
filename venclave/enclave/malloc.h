@@ -16,4 +16,6 @@ void* ve_realloc(void* ptr, size_t size);
 
 void* ve_memalign(size_t alignment, size_t size);
 
+int ve_posix_memalign(void** memptr, size_t alignment, size_t size);
+
 #endif /* _VE_ENCLAVE_MALLOC_H */

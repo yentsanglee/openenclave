@@ -11,6 +11,7 @@ if (OE_SGX)
         sgx/calls.c
         sgx/cpuid.c
         sgx/debugmalloc.c
+        sgx/ereport.c
         sgx/entropy.c
         sgx/errno.c
         sgx/exception.c

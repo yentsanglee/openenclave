@@ -11,6 +11,8 @@
 
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
+    (B) Implement vectored exceptions.
+
     (B) Add a stack guard page.
 
     (B) Add ve_errno type and set in syscall functions.

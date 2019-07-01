@@ -38,7 +38,7 @@ static void _close_standard_devices(void)
 void* _thread_func(void* arg)
 {
     oe_enclave_t* enclave = (oe_enclave_t*)arg;
-    const uint64_t N = 1000;
+    const uint64_t N = 10;
 
     printf("=== new thread\n");
     fflush(stdout);
@@ -98,6 +98,15 @@ int main(int argc, const char* argv[])
         if (pthread_join(threads[i], NULL) != 0)
             err("pthread_join() failed");
     }
+
+#if 0
+    {
+        int retval;
+
+        if ((result = test_time(enclave, &retval)) != OE_OK || retval != 0)
+            err("test_time() failed: %s: %d\n", oe_result_str(result), retval);
+    }
+#endif
 
 #if 0
     {

@@ -11,5 +11,7 @@ target_include_directories(vsample1_enc PRIVATE
     ${CMAKE_BINARY_DIR}/output/include/openenclave/libc)
 
 target_link_libraries(vsample1_enc
+    -Wl,--whole-archive
     oevenclave
+    -Wl,--no-whole-archive
     oelibc_includes)

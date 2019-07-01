@@ -3,22 +3,29 @@
 
 #include <openenclave/bits/properties.h>
 #include <openenclave/bits/safemath.h>
+#include <openenclave/corelibc/errno.h>
+#include <openenclave/corelibc/stdio.h>
 #include <openenclave/edger8r/common.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/raise.h>
+#include <openenclave/internal/rdrand.h>
+#include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/thread.h>
 #include "assert.h"
 #include "call.h"
 #include "futex.h"
 #include "globals.h"
 #include "hexdump.h"
+#include "io.h"
 #include "lock.h"
 #include "malloc.h"
 #include "print.h"
 #include "process.h"
+#include "sbrk.h"
 #include "string.h"
 #include "thread.h"
+#include "time.h"
 #include "trace.h"
 
 extern const oe_ecall_func_t __oe_ecalls_table[];
@@ -41,13 +48,38 @@ void oe_abort(void)
     ve_abort();
 }
 
-void __oe_assert_fail(
-    const char* expr,
-    const char* file,
-    int line,
-    const char* func)
+void oe_sleep_msec(uint64_t milliseconds)
 {
-    __ve_assert_fail(expr, file, line, func);
+    struct ve_timespec ts;
+    const struct ve_timespec* req = &ts;
+    struct ve_timespec rem = {0, 0};
+
+    ts.tv_sec = (time_t)(milliseconds / 1000);
+    ts.tv_nsec = (long)((milliseconds % 1000) * 1000000);
+
+    while (ve_nanosleep(req, &rem) == -1)
+        req = &rem;
+}
+
+uint64_t oe_get_time(void)
+{
+    struct ve_timespec ts;
+
+    if (ve_clock_gettime(VE_CLOCK_REALTIME, &ts) != 0)
+        return 0;
+
+    return ((uint64_t)ts.tv_sec * 1000) + ((uint64_t)ts.tv_nsec / 1000000);
+}
+
+time_t oe_time(time_t* tloc)
+{
+    uint64_t msec = oe_get_time() / 1000;
+    time_t time = (time_t)(msec > OE_LONG_MAX ? OE_LONG_MAX : msec);
+
+    if (tloc)
+        *tloc = time;
+
+    return time;
 }
 
 oe_enclave_t* oe_get_enclave(void)
@@ -147,22 +179,33 @@ bool oe_is_outside_enclave(const void* ptr, size_t size)
     return true;
 }
 
+static oe_result_t _oe_enclave_status = OE_OK;
+
 oe_result_t oe_get_enclave_status(void)
 {
-    /* ATTN: implement! */
-    return OE_OK;
+    return _oe_enclave_status;
 }
+
+static log_level_t _active_log_level = OE_LOG_LEVEL_ERROR;
 
 oe_result_t oe_log(log_level_t level, const char* fmt, ...)
 {
-    ve_va_list ap;
+    if (level <= _active_log_level)
+    {
+        ve_va_list ap;
 
-    ve_va_start(ap, fmt);
-    ve_print("oe_log: %u: ", level);
-    ve_vprint(fmt, ap);
-    ve_va_end(ap);
+        ve_va_start(ap, fmt);
+        ve_print("oe_log: %u: ", level);
+        ve_vprint(fmt, ap);
+        ve_va_end(ap);
+    }
 
     return OE_OK;
+}
+
+log_level_t get_current_logging_level(void)
+{
+    return _active_log_level;
 }
 
 typedef struct _oe_thread_data oe_thread_data_t;
@@ -520,6 +563,89 @@ int ve_handle_get_settings(int fd, ve_call_buf_t* buf, int* exit_status)
     return 0;
 }
 
+int oe_host_write(int device, const char* str, size_t len)
+{
+    int ret = -1;
+    int fd;
+
+    switch (device)
+    {
+        case 0:
+            fd = VE_STDOUT_FILENO;
+            break;
+        case 1:
+            fd = VE_STDERR_FILENO;
+            break;
+        default:
+        {
+            goto done;
+        }
+    }
+
+    if (len == (size_t)-1)
+        len = ve_strlen(str);
+
+    if (ve_write(fd, str, len) != (ssize_t)len)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+int oe_host_vfprintf(int device, const char* fmt, oe_va_list ap_)
+{
+    int ret = -1;
+    int n;
+    char buf[256];
+    char* p = buf;
+
+    /* Try first with a fixed-length scratch buffer */
+    {
+        oe_va_list ap;
+        oe_va_copy(ap, ap_);
+        n = oe_vsnprintf(buf, sizeof(buf), fmt, ap);
+        oe_va_end(ap);
+    }
+
+    /* If string was truncated, retry with correctly sized buffer */
+    if (n >= (int)sizeof(buf))
+    {
+        if (!(p = ve_malloc((uint32_t)n + 1)))
+            goto done;
+
+        oe_va_list ap;
+        oe_va_copy(ap, ap_);
+        n = oe_vsnprintf(p, (size_t)n + 1, fmt, ap);
+        oe_va_end(ap);
+    }
+
+    if (oe_host_write(device, p, (size_t)-1) != 0)
+        goto done;
+
+    ret = n;
+
+done:
+
+    if (p != buf)
+        ve_free(p);
+
+    return ret;
+}
+
+int oe_host_fprintf(int device, const char* fmt, ...)
+{
+    int n;
+
+    oe_va_list ap;
+    oe_va_start(ap, fmt);
+    n = oe_host_vfprintf(device, fmt, ap);
+    oe_va_end(ap);
+
+    return n;
+}
+
 int oe_host_printf(const char* fmt, ...)
 {
     ve_va_list ap;
@@ -528,11 +654,6 @@ int oe_host_printf(const char* fmt, ...)
     ve_va_end(ap);
 
     return 0;
-}
-
-size_t oe_strlcpy(char* dest, const char* src, size_t size)
-{
-    return ve_strlcpy(dest, src, size);
 }
 
 void* oe_malloc(size_t size)
@@ -553,4 +674,97 @@ void* oe_calloc(size_t nmemb, size_t size)
 void* oe_realloc(void* ptr, size_t size)
 {
     return ve_realloc(ptr, size);
+}
+
+void* oe_memalign(size_t alignment, size_t size)
+{
+    return ve_memalign(alignment, size);
+}
+
+int oe_posix_memalign(void** memptr, size_t alignment, size_t size)
+{
+    return ve_posix_memalign(memptr, alignment, size);
+}
+
+/* Non-secure replacement for RDRAND, which crashes Valgrind. */
+uint64_t oe_rdrand(void)
+{
+    union {
+        uint64_t word;
+        uint8_t bytes[sizeof(uint64_t)];
+    } r;
+
+    /* Initialize all bytes with an increasing counter. */
+    {
+        static uint8_t _counter = 0;
+        static oe_spinlock_t _lock = OE_SPINLOCK_INITIALIZER;
+
+        oe_spin_lock(&_lock);
+
+        for (size_t i = 0; i < sizeof(uint64_t); i++)
+            r.bytes[i] = _counter++;
+
+        oe_spin_unlock(&_lock);
+    }
+
+    /* Initialize each byte with a function of the time. */
+    for (size_t i = 0; i < sizeof(uint64_t); i++)
+    {
+        uint8_t xor = 0;
+        struct ve_timespec ts;
+
+        if (ve_clock_gettime(VE_CLOCK_REALTIME, &ts) != 0)
+            oe_abort();
+
+        const uint8_t* p = (const uint8_t*)&ts;
+        const uint8_t* end = p + sizeof(ts);
+
+        while (p != end)
+            xor ^= *p++;
+
+        r.bytes[i] = xor;
+    }
+
+    return r.word;
+}
+
+int* __oe_errno_location(void)
+{
+    static __thread int _errno = 0;
+    return &_errno;
+}
+
+void* oe_sbrk(intptr_t increment)
+{
+    return ve_sbrk(increment);
+}
+
+/* Wrapper for the EGETKEY instruction. */
+uint64_t oe_egetkey(
+    const sgx_key_request_t* sgx_key_request,
+    sgx_key_t* sgx_key)
+{
+    OE_UNUSED(sgx_key_request);
+    OE_UNUSED(sgx_key);
+
+    /* ATTN: implement this  */
+    oe_abort();
+
+    return 0;
+}
+
+/* Wrapper for the EREPORT instruction. */
+oe_result_t oe_ereport(
+    sgx_target_info_t* target_info_align_512,
+    sgx_report_data_t* report_data_align_128,
+    sgx_report_t* report_align_512)
+{
+    OE_UNUSED(target_info_align_512);
+    OE_UNUSED(report_data_align_128);
+    OE_UNUSED(report_align_512);
+
+    /* ATTN: implement this  */
+    oe_abort();
+
+    return OE_OK;
 }

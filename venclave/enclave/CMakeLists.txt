@@ -56,11 +56,31 @@ add_library(oevenclave STATIC
     thread.c
     enclave.c
     safecrt.c
-    result.c
     memmove.c
     signal.c
     restore.S
     futex.c
+    __secs_to_tm.c
+    ../../enclave/core/assert.c
+    ../../enclave/core/ctype.c
+    ../../enclave/core/gmtime.c
+    ../../enclave/core/hexdump.c
+    ../../enclave/core/intstr.c
+    ../../enclave/core/printf.c
+    ../../enclave/core/pthread.c
+    ../../enclave/core/result.c
+    ../../enclave/core/stdio.c
+    ../../enclave/core/strerror.c
+    ../../enclave/core/string.c
+    ../../enclave/core/strtok_r.c
+    ../../enclave/core/strtoul.c
+    ../../enclave/core/sgx/atexit.c
+    ../../enclave/core/sgx/entropy.c
+    ../../enclave/core/sgx/jump.c
+    ../../enclave/core/sgx/keys.c
+    ../../enclave/core/sgx/report.c
+    ../../enclave/core/sgx/once.c
+    ###
     ../../enclave/core/sgx/spinlock.c
     ../../enclave/core/sgx/thread.c)
 
