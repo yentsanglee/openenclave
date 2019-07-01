@@ -81,7 +81,6 @@ add_library(oevenclave STATIC
     ../../enclave/core/sgx/report.c
     ../../enclave/core/sgx/once.c
     ../../enclave/core/sgx/sched_yield.c
-    ###
     ../../enclave/core/sgx/spinlock.c
     ../../enclave/core/sgx/thread.c)
 
