@@ -51,6 +51,8 @@ void* ve_get_baseaddr(void)
     return (uint8_t*)&__ve_self - __ve_self;
 }
 
+#if 0
+
 void ve_call_fini_functions(void)
 {
     void (**fn)(void);
@@ -82,3 +84,5 @@ void __libc_csu_init(void)
 {
     ve_call_init_functions();
 }
+
+#endif

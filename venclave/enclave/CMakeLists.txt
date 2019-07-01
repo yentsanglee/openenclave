@@ -1,6 +1,38 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
+##==============================================================================
+##
+## libc:
+##
+##==============================================================================
+
+add_library(c STATIC libc.c)
+
+install(TARGETS c
+    EXPORT openenclave-targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
+##==============================================================================
+##
+## oevend:
+##
+##==============================================================================
+
+add_library(oevend SHARED libvend.c)
+
+target_link_libraries(oevend PRIVATE -nostdlib)
+
+install(TARGETS oevend
+    EXPORT openenclave-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
+##==============================================================================
+##
+## oevenclave:
+##
+##==============================================================================
+
 add_library(oevenclave STATIC
     assert.c
     string.c
@@ -34,7 +66,13 @@ target_compile_options(oevenclave PUBLIC
     -fPIE
     -nostdinc)
 
-target_link_libraries(oevenclave PUBLIC oe_includes)
+target_link_libraries(
+    oevenclave
+    PUBLIC
+    -L${CMAKE_BINARY_DIR}/venclave/enclave
+    -lc
+    oevend
+    oe_includes)
 
 target_compile_definitions(oevenclave PRIVATE OE_BUILD_ENCLAVE)
 
@@ -43,5 +81,5 @@ target_include_directories(oevenclave PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR})
 
 install(TARGETS oevenclave EXPORT openenclave-targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/host)
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
 

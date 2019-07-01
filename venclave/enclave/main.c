@@ -36,7 +36,13 @@ static size_t _nthreads;
 
 __attribute__((constructor)) static void constructor(void)
 {
+    ve_print("=== constructor()\n");
     _called_constructor = true;
+}
+
+__attribute__((destructor)) static void destructor(void)
+{
+    ve_print("=== destructor()\n");
 }
 
 static int _thread_func(void* arg)
@@ -310,7 +316,7 @@ void test_signals(void)
         ve_panic("ve_kill() failed");
 }
 
-static int _main(void)
+int main(void)
 {
     int exit_status;
 
@@ -333,18 +339,3 @@ static int _main(void)
 
     return exit_status;
 }
-
-#if defined(BUILD_STATIC)
-void _start(void)
-{
-    ve_call_init_functions();
-    int rval = _main();
-    ve_call_fini_functions();
-    ve_exit(rval);
-}
-#else
-int main(void)
-{
-    return _main();
-}
-#endif

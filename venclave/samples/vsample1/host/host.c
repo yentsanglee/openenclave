@@ -1,6 +1,6 @@
 #include <openenclave/host.h>
 #include <unistd.h>
-#include "sample_u.h"
+#include "vsample1_u.h"
 
 const char* arg0;
 
@@ -42,7 +42,7 @@ int main(int argc, const char* argv[])
         return 1;
     }
 
-    if ((result = oe_create_sample_enclave(
+    if ((result = oe_create_vsample1_enclave(
              argv[1],
              OE_ENCLAVE_TYPE_SGX,
              OE_ENCLAVE_FLAG_DEBUG,

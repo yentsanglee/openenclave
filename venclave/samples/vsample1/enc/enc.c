@@ -5,7 +5,7 @@
 #include <openenclave/corelibc/string.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/print.h>
-#include "sample_t.h"
+#include "vsample1_t.h"
 
 uint64_t test_ecall(uint64_t x)
 {

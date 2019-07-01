@@ -3,7 +3,7 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-    (A) Fix hang one thread call ve_exit
+    (A) Fix hang when one thread calls ve_exit()
 
     (A) Implement atexit()
 
