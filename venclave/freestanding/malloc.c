@@ -1,10 +1,13 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-void f()
+static unsigned char heap[1024];
+
+void* malloc(unsigned long size)
 {
+    return heap;
 }
 
-void __libc_freeres(void)
+void free(void* ptr)
 {
 }
