@@ -15,3 +15,7 @@ void __libc_start_main(void)
 {
     main();
 }
+
+void __stack_chk_fail(void)
+{
+}

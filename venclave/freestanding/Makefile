@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-CFLAGS += -Wall -g -fPIC
+CFLAGS += -Wall -g -fPIC -nostdinc -fno-builtin
 
 VALGRIND_OPTS += --tool=memcheck
 VALGRIND_OPTS += --trace-children=yes
