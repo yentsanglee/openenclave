@@ -85,6 +85,11 @@ void* memalign(size_t alignment, size_t size)
     return dlmemalign(alignment, size);
 }
 
+int posix_memalign(void** memptr, size_t alignment, size_t size)
+{
+    return dlposix_memalign(memptr, alignment, size);
+}
+
 void* ve_malloc(size_t size)
 {
     return malloc(size);
@@ -112,5 +117,5 @@ void* ve_memalign(size_t alignment, size_t size)
 
 int ve_posix_memalign(void** memptr, size_t alignment, size_t size)
 {
-    return dlposix_memalign(memptr, alignment, size);
+    return posix_memalign(memptr, alignment, size);
 }
