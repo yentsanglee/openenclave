@@ -28,8 +28,7 @@ char* strcpy(char* dest, const char* src);
 
 int main(void)
 {
-    char buf[1024];
-
+    // char buf[1024];
     // strcpy(buf, "hello");
 
     f();
