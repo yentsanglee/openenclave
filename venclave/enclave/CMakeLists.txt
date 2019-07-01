@@ -60,7 +60,9 @@ add_library(oevenclave STATIC
     memmove.c
     signal.c
     restore.S
-    futex.c)
+    futex.c
+    ../../enclave/core/sgx/spinlock.c
+    ../../enclave/core/sgx/thread.c)
 
 target_compile_options(oevenclave PUBLIC
     -fPIE
@@ -74,7 +76,7 @@ target_link_libraries(
     oevend
     oe_includes)
 
-target_compile_definitions(oevenclave PRIVATE OE_BUILD_ENCLAVE)
+target_compile_definitions(oevenclave PUBLIC OE_BUILD_ENCLAVE)
 
 target_include_directories(oevenclave PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include

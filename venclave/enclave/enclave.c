@@ -7,8 +7,10 @@
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/raise.h>
+#include <openenclave/internal/thread.h>
 #include "assert.h"
 #include "call.h"
+#include "futex.h"
 #include "globals.h"
 #include "hexdump.h"
 #include "lock.h"
@@ -22,6 +24,7 @@
 extern const oe_ecall_func_t __oe_ecalls_table[];
 extern const size_t __oe_ecalls_table_size;
 
+/* Opaque enclave pointer passed by the host. */
 static oe_enclave_t* _enclave;
 
 typedef struct _ecall_table
@@ -160,6 +163,90 @@ oe_result_t oe_log(log_level_t level, const char* fmt, ...)
     ve_va_end(ap);
 
     return OE_OK;
+}
+
+typedef struct _oe_thread_data oe_thread_data_t;
+typedef struct _td td_t;
+
+void* td_to_tcs(const td_t* td)
+{
+    /* ve_thread_t start on the page preceeding the td. */
+    return (void*)((uint8_t*)td - OE_PAGE_SIZE);
+}
+
+oe_thread_data_t* oe_get_thread_data(void)
+{
+    return (oe_thread_data_t*)(ve_thread_get_extra(ve_thread_self()));
+}
+
+static void _handle_thread_wait_ocall(uint64_t arg_in)
+{
+    ve_thread_t thread = (ve_thread_t)arg_in;
+    volatile int* value = ve_thread_get_futex_addr(thread);
+
+    if (__sync_fetch_and_add(value, -1) == 0)
+    {
+        /* Wait while ignoring any spurious wakes. */
+        do
+        {
+            ve_futex_wait(value, -1, 1);
+
+        } while (*value == -1);
+    }
+}
+
+static void _handle_thread_wake_ocall(uint64_t arg_in)
+{
+    ve_thread_t thread = (ve_thread_t)arg_in;
+    volatile int* value = ve_thread_get_futex_addr(thread);
+
+    if (__sync_fetch_and_add(value, 1) != 0)
+    {
+        ve_futex_wake(value, 1, 1);
+    }
+}
+
+static void _handle_thread_wake_wait_ocall(uint64_t arg_in)
+{
+    oe_thread_wake_wait_args_t* args = (oe_thread_wake_wait_args_t*)arg_in;
+
+    if (!args)
+        return;
+
+    _handle_thread_wake_ocall((uint64_t)args->waiter_tcs);
+    _handle_thread_wait_ocall((uint64_t)args->self_tcs);
+}
+
+oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)
+{
+    oe_result_t result = OE_UNEXPECTED;
+
+    OE_UNUSED(arg_out);
+
+    switch (func)
+    {
+        case OE_OCALL_THREAD_WAIT:
+            _handle_thread_wait_ocall(arg_in);
+            break;
+
+        case OE_OCALL_THREAD_WAKE:
+            _handle_thread_wake_ocall(arg_in);
+            break;
+
+        case OE_OCALL_THREAD_WAKE_WAIT:
+            _handle_thread_wake_wait_ocall(arg_in);
+            break;
+
+        default:
+        {
+            OE_RAISE(OE_NOT_FOUND);
+        }
+    }
+
+    result = OE_OK;
+
+done:
+    return result;
 }
 
 oe_result_t oe_register_ecall_function_table(

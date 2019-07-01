@@ -41,7 +41,15 @@ struct _ve_thread
     int ptid;
     volatile int ctid;
     int retval;
+    int futex_addr;
+    uint8_t padding[3992];
+
+    /* Leave extra space for the thread-data struct and the tsd page. */
+    uint8_t extra[2 * OE_PAGE_SIZE];
 };
+
+OE_STATIC_ASSERT(OE_OFFSETOF(struct _ve_thread, extra) == VE_PAGE_SIZE);
+OE_STATIC_ASSERT(sizeof(struct _ve_thread) == 3 * VE_PAGE_SIZE);
 
 typedef struct _thread_arg
 {
@@ -302,4 +310,14 @@ int ve_thread_set_retval(int retval)
 
 done:
     return ret;
+}
+
+volatile int* ve_thread_get_futex_addr(ve_thread_t thread)
+{
+    return thread ? &thread->futex_addr : NULL;
+}
+
+uint8_t* ve_thread_get_extra(ve_thread_t thread)
+{
+    return thread ? thread->extra : NULL;
 }

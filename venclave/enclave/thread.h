@@ -21,4 +21,9 @@ int ve_thread_join(ve_thread_t thread, int* retval);
 
 int ve_thread_set_retval(int retval);
 
+volatile int* ve_thread_get_futex_addr(ve_thread_t thread);
+
+/* Return pointer to the the two extra pages that follow the thread struct. */
+uint8_t* ve_thread_get_extra(ve_thread_t thread);
+
 #endif /* _VE_ENCLAVE_THREAD_H */

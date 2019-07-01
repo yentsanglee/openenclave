@@ -5,15 +5,15 @@
 #include <openenclave/corelibc/string.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/print.h>
+#include <openenclave/internal/thread.h>
 #include "vsample1_t.h"
 
 uint64_t test_ecall(uint64_t x)
 {
     uint64_t retval;
 
-#if 0
-    oe_malloc(100);
-#endif
+    static oe_mutex_t _mutex = OE_MUTEX_INITIALIZER;
+    oe_mutex_lock(&_mutex);
 
     if (test_ocall(&retval, x) != OE_OK)
     {
@@ -21,7 +21,7 @@ uint64_t test_ecall(uint64_t x)
         oe_abort();
     }
 
-    oe_host_printf("retval=%lu\n", retval);
+    oe_mutex_unlock(&_mutex);
 
     return retval;
 }

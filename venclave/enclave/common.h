@@ -6,6 +6,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/internal/defs.h>
 
 #if defined(__GNUC__)
 #define ve_va_list __builtin_va_list
