@@ -78,3 +78,13 @@ int ve_kill(int pid, int sig)
 {
     return (int)ve_syscall2(VE_SYS_kill, pid, sig);
 }
+
+int ve_tkill(int tid, int sig)
+{
+    return (int)ve_syscall2(VE_SYS_tkill, tid, sig);
+}
+
+int ve_tgkill(int tgid, int tid, int sig)
+{
+    return (int)ve_syscall3(VE_SYS_tgkill, tgid, tid, sig);
+}

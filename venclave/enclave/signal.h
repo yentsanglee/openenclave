@@ -70,4 +70,8 @@ ve_sighandler_t ve_signal(int signum, ve_sighandler_t handler);
 
 int ve_kill(int pid, int sig);
 
+int ve_tkill(int tid, int sig);
+
+int ve_tgkill(int tgid, int tid, int sig);
+
 #endif /* _VE_ENCLAVE_SIGNAL_H */
