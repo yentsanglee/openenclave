@@ -234,8 +234,9 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
         extern void __libc_csu_fini(void);
         __libc_csu_fini();
 
+        /* Self-test for destructors. */
         if (!_called_destructor)
-            ve_panic("failed to call destructors");
+            ve_panic("_destructor() not called");
     }
 
     /* Terminate. */
@@ -326,14 +327,34 @@ void test_signals(void)
         ve_panic("ve_kill() failed");
 }
 
+static bool _called_sigusr1;
+
+static void _sigusr1(int sig)
+{
+    (void)sig;
+    _called_sigusr1 = true;
+}
+
 int main(void)
 {
     int exit_status;
 
     __ve_main_pid = ve_getpid();
 
+    /* Self-test for constructors. */
     if (!_called_constructor)
-        ve_panic("constructor not called");
+        ve_panic("_constructor() not called");
+
+    /* Self-test for signals. */
+    {
+        ve_signal(VE_SIGUSR1, _sigusr1);
+        ve_kill(ve_getpid(), VE_SIGUSR1);
+
+        if (!_called_sigusr1)
+            ve_panic("_sigusr1() not called");
+
+        ve_signal(VE_SIGUSR1, VE_SIG_DFL);
+    }
 
 #if 0
     test_signals();

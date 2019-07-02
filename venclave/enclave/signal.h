@@ -46,24 +46,6 @@
 #define VE_SIG_IGN ((void (*)(int))1)
 #endif
 
-typedef struct _ve_sigset_t
-{
-    unsigned long __bits[128 / sizeof(long)];
-} ve_sigset_t;
-
-struct ve_sigaction
-{
-    void (*sa_handler)(int);
-    ve_sigset_t sa_mask;
-    int sa_flags;
-    void (*sa_restorer)(void);
-};
-
-int ve_sigaction(
-    int signum,
-    const struct ve_sigaction* act,
-    struct ve_sigaction* oldact);
-
 typedef void (*ve_sighandler_t)(int);
 
 ve_sighandler_t ve_signal(int signum, ve_sighandler_t handler);
