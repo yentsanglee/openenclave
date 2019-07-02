@@ -18,6 +18,7 @@
 
 #if defined(__GNUC__)
 #define VE_NO_RETURN __attribute__((__noreturn__))
+#define VE_WEAK __attribute__((__weak__))
 #endif
 
 #endif /* _VE_ENCLAVE_COMMON_H */

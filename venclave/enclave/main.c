@@ -221,11 +221,6 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
     ve_close(__ve_sock);
     ve_shmdt(__ve_shmaddr);
 
-    /* Close the standard descriptors. */
-    ve_close(VE_STDIN_FILENO);
-    ve_close(VE_STDOUT_FILENO);
-    ve_close(VE_STDERR_FILENO);
-
     /* Terminate. */
     *exit_status = 0;
     return 1;
@@ -336,6 +331,14 @@ int main(void)
     /* Handle messages over the main socket. */
     if ((exit_status = ve_handle_calls(__ve_sock)) == -1)
         ve_panic("encl: ve_handle_calls() failed");
+
+    /* ATTN: move this down! */
+    ve_exit(exit_status);
+
+    /* Close the standard descriptors. */
+    ve_close(VE_STDIN_FILENO);
+    ve_close(VE_STDOUT_FILENO);
+    ve_close(VE_STDERR_FILENO);
 
     return exit_status;
 }

@@ -10,6 +10,7 @@
 #include <openenclave/internal/print.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/time.h>
+#include <stdio.h>
 #include "vsample1_t.h"
 
 uint64_t test_ecall(uint64_t x)
@@ -21,6 +22,8 @@ uint64_t test_ecall(uint64_t x)
     oe_spin_lock(&_spin);
     oe_sleep_msec(10);
     oe_spin_unlock(&_spin);
+
+    printf("test_ecall{%s}\n", "some string");
 
     {
         uint8_t buf[64];

@@ -8,6 +8,7 @@
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "enclave.h"
 #include "heap.h"
 #include "hostmalloc.h"
@@ -41,6 +42,9 @@ static void _create_enclave_once(void)
     /* Create the host heap to be shared with enclaves. */
     if (ve_heap_create(&__ve_heap, VE_HEAP_SIZE) != 0)
         goto done;
+
+    /* Register the syscall OCALLs. */
+    oe_register_syscall_ocall_function_table();
 
     _create_enclave_once_okay = true;
 
@@ -170,6 +174,9 @@ oe_result_t oe_call_enclave_function_by_table_id(
     void* input_buffer = NULL;
     void* output_buffer = NULL;
 
+    if (output_buffer_ && output_buffer_size)
+        memset(output_buffer_, 0, output_buffer_size);
+
     /* Reject invalid parameters */
     if (!ve)
         OE_RAISE(OE_INVALID_PARAMETER);
@@ -184,8 +191,10 @@ oe_result_t oe_call_enclave_function_by_table_id(
     }
 
     /* Allocate an output buffer */
-    if (output_buffer_ && output_buffer_size != 0)
+    if (output_buffer_ && output_buffer_size)
     {
+        memset(output_buffer_, 0, output_buffer_size);
+
         if (!(output_buffer = ve_host_calloc(1, output_buffer_size)))
             OE_RAISE(OE_OUT_OF_MEMORY);
     }

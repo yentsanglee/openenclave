@@ -188,7 +188,7 @@ void* ve_memset(void* s, int c, size_t n)
     return s;
 }
 
-void* memset(void* s, int c, size_t n)
+VE_WEAK void* memset(void* s, int c, size_t n)
 {
     volatile uint8_t* p = (volatile uint8_t*)s;
 
@@ -209,7 +209,7 @@ void* ve_memcpy(void* dest, const void* src, size_t n)
     return dest;
 }
 
-void* memcpy(void* dest, const void* src, size_t n)
+VE_WEAK void* memcpy(void* dest, const void* src, size_t n)
 {
     return ve_memcpy(dest, src, n);
 }

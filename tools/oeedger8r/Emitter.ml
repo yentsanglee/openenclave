@@ -722,6 +722,7 @@ let gen_enclave_code (ec : enclave_content) (ep : edger8r_params) =
     ; "_total_buffer_size = _input_buffer_size;"
     ; "OE_ADD_SIZE(_total_buffer_size, _output_buffer_size);"
     ; sprintf "_buffer = (uint8_t*)%s(_total_buffer_size);" alloc_func
+    ; "memset(_buffer, 0, _total_buffer_size);"
     ; "_input_buffer = _buffer;"
     ; "_output_buffer = _buffer + _input_buffer_size;"
     ; "if (_buffer == NULL)"
