@@ -3,6 +3,7 @@
 
 #include "call.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include "hostmalloc.h"
 #include "io.h"
@@ -12,6 +13,13 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
 {
     switch (buf->func)
     {
+        case VE_FUNC_ABORT:
+        {
+            printf("enclave aborted\n");
+            fflush(stdout);
+            abort();
+            return 0;
+        }
         case VE_FUNC_PING:
         {
             ve_handle_call_ping(buf);

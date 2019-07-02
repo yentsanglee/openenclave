@@ -23,11 +23,11 @@ uint64_t test_ecall(uint64_t x)
     oe_sleep_msec(10);
     oe_spin_unlock(&_spin);
 
-#if 0
+#if 1
     {
         static oe_mutex_t _mutex = OE_MUTEX_INITIALIZER;
-        uint8_t buf[64];
-        char str[1024];
+        uint8_t buf[32];
+        char str[sizeof(buf) * 2 + 1];
         oe_mutex_lock(&_mutex);
         oe_get_entropy(buf, sizeof(buf));
         oe_hex_string(str, sizeof(str), buf, sizeof(buf));

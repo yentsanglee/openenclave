@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "process.h"
+#include "call.h"
 #include "globals.h"
 #include "print.h"
 #include "signal.h"
@@ -21,6 +22,25 @@ VE_NO_RETURN void ve_exit(int status)
 
 VE_NO_RETURN void ve_abort(void)
 {
+    uint64_t retval = 0;
+    static bool _abort_called;
+    static ve_lock_t _lock;
+    bool abort = false;
+
+    ve_lock(&_lock);
+    {
+        if (!_abort_called)
+        {
+            abort = true;
+            _abort_called = true;
+        }
+    }
+    ve_unlock(&_lock);
+
+    /* Ask the host to call abort(). */
+    if (abort)
+        ve_call0(__ve_thread_sock_tls, VE_FUNC_ABORT, &retval);
+
     *((volatile int*)0) = 0;
     ve_exit(127);
 }
