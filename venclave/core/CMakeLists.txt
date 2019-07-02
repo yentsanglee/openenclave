@@ -39,11 +39,11 @@ install(TARGETS oevend
 
 ##==============================================================================
 ##
-## oevenclave:
+## oevcore:
 ##
 ##==============================================================================
 
-add_library(oevenclave STATIC
+add_library(oevcore STATIC
     assert.c
     string.c
     syscall.c
@@ -95,12 +95,12 @@ add_library(oevenclave STATIC
     ../../enclave/core/sgx/spinlock.c
     ../../enclave/core/sgx/thread.c)
 
-target_compile_options(oevenclave PUBLIC
+target_compile_options(oevcore PUBLIC
     -fPIE
     -nostdinc)
 
 target_link_libraries(
-    oevenclave
+    oevcore
     PUBLIC
     -L${OE_LIBDIR}/openenclave/enclave/libc
     c
@@ -108,14 +108,14 @@ target_link_libraries(
     oevend
     oe_includes)
 
-target_compile_definitions(oevenclave PUBLIC OE_BUILD_ENCLAVE)
+target_compile_definitions(oevcore PUBLIC OE_BUILD_ENCLAVE)
 
-target_include_directories(oevenclave PRIVATE
+target_include_directories(oevcore PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR})
 
-set_property(TARGET oevenclave PROPERTY
+set_property(TARGET oevcore PROPERTY
     ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
-install(TARGETS oevenclave EXPORT openenclave-targets
+install(TARGETS oevcore EXPORT openenclave-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)

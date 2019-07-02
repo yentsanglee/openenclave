@@ -85,7 +85,7 @@ target_link_libraries(oesyscall
 add_library(oevsyscall STATIC)
 
 target_link_libraries(oevsyscall
-    PUBLIC oevenclave
+    PUBLIC oevcore
     PRIVATE oesyscallobj)
 
 ##==============================================================================

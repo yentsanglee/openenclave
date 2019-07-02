@@ -871,7 +871,7 @@ set_property(TARGET oelibc PROPERTY
 add_library(oevlibc STATIC)
 
 target_link_libraries(oevlibc
-  PUBLIC oevsyscall oevenclave oelibc_includes
+  PUBLIC oevsyscall oevcore oelibc_includes
   PRIVATE oelibcobj oelibasm)
 
 if (OE_SGX)

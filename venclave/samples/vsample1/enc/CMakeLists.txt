@@ -13,6 +13,6 @@ target_include_directories(vsample1_enc PRIVATE
 target_link_libraries(vsample1_enc
     oevlibc
     -Wl,--whole-archive
-    oevenclave
+    oevcore
     -Wl,--no-whole-archive
     oelibc_includes)
