@@ -45,12 +45,6 @@ VE_NO_RETURN void ve_abort(void)
     ve_exit(127);
 }
 
-VE_NO_RETURN void ve_panic(const char* msg)
-{
-    ve_puts(msg);
-    ve_abort();
-}
-
 int ve_gettid(void)
 {
     return (int)ve_syscall0(VE_SYS_gettid);
@@ -70,39 +64,3 @@ void* ve_get_baseaddr(void)
 {
     return (uint8_t*)&__ve_self - __ve_self;
 }
-
-#if 0
-
-void ve_call_fini_functions(void)
-{
-    void (**fn)(void);
-    extern void (*__fini_array_start)(void);
-    extern void (*__fini_array_end)(void);
-
-    for (fn = &__fini_array_end - 1; fn >= &__fini_array_start; fn--)
-    {
-        (*fn)();
-    }
-}
-
-void __libc_csu_fini(void)
-{
-    ve_call_fini_functions();
-}
-
-void ve_call_init_functions(void)
-{
-    void (**fn)(void);
-    extern void (*__init_array_start)(void);
-    extern void (*__init_array_end)(void);
-
-    for (fn = &__init_array_start; fn < &__init_array_end; fn++)
-        (*fn)();
-}
-
-void __libc_csu_init(void)
-{
-    ve_call_init_functions();
-}
-
-#endif

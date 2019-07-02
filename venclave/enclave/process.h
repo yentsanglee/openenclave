@@ -36,8 +36,6 @@ VE_NO_RETURN void ve_exit(int status);
 
 VE_NO_RETURN void ve_abort(void);
 
-VE_NO_RETURN void ve_panic(const char* msg);
-
 int ve_gettid(void);
 
 int ve_getpid(void);

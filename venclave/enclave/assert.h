@@ -4,12 +4,6 @@
 #ifndef _VE_ENCLAVE_ASSERT_H
 #define _VE_ENCLAVE_ASSERT_H
 
-void __ve_assert_fail(
-    const char* expr,
-    const char* file,
-    int line,
-    const char* function);
-
 #ifndef NDEBUG
 #define ve_assert(EXPR)                                                \
     do                                                                 \
@@ -20,5 +14,11 @@ void __ve_assert_fail(
 #else
 #define ve_assert(EXPR)
 #endif
+
+void __ve_assert_fail(
+    const char* expr,
+    const char* file,
+    int line,
+    const char* function);
 
 #endif /* _VE_ENCLAVE_ASSERT_H */

@@ -5,15 +5,14 @@
 
     (A) Fix rules for oelibc.
 
-    (A) Fix hang when one thread calls ve_exit()
-
-    (A) Implement atexit()
-
     (A) Call destructors from exit.
 
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
-    (B) Implement vectored exceptions.
+    (B) Support vectored exceptions.
 
     (B) Add a stack guard page.
 
+    CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+
+    (C) Fix hang when one thread calls ve_exit()

@@ -7,6 +7,7 @@
 #include "globals.h"
 #include "io.h"
 #include "malloc.h"
+#include "panic.h"
 #include "process.h"
 #include "string.h"
 #include "trace.h"

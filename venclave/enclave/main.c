@@ -8,6 +8,7 @@
 #include "hexdump.h"
 #include "io.h"
 #include "malloc.h"
+#include "panic.h"
 #include "print.h"
 #include "process.h"
 #include "recvfd.h"
@@ -30,6 +31,7 @@ __thread uint64_t _thread_value_tls = THREAD_VALUE;
 static __thread int _pid_tls;
 
 static bool _called_constructor = false;
+static bool _called_destructor = false;
 
 static ve_thread_t _threads[MAX_THREADS];
 static size_t _nthreads;
@@ -43,6 +45,7 @@ __attribute__((constructor)) static void constructor(void)
 __attribute__((destructor)) static void destructor(void)
 {
     ve_print("=== destructor()\n");
+    _called_destructor = true;
 }
 
 static int _thread_func(void* arg)
@@ -226,14 +229,14 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
         oe_call_atexit_functions();
     }
 
-/*
-ATTN:
-*/
-#if 0
-    /* Release resources held by the main thread. */
-    ve_close(__ve_sock);
-    ve_shmdt(__ve_shmaddr);
-#endif
+    /* Call any destructors. */
+    {
+        extern void __libc_csu_fini(void);
+        __libc_csu_fini();
+
+        if (!_called_destructor)
+            ve_panic("failed to call destructors");
+    }
 
     /* Terminate. */
     *exit_status = 0;

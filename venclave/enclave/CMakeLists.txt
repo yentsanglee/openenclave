@@ -59,6 +59,7 @@ add_library(oevenclave STATIC
     memmove.c
     signal.c
     restore.S
+    panic.c
     futex.c
     __secs_to_tm.c
     ../../enclave/core/assert.c
