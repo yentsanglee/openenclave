@@ -9,9 +9,16 @@
 
 add_library(c STATIC libc.c)
 
+target_compile_options(c PRIVATE
+    -fPIE
+    -nostdinc)
+
+set_property(TARGET c PROPERTY
+    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/libc)
+
 install(TARGETS c
     EXPORT openenclave-targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave/libc)
 
 ##==============================================================================
 ##
@@ -22,6 +29,9 @@ install(TARGETS c
 add_library(oevend SHARED libvend.c)
 
 target_link_libraries(oevend PRIVATE -nostdlib)
+
+set_property(TARGET oevend PROPERTY
+    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
 install(TARGETS oevend
     EXPORT openenclave-targets
@@ -92,7 +102,8 @@ target_compile_options(oevenclave PUBLIC
 target_link_libraries(
     oevenclave
     PUBLIC
-    -L${CMAKE_BINARY_DIR}/venclave/enclave
+    -L${OE_LIBDIR}/openenclave/enclave/libc
+    c
     -lc
     oevend
     oe_includes)
@@ -103,6 +114,8 @@ target_include_directories(oevenclave PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR})
 
+set_property(TARGET oevenclave PROPERTY
+    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
+
 install(TARGETS oevenclave EXPORT openenclave-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
-

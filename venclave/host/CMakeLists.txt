@@ -21,7 +21,9 @@ add_library(oevhost STATIC
     ../../host/linux/hostthread.c
     ../../host/syscall_u_wrapper.c)
 
-target_link_libraries(oevhost PUBLIC oe_includes)
+target_link_libraries(oevhost
+    PRIVATE oehost
+    PUBLIC oe_includes)
 
 target_include_directories(oevhost PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}

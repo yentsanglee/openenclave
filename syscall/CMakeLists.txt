@@ -21,11 +21,11 @@ add_custom_target(syscall_trusted_edl
 
 ##==============================================================================
 ##
-## These rules build the oesyscall target.
+## oesyscallobj target:
 ##
 ##==============================================================================
 
-add_library(oesyscall STATIC
+add_library(oesyscallobj OBJECT
     syscall_t_wrapper.c
     consolefs.c
     device.c
@@ -47,22 +47,62 @@ add_library(oesyscall STATIC
     unistd.c
     utsname.c)
 
-maybe_build_using_clangw(oesyscall)
+maybe_build_using_clangw(oesyscallobj)
 
-add_dependencies(oesyscall syscall_trusted_edl)
+add_dependencies(oesyscallobj syscall_trusted_edl)
 
-target_include_directories(oesyscall PRIVATE
+target_compile_definitions(oesyscallobj PRIVATE OE_BUILD_ENCLAVE)
+
+target_link_libraries(oesyscallobj PRIVATE oe_includes oelibc_includes)
+
+target_include_directories(oesyscallobj PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     ${PROJECT_SOURCE_DIR}/include/openenclave/corelibc)
-
-target_link_libraries(oesyscall oecore)
 
 set_source_files_properties(
     ${CMAKE_CURRENT_BINARY_DIR}/syscall_t.c
     PROPERTIES COMPILE_FLAGS -DOE_NEED_STDC_NAMES)
 
-install(TARGETS oesyscall EXPORT openenclave-targets ARCHIVE
+##==============================================================================
+##
+## oesyscall target:
+##
+##==============================================================================
+
+add_library(oesyscall STATIC)
+
+target_link_libraries(oesyscall
+    PUBLIC oecore
+    PRIVATE oesyscallobj)
+
+##==============================================================================
+##
+## oevsyscall target:
+##
+##==============================================================================
+
+add_library(oevsyscall STATIC)
+
+target_link_libraries(oevsyscall
+    PUBLIC oevenclave
+    PRIVATE oesyscallobj)
+
+##==============================================================================
+##
+## install targets:
+##
+##==============================================================================
+
+install(TARGETS oesyscall oevsyscall oesyscallobj
+    EXPORT openenclave-targets
+    ARCHIVE
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
+##==============================================================================
+##
+## devices target:
+##
+##==============================================================================
 
 add_subdirectory(devices)

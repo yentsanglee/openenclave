@@ -1,6 +1,12 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
+##==============================================================================
+##
+## oelibasm target:
+##
+##==============================================================================
+
 # Build the C library, using local sources and sources from musl.
 set(MUSLSRC ${PROJECT_SOURCE_DIR}/3rdparty/musl/musl/src)
 
@@ -27,7 +33,6 @@ elseif(OE_TRUSTZONE)
         ${MUSLSRC}/setjmp/aarch64/longjmp.s
         ${MUSLSRC}/setjmp/aarch64/setjmp.s)
 endif()
-
 
 maybe_build_using_clangw(oelibasm)
 
@@ -59,7 +64,13 @@ else()
         optee/exp2l.c)
 endif()
 
-add_library(oelibc STATIC
+##==============================================================================
+##
+## oelibcobj target:
+##
+##==============================================================================
+
+add_library(oelibcobj OBJECT
     arc4random.c
     atexit.c
     dladdr.c
@@ -774,29 +785,29 @@ add_library(oelibc STATIC
     ${PLATFORM_SRC}
 )
 
-maybe_build_using_clangw(oelibc)
+maybe_build_using_clangw(oelibcobj)
 
 # NOTE: This is the minimum required for musl sources.
-set_property(TARGET oelibc PROPERTY C_STANDARD 99)
+set_property(TARGET oelibcobj PROPERTY C_STANDARD 99)
 
-target_compile_options(oelibc PRIVATE
+target_compile_options(oelibcobj PRIVATE
     -fno-builtin-memcpy
     -fno-builtin-memset
     -ffreestanding)
 
 if (OE_SGX)
-    target_compile_options(oelibc PRIVATE -mrdrnd)
+    target_compile_options(oelibcobj PRIVATE -mrdrnd)
 endif()
 
 if (CMAKE_C_COMPILER_ID MATCHES GNU)
-  target_compile_options(oelibc PRIVATE
+  target_compile_options(oelibcobj PRIVATE
     -fexcess-precision=standard
     -frounding-math)
 endif ()
 
 # Ignore warnings from musl sources. First, shared warnings:
 if (CMAKE_C_COMPILER_ID MATCHES GNU OR CMAKE_C_COMPILER_ID MATCHES Clang OR USE_CLANGW)
-  target_compile_options(oelibc PRIVATE
+  target_compile_options(oelibcobj PRIVATE
     -Wno-missing-braces
     -Wno-parentheses
     -Wno-unknown-pragmas
@@ -807,7 +818,7 @@ endif ()
 
 # Second: compiler-specific warnings:
 if (CMAKE_C_COMPILER_ID MATCHES GNU)
-  target_compile_options(oelibc PRIVATE
+  target_compile_options(oelibcobj PRIVATE
     -Wno-jump-misses-init
     -Wno-maybe-uninitialized
     -Wno-unknown-pragmas
@@ -816,7 +827,7 @@ if (CMAKE_C_COMPILER_ID MATCHES GNU)
     -Wno-unused-value
     -Wno-unused-variable)
 elseif (CMAKE_C_COMPILER_ID MATCHES Clang OR USE_CLANGW)
-  target_compile_options(oelibc PRIVATE
+  target_compile_options(oelibcobj PRIVATE
     -Wno-dangling-else
     -Wno-ignored-attributes
     -Wno-logical-op-parentheses
@@ -825,32 +836,64 @@ elseif (CMAKE_C_COMPILER_ID MATCHES Clang OR USE_CLANGW)
     -Wno-unneeded-internal-declaration)
 endif ()
 
-target_compile_definitions(oelibc PRIVATE _XOPEN_SOURCE=700)
+target_compile_definitions(oelibcobj PRIVATE _XOPEN_SOURCE=700)
 
 if (USE_DEBUG_MALLOC)
-  target_compile_definitions(oelibc PRIVATE OE_USE_DEBUG_MALLOC)
+  target_compile_definitions(oelibcobj PRIVATE OE_USE_DEBUG_MALLOC)
 endif ()
+
+target_link_libraries(oelibcobj
+  PRIVATE oesyscall oe_includes oelibc_includes)
+
+##==============================================================================
+##
+## oelibc target:
+##
+##==============================================================================
+
+add_library(oelibc STATIC)
 
 # This project (and its dependents) require the enclave headers and
 # library, and the musl headers.
 target_link_libraries(oelibc
   PUBLIC oesyscall oecore oelibc_includes
-  PRIVATE oelibasm)
+  PRIVATE oelibcobj oelibasm)
+
+set_property(TARGET oelibc PROPERTY
+  ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
+
+##==============================================================================
+##
+## oevlibc target:
+##
+##==============================================================================
+
+add_library(oevlibc STATIC)
+
+target_link_libraries(oevlibc
+  PUBLIC oevsyscall oevenclave oelibc_includes
+  PRIVATE oelibcobj oelibasm)
 
 if (OE_SGX)
-target_include_directories(oelibc PRIVATE
+target_include_directories(oelibcobj PRIVATE
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/include
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/internal
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/arch/x86_64)
 else()
-target_include_directories(oelibc PRIVATE
+target_include_directories(oelibcobj PRIVATE
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/include
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/internal
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/arch/aarch64)
 endif()
 
-set_property(TARGET oelibc PROPERTY
+set_property(TARGET oevlibc PROPERTY
   ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
-install(TARGETS oelibc oelibasm EXPORT openenclave-targets
+##==============================================================================
+##
+## install targets:
+##
+##==============================================================================
+
+install(TARGETS oelibc oelibcobj oelibasm EXPORT openenclave-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
