@@ -1,7 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include <openenclave/internal/print.h>
 #include "assert.h"
 #include "call.h"
 #include "common.h"

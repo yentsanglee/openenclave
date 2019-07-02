@@ -3,6 +3,8 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
+    (A) Fix rules for oelibc.
+
     (A) Fix hang when one thread calls ve_exit()
 
     (A) Implement atexit()
@@ -14,6 +16,4 @@
     (B) Implement vectored exceptions.
 
     (B) Add a stack guard page.
-
-    (B) Add ve_errno type and set in syscall functions.
 

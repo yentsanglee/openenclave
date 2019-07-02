@@ -23,8 +23,10 @@ void err(const char* fmt, ...)
 
 uint64_t test_ocall(uint64_t x)
 {
+#if 0
     printf("test_ocall(): thread=%lu x=%lu\n", pthread_self(), x);
     fflush(stdout);
+#endif
     return x;
 }
 
@@ -55,9 +57,6 @@ void* _thread_func(void* arg)
         if (retval != i)
             err("test1() failed: expected retval=%lu", retval);
     }
-
-    printf("=== new thread done\n");
-    fflush(stdout);
 
     return NULL;
 }

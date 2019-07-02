@@ -8,6 +8,7 @@
 #include <openenclave/internal/entropy.h>
 #include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/print.h>
+#include <openenclave/internal/tests.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/time.h>
 #include <stdio.h>
@@ -16,28 +17,32 @@
 uint64_t test_ecall(uint64_t x)
 {
     uint64_t retval;
-    static oe_mutex_t _mutex = OE_MUTEX_INITIALIZER;
     static oe_spinlock_t _spin = OE_SPINLOCK_INITIALIZER;
 
     oe_spin_lock(&_spin);
     oe_sleep_msec(10);
     oe_spin_unlock(&_spin);
 
-    printf("test_ecall{%s}\n", "some string");
-
+#if 0
     {
+        static oe_mutex_t _mutex = OE_MUTEX_INITIALIZER;
         uint8_t buf[64];
+        char str[1024];
         oe_mutex_lock(&_mutex);
         oe_get_entropy(buf, sizeof(buf));
-        oe_hex_dump(buf, sizeof(buf));
+        oe_hex_string(str, sizeof(str), buf, sizeof(buf));
+        oe_host_printf("tmp=%s\n", str);
         oe_mutex_unlock(&_mutex);
     }
+#endif
 
-    if (test_ocall(&retval, x) != OE_OK)
+    if (test_ocall(&retval, x) != OE_OK || retval != x)
     {
         oe_host_printf("test_ocall() failed\n");
         oe_abort();
     }
+
+    // OE_TEST(false);
 
     return retval;
 }
