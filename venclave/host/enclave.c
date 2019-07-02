@@ -176,8 +176,9 @@ static int _terminate_enclave_process(ve_enclave_t* enclave)
     {
         const int sock = enclave->threads[i].sock;
         const int child_sock = enclave->threads[i].child_sock;
+        uint64_t retval;
 
-        if (ve_call_send0(sock, VE_FUNC_TERMINATE_THREAD) != 0)
+        if (ve_call0(sock, VE_FUNC_TERMINATE_THREAD, &retval) != 0)
             goto done;
 
         close(sock);
@@ -188,8 +189,9 @@ static int _terminate_enclave_process(ve_enclave_t* enclave)
     {
         const int sock = enclave->sock;
         const int child_sock = enclave->child_sock;
+        uint64_t retval;
 
-        if (ve_call_send0(sock, VE_FUNC_TERMINATE) != 0)
+        if (ve_call0(sock, VE_FUNC_TERMINATE, &retval) != 0)
             goto done;
 
         close(sock);

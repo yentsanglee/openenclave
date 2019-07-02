@@ -15,13 +15,6 @@ VE_NO_RETURN void ve_exit(int status)
     if (ve_getpid() != ve_gettid())
         ve_thread_set_retval(status);
 
-    /* If the main thread is exiting, call the atexit handlers. */
-    if (ve_getpid() == ve_gettid())
-    {
-        extern void oe_call_atexit_functions(void);
-        oe_call_atexit_functions();
-    }
-
     for (;;)
         ve_syscall1(VE_SYS_exit, status);
 }

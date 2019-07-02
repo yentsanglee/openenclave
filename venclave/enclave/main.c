@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/internal/print.h>
 #include "assert.h"
 #include "call.h"
 #include "common.h"
@@ -184,6 +185,9 @@ static int _handle_init(void)
     {
         __ve_sock = arg.sock;
 
+        /* ATTN: use of this variable is tricky. */
+        __ve_thread_sock_tls = __ve_sock;
+
         if (_attach_host_heap(arg.shmid, arg.shmaddr, arg.shmsize) != 0)
         {
             ve_put("_attach_host_heap() failed\n");
@@ -217,13 +221,24 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
         ve_print("encl: join: retval=%d\n", retval);
     }
 
+    /* Call the atexit handlers. */
+    {
+        extern void oe_call_atexit_functions(void);
+        oe_call_atexit_functions();
+    }
+
+/*
+ATTN:
+*/
+#if 0
     /* Release resources held by the main thread. */
     ve_close(__ve_sock);
     ve_shmdt(__ve_shmaddr);
+#endif
 
     /* Terminate. */
     *exit_status = 0;
-    return 1;
+    return 0;
 }
 
 void test_malloc(int fd)
@@ -281,8 +296,6 @@ int ve_handle_call_terminate_thread(
     OE_UNUSED(fd);
     OE_UNUSED(buf);
 
-    ve_close(fd);
-
     ve_print("encl: thread exit: tid=%d\n", ve_gettid());
 
     *exit_status = 99;
@@ -293,7 +306,7 @@ int ve_handle_call_terminate_thread(
     ve_sleep(sec);
 #endif
 
-    return 1;
+    return 0;
 }
 
 void _main_sig_handler(int arg)
@@ -331,9 +344,6 @@ int main(void)
     /* Handle messages over the main socket. */
     if ((exit_status = ve_handle_calls(__ve_sock)) == -1)
         ve_panic("encl: ve_handle_calls() failed");
-
-    /* ATTN: move this down! */
-    ve_exit(exit_status);
 
     /* Close the standard descriptors. */
     ve_close(VE_STDIN_FILENO);

@@ -7,14 +7,12 @@
 #include "globals.h"
 #include "io.h"
 #include "malloc.h"
+#include "process.h"
 #include "string.h"
 #include "trace.h"
 
 static int _handle_call(int fd, ve_call_buf_t* buf, int* exit_status)
 {
-    if (exit_status)
-        *exit_status = 0;
-
     switch (buf->func)
     {
         case VE_FUNC_PING:
@@ -123,13 +121,13 @@ int ve_handle_calls(int fd)
         ve_call_buf_t in;
         ve_call_buf_t out;
         int retval;
-        int exit_status = 0;
+        int exit_status = -1;
 
         if (ve_readn(fd, &in, sizeof(in)) != 0)
             goto done;
 
-#if defined(TRACE_CALLS)
-        ve_print("[ENCLAVE:%s]\n", ve_func_name(in.func));
+#if 0
+        ve_print("[ENCLAVE:%s]\n", ve_func_name((ve_func_t)in.func));
 #endif
 
         ve_call_buf_clear(&out);
@@ -149,14 +147,19 @@ int ve_handle_calls(int fd)
             }
             default:
             {
-                /* The handler exited. */
-                ret = exit_status;
-                goto done;
+                ve_panic("unexpected");
             }
         }
 
         if (ve_writen(fd, &out, sizeof(out)) != 0)
             goto done;
+
+        if (exit_status >= 0)
+        {
+            ve_close(fd);
+            ret = exit_status;
+            break;
+        }
     }
 
 done:
