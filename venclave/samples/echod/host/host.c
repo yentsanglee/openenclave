@@ -129,6 +129,13 @@ static void* server_thread(void* arg)
     return NULL;
 }
 
+static void _close_standard_devices(void)
+{
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+}
+
 int main(int argc, const char* argv[])
 {
     arg0 = argv[0];
@@ -173,6 +180,8 @@ int main(int argc, const char* argv[])
     /* Terminate the enclave. */
     if ((result = oe_terminate_enclave(enclave)) != OE_OK)
         error_exit("oe_terminate_enclave() failed: result=%u", result);
+
+    _close_standard_devices();
 
     return 0;
 }
