@@ -214,7 +214,7 @@ VE_WEAK void* memcpy(void* dest, const void* src, size_t n)
     return ve_memcpy(dest, src, n);
 }
 
-int ve_memcmp(const void* s1, const void* s2, size_t n)
+VE_WEAK int ve_memcmp(const void* s1, const void* s2, size_t n)
 {
     const unsigned char* p = (const unsigned char*)s1;
     const unsigned char* q = (const unsigned char*)s2;
@@ -230,7 +230,7 @@ int ve_memcmp(const void* s1, const void* s2, size_t n)
     return 0;
 }
 
-int memcmp(const void* s1, const void* s2, size_t n)
+VE_WEAK int memcmp(const void* s1, const void* s2, size_t n)
 {
     return ve_memcmp(s1, s2, n);
 }

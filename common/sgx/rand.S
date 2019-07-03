@@ -3,7 +3,7 @@
 
 .text
 .globl  oe_rdrand
-
+.weak oe_rdrand
 oe_rdrand:
     pushq   %rbp
     movq    %rsp, %rbp

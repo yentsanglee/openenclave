@@ -9,7 +9,7 @@
 #endif
 #if defined(OE_INLINE)
 #undef OE_INLINE
-#define OE_INLINE
+#define OE_INLINE __attribute__((weak))
 #endif
 #include <openenclave/corelibc/bits/malloc.h>
 #if defined(__UNDEF_OE_NEED_STDC_NAMES)

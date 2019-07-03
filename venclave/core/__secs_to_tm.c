@@ -3,6 +3,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include "common.h"
 
 #define INT_MIN OE_INT_MIN
 #define INT_MAX OE_INT_MAX
@@ -24,4 +25,13 @@ struct tm
     const char* __tm_zone;
 };
 
+#define __secs_to_tm __musl_secs_to_tm
+
 #include "../../enclave/core/__secs_to_tm.c"
+
+#undef __secs_to_tm
+
+VE_WEAK int __secs_to_tm(long long t, struct tm* tm)
+{
+    return __musl_secs_to_tm(t, tm);
+}

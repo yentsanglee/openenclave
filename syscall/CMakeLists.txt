@@ -60,6 +60,8 @@ target_include_directories(oesyscallobj PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${PROJECT_SOURCE_DIR}/include/openenclave/corelibc)
 
+target_compile_options(oesyscallobj PRIVATE -fPIE)
+
 set_source_files_properties(
     ${CMAKE_CURRENT_BINARY_DIR}/syscall_t.c
     PROPERTIES COMPILE_FLAGS -DOE_NEED_STDC_NAMES)
