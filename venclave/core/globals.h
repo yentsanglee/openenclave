@@ -26,6 +26,9 @@ extern size_t __ve_tbss_align;
 /* Holds relative virtual address of this variable itself (from the host). */
 extern uint64_t __ve_self;
 
+/* The relative-virtual address of the first program segment (ELF header). */
+extern uint64_t __ve_base_rva;
+
 /* Socket for the current thread. */
 extern __thread int __ve_thread_sock_tls;
 

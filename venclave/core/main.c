@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/internal/elf.h>
 #include "assert.h"
 #include "call.h"
 #include "common.h"
@@ -154,6 +155,45 @@ done:
     return ret;
 }
 
+static int _check_elf_header()
+{
+    int ret = -1;
+    const uint8_t e_ident[] = {0x7f, 'E', 'L', 'F'};
+    const elf64_ehdr_t* ehdr;
+
+    if (!(ehdr = (const elf64_ehdr_t*)ve_get_baseaddr()))
+        goto done;
+
+    /* Check the ELF magic number. */
+    if (ve_memcmp(ehdr->e_ident, e_ident, sizeof(e_ident)) != 0)
+        goto done;
+
+    /* Check that this is an ELF-64-bit header. */
+    if (ehdr->e_ident[EI_CLASS] != ELFCLASS64)
+        goto done;
+
+    /* Check that the data encoding is 2's complement. */
+    if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
+        goto done;
+
+    /* Check that this is an x86-64 machine. */
+    if (ehdr->e_machine != EM_X86_64)
+        goto done;
+
+    /* Check the size of the ELF header. */
+    if (ehdr->e_ehsize != sizeof(elf64_ehdr_t))
+        goto done;
+
+    /* Check the size of the program header structures. */
+    if (ehdr->e_phentsize != sizeof(elf64_phdr_t))
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 static int _handle_init(void)
 {
     int ret = -1;
@@ -182,6 +222,11 @@ static int _handle_init(void)
     __ve_tbss_size = arg.tbss_size;
     __ve_tbss_align = arg.tbss_align;
     __ve_self = arg.self_rva;
+    __ve_base_rva = arg.base_rva;
+
+    /* Verify the ELF headfer (pointed to by the base address). */
+    if (_check_elf_header() != 0)
+        ve_panic("elf header check failed");
 
     /* Handle the request. */
     {

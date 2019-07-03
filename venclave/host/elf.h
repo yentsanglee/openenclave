@@ -19,6 +19,9 @@ typedef struct _ve_elf_info
     size_t tbss_size;
     size_t tbss_align;
 
+    /* The relative virtual address of the first program segment. */
+    size_t base_rva;
+
     /* The relative virtual address of the enclave's __ve_self variable. */
     uint64_t self_rva;
 } ve_elf_info_t;

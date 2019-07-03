@@ -81,6 +81,7 @@ typedef struct _ve_init_arg
     size_t tbss_size;
     size_t tbss_align;
     uint64_t self_rva;
+    uint64_t base_rva;
 } ve_init_arg_t;
 
 const char* ve_func_name(ve_func_t func);

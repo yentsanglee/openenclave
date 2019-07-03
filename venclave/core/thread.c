@@ -174,7 +174,8 @@ int ve_thread_create(
 
     /* Copy tdata section onto the new_tls. */
     {
-        void* tdata = (uint8_t*)ve_get_baseaddr() + __ve_tdata_rva;
+        uint8_t* data_segment = ((uint8_t*)&__ve_self - __ve_self);
+        void* tdata = data_segment + __ve_tdata_rva;
         ve_memcpy(tls, tdata, __ve_tdata_size);
     }
 

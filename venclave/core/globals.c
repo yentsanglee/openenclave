@@ -17,6 +17,8 @@ size_t __ve_tbss_align;
 
 uint64_t __ve_self;
 
+uint64_t __ve_base_rva;
+
 __thread int __ve_thread_sock_tls;
 
 int __ve_main_pid;

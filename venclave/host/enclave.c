@@ -70,6 +70,7 @@ static int _init_child(
     arg.tbss_size = elf_info->tbss_size;
     arg.tbss_align = elf_info->tbss_align;
     arg.self_rva = elf_info->self_rva;
+    arg.base_rva = elf_info->base_rva;
 
     /* Send the message to the child's standard input. */
     if (ve_writen(child_fd, &arg, sizeof(arg)) != 0)

@@ -62,5 +62,5 @@ int ve_waitpid(int pid, int* status, int options)
 
 void* ve_get_baseaddr(void)
 {
-    return (uint8_t*)&__ve_self - __ve_self;
+    return ((uint8_t*)&__ve_self - __ve_self) + __ve_base_rva;
 }

@@ -769,10 +769,7 @@ oe_result_t oe_ereport(
     return OE_OK;
 }
 
-#if 0
 void* __oe_get_enclave_base(void)
 {
-    /* This returns 0 */
     return ve_get_baseaddr();
 }
-#endif

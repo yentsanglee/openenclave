@@ -79,6 +79,18 @@ int ve_get_elf_info(const char* path, ve_elf_info_t* buf)
         buf->self_rva = sym.st_value;
     }
 
+    /* Find the relative-virtual address of the first program segment. */
+    {
+        elf64_phdr_t* phdr;
+
+        /* Get the header for the first program segment. */
+        if (!(phdr = elf64_get_program_header(&elf, 0)))
+            goto done;
+
+        /* Subtract the program header offset to get the ELF header address. */
+        buf->base_rva = phdr->p_vaddr - ehdr->e_phoff;
+    }
+
     ret = 0;
 
 done:
