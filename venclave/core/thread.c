@@ -11,6 +11,7 @@
 #include "signal.h"
 #include "string.h"
 #include "syscall.h"
+#include "trace.h"
 
 #define VE_MAX_THREADS 1024
 #define VE_PAGE_SIZE 4096
@@ -244,7 +245,7 @@ int ve_thread_create(
             goto done;
         }
 
-        ve_print("encl: new thread: rval=%d\n", rval);
+        VE_T(ve_print("encl: new thread: rval=%d\n", rval));
     }
 
     *thread_out = (ve_thread_t)thread;

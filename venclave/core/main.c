@@ -39,13 +39,13 @@ static size_t _nthreads;
 
 __attribute__((constructor)) static void constructor(void)
 {
-    ve_print("=== constructor()\n");
+    VE_T(ve_print("encl: constructor()\n");)
     _called_constructor = true;
 }
 
 __attribute__((destructor)) static void destructor(void)
 {
-    ve_print("=== destructor()\n");
+    VE_T(ve_print("encl: destructor()\n");)
     _called_destructor = true;
 }
 
@@ -265,7 +265,7 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
         if (ve_thread_join(_threads[i], &retval) != 0)
             ve_panic("failed to join threads");
 
-        ve_print("encl: join: retval=%d\n", retval);
+        VE_T(ve_print("encl: join: retval=%d\n", retval);)
     }
 
     /* Call the atexit handlers. */
@@ -344,7 +344,7 @@ int ve_handle_call_terminate_thread(
     OE_UNUSED(fd);
     OE_UNUSED(buf);
 
-    ve_print("encl: thread exit: tid=%d\n", ve_gettid());
+    VE_T(ve_print("encl: thread exit: tid=%d\n", ve_gettid());)
 
     *exit_status = 99;
 
@@ -411,7 +411,7 @@ int main(void)
 
     /* Handle messages over the main socket. */
     if ((exit_status = ve_handle_calls(__ve_sock)) == -1)
-        ve_panic("encl: ve_handle_calls() failed");
+        ve_panic("ve_handle_calls() failed");
 
     /* Close the standard descriptors. */
     ve_close(VE_STDIN_FILENO);

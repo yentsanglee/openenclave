@@ -92,7 +92,16 @@ int posix_memalign(void** memptr, size_t alignment, size_t size)
 
 void* ve_malloc(size_t size)
 {
+#if defined(ZERO_FILL_MALLOCS)
+    void* ptr;
+
+    if ((ptr = malloc(size)))
+        ve_memset(ptr, 0, size);
+
+    return ptr;
+#else
     return malloc(size);
+#endif
 }
 
 void ve_free(void* ptr)

@@ -92,6 +92,7 @@ add_library(oelibcobj OBJECT
     strerror.c
     sysconf.c
     time.c
+    __fdopen.c
     __printf_chk.c
     __vfprintf_chk.c
     ${MUSLSRC}/complex/cabs.c
@@ -442,7 +443,7 @@ add_library(oelibcobj OBJECT
     ${MUSLSRC}/misc/dirname.c
     ${MUSLSRC}/misc/getdomainname.c
     ${MUSLSRC}/misc/ioctl.c
-    ${MUSLSRC}/misc/nftw.c
+    #${MUSLSRC}/misc/nftw.c
     ${MUSLSRC}/misc/uname.c
     ${MUSLSRC}/mman/mmap.c
     ${MUSLSRC}/mman/munmap.c
@@ -485,10 +486,10 @@ add_library(oelibcobj OBJECT
     ${MUSLSRC}/network/gai_strerror.c
     ${MUSLSRC}/network/gethostbyaddr.c
     ${MUSLSRC}/network/gethostbyaddr_r.c
-    ${MUSLSRC}/network/gethostbyname2.c
-    ${MUSLSRC}/network/gethostbyname2_r.c
-    ${MUSLSRC}/network/gethostbyname.c
-    ${MUSLSRC}/network/gethostbyname_r.c
+    #${MUSLSRC}/network/gethostbyname2.c
+    #${MUSLSRC}/network/gethostbyname2_r.c
+    #${MUSLSRC}/network/gethostbyname.c
+    #${MUSLSRC}/network/gethostbyname_r.c
     ${MUSLSRC}/network/accept.c
     ${MUSLSRC}/network/bind.c
     ${MUSLSRC}/network/inet_pton.c
@@ -501,17 +502,17 @@ add_library(oelibcobj OBJECT
     ${MUSLSRC}/network/recv.c
     ${MUSLSRC}/network/recvfrom.c
     ${MUSLSRC}/network/recvmsg.c
-    ${MUSLSRC}/network/res_msend.c
+    #${MUSLSRC}/network/res_msend.c
     ${MUSLSRC}/network/res_mkquery.c
     ${MUSLSRC}/network/if_nametoindex.c
     ${MUSLSRC}/network/dn_expand.c
     ${MUSLSRC}/network/dns_parse.c
-    ${MUSLSRC}/network/res_query.c
+    #${MUSLSRC}/network/res_query.c
     ${MUSLSRC}/network/resolvconf.c
     ${MUSLSRC}/network/lookup_ipliteral.c
-    ${MUSLSRC}/network/res_msend.c
+    #${MUSLSRC}/network/res_msend.c
     ${MUSLSRC}/network/lookup_serv.c
-    ${MUSLSRC}/network/lookup_name.c
+    #${MUSLSRC}/network/lookup_name.c
     ${MUSLSRC}/prng/drand48.c
     ${MUSLSRC}/prng/lcong48.c
     ${MUSLSRC}/prng/lrand48.c
@@ -548,7 +549,7 @@ add_library(oelibcobj OBJECT
     ${MUSLSRC}/stdio/ext.c
     ${MUSLSRC}/stdio/fclose.c
     ${MUSLSRC}/stdio/__fclose_ca.c
-    ${MUSLSRC}/stdio/__fdopen.c
+    #${MUSLSRC}/stdio/__fdopen.c
     ${MUSLSRC}/stdio/feof.c
     ${MUSLSRC}/stdio/ferror.c
     ${MUSLSRC}/stdio/fflush.c

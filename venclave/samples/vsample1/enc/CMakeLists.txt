@@ -12,8 +12,9 @@ target_include_directories(vsample1_enc PRIVATE
 
 target_link_libraries(vsample1_enc
     -Wl,--warn-once
-    oevlibc
     -Wl,--whole-archive
+    oevhostfs
+    oevlibc
     oevcore
     -Wl,--no-whole-archive
     oelibc_includes)

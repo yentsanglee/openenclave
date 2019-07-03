@@ -89,7 +89,12 @@ oe_enclave_t* oe_get_enclave(void)
 
 void* oe_host_malloc(size_t size)
 {
-    return ve_call_malloc(__ve_thread_sock_tls, size);
+    void* ptr;
+
+    if ((ptr = ve_call_malloc(__ve_thread_sock_tls, size)))
+        ve_memset(ptr, 0, size);
+
+    return ptr;
 }
 
 void* oe_host_calloc(size_t nmemb, size_t size)
@@ -110,7 +115,12 @@ void oe_host_free(void* ptr)
 // Function used by oeedger8r for allocating ocall buffers.
 void* oe_allocate_ocall_buffer(size_t size)
 {
-    return oe_host_malloc(size);
+    void* ptr;
+
+    if ((ptr = oe_host_malloc(size)))
+        ve_memset(ptr, 0, size);
+
+    return ptr;
 }
 
 // Function used by oeedger8r for freeing ocall buffers.
@@ -387,7 +397,7 @@ static oe_result_t _handle_call_enclave_function(uint64_t arg_in)
         OE_RAISE(OE_NOT_FOUND);
 
     // Allocate buffers in enclave memory
-    buffer = input_buffer = ve_malloc(buffer_size);
+    buffer = input_buffer = ve_calloc(1, buffer_size);
     if (buffer == NULL)
         OE_RAISE(OE_OUT_OF_MEMORY);
 
@@ -470,6 +480,9 @@ oe_result_t oe_call_host_function_by_table_id(
     /* Reject invalid parameters */
     if (!input_buffer || input_buffer_size == 0)
         OE_RAISE(OE_INVALID_PARAMETER);
+
+    if (output_buffer && output_buffer_size)
+        ve_memset(output_buffer, 0, output_buffer_size);
 
     /* Initialize the arguments */
     {
@@ -772,4 +785,9 @@ oe_result_t oe_ereport(
 void* __oe_get_enclave_base(void)
 {
     return ve_get_baseaddr();
+}
+
+int* __h_errno_location(void)
+{
+    return __oe_errno_location();
 }

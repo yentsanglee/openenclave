@@ -69,9 +69,9 @@ int main(int argc, const char* argv[])
     const size_t N = 8;
     pthread_t threads[N];
 
-    if (argc != 2)
+    if (argc != 3)
     {
-        fprintf(stderr, "Usage: %s program\n", argv[0]);
+        fprintf(stderr, "Usage: %s program path\n", argv[0]);
         return 1;
     }
 
@@ -98,25 +98,18 @@ int main(int argc, const char* argv[])
             err("pthread_join() failed");
     }
 
+    /* Test file systems support. */
+    {
+        if ((result = test_files(enclave, argv[2])) != OE_OK)
+            err("test_files() failed: %s\n", oe_result_str(result));
+    }
+
 #if 0
     {
         int retval;
 
         if ((result = test_time(enclave, &retval)) != OE_OK || retval != 0)
             err("test_time() failed: %s: %d\n", oe_result_str(result), retval);
-    }
-#endif
-
-#if 0
-    {
-        char buf[100] = {'\0'};
-        int retval;
-
-        if ((result = test1(enclave, &retval, "hello", buf)) != OE_OK)
-            err("test1() failed: %s\n", oe_result_str(result));
-
-        if (strcmp(buf, "hello") != 0)
-            err("test1() failed: expected 'hello' string");
     }
 #endif
 
