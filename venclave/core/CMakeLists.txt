@@ -7,42 +7,41 @@
 ##
 ##==============================================================================
 
-add_library(c STATIC libc.c)
+add_library(libc STATIC libc.c)
 
-target_compile_options(c PRIVATE
+target_compile_options(libc PRIVATE
     -fPIE
     -nostdinc)
 
-set_property(TARGET c PROPERTY
-    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/libc)
+set_property(TARGET libc PROPERTY OUTPUT_NAME c)
 
-install(TARGETS c
+set_property(TARGET libc PROPERTY
+    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/venclave)
+
+install(TARGETS libc
     EXPORT openenclave-targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave/libc)
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave/venclave)
 
 ##==============================================================================
 ##
-## libcxx:
+## libc++:
 ##
 ##==============================================================================
 
-add_library(cxx STATIC libcxx.cpp)
+add_library(libc++ STATIC libcxx.cpp)
 
-target_compile_options(cxx PRIVATE
+target_compile_options(libc++ PRIVATE
     -fPIE
     -nostdinc)
 
-set_property(TARGET cxx PROPERTY
-    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/libcxx)
+set_property(TARGET libc++ PROPERTY OUTPUT_NAME stdc++)
 
-set(CXX_NAME stdc++)
+set_property(TARGET libc++ PROPERTY
+    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/venclave)
 
-set_property(TARGET cxx PROPERTY
-    OUTPUT_NAME ${CXX_NAME})
-
-install(TARGETS cxx
+install(TARGETS libc++
     EXPORT openenclave-targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave/libcxx)
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave/venclave)
 
 ##==============================================================================
 ##
@@ -50,18 +49,18 @@ install(TARGETS cxx
 ##
 ##==============================================================================
 
-add_library(m STATIC libm.c)
+add_library(libm STATIC libm.c)
 
-target_compile_options(m PRIVATE
-    -fPIE
-    -nostdinc)
+target_compile_options(libm PRIVATE -fPIE -nostdinc)
 
-set_property(TARGET m PROPERTY
-    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/libm)
+set_property(TARGET libm PROPERTY OUTPUT_NAME stdc++)
 
-install(TARGETS m
+set_property(TARGET libm PROPERTY
+    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/venclave)
+
+install(TARGETS libm
     EXPORT openenclave-targets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave/libm)
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave/venclave)
 
 ##==============================================================================
 ##
@@ -72,6 +71,8 @@ install(TARGETS m
 add_library(oevend SHARED libvend.c)
 
 target_link_libraries(oevend PRIVATE -nostdlib)
+
+set_property(TARGET libm PROPERTY OUTPUT_NAME m)
 
 set_property(TARGET oevend PROPERTY
     ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
@@ -145,14 +146,10 @@ target_compile_options(oevcore PUBLIC
 target_compile_options(oevcore
     INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)
 
-target_link_libraries(
-    oevcore
+target_link_libraries(oevcore
     PUBLIC
-    -L${OE_LIBDIR}/openenclave/enclave/libc
-    -L${OE_LIBDIR}/openenclave/enclave/libcxx
-    -L${OE_LIBDIR}/openenclave/enclave/libm
-    ${CXX_NAME}
-    -l${CXX_NAME}
+    -L${OE_LIBDIR}/openenclave/enclave/venclave
+    libc libc++ libm
     -static-libgcc
     oevend
     oe_includes)
