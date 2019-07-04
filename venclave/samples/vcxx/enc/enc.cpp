@@ -26,14 +26,17 @@ struct object
 {
     object()
     {
+        printf("=== called %s()\n", __FUNCTION__);
+
+        // ATTN: crashes due to misordered oconstructors.
+        // cout << "=== object()" << endl;
+
         _object_constructor_called = true;
-        // cout << "*** object::object()" << endl;
-        // printf("*** object::object()\n");
     }
 
     ~object()
     {
-        // cout << "*** object::~object()" << endl;
+        // cout << "=== object::~object()" << endl;
     }
 };
 
@@ -41,7 +44,7 @@ object o;
 
 extern "C" void test_cxx(void)
 {
-    cout << "*** enclave: " << __FUNCTION__ << endl;
+    cout << "=== enclave: " << __FUNCTION__ << endl;
 
     _strings.push_back(string("red"));
     _strings.push_back(string("green"));

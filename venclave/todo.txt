@@ -3,6 +3,10 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
+    (A) Are relocations already applied?
+
+    (A) Fix order of construction problem (e.g., cout not constructed).
+
     (A) Fix rules for oelibc.
 
     (A) Call destructors from exit.

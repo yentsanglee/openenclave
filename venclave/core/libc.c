@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+void ve_print(const char* fmt, ...);
+
 static long _syscall1(long n, long x1)
 {
     unsigned long ret;
@@ -48,7 +50,7 @@ void __libc_start_main(void)
     int exit_status;
     extern int main(void);
 
-    __libc_csu_init();
+    //    __libc_csu_init();
     exit_status = main();
     __libc_csu_fini();
 

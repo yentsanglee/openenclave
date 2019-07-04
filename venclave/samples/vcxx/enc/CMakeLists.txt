@@ -11,7 +11,7 @@ target_include_directories(vcxx_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(vcxx_enc
     oelibcxx
-    -Wl,--whole-archive
+    #-Wl,--whole-archive
     oevlibc
-    -Wl,--no-whole-archive
+    #-Wl,--no-whole-archive
     oevcore)

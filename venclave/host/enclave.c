@@ -320,6 +320,27 @@ void ve_handle_call_ping(ve_call_buf_t* buf)
     buf->retval = buf->arg1;
 }
 
+static int _call_post_init(ve_enclave_t* enclave)
+{
+    int ret = -1;
+    uint64_t retval;
+    int sock;
+
+    sock = enclave->sock;
+
+    if (ve_call0(enclave->sock, VE_FUNC_POST_INIT, &retval) != 0)
+        goto done;
+
+    if (retval != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+
+    return ret;
+}
+
 int ve_enclave_create(
     const char* path,
     ve_heap_t* heap,
@@ -329,6 +350,7 @@ int ve_enclave_create(
     ve_enclave_t* enclave = NULL;
     size_t stack_size;
     ve_elf_info_t elf_info;
+    ve_enclave_settings_t settings;
 
     if (enclave_out)
         *enclave_out = NULL;
@@ -349,7 +371,9 @@ int ve_enclave_create(
     if ((enclave->pid = _fork_exec_enclave(path, enclave, &elf_info)) == -1)
         goto done;
 
-    ve_enclave_settings_t settings;
+    /* Perform post-initialization (to invoke constructors). */
+    if (_call_post_init(enclave) != 0)
+        goto done;
 
     /* Get the enclave settings. */
     if (ve_enclave_get_settings(enclave, &settings) != 0)

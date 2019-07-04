@@ -252,6 +252,20 @@ done:
     return ret;
 }
 
+int ve_handle_post_init(int fd, ve_call_buf_t* buf, int* exit_status)
+{
+    extern void __libc_csu_init(void);
+
+    OE_UNUSED(fd);
+    OE_UNUSED(buf);
+    OE_UNUSED(exit_status);
+
+    /* Invoke constructors, which may perform ocalls. */
+    __libc_csu_init();
+
+    return 0;
+}
+
 int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
 {
     OE_UNUSED(fd);
@@ -386,9 +400,12 @@ int main(void)
 
     __ve_main_pid = ve_getpid();
 
+#if 0
     /* Self-test for constructors. */
     if (!_called_constructor)
         ve_panic("_constructor() not called");
+#endif
+    (void)_called_constructor;
 
     /* Self-test for signals. */
     {

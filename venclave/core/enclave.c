@@ -446,8 +446,6 @@ int ve_handle_init_enclave(int fd, ve_call_buf_t* buf, int* exit_status)
     OE_UNUSED(fd);
     OE_UNUSED(exit_status);
 
-    ve_print("ve_handle_init_enclave=%lx\n", buf->arg1);
-
     _enclave = (oe_enclave_t*)buf->arg1;
     buf->retval = 0;
 

@@ -7,6 +7,8 @@
 #include "../common/call.h"
 #include "common.h"
 
+int ve_handle_post_init(int fd, ve_call_buf_t* buf, int* exit_status);
+
 int ve_handle_call_ping(int fd, ve_call_buf_t* buf, int* exit_status);
 
 int ve_handle_call_add_thread(int fd, ve_call_buf_t* buf, int* exit_status);

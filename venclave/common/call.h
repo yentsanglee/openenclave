@@ -14,6 +14,7 @@ typedef enum _ve_func
     VE_FUNC_RET,
     VE_FUNC_ERR,
     VE_FUNC_INIT,
+    VE_FUNC_POST_INIT,
     VE_FUNC_PING,
     VE_FUNC_TERMINATE,
     VE_FUNC_ADD_THREAD,
