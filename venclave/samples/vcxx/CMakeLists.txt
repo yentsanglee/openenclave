@@ -26,7 +26,7 @@ set(VALGRIND_OPTS
     --malloc-fill=0xAA
     --free-fill=0xDD)
 
-#add_test(vcxx-valgrind valgrind ${VALGRIND_OPTS}
-#    ${CMAKE_CURRENT_BINARY_DIR}/host/vcxx_host
-#    ${CMAKE_CURRENT_BINARY_DIR}/enc/vcxx_enc
-#    ${TMPDIR})
+add_test(vcxx-valgrind valgrind ${VALGRIND_OPTS}
+    ${CMAKE_CURRENT_BINARY_DIR}/host/vcxx_host
+    ${CMAKE_CURRENT_BINARY_DIR}/enc/vcxx_enc
+    ${TMPDIR})

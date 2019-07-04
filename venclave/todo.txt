@@ -5,13 +5,13 @@
 
     (A) Are relocations already applied?
 
+    (A) Call destructors during termination (since they might make ocalls).
+
     (A) Fix order of construction problem (e.g., cout not constructed).
 
-    (A) Fix rules for oelibc.
-
-    (A) Call destructors from exit.
-
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+
+    (B) Fix cmake rules for oelibc.
 
     (B) Support vectored exceptions.
 
