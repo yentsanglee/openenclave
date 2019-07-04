@@ -11,6 +11,34 @@ using namespace std;
 
 static vector<string> _strings;
 
+struct test_exception
+{
+    int val;
+
+    test_exception(int val_) : val(val_)
+    {
+    }
+};
+
+static bool _object_constructor_called = false;
+
+struct object
+{
+    object()
+    {
+        _object_constructor_called = true;
+        // cout << "*** object::object()" << endl;
+        // printf("*** object::object()\n");
+    }
+
+    ~object()
+    {
+        // cout << "*** object::~object()" << endl;
+    }
+};
+
+object o;
+
 extern "C" void test_cxx(void)
 {
     cout << "*** enclave: " << __FUNCTION__ << endl;
@@ -19,22 +47,22 @@ extern "C" void test_cxx(void)
     _strings.push_back(string("green"));
     _strings.push_back(string("blue"));
 
+    /* Test global construction. */
+    OE_TEST(_object_constructor_called == true);
+
     /* Test exceptions */
     {
         bool caught = false;
-        struct e
-        {
-            int val;
-        };
-
+        const int val = 12345;
         try
         {
             caught = false;
-            throw e();
+            throw test_exception(val);
         }
-        catch (const e&)
+        catch (const test_exception& e)
         {
             caught = true;
+            OE_TEST(e.val == val);
         }
 
         OE_TEST(caught);
