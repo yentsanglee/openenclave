@@ -161,7 +161,7 @@ static int _check_elf_header()
     const uint8_t e_ident[] = {0x7f, 'E', 'L', 'F'};
     const elf64_ehdr_t* ehdr;
 
-    if (!(ehdr = (const elf64_ehdr_t*)ve_get_baseaddr()))
+    if (!(ehdr = (const elf64_ehdr_t*)ve_get_elf_header()))
         goto done;
 
     /* Check the ELF magic number. */

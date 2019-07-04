@@ -136,6 +136,9 @@ add_library(oevcore STATIC
 target_compile_options(oevcore PUBLIC -fPIE -nostdinc)
 
 target_compile_options(oevcore
+    PUBLIC
+    -fPIE
+    INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-fstack-protector-strong>
     INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)
 
 target_link_libraries(oevcore

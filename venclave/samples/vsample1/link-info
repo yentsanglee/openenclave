@@ -1,0 +1,4 @@
+#!/bin/bash
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+ldd ~/openenclave/build/venclave/samples/vsample1/enc/vsample1_enc

@@ -8,6 +8,7 @@
 #include <openenclave/edger8r/common.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/calls.h>
+#include <openenclave/internal/globals.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/rdrand.h>
 #include <openenclave/internal/sgxtypes.h>
@@ -782,9 +783,14 @@ oe_result_t oe_ereport(
     return OE_OK;
 }
 
-void* __oe_get_enclave_base(void)
+const void* __oe_get_enclave_base(void)
 {
     return ve_get_baseaddr();
+}
+
+const void* __oe_get_enclave_elf_header(void)
+{
+    return ve_get_elf_header();
 }
 
 int* __h_errno_location(void)
