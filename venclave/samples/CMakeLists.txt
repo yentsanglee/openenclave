@@ -3,3 +3,4 @@
 
 add_subdirectory(vsample1)
 add_subdirectory(echod)
+add_subdirectory(vcxx)

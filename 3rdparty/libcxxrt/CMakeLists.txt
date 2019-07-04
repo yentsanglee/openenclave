@@ -21,6 +21,6 @@ target_compile_options(libcxxrt PRIVATE -Wno-error)
 
 target_compile_definitions(libcxxrt PRIVATE -D_GNU_SOURCE)
 
-target_link_libraries(libcxxrt PUBLIC oelibc)
+target_link_libraries(libcxxrt PRIVATE oelibc)
 
 install(TARGETS libcxxrt EXPORT openenclave-targets)

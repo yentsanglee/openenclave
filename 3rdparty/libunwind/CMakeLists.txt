@@ -127,7 +127,7 @@ target_compile_definitions(libunwind PRIVATE
   PACKAGE_STRING=\"libunwind-1.3\"
   PACKAGE_BUGREPORT=\"unwind.org\")
 
-target_link_libraries(libunwind PUBLIC oelibc)
+target_link_libraries(libunwind PRIVATE oelibc)
 
 target_include_directories(libunwind PRIVATE
   ${PROJECT_SOURCE_DIR}/include

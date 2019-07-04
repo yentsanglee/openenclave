@@ -28,7 +28,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
         )
 endif ()
 
-target_link_libraries(libcxxtest-support PRIVATE oelibcxx oeenclave)
+target_link_libraries(libcxxtest-support PRIVATE oelibcxx oeenclave oelibc)
 target_link_libraries(libcxxtest-support INTERFACE -Wl,--undefined=Test)
 
 target_include_directories(libcxxtest-support PRIVATE

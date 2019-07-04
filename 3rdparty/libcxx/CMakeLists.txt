@@ -57,7 +57,7 @@ target_compile_definitions(libcxx
   -D_LIBCPP_BUILDING_LIBRARY
   -DOE_LIBC_SUPPRESS_DEPRECATIONS)
 
-target_link_libraries(libcxx PUBLIC oelibc)
+target_link_libraries(libcxx PRIVATE oelibc)
 
 # NOTE: The `PUBLIC` headers for `libcxx` are actually added to
 # `oelibc_includes`, this is necessary to get the ordering correct.

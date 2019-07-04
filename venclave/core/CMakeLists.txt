@@ -22,6 +22,49 @@ install(TARGETS c
 
 ##==============================================================================
 ##
+## libcxx:
+##
+##==============================================================================
+
+add_library(cxx STATIC libcxx.cpp)
+
+target_compile_options(cxx PRIVATE
+    -fPIE
+    -nostdinc)
+
+set_property(TARGET cxx PROPERTY
+    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/libcxx)
+
+set(CXX_NAME stdc++)
+
+set_property(TARGET cxx PROPERTY
+    OUTPUT_NAME ${CXX_NAME})
+
+install(TARGETS cxx
+    EXPORT openenclave-targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave/libcxx)
+
+##==============================================================================
+##
+## libm:
+##
+##==============================================================================
+
+add_library(m STATIC libm.c)
+
+target_compile_options(m PRIVATE
+    -fPIE
+    -nostdinc)
+
+set_property(TARGET m PROPERTY
+    ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/libm)
+
+install(TARGETS m
+    EXPORT openenclave-targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave/libm)
+
+##==============================================================================
+##
 ## oevend:
 ##
 ##==============================================================================
@@ -99,12 +142,18 @@ target_compile_options(oevcore PUBLIC
     -fPIE
     -nostdinc)
 
+target_compile_options(oevcore
+    INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)
+
 target_link_libraries(
     oevcore
     PUBLIC
     -L${OE_LIBDIR}/openenclave/enclave/libc
-    c
-    -lc
+    -L${OE_LIBDIR}/openenclave/enclave/libcxx
+    -L${OE_LIBDIR}/openenclave/enclave/libm
+    ${CXX_NAME}
+    -l${CXX_NAME}
+    -static-libgcc
     oevend
     oe_includes)
 

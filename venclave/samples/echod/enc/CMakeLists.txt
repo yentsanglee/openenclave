@@ -7,9 +7,6 @@ add_executable(echod_enc enc.c ${gen})
 
 target_include_directories(echod_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_include_directories(echod_enc PRIVATE
-    ${CMAKE_BINARY_DIR}/output/include/openenclave/libc)
-
 target_link_libraries(echod_enc
     -Wl,--warn-once
     -Wl,--whole-archive

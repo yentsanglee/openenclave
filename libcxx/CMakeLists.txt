@@ -13,7 +13,7 @@ maybe_build_using_clangw(oelibcxx)
 # directories of these targets and their dependencies (such as
 # `oelibc`). Hence this file has more comments than code.
 target_link_libraries(oelibcxx
-  PUBLIC libcxx libcxxrt libunwind)
+  PRIVATE libcxx libcxxrt libunwind)
 
 set_property(TARGET oelibcxx
   PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/enclave)
