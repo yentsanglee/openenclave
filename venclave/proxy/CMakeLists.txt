@@ -2,6 +2,6 @@
 # Licensed under the MIT License.
 
 add_subdirectory(host)
-add_subdirectory(core)
-add_subdirectory(proxy)
-add_subdirectory(samples)
+add_subdirectory(enc)
+
+add_test(vproxy ${OE_BINDIR}/oevproxyhost 2147483647)

@@ -3,20 +3,18 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
-    (A) Are relocations already applied?
+    (A) Proxy enclave.
 
-    (A) Call destructors during termination (since they might make ocalls).
-
-    (A) Fix order of construction problem (e.g., cout not constructed).
+    (A) Vectored exceptions.
 
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
-    (B) Fix cmake rules for oelibc.
-
-    (B) Support vectored exceptions.
-
-    (B) Add a stack guard page.
+    (B) Overhaul cmake rules for various libraries.
 
     CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
+    (B) Add a stack guard page.
+
     (C) Fix hang when one thread calls ve_exit()
+
+    (C) Fix order of construction problem

@@ -13,6 +13,9 @@
 #define VE_I_SENDFD (('S' << 8) | 17)
 #define VE_I_RECVFD (('S' << 8) | 14)
 
+#define VE_AF_LOCAL 1
+#define VE_SOCK_STREAM 1
+
 struct ve_strrecvfd
 {
     int fd;
@@ -32,5 +35,13 @@ int ve_writen(int fd, const void* buf, size_t count);
 int ve_close(int fd);
 
 int ve_ioctl(int fd, unsigned long request, ...);
+
+int ve_pipe(int pipefd[2]);
+
+int ve_dup(int fd);
+
+int ve_socketpair(int domain, int type, int protocol, int sv[2]);
+
+int ve_getdtablesize(void);
 
 #endif /* _VE_ENCLAVE_IO_H */

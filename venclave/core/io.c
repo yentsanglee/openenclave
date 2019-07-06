@@ -42,4 +42,35 @@ int ve_ioctl(int fd, unsigned long request, ...)
     return (int)ve_syscall6(VE_SYS_ioctl, x1, x2, x3, x4, x5, x6);
 }
 
+int ve_pipe(int pipefd[2])
+{
+    return (int)ve_syscall1(VE_SYS_pipe, (long)pipefd);
+}
+
+int ve_dup(int fd)
+{
+    return (int)ve_syscall1(VE_SYS_dup, fd);
+}
+
+int ve_socketpair(int domain, int type, int protocol, int sv[2])
+{
+    return (int)ve_syscall4(
+        VE_SYS_socketpair, domain, type, protocol, (long)sv);
+}
+
+int ve_getdtablesize(void)
+{
+    int ret = -1;
+    const int RLIMIT_NOFILE = 7;
+    unsigned long rlim[2];
+
+    if (ve_syscall2(VE_SYS_getrlimit, RLIMIT_NOFILE, (long)rlim) < 0)
+        goto done;
+
+    ret = (int)rlim[0];
+
+done:
+    return ret;
+}
+
 #include "../common/io.c"

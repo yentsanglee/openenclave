@@ -80,8 +80,6 @@ void test_files1(const char* path)
     strlcpy(filename, path, sizeof(filename));
     strlcat(filename, "/tmpfile", sizeof(filename));
 
-    printf("filename{%s}\n", filename);
-
     /* Create a file that contains the alphabet. */
     {
         FILE* os;

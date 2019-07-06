@@ -69,3 +69,13 @@ void* ve_get_elf_header(void)
 {
     return ((uint8_t*)&__ve_self - __ve_self) + __ve_base_rva;
 }
+
+int ve_fork(void)
+{
+    return (int)ve_syscall0(VE_SYS_fork);
+}
+
+int ve_execv(const char* path, char* const argv[])
+{
+    return (int)ve_syscall3(VE_SYS_execve, (long)path, (long)argv, (long)NULL);
+}
