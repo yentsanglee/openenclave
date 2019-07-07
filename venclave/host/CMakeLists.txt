@@ -30,11 +30,16 @@ add_library(oevhost STATIC
     sendfd.c
     rand.c
     syscall.c
+    ../common/fingerprint.c
     ../../host/linux/hostthread.c
     ../../host/syscall_u_wrapper.c
     ${CMAKE_CURRENT_BINARY_DIR}/vproxyhostfp.c)
 
 add_dependencies(oevhost vproxyhostfp)
+
+target_compile_definitions(oevhost PRIVATE
+    VPROXYHOST_BUILD="${OE_BINDIR}/oevproxyhost"
+    VPROXYHOST_INSTALL="${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/oevproxyhost")
 
 target_link_libraries(oevhost
     PRIVATE oehost

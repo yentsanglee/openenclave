@@ -15,4 +15,8 @@ typedef struct _oe_fingerprint
 
 int oe_compute_fingerprint(const char* path, oe_fingerprint_t* fingerprint);
 
+int oe_compare_fingerprint(
+    const oe_fingerprint_t* x,
+    const oe_fingerprint_t* y);
+
 #endif /* _OE_INTERNAL_FINGERPRINT */

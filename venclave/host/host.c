@@ -5,6 +5,7 @@
 #include <openenclave/edger8r/common.h>
 #include <openenclave/host.h>
 #include <openenclave/internal/calls.h>
+#include <openenclave/internal/fingerprint.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
 #include <pthread.h>
@@ -12,6 +13,11 @@
 #include "enclave.h"
 #include "heap.h"
 #include "hostmalloc.h"
+
+/* The fingerprint of the version of oevproxy this library was built with. */
+extern const oe_fingerprint_t __ve_vproxyhostfp;
+
+const char* __ve_vproxy_path;
 
 #define ENCLAVE_MAGIC 0x982dea60014b4c97
 
@@ -37,6 +43,45 @@ static ve_enclave_t* _cast_enclave(oe_enclave_t* enclave)
     return enclave->venclave;
 }
 
+/* Locate the oevproxyhost program (check build and install directory). */
+static int _locate_oevproxyhost(void)
+{
+    int ret = -1;
+    oe_fingerprint_t fp;
+
+    /* Check the vproxy in the build directory (if any). */
+    if (oe_compute_fingerprint(VPROXYHOST_BUILD, &fp) == 0 &&
+        oe_compare_fingerprint(&fp, &__ve_vproxyhostfp) == 0)
+    {
+        __ve_vproxy_path = VPROXYHOST_BUILD;
+        ret = 0;
+        goto done;
+    }
+
+    /* Check the vproxy in the install directory (if any). */
+    if (oe_compute_fingerprint(VPROXYHOST_INSTALL, &fp) == 0 &&
+        oe_compare_fingerprint(&fp, &__ve_vproxyhostfp) == 0)
+    {
+        __ve_vproxy_path = VPROXYHOST_INSTALL;
+        ret = 0;
+        goto done;
+    }
+
+    ret = 0;
+
+done:
+
+    if (!__ve_vproxy_path)
+    {
+        fprintf(stderr, "failed to locate oevproxyhost program.");
+        exit(1);
+    }
+
+    printf("__ve_vproxy_path=%s\n", __ve_vproxy_path);
+
+    return ret;
+}
+
 static void _create_enclave_once(void)
 {
     /* Create the host heap to be shared with enclaves. */
@@ -45,6 +90,9 @@ static void _create_enclave_once(void)
 
     /* Register the syscall OCALLs. */
     oe_register_syscall_ocall_function_table();
+
+    if (_locate_oevproxyhost() != 0)
+        goto done;
 
     _create_enclave_once_okay = true;
 

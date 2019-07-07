@@ -60,3 +60,17 @@ done:
 
     return ret;
 }
+
+int oe_compare_fingerprint(const oe_fingerprint_t* x, const oe_fingerprint_t* y)
+{
+    if (!x || !y)
+        return -1;
+
+    if (x->size != y->size)
+        return -1;
+
+    if (memcmp(x->hash, y->hash, sizeof(x->hash)) != 0)
+        return -1;
+
+    return 0;
+}
