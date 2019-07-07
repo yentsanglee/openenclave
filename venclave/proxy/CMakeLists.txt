@@ -3,5 +3,3 @@
 
 add_subdirectory(host)
 add_subdirectory(enc)
-
-add_test(vproxy ${OE_BINDIR}/oevproxyhost 2147483647)
