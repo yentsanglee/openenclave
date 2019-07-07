@@ -340,8 +340,15 @@ static void _terminate_proxy(int pid, int sock)
 {
     int status = 0;
     int r;
+    uint64_t retval = (uint64_t)-1;
 
-    ve_write(sock, "quit\n", 5);
+    /* Send termination request to the proxy. */
+    if (ve_call0(sock, VE_FUNC_TERMINATE, &retval) != 0)
+        ve_panic("failed to send terminate request to proxy.");
+
+    if (retval != 0)
+        ve_panic("bad terminate response from proxy.");
+
     ve_close(sock);
 
     /* Wait for the child to exit. */
@@ -351,7 +358,7 @@ static void _terminate_proxy(int pid, int sock)
     if (r != pid)
         ve_panic("waitpid failed on proxy");
 
-    if (VE_WEXITSTATUS(status) != 77)
+    if (VE_WEXITSTATUS(status) != 0)
         ve_panic("bad proxy exit status");
 }
 

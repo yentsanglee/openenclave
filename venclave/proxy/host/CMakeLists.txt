@@ -3,7 +3,7 @@
 
 oeedl_file(../proxy.edl host gen)
 
-add_executable(oevproxyhost main.c ${gen})
+add_executable(oevproxyhost main.c io.c ${gen})
 
 target_include_directories(oevproxyhost PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

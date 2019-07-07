@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "trace.h"
-
 int ve_readn(int fd, void* buf, size_t count)
 {
     int ret = -1;

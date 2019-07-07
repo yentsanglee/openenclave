@@ -1,9 +1,11 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <assert.h>
 #include <limits.h>
 #include <openenclave/host.h>
 #include <unistd.h>
+#include "../../common/call.h"
 #include "proxy_u.h"
 
 const char* arg0;
@@ -54,6 +56,81 @@ done:
     return ret;
 }
 
+static int _handle_call(int fd, ve_call_buf_t* buf, int* exit_status)
+{
+    OE_UNUSED(fd);
+    OE_UNUSED(buf);
+
+    switch (buf->func)
+    {
+        case VE_FUNC_TERMINATE:
+        {
+            *exit_status = 0;
+            return 0;
+        }
+        default:
+        {
+            return -1;
+        }
+    }
+}
+
+static int _handle_calls(int fd)
+{
+    int ret = -1;
+    extern int ve_readn(int fd, void* buf, size_t count);
+    extern int ve_writen(int fd, const void* buf, size_t count);
+
+    if (fd < 0)
+        goto done;
+
+    for (;;)
+    {
+        ve_call_buf_t in;
+        ve_call_buf_t out;
+        int retval;
+        int exit_status = -1;
+
+        if (ve_readn(fd, &in, sizeof(in)) != 0)
+            goto done;
+
+        ve_call_buf_clear(&out);
+
+        switch ((retval = _handle_call(fd, &in, &exit_status)))
+        {
+            case 0:
+            {
+                out.func = VE_FUNC_RET;
+                out.retval = in.retval;
+                break;
+            }
+            case -1:
+            {
+                out.func = VE_FUNC_ERR;
+                break;
+            }
+            default:
+            {
+                err("vproxyhost: unexpected handle-call response");
+                break;
+            }
+        }
+
+        if (ve_writen(fd, &out, sizeof(out)) != 0)
+            goto done;
+
+        if (exit_status >= 0)
+        {
+            close(fd);
+            ret = exit_status;
+            break;
+        }
+    }
+
+done:
+    return ret;
+}
+
 int main(int argc, const char* argv[])
 {
     arg0 = argv[0];
@@ -61,6 +138,7 @@ int main(int argc, const char* argv[])
     char path[PATH_MAX];
     oe_result_t result;
     oe_enclave_t* enclave = NULL;
+    int exit_status = 0;
 
     /* Check command line arguments. */
     if (argc != 2)
@@ -109,11 +187,9 @@ int main(int argc, const char* argv[])
     /* Block while waiting to read the socket. */
     if (sock != INT_MAX)
     {
-        char buf[1024] = {'\0'};
-
-        printf("proxy: waiting\n");
-        fflush(stdout);
-        read(sock, buf, sizeof(buf));
+        /* ATTN: capture exit status here. */
+        if ((exit_status = _handle_calls(sock)) == -1)
+            err("vproxyhost: termination error");
     }
 
     /* Terminate the enclave. */
@@ -122,5 +198,5 @@ int main(int argc, const char* argv[])
 
     _close_standard_devices();
 
-    return 77;
+    return exit_status;
 }
