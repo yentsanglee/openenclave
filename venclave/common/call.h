@@ -6,6 +6,7 @@
 
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
+#include <openenclave/corelibc/limits.h>
 
 #define VE_INIT_ARG_MAGIC 0x3b146763853147ce
 
@@ -83,6 +84,7 @@ typedef struct _ve_init_arg
     size_t tbss_align;
     uint64_t self_rva;
     uint64_t base_rva;
+    char vproxyhost_path[OE_PATH_MAX];
 } ve_init_arg_t;
 
 const char* ve_func_name(ve_func_t func);

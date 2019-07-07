@@ -17,7 +17,7 @@
 /* The fingerprint of the version of oevproxy this library was built with. */
 extern const oe_fingerprint_t __ve_vproxyhostfp;
 
-const char* __ve_vproxy_path;
+const char* __ve_vproxyhost_path;
 
 #define ENCLAVE_MAGIC 0x982dea60014b4c97
 
@@ -53,7 +53,7 @@ static int _locate_oevproxyhost(void)
     if (oe_compute_fingerprint(VPROXYHOST_BUILD, &fp) == 0 &&
         oe_compare_fingerprint(&fp, &__ve_vproxyhostfp) == 0)
     {
-        __ve_vproxy_path = VPROXYHOST_BUILD;
+        __ve_vproxyhost_path = VPROXYHOST_BUILD;
         ret = 0;
         goto done;
     }
@@ -62,7 +62,7 @@ static int _locate_oevproxyhost(void)
     if (oe_compute_fingerprint(VPROXYHOST_INSTALL, &fp) == 0 &&
         oe_compare_fingerprint(&fp, &__ve_vproxyhostfp) == 0)
     {
-        __ve_vproxy_path = VPROXYHOST_INSTALL;
+        __ve_vproxyhost_path = VPROXYHOST_INSTALL;
         ret = 0;
         goto done;
     }
@@ -71,13 +71,18 @@ static int _locate_oevproxyhost(void)
 
 done:
 
-    if (!__ve_vproxy_path)
+    if (!__ve_vproxyhost_path)
     {
         fprintf(stderr, "failed to locate oevproxyhost program.");
         exit(1);
     }
 
-    printf("__ve_vproxy_path=%s\n", __ve_vproxy_path);
+    if (strlen(__ve_vproxyhost_path) >= OE_PATH_MAX)
+    {
+        fprintf(
+            stderr, "oevproxyhost path too long: %s\n", __ve_vproxyhost_path);
+        exit(1);
+    }
 
     return ret;
 }

@@ -202,6 +202,58 @@ done:
     return ret;
 }
 
+/* Create a proxy enclave and return a socket for communicating with it. */
+static int _create_proxy(const char* path, int* sock)
+{
+    int ret = -1;
+    int pid;
+    int socks[2] = {-1, -1};
+
+    if (sock)
+        *sock = -1;
+
+    if (!path || !sock)
+        goto done;
+
+    if (ve_socketpair(VE_AF_LOCAL, VE_SOCK_STREAM, 0, socks) == -1)
+        goto done;
+
+    if ((pid = ve_fork()) < 0)
+        goto done;
+
+    /* If inside the child process. */
+    if (pid == 0)
+    {
+        char* argv[3];
+        ve_dstr_buf buf;
+
+        argv[0] = (char*)path;
+        argv[1] = (char*)ve_dstr(&buf, socks[1], NULL);
+        argv[2] = NULL;
+
+        /* Close all non-standard file descriptors except socks[1]. */
+        {
+            const int max_fd = ve_getdtablesize() - 1;
+
+            for (int i = VE_STDERR_FILENO + 1; i <= max_fd; i++)
+            {
+                if (i != socks[1])
+                    ve_close(i);
+            }
+        }
+
+        /* Execute the enclave proxy. */
+        ve_execv(path, argv);
+        ve_panic("ve_execv() failed");
+    }
+
+    *sock = socks[0];
+    ret = pid;
+
+done:
+    return ret;
+}
+
 static int _handle_init(void)
 {
     int ret = -1;
@@ -250,6 +302,16 @@ static int _handle_init(void)
         }
     }
 
+#if defined(USE_PROXY)
+    {
+        const char* path = arg.vproxyhost_path;
+
+        /* Create the proxy process to handle SGX requests. */
+        if ((__ve_proxy_pid = _create_proxy(path, &__ve_proxy_sock)) == -1)
+            ve_panic("_create_proxy_enclave() failed");
+    }
+#endif /* defined(USE_PROXY) */
+
     /* Send response back on the socket. */
     if (ve_writen(__ve_sock, &retval, sizeof(retval)) != 0)
         goto done;
@@ -274,7 +336,7 @@ int ve_handle_post_init(int fd, ve_call_buf_t* buf, int* exit_status)
     return 0;
 }
 
-void ve_terminate_proxy(int pid, int sock)
+static void _terminate_proxy(int pid, int sock)
 {
     int status = 0;
     int r;
@@ -328,7 +390,7 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
 #if defined(USE_PROXY)
 
     /* Terminate the proxy. */
-    ve_terminate_proxy(__ve_proxy_pid, __ve_proxy_sock);
+    _terminate_proxy(__ve_proxy_pid, __ve_proxy_sock);
 
 #endif /* defined(USE_PROXY) */
 
@@ -428,58 +490,6 @@ static void _sigusr1(int sig)
     _called_sigusr1 = true;
 }
 
-/* Create a proxy enclave and return a socket for communicating with it. */
-int ve_create_proxy(const char* path, int* sock)
-{
-    int ret = -1;
-    int pid;
-    int socks[2] = {-1, -1};
-
-    if (sock)
-        *sock = -1;
-
-    if (!path || !sock)
-        goto done;
-
-    if (ve_socketpair(VE_AF_LOCAL, VE_SOCK_STREAM, 0, socks) == -1)
-        goto done;
-
-    if ((pid = ve_fork()) < 0)
-        goto done;
-
-    /* If inside the child process. */
-    if (pid == 0)
-    {
-        char* argv[3];
-        ve_dstr_buf buf;
-
-        argv[0] = (char*)path;
-        argv[1] = (char*)ve_dstr(&buf, socks[1], NULL);
-        argv[2] = NULL;
-
-        /* Close all non-standard file descriptors except socks[1]. */
-        {
-            const int max_fd = ve_getdtablesize() - 1;
-
-            for (int i = VE_STDERR_FILENO + 1; i <= max_fd; i++)
-            {
-                if (i != socks[1])
-                    ve_close(i);
-            }
-        }
-
-        /* Execute the enclave proxy. */
-        ve_execv(path, argv);
-        ve_panic("ve_execv() failed");
-    }
-
-    *sock = socks[0];
-    ret = pid;
-
-done:
-    return ret;
-}
-
 int main(void)
 {
     int exit_status;
@@ -504,18 +514,6 @@ int main(void)
     /* Wait here to be initialized and to receive the main socket. */
     if (_handle_init() != 0)
         ve_panic("ve_handle_init() failed");
-
-#if defined(USE_PROXY)
-    {
-        /* ATTN: hardcoded path! */
-        const char path[] =
-            "/root/mikbras.virtenc/build/output/bin/oevproxyhost";
-
-        /* Create the proxy process (to handle SGX requests). */
-        if ((__ve_proxy_pid = ve_create_proxy(path, &__ve_proxy_sock)) == -1)
-            ve_panic("_create_proxy_enclave() failed");
-    }
-#endif /* defined(USE_PROXY) */
 
     /* Handle messages over the main socket. */
     if ((exit_status = ve_handle_calls(__ve_sock)) == -1)

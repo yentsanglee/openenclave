@@ -44,6 +44,7 @@ struct _ve_enclave
 };
 
 extern const char* __ve_arg0;
+extern const char* __ve_vproxyhost_path;
 
 static int _init_child(
     ve_enclave_t* enclave,
@@ -58,6 +59,10 @@ static int _init_child(
     if (!enclave || child_fd < 0 || child_sock < 0)
         goto done;
 
+    if (!__ve_vproxyhost_path || strlen(__ve_vproxyhost_path) >= OE_PATH_MAX)
+        goto done;
+
+    memset(&arg, 0, sizeof(arg));
     arg.magic = VE_INIT_ARG_MAGIC;
     arg.sock = child_sock;
     arg.shmid = enclave->heap->shmid;
@@ -71,6 +76,7 @@ static int _init_child(
     arg.tbss_align = elf_info->tbss_align;
     arg.self_rva = elf_info->self_rva;
     arg.base_rva = elf_info->base_rva;
+    strcpy(arg.vproxyhost_path, __ve_vproxyhost_path);
 
     /* Send the message to the child's standard input. */
     if (ve_writen(child_fd, &arg, sizeof(arg)) != 0)
