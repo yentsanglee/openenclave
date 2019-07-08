@@ -755,22 +755,6 @@ void* oe_sbrk(intptr_t increment)
     return ve_sbrk(increment);
 }
 
-/* Wrapper for the EREPORT instruction. */
-oe_result_t oe_ereport(
-    sgx_target_info_t* target_info_align_512,
-    sgx_report_data_t* report_data_align_128,
-    sgx_report_t* report_align_512)
-{
-    OE_UNUSED(target_info_align_512);
-    OE_UNUSED(report_data_align_128);
-    OE_UNUSED(report_align_512);
-
-    /* ATTN: implement this  */
-    oe_abort();
-
-    return OE_OK;
-}
-
 const void* __oe_get_enclave_base(void)
 {
     return ve_get_baseaddr();
@@ -806,7 +790,7 @@ uint64_t oe_egetkey(
     locked = true;
 
     if (ve_msg_send(sock, VE_MSG_EGETKEY, &req, sizeof(req)) != 0)
-        ve_unlock(&_proxy_sock_lock);
+        goto done;
 
     if (ve_msg_recv(sock, VE_MSG_EGETKEY, &rsp, sizeof(rsp)) != 0)
         goto done;
@@ -820,4 +804,40 @@ done:
         ve_unlock(&_proxy_sock_lock);
 
     return ret;
+}
+
+oe_result_t oe_ereport(
+    sgx_target_info_t* target_info,
+    sgx_report_data_t* report_data,
+    sgx_report_t* report)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    const int sock = __ve_proxy_sock;
+    ve_ereport_request_t req;
+    ve_ereport_response_t rsp;
+    bool locked = false;
+
+    if (!target_info || !report_data || !report)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    ve_memcpy(&req.target_info, target_info, sizeof(req.target_info));
+    ve_memcpy(&req.report_data, report_data, sizeof(req.report_data));
+    ve_memset(&rsp, 0, sizeof(rsp));
+
+    if (ve_msg_send(sock, VE_MSG_EREPORT, &req, sizeof(req)) != 0)
+        goto done;
+
+    if (ve_msg_recv(sock, VE_MSG_EREPORT, &rsp, sizeof(rsp)) != 0)
+        goto done;
+
+    ve_memcpy(report, &rsp.report, sizeof(sgx_report_t));
+
+    result = (oe_result_t)rsp.result;
+
+done:
+
+    if (locked)
+        ve_unlock(&_proxy_sock_lock);
+
+    return result;
 }

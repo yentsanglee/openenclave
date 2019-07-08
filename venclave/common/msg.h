@@ -14,6 +14,7 @@ typedef enum _ve_msg_type
 {
     VE_MSG_TERMINATE,
     VE_MSG_EGETKEY,
+    VE_MSG_EREPORT,
 } ve_msg_type_t;
 
 typedef struct _ve_msg
@@ -34,6 +35,18 @@ typedef struct _ve_egetkey_response
     uint64_t ret;
     sgx_key_t key;
 } ve_egetkey_response_t;
+
+typedef struct _ve_ereport_request
+{
+    sgx_target_info_t target_info;
+    sgx_report_data_t report_data;
+} ve_ereport_request_t;
+
+typedef struct _ve_ereport_response
+{
+    uint64_t result;
+    sgx_report_t report;
+} ve_ereport_response_t;
 
 int ve_msg_send(int fd, ve_msg_type_t type, const void* data, size_t size);
 

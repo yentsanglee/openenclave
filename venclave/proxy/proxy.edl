@@ -3,10 +3,19 @@
 
 enclave {
     trusted {
+
         public uint64_t egetkey_ecall(
             [in, size=sgx_key_request_size] const void* sgx_key_request,
             size_t sgx_key_request_size,
             [out, size=sgx_key_size] void* sgx_key,
             size_t sgx_key_size);
+
+        public uint64_t ereport_ecall(
+            [in, size=target_info_size] const void* target_info,
+            size_t target_info_size,
+            [in, size=report_data_size] const void* report_data,
+            size_t report_data_size,
+            [out, size=report_size] void* report,
+            size_t report_size);
     };
 };

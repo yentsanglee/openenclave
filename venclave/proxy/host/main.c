@@ -93,6 +93,44 @@ done:
     return ret;
 }
 
+static int _handle_ereport_request(
+    oe_enclave_t* enclave,
+    int fd,
+    const void* data,
+    size_t size)
+{
+    int ret = -1;
+    ve_ereport_request_t req;
+    ve_ereport_response_t rsp;
+
+    if (size != sizeof(req))
+        goto done;
+
+    memcpy(&req, data, sizeof(req));
+    memset(&rsp, 0, sizeof(rsp));
+
+    if (ereport_ecall(
+            enclave,
+            &rsp.result,
+            &req.target_info,
+            sizeof(req.target_info),
+            &req.report_data,
+            sizeof(req.report_data),
+            &rsp.report,
+            sizeof(rsp.report)) != OE_OK)
+    {
+        goto done;
+    }
+
+    if (ve_msg_send(fd, VE_MSG_EREPORT, &rsp, sizeof(rsp)) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
 static int _handle_messages(oe_enclave_t* enclave, int fd)
 {
     int ret = -1;
@@ -125,6 +163,13 @@ static int _handle_messages(oe_enclave_t* enclave, int fd)
             case VE_MSG_EGETKEY:
             {
                 if (_handle_egetkey_request(enclave, fd, data, size) != 0)
+                    goto done;
+
+                break;
+            }
+            case VE_MSG_EREPORT:
+            {
+                if (_handle_ereport_request(enclave, fd, data, size) != 0)
                     goto done;
 
                 break;
