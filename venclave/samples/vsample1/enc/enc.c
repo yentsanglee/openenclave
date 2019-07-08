@@ -10,6 +10,8 @@
 #include <openenclave/internal/entropy.h>
 #include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/print.h>
+#include <openenclave/internal/sgxkeys.h>
+#include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/tests.h>
 #include <openenclave/internal/thread.h>
 #include <openenclave/internal/time.h>
@@ -145,6 +147,24 @@ void test_files(const char* path)
 {
     test_files1(path);
     test_files2(path);
+}
+
+void test_get_key(void)
+{
+    sgx_key_request_t request;
+    sgx_key_t key;
+
+    memset(&request, 0, sizeof(request));
+    request.key_name = SGX_KEYSELECT_SEAL;
+    request.key_policy = SGX_KEYPOLICY_MRENCLAVE;
+    memset(&key, 0, sizeof(key));
+
+    OE_TEST(oe_get_key(&request, &key) == OE_OK);
+
+    for (size_t i = 0; i < sizeof(key.buf); i++)
+        printf("%02x", key.buf[i]);
+
+    printf("\n");
 }
 
 OE_SET_ENCLAVE_SGX(

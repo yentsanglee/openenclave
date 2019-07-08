@@ -9,6 +9,8 @@ enclave {
         public int test_time();
 
         public void test_files([string, in] const char* path);
+
+        public void test_get_key();
     };
 
     untrusted {

@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include <openenclave/internal/elf.h>
+#include "../common/msg.h"
 #include "assert.h"
 #include "call.h"
 #include "common.h"
@@ -251,6 +252,10 @@ static int _create_proxy(const char* path, int* sock)
     ret = pid;
 
 done:
+
+    if (socks[1] != -1)
+        ve_close(socks[1]);
+
     return ret;
 }
 
@@ -340,16 +345,21 @@ static void _terminate_proxy(int pid, int sock)
 {
     int status = 0;
     int r;
-    uint64_t retval = (uint64_t)-1;
 
-    /* Send termination request to the proxy. */
-    if (ve_call0(sock, VE_FUNC_TERMINATE, &retval) != 0)
-        ve_panic("failed to send terminate request to proxy.");
+    /* Tell the proxy to terminate. */
+    {
+        ve_msg_type_t type;
+        void* data;
+        size_t size;
 
-    if (retval != 0)
-        ve_panic("bad terminate response from proxy.");
+        if (ve_msg_send(sock, VE_MSG_TERMINATE, NULL, 0) != 0)
+            ve_panic("failed to send terminate message to proxy");
 
-    ve_close(sock);
+        if (ve_msg_recv_any(sock, &type, &data, &size) != 0)
+            ve_panic("failed to receive terminate message to proxy");
+
+        ve_close(sock);
+    }
 
     /* Wait for the child to exit. */
     while ((r = ve_waitpid(pid, &status, 0)) < 0)

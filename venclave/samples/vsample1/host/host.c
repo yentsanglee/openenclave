@@ -104,6 +104,9 @@ int main(int argc, const char* argv[])
             err("test_files() failed: %s\n", oe_result_str(result));
     }
 
+    if ((result = test_get_key(enclave)) != OE_OK)
+        err("test_get_key() failed: %s\n", oe_result_str(result));
+
 #if 0
     {
         int retval;

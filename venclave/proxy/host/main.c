@@ -6,6 +6,7 @@
 #include <openenclave/host.h>
 #include <unistd.h>
 #include "../../common/call.h"
+#include "../../common/msg.h"
 #include "proxy_u.h"
 
 const char* arg0;
@@ -56,78 +57,89 @@ done:
     return ret;
 }
 
-static int _handle_call(int fd, ve_call_buf_t* buf, int* exit_status)
-{
-    OE_UNUSED(fd);
-    OE_UNUSED(buf);
-
-    switch (buf->func)
-    {
-        case VE_FUNC_TERMINATE:
-        {
-            *exit_status = 0;
-            return 0;
-        }
-        default:
-        {
-            return -1;
-        }
-    }
-}
-
-static int _handle_calls(int fd)
+static int _handle_egetkey_request(
+    oe_enclave_t* enclave,
+    int fd,
+    const void* data,
+    size_t size)
 {
     int ret = -1;
-    extern int ve_readn(int fd, void* buf, size_t count);
-    extern int ve_writen(int fd, const void* buf, size_t count);
+    ve_egetkey_request_t req;
+    ve_egetkey_response_t rsp;
+
+    if (size != sizeof(req))
+        goto done;
+
+    memcpy(&req, data, sizeof(req));
+    memset(&rsp, 0, sizeof(rsp));
+
+    if (egetkey_ecall(
+            enclave,
+            &rsp.ret,
+            &req.request,
+            sizeof(req.request),
+            &rsp.key,
+            sizeof(rsp.key)) != OE_OK)
+    {
+        goto done;
+    }
+
+    if (ve_msg_send(fd, VE_MSG_EGETKEY, &rsp, sizeof(rsp)) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static int _handle_messages(oe_enclave_t* enclave, int fd)
+{
+    int ret = -1;
+    ve_msg_type_t type;
+    void* data = NULL;
+    size_t size;
 
     if (fd < 0)
         goto done;
 
     for (;;)
     {
-        ve_call_buf_t in;
-        ve_call_buf_t out;
-        int retval;
-        int exit_status = -1;
-
-        if (ve_readn(fd, &in, sizeof(in)) != 0)
+        if (ve_msg_recv_any(fd, &type, &data, &size) != 0)
             goto done;
 
-        ve_call_buf_clear(&out);
-
-        switch ((retval = _handle_call(fd, &in, &exit_status)))
+        switch (type)
         {
-            case 0:
+            case VE_MSG_TERMINATE:
             {
-                out.func = VE_FUNC_RET;
-                out.retval = in.retval;
-                break;
+                /* Send back response. */
+                if (ve_msg_send(fd, type, NULL, 0) != 0)
+                    goto done;
+
+                close(fd);
+
+                /* Set the process exit status and exit this function. */
+                ret = 0;
+                goto done;
             }
-            case -1:
+            case VE_MSG_EGETKEY:
             {
-                out.func = VE_FUNC_ERR;
-                break;
-            }
-            default:
-            {
-                err("vproxyhost: unexpected handle-call response");
+                if (_handle_egetkey_request(enclave, fd, data, size) != 0)
+                    goto done;
+
                 break;
             }
         }
 
-        if (ve_writen(fd, &out, sizeof(out)) != 0)
-            goto done;
-
-        if (exit_status >= 0)
-        {
-            close(fd);
-            ret = exit_status;
-            break;
-        }
+        free(data);
+        data = NULL;
     }
 
 done:
+
+    if (data)
+        free(data);
+
     return ret;
 }
 
@@ -188,7 +200,7 @@ int main(int argc, const char* argv[])
     if (sock != INT_MAX)
     {
         /* ATTN: capture exit status here. */
-        if ((exit_status = _handle_calls(sock)) == -1)
+        if ((exit_status = _handle_messages(enclave, sock)) == -1)
             err("vproxyhost: termination error");
     }
 

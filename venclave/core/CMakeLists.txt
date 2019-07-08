@@ -92,6 +92,7 @@ add_library(oevcore STATIC
     clone.S
     sbrk.c
     main.c
+    msg.c
     print.c
     malloc.c
     shm.c

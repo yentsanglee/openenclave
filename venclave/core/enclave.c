@@ -13,6 +13,7 @@
 #include <openenclave/internal/rdrand.h>
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/thread.h>
+#include "../common/msg.h"
 #include "assert.h"
 #include "call.h"
 #include "futex.h"
@@ -31,6 +32,9 @@
 
 extern const oe_ecall_func_t __oe_ecalls_table[];
 extern const size_t __oe_ecalls_table_size;
+
+extern int __ve_proxy_sock;
+static ve_lock_t _proxy_sock_lock;
 
 /* Opaque enclave pointer passed by the host. */
 static oe_enclave_t* _enclave;
@@ -751,20 +755,6 @@ void* oe_sbrk(intptr_t increment)
     return ve_sbrk(increment);
 }
 
-/* Wrapper for the EGETKEY instruction. */
-uint64_t oe_egetkey(
-    const sgx_key_request_t* sgx_key_request,
-    sgx_key_t* sgx_key)
-{
-    OE_UNUSED(sgx_key_request);
-    OE_UNUSED(sgx_key);
-
-    /* ATTN: implement this  */
-    oe_abort();
-
-    return 0;
-}
-
 /* Wrapper for the EREPORT instruction. */
 oe_result_t oe_ereport(
     sgx_target_info_t* target_info_align_512,
@@ -794,4 +784,40 @@ const void* __oe_get_enclave_elf_header(void)
 int* __h_errno_location(void)
 {
     return __oe_errno_location();
+}
+
+uint64_t oe_egetkey(
+    const sgx_key_request_t* sgx_key_request,
+    sgx_key_t* sgx_key)
+{
+    uint64_t ret = SGX_EGETKEY_INVALID_ATTRIBUTE;
+    const int sock = __ve_proxy_sock;
+    ve_egetkey_request_t req;
+    ve_egetkey_response_t rsp;
+    bool locked = false;
+
+    if (!sgx_key_request || !sgx_key)
+        goto done;
+
+    ve_memcpy(&req.request, sgx_key_request, sizeof(req.request));
+    ve_memset(&rsp, 0, sizeof(rsp));
+
+    ve_lock(&_proxy_sock_lock);
+    locked = true;
+
+    if (ve_msg_send(sock, VE_MSG_EGETKEY, &req, sizeof(req)) != 0)
+        ve_unlock(&_proxy_sock_lock);
+
+    if (ve_msg_recv(sock, VE_MSG_EGETKEY, &rsp, sizeof(rsp)) != 0)
+        goto done;
+
+    ve_memcpy(sgx_key, &rsp.key, sizeof(sgx_key_t));
+    ret = rsp.ret;
+
+done:
+
+    if (locked)
+        ve_unlock(&_proxy_sock_lock);
+
+    return ret;
 }
