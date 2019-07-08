@@ -5,7 +5,7 @@
 #include <openenclave/internal/trace.h>
 #include <stdio.h>
 
-static int oe_fopen(FILE** fp, const char* path, const char* mode)
+static int _fopen(FILE** fp, const char* path, const char* mode)
 {
     if (!fp)
         return -1;
@@ -15,6 +15,8 @@ static int oe_fopen(FILE** fp, const char* path, const char* mode)
 
     return 0;
 }
+
+#define oe_fopen _fopen
 
 #include "../../host/sgx/elf.c"
 

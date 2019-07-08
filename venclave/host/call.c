@@ -51,6 +51,10 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
         {
             return ve_handle_call_host_function(fd, buf);
         }
+        case VE_FUNC_OCALL:
+        {
+            return ve_handle_ocall(fd, buf);
+        }
         default:
         {
             return -1;

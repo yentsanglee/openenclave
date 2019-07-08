@@ -30,6 +30,7 @@ typedef enum _ve_func
     VE_FUNC_INIT_ENCLAVE,
     VE_FUNC_CALL_ENCLAVE_FUNCTION,
     VE_FUNC_CALL_HOST_FUNCTION,
+    VE_FUNC_OCALL,
     VE_FUNC_ABORT,
 } ve_func_t;
 

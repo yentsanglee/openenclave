@@ -45,6 +45,8 @@ const char* ve_func_name(ve_func_t func)
             return "VE_FUNC_CALL_HOST_FUNCTION";
         case VE_FUNC_ABORT:
             return "ABORT";
+        case VE_FUNC_OCALL:
+            return "OCALL";
     }
 
     return "UNKNOWN";

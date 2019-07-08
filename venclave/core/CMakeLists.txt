@@ -83,34 +83,33 @@ install(TARGETS oevend
 
 add_library(oevcore STATIC
     assert.c
+    call.c
+    clone.S
+    enclave.c
+    futex.c
+    globals.c
+    hexdump.c
+    io.c
+    lock.c
+    main.c
+    malloc.c
+    memmove.c
+    msg.c
+    panic.c
+    print.c
+    process.c
+    recvfd.c
+    register.c
+    restore.S
+    sbrk.c
+    __secs_to_tm.c
+    shm.c
+    signal.c
+    socket.c
     string.c
     syscall.c
-    recvfd.c
-    socket.c
-    time.c
-    globals.c
-    clone.S
-    sbrk.c
-    main.c
-    msg.c
-    print.c
-    malloc.c
-    shm.c
-    process.c
-    io.c
-    call.c
-    lock.c
-    hexdump.c
-    register.c
     thread.c
-    enclave.c
-    safecrt.c
-    memmove.c
-    signal.c
-    restore.S
-    panic.c
-    futex.c
-    __secs_to_tm.c
+    time.c
     ../../enclave/core/assert.c
     ../../enclave/core/ctype.c
     ../../enclave/core/gmtime.c
@@ -119,20 +118,22 @@ add_library(oevcore STATIC
     ../../enclave/core/printf.c
     ../../enclave/core/pthread.c
     ../../enclave/core/result.c
-    ../../enclave/core/stdio.c
-    ../../enclave/core/strerror.c
-    ../../enclave/core/string.c
-    ../../enclave/core/strtok_r.c
-    ../../enclave/core/strtoul.c
     ../../enclave/core/sgx/atexit.c
     ../../enclave/core/sgx/entropy.c
     ../../enclave/core/sgx/jump.c
     ../../enclave/core/sgx/keys.c
-    ../../enclave/core/sgx/report.c
     ../../enclave/core/sgx/once.c
+    ../../enclave/core/sgx/report.c
+    ../../enclave/core/sgx/report.c
+    ../../common/safecrt.c
     ../../enclave/core/sgx/sched_yield.c
     ../../enclave/core/sgx/spinlock.c
-    ../../enclave/core/sgx/thread.c)
+    ../../enclave/core/sgx/thread.c
+    ../../enclave/core/stdio.c
+    ../../enclave/core/strerror.c
+    ../../enclave/core/string.c
+    ../../enclave/core/strtok_r.c
+    ../../enclave/core/strtoul.c)
 
 target_compile_options(oevcore PUBLIC -fPIE -nostdinc)
 

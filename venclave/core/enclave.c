@@ -284,17 +284,34 @@ oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)
     switch (func)
     {
         case OE_OCALL_THREAD_WAIT:
+        {
             _handle_thread_wait_ocall(arg_in);
             break;
-
+        }
         case OE_OCALL_THREAD_WAKE:
+        {
             _handle_thread_wake_ocall(arg_in);
             break;
-
+        }
         case OE_OCALL_THREAD_WAKE_WAIT:
+        {
             _handle_thread_wake_wait_ocall(arg_in);
             break;
+        }
+        case OE_OCALL_GET_QE_TARGET_INFO:
+        case OE_OCALL_GET_QUOTE:
+        {
+            const int sock = __ve_thread_sock_tls;
+            uint64_t retval = 0;
 
+            if (ve_call2(sock, VE_FUNC_OCALL, &retval, func, arg_in) != 0)
+                OE_RAISE(OE_FAILURE);
+
+            if (retval != 0)
+                OE_RAISE(OE_FAILURE);
+
+            break;
+        }
         default:
         {
             OE_RAISE(OE_NOT_FOUND);

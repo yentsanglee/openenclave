@@ -7,6 +7,7 @@
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/fingerprint.h>
 #include <openenclave/internal/raise.h>
+#include <openenclave/internal/report.h>
 #include <openenclave/internal/utils.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -450,4 +451,90 @@ int ve_handle_call_host_function(int fd, ve_call_buf_t* buf)
 
     buf->retval = (uint64_t)_handle_call_host_function(buf->arg1, _enclave_tls);
     return 0;
+}
+
+void HandleGetQETargetInfo(uint64_t arg_in)
+{
+    extern oe_result_t sgx_get_qetarget_info(sgx_target_info_t * target_info);
+    oe_get_qetarget_info_args_t* args = (oe_get_qetarget_info_args_t*)arg_in;
+
+    if (!args)
+        return;
+
+    args->result = sgx_get_qetarget_info(&args->target_info);
+}
+
+void HandleGetQuote(uint64_t arg_in)
+{
+    OE_UNUSED(arg_in);
+}
+
+int ve_handle_ocall(int fd, ve_call_buf_t* buf)
+{
+    int ret = -1;
+
+    OE_UNUSED(fd);
+
+    switch ((oe_func_t)buf->arg1)
+    {
+        case OE_OCALL_GET_QE_TARGET_INFO:
+        {
+            extern void HandleGetQETargetInfo(uint64_t arg_in);
+            HandleGetQETargetInfo(buf->arg2);
+            break;
+        }
+        case OE_OCALL_GET_QUOTE:
+        {
+            extern void HandleGetQuote(uint64_t arg_in);
+            HandleGetQuote(buf->arg2);
+            break;
+        }
+        default:
+        {
+            goto done;
+        }
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+static log_level_t _log_level = OE_LOG_LEVEL_ERROR;
+
+log_level_t get_current_logging_level(void)
+{
+    return _log_level;
+}
+
+void oe_hex_dump(const void* data_, size_t size)
+{
+    const uint8_t* data = (const uint8_t*)data_;
+    size_t i;
+
+    for (i = 0; i < size; i++)
+    {
+        char buf[3];
+
+        snprintf(buf, sizeof(buf), "%02x", data[i]);
+
+        if (((i + 1) % 16) == 0)
+            putc('\n', stdout);
+        else if (i + 1 != size)
+            putc(' ', stdout);
+    }
+
+    putc('\n', stdout);
+}
+
+void oe_log(log_level_t level, const char* fmt, ...)
+{
+    if (level <= get_current_logging_level())
+    {
+        va_list ap;
+        va_start(ap, fmt);
+        vfprintf(stdout, fmt, ap);
+        va_end(ap);
+    }
 }
