@@ -7,12 +7,6 @@
 #include <string.h>
 #include "proxy_t.h"
 
-void dummy_ecall(void)
-{
-    printf("oevproxyenc: dummy_ecall()\n");
-    fflush(stdout);
-}
-
 uint64_t egetkey_ecall(
     const void* sgx_key_request,
     size_t sgx_key_request_size,

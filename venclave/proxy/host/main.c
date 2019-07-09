@@ -235,12 +235,6 @@ int main(int argc, const char* argv[])
         err("oe_create_enclave() failed: %s\n", oe_result_str(result));
     }
 
-#if 0
-    /* Call into the enclave. */
-    if ((result = dummy_ecall(enclave)) != OE_OK)
-        err("dummy_ecall() failed: %s\n", oe_result_str(result));
-#endif
-
     /* Block while waiting to read the socket. */
     if (sock != INT_MAX)
     {
