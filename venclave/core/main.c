@@ -5,7 +5,7 @@
 #include "../common/msg.h"
 #include "calls.h"
 #include "common.h"
-#include "elfinfo.h"
+#include "elf.h"
 #include "hexdump.h"
 #include "hostheap.h"
 #include "io.h"
@@ -129,7 +129,7 @@ static int _check_elf_header()
     const uint8_t e_ident[] = {0x7f, 'E', 'L', 'F'};
     const elf64_ehdr_t* ehdr;
 
-    if (!(ehdr = (const elf64_ehdr_t*)ve_get_elf_header()))
+    if (!(ehdr = (const elf64_ehdr_t*)ve_elf_get_header()))
         goto done;
 
     /* Check the ELF magic number. */
@@ -239,8 +239,7 @@ static int _handle_init(void)
     }
 
     /* Save the TLS information. */
-    __ve_elf_info = arg.elf_info;
-    __ve_self = __ve_elf_info.self_rva;
+    ve_elf_set_info(&arg.elf_info);
 
     /* Verify the ELF headfer (pointed to by the base address). */
     if (_check_elf_header() != 0)

@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #include "thread.h"
-#include "elfinfo.h"
+#include "elf.h"
 #include "futex.h"
 #include "hexdump.h"
 #include "malloc.h"
@@ -80,6 +80,7 @@ static int _get_tls(
     int ret = -1;
     const uint8_t* p;
     size_t align = 0;
+    ve_elf_info_t elf_info;
 
     if (tls)
         *tls = NULL;
@@ -90,22 +91,24 @@ static int _get_tls(
     if (!thread || !tls || !tls_size)
         goto done;
 
-    if (__ve_elf_info.tdata_size == 0 && __ve_elf_info.tbss_size == 0)
+    ve_elf_get_info(&elf_info);
+
+    if (elf_info.tdata_size == 0 && elf_info.tbss_size == 0)
         goto done;
 
     /* align = max(__ve_tdata_align, __ve_tbss_align) */
-    if (__ve_elf_info.tdata_align > __ve_elf_info.tbss_align)
-        align = __ve_elf_info.tdata_align;
+    if (elf_info.tdata_align > elf_info.tbss_align)
+        align = elf_info.tdata_align;
     else
-        align = __ve_elf_info.tbss_align;
+        align = elf_info.tbss_align;
 
     /* Check that align is a power of two. */
     if ((align & (align - 1)))
         goto done;
 
     p = (const uint8_t*)thread;
-    p -= _round_up_to_multiple(__ve_elf_info.tdata_size, align);
-    p -= _round_up_to_multiple(__ve_elf_info.tbss_size, align);
+    p -= _round_up_to_multiple(elf_info.tdata_size, align);
+    p -= _round_up_to_multiple(elf_info.tbss_size, align);
 
     *tls = p;
     *tls_size = (size_t)((const uint8_t*)thread - p);
@@ -141,6 +144,7 @@ int ve_thread_create(
     const void* main_tls;
     size_t main_tls_size;
     void* tls = NULL;
+    ve_elf_info_t elf_info;
 
     if (thread_out)
         *thread_out = NULL;
@@ -156,8 +160,10 @@ int ve_thread_create(
     if (_get_tls(main_thread, &main_tls, &main_tls_size) != 0)
         goto done;
 
+    ve_elf_get_info(&elf_info);
+
     /* Fail if the tdata section will not fit into the TLS. */
-    if (main_tls_size < __ve_elf_info.tdata_size)
+    if (main_tls_size < elf_info.tdata_size)
         goto done;
 
     /* Allocate TLS followed by the thread. */
@@ -175,9 +181,9 @@ int ve_thread_create(
 
     /* Copy tdata section onto the new_tls. */
     {
-        uint8_t* data_segment = ((uint8_t*)&__ve_self - __ve_self);
-        void* tdata = data_segment + __ve_elf_info.tdata_rva;
-        ve_memcpy(tls, tdata, __ve_elf_info.tdata_size);
+        uint8_t* baseaddr = ((uint8_t*)ve_elf_get_baseaddr());
+        void* tdata = baseaddr + elf_info.tdata_rva;
+        ve_memcpy(tls, tdata, elf_info.tdata_size);
     }
 
     /* Allocate and zero-fill the stack. */

@@ -84,7 +84,7 @@ install(TARGETS oevend
 add_library(oevcore STATIC
     calls.c
     clone.S
-    elfinfo.c
+    elf.c
     enclave.c
     futex.c
     hexdump.c

@@ -3,7 +3,7 @@
 
 #include "process.h"
 #include "calls.h"
-#include "elfinfo.h"
+#include "elf.h"
 #include "print.h"
 #include "signal.h"
 #include "socket.h"
@@ -59,16 +59,6 @@ int ve_getpid(void)
 int ve_waitpid(int pid, int* status, int options)
 {
     return (int)ve_syscall4(VE_SYS_wait4, pid, (long)status, options, 0);
-}
-
-void* ve_get_baseaddr(void)
-{
-    return ((uint8_t*)&__ve_self - __ve_self);
-}
-
-void* ve_get_elf_header(void)
-{
-    return ((uint8_t*)&__ve_self - __ve_self) + __ve_elf_info.base_rva;
 }
 
 int ve_fork(void)

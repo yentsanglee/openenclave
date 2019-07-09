@@ -42,11 +42,6 @@ int ve_getpid(void);
 
 int ve_waitpid(int pid, int* status, int options);
 
-/* Get the real base address of this process. */
-void* ve_get_baseaddr(void);
-
-void* ve_get_elf_header(void);
-
 /* Create a new process (used to implement thread creation). */
 int ve_clone(
     int (*fn)(void*),

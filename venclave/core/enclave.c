@@ -15,7 +15,7 @@
 #include <openenclave/internal/thread.h>
 #include "../common/msg.h"
 #include "calls.h"
-#include "elfinfo.h"
+#include "elf.h"
 #include "futex.h"
 #include "hexdump.h"
 #include "hostheap.h"
@@ -722,12 +722,12 @@ void* oe_sbrk(intptr_t increment)
 
 const void* __oe_get_enclave_base(void)
 {
-    return ve_get_baseaddr();
+    return ve_elf_get_baseaddr();
 }
 
 const void* __oe_get_enclave_elf_header(void)
 {
-    return ve_get_elf_header();
+    return ve_elf_get_header();
 }
 
 int* __h_errno_location(void)
