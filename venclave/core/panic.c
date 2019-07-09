@@ -11,6 +11,6 @@ void __ve_panic(
     int line,
     const char* function)
 {
-    ve_print("Panicked: %s (%s: %s: %d)\n", expr, file, function, line);
+    ve_printf("Panicked: %s (%s: %s: %d)\n", expr, file, function, line);
     ve_abort();
 }

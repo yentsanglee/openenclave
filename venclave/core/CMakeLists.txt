@@ -99,7 +99,6 @@ add_library(oevcore STATIC
     print.c
     process.c
     recvfd.c
-    register.c
     restore.S
     sbrk.c
     __secs_to_tm.c

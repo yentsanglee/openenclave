@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-void ve_print(const char* fmt, ...);
+void ve_printf(const char* fmt, ...);
 
 static long _syscall1(long n, long x1)
 {

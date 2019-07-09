@@ -14,10 +14,10 @@
 #include "print.h"
 #include "process.h"
 #include "recvfd.h"
-#include "register.h"
 #include "sbrk.h"
 #include "shm.h"
 #include "signal.h"
+#include "socket.h"
 #include "string.h"
 #include "syscall.h"
 #include "thread.h"
@@ -48,13 +48,13 @@ int __ve_proxy_sock;
 
 __attribute__((constructor)) static void constructor(void)
 {
-    VE_T(ve_print("encl: constructor()\n");)
+    VE_T(ve_printf("encl: constructor()\n");)
     _called_constructor = true;
 }
 
 __attribute__((destructor)) static void destructor(void)
 {
-    VE_T(ve_print("encl: destructor()\n");)
+    VE_T(ve_printf("encl: destructor()\n");)
     _called_destructor = true;
 }
 
@@ -136,7 +136,7 @@ static int _attach_host_heap(int shmid, const void* shmaddr, size_t shmsize)
     /* Attach the host's shared memory heap. */
     if ((rval = ve_shmat(shmid, shmaddr, shmflg)) == (void*)-1)
     {
-        ve_print(
+        ve_printf(
             "error: ve_shmat(1) failed: rval=%p shmid=%d shmaddr=%p\n",
             rval,
             shmid,
@@ -146,7 +146,7 @@ static int _attach_host_heap(int shmid, const void* shmaddr, size_t shmsize)
 
     if (rval != shmaddr)
     {
-        ve_print(
+        ve_printf(
             "error: ve_shmat(2) failed: rval=%p shmid=%d shmaddr=%p\n",
             rval,
             shmid,
@@ -385,7 +385,7 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
         if (ve_thread_join(_threads[i], &retval) != 0)
             ve_panic("failed to join threads");
 
-        VE_T(ve_print("encl: join: retval=%d\n", retval);)
+        VE_T(ve_printf("encl: join: retval=%d\n", retval);)
     }
 
     /* Call the atexit handlers. */
@@ -450,13 +450,13 @@ int ve_handle_call_terminate_thread(
     OE_UNUSED(fd);
     OE_UNUSED(buf);
 
-    VE_T(ve_print("encl: thread exit: tid=%d\n", ve_gettid());)
+    VE_T(ve_printf("encl: thread exit: tid=%d\n", ve_gettid());)
 
     *exit_status = 99;
 
 #if 0
     uint32_t sec = (uint32_t)(2 + (ve_gettid() - __ve_main_pid) * 2);
-    ve_print("sec=%u\n", sec);
+    ve_printf("sec=%u\n", sec);
     ve_sleep(sec);
 #endif
 

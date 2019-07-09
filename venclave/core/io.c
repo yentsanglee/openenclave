@@ -52,12 +52,6 @@ int ve_dup(int fd)
     return (int)ve_syscall1(VE_SYS_dup, fd);
 }
 
-int ve_socketpair(int domain, int type, int protocol, int sv[2])
-{
-    return (int)ve_syscall4(
-        VE_SYS_socketpair, domain, type, protocol, (long)sv);
-}
-
 int ve_getdtablesize(void)
 {
     int ret = -1;

@@ -6,7 +6,7 @@
 
 #include "print.h"
 
-#define VE_TRACE ve_print("encl: trace: %s(%u)\n", __FILE__, __LINE__)
+#define VE_TRACE ve_printf("encl: trace: %s(%u)\n", __FILE__, __LINE__)
 
 #if defined(VE_DO_TRACE)
 #define VE_T(EXPR) EXPR

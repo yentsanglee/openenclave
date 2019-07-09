@@ -57,10 +57,6 @@ int ve_clone(
     void* tls,
     volatile int* ctid);
 
-void ve_call_init_functions(void);
-
-void ve_call_fini_functions(void);
-
 int ve_fork(void);
 
 int ve_execv(const char* path, char* const argv[]);

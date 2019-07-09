@@ -6,6 +6,9 @@
 
 #include "common.h"
 
+#define VE_AF_LOCAL 1
+#define VE_SOCK_STREAM 1
+
 typedef uint32_t ve_socklen_t;
 
 struct ve_iovec
@@ -39,5 +42,7 @@ struct ve_cmsghdr
 #endif
 
 ssize_t ve_recvmsg(int sockfd, struct ve_msghdr* msg, int flags);
+
+int ve_socketpair(int domain, int type, int protocol, int sv[2]);
 
 #endif /* _VE_ENCLAVE_SOCKET_H */

@@ -116,7 +116,7 @@ int ve_handle_calls(int fd)
             goto done;
 
 #if 0
-        ve_print("[ENCLAVE:%s]\n", ve_func_name((ve_func_t)in.func));
+        ve_printf("[ENCLAVE:%s]\n", ve_func_name((ve_func_t)in.func));
 #endif
 
         ve_call_buf_clear(&out);

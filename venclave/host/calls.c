@@ -75,10 +75,6 @@ int ve_call_recv(int fd, uint64_t* retval)
         if (ve_readn(fd, &in, sizeof(in)) != 0)
             goto done;
 
-#if defined(TRACE_CALLS)
-        ve_print("HOST:%s\n", ve_func_name(in.func));
-#endif
-
         switch (in.func)
         {
             case VE_FUNC_RET:

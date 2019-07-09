@@ -21,6 +21,7 @@ int ve_enclave_terminate(ve_enclave_t* enclave);
 
 int ve_enclave_get_settings(ve_enclave_t* enclave, ve_enclave_settings_t* buf);
 
+/* Assign thread and call into the enclave. */
 int ve_enclave_call(
     ve_enclave_t* enclave,
     ve_func_t func,

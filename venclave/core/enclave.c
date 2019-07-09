@@ -210,8 +210,8 @@ oe_result_t oe_log(log_level_t level, const char* fmt, ...)
         ve_va_list ap;
 
         ve_va_start(ap, fmt);
-        ve_print("oe_log: %u: ", level);
-        ve_vprint(fmt, ap);
+        ve_printf("oe_log: %u: ", level);
+        ve_vprintf(fmt, ap);
         ve_va_end(ap);
     }
 
@@ -683,7 +683,7 @@ int oe_host_printf(const char* fmt, ...)
 {
     ve_va_list ap;
     ve_va_start(ap, fmt);
-    ve_vprint(fmt, ap);
+    ve_vprintf(fmt, ap);
     ve_va_end(ap);
 
     return 0;

@@ -1,8 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-extern "C" void ve_print(const char* fmt, ...);
-
 static long _syscall1(long n, long x1)
 {
     unsigned long ret;

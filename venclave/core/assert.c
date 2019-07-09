@@ -11,6 +11,7 @@ void __ve_assert_fail(
     int line,
     const char* function)
 {
-    ve_print("Assertion failed: %s (%s: %s: %d)\n", expr, file, function, line);
+    ve_printf(
+        "Assertion failed: %s (%s: %s: %d)\n", expr, file, function, line);
     ve_abort();
 }
