@@ -23,7 +23,6 @@ add_library(oevhost STATIC
     elf.c
     host.c
     sendfd.c
-    rand.c
     syscall.c
     ../common/fingerprint.c
     ../common/call.c

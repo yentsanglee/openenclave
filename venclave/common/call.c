@@ -22,8 +22,6 @@ const char* ve_func_name(ve_func_t func)
             return "TERMINATE_THREAD";
         case VE_FUNC_TERMINATE:
             return "TERMINATE";
-        case VE_FUNC_PING:
-            return "PING";
         case VE_FUNC_MALLOC:
             return "MALLOC";
         case VE_FUNC_CALLOC:
@@ -36,8 +34,6 @@ const char* ve_func_name(ve_func_t func)
             return "FREE";
         case VE_FUNC_GET_SETTINGS:
             return "GET_SETTINGS";
-        case VE_FUNC_XOR:
-            return "XOR";
         case VE_FUNC_INIT_ENCLAVE:
             return "INIT_ENCLAVE";
         case VE_FUNC_CALL_ENCLAVE_FUNCTION:

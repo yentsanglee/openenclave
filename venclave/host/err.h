@@ -10,7 +10,4 @@
 OE_PRINTF_FORMAT(1, 2)
 void err(const char* fmt, ...);
 
-OE_PRINTF_FORMAT(1, 2)
-void puterr(const char* fmt, ...);
-
 #endif /* _VE_HOST_ERR_H */

@@ -20,15 +20,3 @@ void err(const char* fmt, ...)
     fprintf(stderr, "\n");
     exit(1);
 }
-
-OE_PRINTF_FORMAT(1, 2)
-void puterr(const char* fmt, ...)
-{
-    va_list ap;
-
-    fprintf(stderr, "%s: error: ", __ve_arg0);
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    fprintf(stderr, "\n");
-}

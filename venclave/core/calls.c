@@ -19,10 +19,6 @@ static int _handle_call(int fd, ve_call_buf_t* buf, int* exit_status)
         {
             return ve_handle_post_init(fd, buf, exit_status);
         }
-        case VE_FUNC_PING:
-        {
-            return ve_handle_call_ping(fd, buf, exit_status);
-        }
         case VE_FUNC_ADD_THREAD:
         {
             return ve_handle_call_add_thread(fd, buf, exit_status);
@@ -46,17 +42,6 @@ static int _handle_call(int fd, ve_call_buf_t* buf, int* exit_status)
         case VE_FUNC_CALL_ENCLAVE_FUNCTION:
         {
             return ve_handle_call_enclave_function(fd, buf, exit_status);
-        }
-        case VE_FUNC_XOR:
-        {
-            uint64_t x1 = buf->arg1;
-            uint64_t x2 = buf->arg2;
-            uint64_t x3 = buf->arg3;
-            uint64_t x4 = buf->arg4;
-            uint64_t x5 = buf->arg5;
-            uint64_t x6 = buf->arg6;
-            buf->retval = (x1 ^ x2 ^ x3 ^ x4 ^ x5 ^ x6);
-            return 0;
         }
         default:
         {

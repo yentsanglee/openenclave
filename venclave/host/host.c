@@ -269,12 +269,6 @@ oe_result_t oe_call_enclave_function_by_table_id(
         args->result = OE_UNEXPECTED;
     }
 
-    /* Test call. */
-    {
-        if (ve_enclave_run_xor_test(ve) != 0)
-            OE_RAISE(OE_FAILURE);
-    }
-
     /* Call into the enclave. */
     {
         ve_enclave_t* ve = enclave->venclave;

@@ -442,27 +442,6 @@ void test_malloc(int fd)
     }
 }
 
-int ve_handle_call_ping(int fd, ve_call_buf_t* buf, int* exit_status)
-{
-    uint64_t retval = 0;
-
-    OE_UNUSED(exit_status);
-
-    ve_print(
-        "encl: ping: value=%lx [%u:%u]\n", buf->arg1, ve_getpid(), ve_gettid());
-
-    ve_assert(_pid_tls == ve_getpid());
-
-    test_malloc(fd);
-
-    if (ve_call1(fd, VE_FUNC_PING, &retval, buf->arg1) != 0)
-        ve_put("encl: ve_call() failed\n");
-
-    buf->retval = retval;
-
-    return 0;
-}
-
 int ve_handle_call_terminate_thread(
     int fd,
     ve_call_buf_t* buf,

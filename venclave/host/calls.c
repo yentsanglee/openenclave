@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "../common/io.h"
 #include "hostmalloc.h"
-#include "io.h"
 #include "trace.h"
 
 static int _handle_call(int fd, ve_call_buf_t* buf)
@@ -18,11 +18,6 @@ static int _handle_call(int fd, ve_call_buf_t* buf)
             printf("enclave aborted\n");
             fflush(stdout);
             abort();
-            return 0;
-        }
-        case VE_FUNC_PING:
-        {
-            ve_handle_call_ping(buf);
             return 0;
         }
         case VE_FUNC_MALLOC:

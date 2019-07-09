@@ -10,13 +10,12 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "../common/io.h"
 #include "calls.h"
 #include "elf.h"
 #include "err.h"
 #include "heap.h"
 #include "hostmalloc.h"
-#include "io.h"
-#include "rand.h"
 
 #define MAX_THREADS 1024
 
@@ -269,30 +268,6 @@ done:
     return ret;
 }
 
-static int _lookup_thread_sock(ve_enclave_t* enclave, uint64_t tcs)
-{
-    int sock = -1;
-
-    if (!enclave)
-        goto done;
-
-    pthread_spin_lock(&enclave->lock);
-    {
-        for (size_t i = 0; i < enclave->nthreads; i++)
-        {
-            if (enclave->threads[i].tcs == tcs)
-            {
-                sock = enclave->threads[i].sock;
-                break;
-            }
-        }
-    }
-    pthread_spin_unlock(&enclave->lock);
-
-done:
-    return sock;
-}
-
 static int _get_child_exit_status(int pid, int* status_out)
 {
     int ret = -1;
@@ -316,15 +291,6 @@ done:
 }
 
 extern int __ve_pid;
-
-void ve_handle_call_ping(ve_call_buf_t* buf)
-{
-    extern int gettid(void);
-
-    printf("host: ping: value=%lx\n", buf->arg1);
-
-    buf->retval = buf->arg1;
-}
 
 static int _call_post_init(ve_enclave_t* enclave)
 {
@@ -437,36 +403,6 @@ done:
     return ret;
 }
 
-int ve_enclave_ping(ve_enclave_t* enclave, uint64_t tcs, uint64_t ping_value)
-{
-    int ret = -1;
-    uint64_t retval;
-    int sock;
-
-    if (!enclave)
-        goto done;
-
-    if (tcs == (uint64_t)-1)
-    {
-        sock = enclave->sock;
-    }
-    else if ((sock = _lookup_thread_sock(enclave, tcs)) == -1)
-    {
-        goto done;
-    }
-
-    if (ve_call1(sock, VE_FUNC_PING, &retval, ping_value) != 0)
-        goto done;
-
-    if (retval != ping_value)
-        goto done;
-
-    ret = 0;
-
-done:
-    return ret;
-}
-
 int ve_enclave_get_settings(ve_enclave_t* enclave, ve_enclave_settings_t* buf)
 {
     int ret = -1;
@@ -566,33 +502,6 @@ int ve_enclave_call(
 done:
 
     _release_thread(enclave, thread);
-
-    return ret;
-}
-
-int ve_enclave_run_xor_test(ve_enclave_t* enclave)
-{
-    int ret = -1;
-
-    uint64_t retval = (uint64_t)-1;
-    uint64_t x1 = ve_rand();
-    uint64_t x2 = ve_rand();
-    uint64_t x3 = ve_rand();
-    uint64_t x4 = ve_rand();
-    uint64_t x5 = ve_rand();
-    uint64_t x6 = ve_rand();
-    uint64_t xor = (x1 ^ x2 ^ x3 ^ x4 ^ x5 ^ x6);
-    ve_func_t func = VE_FUNC_XOR;
-
-    if (ve_enclave_call(enclave, func, &retval, x1, x2, x3, x4, x5, x6) != 0)
-        goto done;
-
-    if (retval != xor)
-        goto done;
-
-    ret = 0;
-
-done:
 
     return ret;
 }
