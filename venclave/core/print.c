@@ -13,14 +13,14 @@ ve_lock_t __ve_print_lock;
 
 void ve_put(const char* s)
 {
-    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
+    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)s, (long)oe_strlen(s));
 }
 
 void ve_puts(const char* s)
 {
     ve_lock(&__ve_print_lock);
     const char nl = '\n';
-    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
+    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)s, (long)oe_strlen(s));
     ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)&nl, 1);
     ve_unlock(&__ve_print_lock);
 }
@@ -184,7 +184,7 @@ static void _put_s(const char* s)
     if (!s)
         s = "(null)";
 
-    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)s, (long)ve_strlen(s));
+    ve_syscall3(VE_SYS_write, VE_STDOUT_FILENO, (long)s, (long)oe_strlen(s));
 }
 
 static void _put_o(uint64_t x)

@@ -56,7 +56,7 @@ char* oe_host_strndup(const char* str, size_t n)
     if (!str)
         return NULL;
 
-    len = ve_strlen(str);
+    len = oe_strlen(str);
 
     if (n < len)
         len = n;
@@ -68,7 +68,7 @@ char* oe_host_strndup(const char* str, size_t n)
     if (!(p = oe_host_malloc(len + 1)))
         return NULL;
 
-    if (ve_memcpy(p, str, len) != OE_OK)
+    if (memcpy(p, str, len) != OE_OK)
         return NULL;
 
     p[len] = '\0';

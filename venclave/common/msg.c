@@ -23,7 +23,7 @@ int ve_msg_send(int fd, ve_msg_type_t type, const void* data, size_t size)
     msg->size = size;
 
     if (size)
-        ve_memcpy(msg->data, data, size);
+        memcpy(msg->data, data, size);
 
     if (ve_writen(fd, msg, msg_size) != 0)
         goto done;

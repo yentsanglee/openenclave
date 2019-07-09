@@ -28,8 +28,8 @@ ve_sighandler_t ve_signal(int signum, ve_sighandler_t handler)
     __attribute__((aligned(16))) struct sigaction oldact;
     long rval;
 
-    ve_memset(&act, 0, sizeof(act));
-    ve_memset(&oldact, 0, sizeof(oldact));
+    memset(&act, 0, sizeof(act));
+    memset(&oldact, 0, sizeof(oldact));
 
     act.handler = handler;
     act.flags = SA_RESTART | SA_RESTORER;

@@ -3,80 +3,7 @@
 
 #include "string.h"
 
-size_t ve_strlen(const char* s)
-{
-    const char* p = s;
-
-    while (*p)
-        p++;
-
-    return (size_t)(p - s);
-}
-
-int ve_strcmp(const char* s1, const char* s2)
-{
-    while ((*s1 && *s2) && (*s1 == *s2))
-    {
-        s1++;
-        s2++;
-    }
-
-    return *s1 - *s2;
-}
-
-size_t ve_strlcpy(char* dest, const char* src, size_t size)
-{
-    const char* start = src;
-
-    if (size)
-    {
-        char* end = dest + size - 1;
-
-        while (*src && dest != end)
-            *dest++ = (char)*src++;
-
-        *dest = '\0';
-    }
-
-    while (*src)
-        src++;
-
-    return (size_t)(src - start);
-}
-
-size_t ve_strlcat(char* dest, const char* src, size_t size)
-{
-    size_t n = 0;
-
-    if (size)
-    {
-        char* end = dest + size - 1;
-
-        while (*dest && dest != end)
-        {
-            dest++;
-            n++;
-        }
-
-        while (*src && dest != end)
-        {
-            n++;
-            *dest++ = *src++;
-        }
-
-        *dest = '\0';
-    }
-
-    while (*src)
-    {
-        src++;
-        n++;
-    }
-
-    return n;
-}
-
-static char oe_get_hex_char(uint64_t x, size_t i)
+static char _get_hex_char(uint64_t x, size_t i)
 {
     uint64_t nbits = (uint64_t)i * 4;
     char nibble = (char)((x & (0x000000000000000fUL << nbits)) >> nbits);
@@ -126,7 +53,7 @@ const char* ve_xstr(ve_xstr_buf* buf, uint64_t x, size_t* size)
     size_t i;
 
     for (i = 0; i < 16; i++)
-        buf->data[15 - i] = oe_get_hex_char(x, i);
+        buf->data[15 - i] = _get_hex_char(x, i);
 
     buf->data[16] = '\0';
 
@@ -137,7 +64,7 @@ const char* ve_xstr(ve_xstr_buf* buf, uint64_t x, size_t* size)
         p++;
 
     if (size)
-        *size = ve_strlen(p);
+        *size = oe_strlen(p);
 
     return p;
 }
@@ -176,61 +103,4 @@ const char* ve_dstr(ve_dstr_buf* buf, int64_t x, size_t* size)
         *size = (size_t)(end - p);
 
     return p;
-}
-
-void* ve_memset(void* s, int c, size_t n)
-{
-    volatile uint8_t* p = (volatile uint8_t*)s;
-
-    while (n--)
-        *p++ = (uint8_t)c;
-
-    return s;
-}
-
-VE_WEAK void* memset(void* s, int c, size_t n)
-{
-    volatile uint8_t* p = (volatile uint8_t*)s;
-
-    while (n--)
-        *p++ = (uint8_t)c;
-
-    return s;
-}
-
-void* ve_memcpy(void* dest, const void* src, size_t n)
-{
-    uint8_t* p = (uint8_t*)dest;
-    const uint8_t* q = (uint8_t*)src;
-
-    while (n--)
-        *p++ = *q++;
-
-    return dest;
-}
-
-VE_WEAK void* memcpy(void* dest, const void* src, size_t n)
-{
-    return ve_memcpy(dest, src, n);
-}
-
-VE_WEAK int ve_memcmp(const void* s1, const void* s2, size_t n)
-{
-    const unsigned char* p = (const unsigned char*)s1;
-    const unsigned char* q = (const unsigned char*)s2;
-
-    while (n--)
-    {
-        int r = *p++ - *q++;
-
-        if (r)
-            return r;
-    }
-
-    return 0;
-}
-
-VE_WEAK int memcmp(const void* s1, const void* s2, size_t n)
-{
-    return ve_memcmp(s1, s2, n);
 }

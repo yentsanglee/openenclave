@@ -19,7 +19,10 @@
 
     (B) Add OE_OCALL_GET_REVOCATION_INFO
 
+    (B) Eliminate duplicate ve-malloc functions.
+
     CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+
 
     (C) Support full logging feature.
 

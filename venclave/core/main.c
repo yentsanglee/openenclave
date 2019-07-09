@@ -133,7 +133,7 @@ static int _check_elf_header()
         goto done;
 
     /* Check the ELF magic number. */
-    if (ve_memcmp(ehdr->e_ident, e_ident, sizeof(e_ident)) != 0)
+    if (memcmp(ehdr->e_ident, e_ident, sizeof(e_ident)) != 0)
         goto done;
 
     /* Check that this is an ELF-64-bit header. */

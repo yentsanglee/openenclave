@@ -8,16 +8,6 @@
 #include "sbrk.h"
 #include "string.h"
 
-static void* memset(void* s, int c, size_t n)
-{
-    return ve_memset(s, c, n);
-}
-
-static void* memcpy(void* dest, const void* src, size_t n)
-{
-    return ve_memcpy(dest, src, n);
-}
-
 static void* sbrk(intptr_t increment)
 {
     return ve_sbrk(increment);
@@ -96,7 +86,7 @@ void* ve_malloc(size_t size)
     void* ptr;
 
     if ((ptr = malloc(size)))
-        ve_memset(ptr, 0, size);
+        memset(ptr, 0, size);
 
     return ptr;
 #else

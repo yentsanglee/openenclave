@@ -99,7 +99,7 @@ void* oe_allocate_ocall_buffer(size_t size)
     void* ptr;
 
     if ((ptr = oe_host_malloc(size)))
-        ve_memset(ptr, 0, size);
+        memset(ptr, 0, size);
 
     return ptr;
 }
@@ -372,13 +372,13 @@ static oe_result_t _handle_call_enclave_function(uint64_t arg_in)
         OE_RAISE(OE_OUT_OF_MEMORY);
 
     // Copy input buffer to enclave buffer.
-    ve_memcpy(input_buffer, args.input_buffer, args.input_buffer_size);
+    memcpy(input_buffer, args.input_buffer, args.input_buffer_size);
 
     // Clear out output buffer.
     // This ensures reproducible behavior if say the function is reading from
     // output buffer.
     output_buffer = buffer + args.input_buffer_size;
-    ve_memset(output_buffer, 0, args.output_buffer_size);
+    memset(output_buffer, 0, args.output_buffer_size);
 
     // Call the function.
     func(
@@ -396,7 +396,7 @@ static oe_result_t _handle_call_enclave_function(uint64_t arg_in)
     if (result == OE_OK)
     {
         // Copy outputs to host memory.
-        ve_memcpy(args.output_buffer, output_buffer, output_bytes_written);
+        memcpy(args.output_buffer, output_buffer, output_bytes_written);
 
         // The ecall succeeded.
         args_ptr->output_bytes_written = output_bytes_written;
@@ -450,7 +450,7 @@ oe_result_t oe_call_host_function_by_table_id(
         OE_RAISE(OE_INVALID_PARAMETER);
 
     if (output_buffer && output_buffer_size)
-        ve_memset(output_buffer, 0, output_buffer_size);
+        memset(output_buffer, 0, output_buffer_size);
 
     /* Initialize the arguments */
     {
@@ -564,7 +564,7 @@ int oe_host_write(int device, const char* str, size_t len)
     }
 
     if (len == (size_t)-1)
-        len = ve_strlen(str);
+        len = oe_strlen(str);
 
     if (ve_write(fd, str, len) != (ssize_t)len)
         goto done;
@@ -748,8 +748,8 @@ uint64_t oe_egetkey(
     if (!sgx_key_request || !sgx_key)
         goto done;
 
-    ve_memcpy(&req.request, sgx_key_request, sizeof(req.request));
-    ve_memset(&rsp, 0, sizeof(rsp));
+    memcpy(&req.request, sgx_key_request, sizeof(req.request));
+    memset(&rsp, 0, sizeof(rsp));
 
     ve_lock(&_proxy_sock_lock);
     locked = true;
@@ -760,7 +760,7 @@ uint64_t oe_egetkey(
     if (ve_msg_recv(sock, VE_MSG_EGETKEY, &rsp, sizeof(rsp)) != 0)
         goto done;
 
-    ve_memcpy(sgx_key, &rsp.key, sizeof(sgx_key_t));
+    memcpy(sgx_key, &rsp.key, sizeof(sgx_key_t));
     ret = rsp.ret;
 
 done:
@@ -785,9 +785,9 @@ oe_result_t oe_ereport(
     if (!target_info || !report_data || !report)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    ve_memcpy(&req.target_info, target_info, sizeof(req.target_info));
-    ve_memcpy(&req.report_data, report_data, sizeof(req.report_data));
-    ve_memset(&rsp, 0, sizeof(rsp));
+    memcpy(&req.target_info, target_info, sizeof(req.target_info));
+    memcpy(&req.report_data, report_data, sizeof(req.report_data));
+    memset(&rsp, 0, sizeof(rsp));
 
     if (ve_msg_send(sock, VE_MSG_EREPORT, &req, sizeof(req)) != 0)
         goto done;
@@ -795,7 +795,7 @@ oe_result_t oe_ereport(
     if (ve_msg_recv(sock, VE_MSG_EREPORT, &rsp, sizeof(rsp)) != 0)
         goto done;
 
-    ve_memcpy(report, &rsp.report, sizeof(sgx_report_t));
+    memcpy(report, &rsp.report, sizeof(sgx_report_t));
 
     result = (oe_result_t)rsp.result;
 

@@ -183,7 +183,7 @@ int ve_thread_create(
     {
         uint8_t* baseaddr = ((uint8_t*)ve_elf_get_baseaddr());
         void* tdata = baseaddr + elf_info.tdata_rva;
-        ve_memcpy(tls, tdata, elf_info.tdata_size);
+        memcpy(tls, tdata, elf_info.tdata_size);
     }
 
     /* Allocate and zero-fill the stack. */
@@ -191,11 +191,11 @@ int ve_thread_create(
         if (!(stack = ve_memalign(VE_PAGE_SIZE, stack_size)))
             goto done;
 
-        ve_memset(stack, 0, stack_size);
+        memset(stack, 0, stack_size);
     }
 
     /* Copy the base fields from the parent thread. */
-    ve_memcpy(&thread->base, main_thread, sizeof(thread_base_t));
+    memcpy(&thread->base, main_thread, sizeof(thread_base_t));
 
     /* Initilize the thread. */
     {

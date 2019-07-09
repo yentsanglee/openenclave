@@ -31,7 +31,7 @@ int ve_recv_fd(int sock)
     iov[0].iov_base = &magic;
     iov[0].iov_len = sizeof(magic);
 
-    ve_memset(&msg, 0, sizeof(msg));
+    memset(&msg, 0, sizeof(msg));
     msg.msg_iov = iov;
     msg.msg_iovlen = 1;
     msg.msg_control = cmsg;
@@ -40,10 +40,10 @@ int ve_recv_fd(int sock)
     if (ve_recvmsg(sock, &msg, 0) != sizeof(magic))
         goto done;
 
-    if (ve_memcmp(&magic, &MAGIC, sizeof(magic)) != 0)
+    if (memcmp(&magic, &MAGIC, sizeof(magic)) != 0)
         goto done;
 
-    ve_memcpy(&ret, CMSG_DATA(cmsg), sizeof(ret));
+    memcpy(&ret, CMSG_DATA(cmsg), sizeof(ret));
 
 done:
     return ret;
