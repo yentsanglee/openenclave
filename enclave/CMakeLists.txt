@@ -47,3 +47,21 @@ set_property(TARGET oeenclave PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/ope
 
 install(TARGETS oeenclave EXPORT openenclave-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
+##==============================================================================
+##
+## oeenclave_libs
+##
+##==============================================================================
+
+add_library(oeenclave_libs INTERFACE)
+
+target_link_libraries(oeenclave_libs INTERFACE
+    oeenclave
+    oecryptombed
+    mbedx509
+    mbedcrypto
+    oelibc
+    oesyscall
+    oecore
+    oe_includes)
