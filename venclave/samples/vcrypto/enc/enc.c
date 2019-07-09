@@ -79,10 +79,8 @@ static void _test_generate(void)
 
     printf("=== begin %s()\n", __FUNCTION__);
 
-    printf("TRACE{%d}\n", __LINE__);
     r = oe_ec_generate_key_pair(
         OE_EC_TYPE_SECP256R1, &private_key, &public_key);
-    printf("TRACE{%d}\n", __LINE__);
     OE_TEST(r == OE_OK);
 
     _test_generate_common(&private_key, &public_key);
