@@ -2,8 +2,8 @@
 // Licensed under the MIT License.
 
 #include "thread.h"
+#include "elfinfo.h"
 #include "futex.h"
-#include "globals.h"
 #include "hexdump.h"
 #include "malloc.h"
 #include "print.h"
@@ -90,22 +90,22 @@ static int _get_tls(
     if (!thread || !tls || !tls_size)
         goto done;
 
-    if (__ve_tdata_size == 0 && __ve_tbss_size == 0)
+    if (__ve_elf_info.tdata_size == 0 && __ve_elf_info.tbss_size == 0)
         goto done;
 
     /* align = max(__ve_tdata_align, __ve_tbss_align) */
-    if (__ve_tdata_align > __ve_tbss_align)
-        align = __ve_tdata_align;
+    if (__ve_elf_info.tdata_align > __ve_elf_info.tbss_align)
+        align = __ve_elf_info.tdata_align;
     else
-        align = __ve_tbss_align;
+        align = __ve_elf_info.tbss_align;
 
     /* Check that align is a power of two. */
     if ((align & (align - 1)))
         goto done;
 
     p = (const uint8_t*)thread;
-    p -= _round_up_to_multiple(__ve_tdata_size, align);
-    p -= _round_up_to_multiple(__ve_tbss_size, align);
+    p -= _round_up_to_multiple(__ve_elf_info.tdata_size, align);
+    p -= _round_up_to_multiple(__ve_elf_info.tbss_size, align);
 
     *tls = p;
     *tls_size = (size_t)((const uint8_t*)thread - p);
@@ -157,12 +157,12 @@ int ve_thread_create(
         goto done;
 
     /* Fail if the tdata section will not fit into the TLS. */
-    if (main_tls_size < __ve_tdata_size)
+    if (main_tls_size < __ve_elf_info.tdata_size)
         goto done;
 
     /* Allocate TLS followed by the thread. */
     {
-        /* ATTN: Vaoid "unaddressable byte(s)" error in Valgrind. */
+        /* Suppress "unaddressable byte(s)" error in Valgrind. */
         const size_t EXTRA = 64;
 
         if (!(tls = ve_calloc(
@@ -176,8 +176,8 @@ int ve_thread_create(
     /* Copy tdata section onto the new_tls. */
     {
         uint8_t* data_segment = ((uint8_t*)&__ve_self - __ve_self);
-        void* tdata = data_segment + __ve_tdata_rva;
-        ve_memcpy(tls, tdata, __ve_tdata_size);
+        void* tdata = data_segment + __ve_elf_info.tdata_rva;
+        ve_memcpy(tls, tdata, __ve_elf_info.tdata_size);
     }
 
     /* Allocate and zero-fill the stack. */

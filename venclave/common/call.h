@@ -68,6 +68,25 @@ OE_INLINE void ve_call_buf_clear(volatile ve_call_buf_t* buf)
     }
 }
 
+typedef struct _ve_elf_info
+{
+    /* Thread local storage .tdata section. */
+    size_t tdata_rva;
+    size_t tdata_size;
+    size_t tdata_align;
+
+    /* Thread local storage .tbss section. */
+    size_t tbss_rva;
+    size_t tbss_size;
+    size_t tbss_align;
+
+    /* The relative virtual address of the first program segment. */
+    size_t base_rva;
+
+    /* The relative virtual address of the enclave's __ve_self variable. */
+    uint64_t self_rva;
+} ve_elf_info_t;
+
 typedef struct _ve_init_arg
 {
     uint64_t magic;
@@ -75,14 +94,7 @@ typedef struct _ve_init_arg
     int shmid;
     void* shmaddr;
     size_t shmsize;
-    size_t tdata_rva;
-    size_t tdata_size;
-    size_t tdata_align;
-    size_t tbss_rva;
-    size_t tbss_size;
-    size_t tbss_align;
-    uint64_t self_rva;
-    uint64_t base_rva;
+    ve_elf_info_t elf_info;
     char vproxyhost_path[OE_PATH_MAX];
 } ve_init_arg_t;
 

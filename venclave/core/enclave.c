@@ -15,8 +15,8 @@
 #include <openenclave/internal/thread.h>
 #include "../common/msg.h"
 #include "calls.h"
+#include "elfinfo.h"
 #include "futex.h"
-#include "globals.h"
 #include "hexdump.h"
 #include "hostheap.h"
 #include "io.h"

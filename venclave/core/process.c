@@ -3,7 +3,7 @@
 
 #include "process.h"
 #include "calls.h"
-#include "globals.h"
+#include "elfinfo.h"
 #include "print.h"
 #include "signal.h"
 #include "socket.h"
@@ -68,7 +68,7 @@ void* ve_get_baseaddr(void)
 
 void* ve_get_elf_header(void)
 {
-    return ((uint8_t*)&__ve_self - __ve_self) + __ve_base_rva;
+    return ((uint8_t*)&__ve_self - __ve_self) + __ve_elf_info.base_rva;
 }
 
 int ve_fork(void)

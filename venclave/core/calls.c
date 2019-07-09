@@ -3,7 +3,7 @@
 
 #include "calls.h"
 #include "common.h"
-#include "globals.h"
+#include "elfinfo.h"
 #include "io.h"
 #include "malloc.h"
 #include "panic.h"

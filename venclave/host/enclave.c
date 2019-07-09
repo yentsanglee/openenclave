@@ -55,7 +55,7 @@ static int _init_child(
     ve_init_arg_t arg;
     int retval;
 
-    if (!enclave || child_fd < 0 || child_sock < 0)
+    if (!enclave || child_fd < 0 || child_sock < 0 || !elf_info)
         goto done;
 
     if (!__ve_vproxyhost_path || strlen(__ve_vproxyhost_path) >= OE_PATH_MAX)
@@ -67,14 +67,7 @@ static int _init_child(
     arg.shmid = enclave->heap->shmid;
     arg.shmaddr = enclave->heap->shmaddr;
     arg.shmsize = enclave->heap->shmsize;
-    arg.tdata_rva = elf_info->tdata_rva;
-    arg.tdata_size = elf_info->tdata_size;
-    arg.tdata_align = elf_info->tdata_align;
-    arg.tbss_rva = elf_info->tbss_rva;
-    arg.tbss_size = elf_info->tbss_size;
-    arg.tbss_align = elf_info->tbss_align;
-    arg.self_rva = elf_info->self_rva;
-    arg.base_rva = elf_info->base_rva;
+    arg.elf_info = *elf_info;
     strcpy(arg.vproxyhost_path, __ve_vproxyhost_path);
 
     /* Send the message to the child's standard input. */

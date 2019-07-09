@@ -5,7 +5,7 @@
 #include "../common/msg.h"
 #include "calls.h"
 #include "common.h"
-#include "globals.h"
+#include "elfinfo.h"
 #include "hexdump.h"
 #include "hostheap.h"
 #include "io.h"
@@ -239,14 +239,8 @@ static int _handle_init(void)
     }
 
     /* Save the TLS information. */
-    __ve_tdata_rva = arg.tdata_rva;
-    __ve_tdata_size = arg.tdata_size;
-    __ve_tdata_align = arg.tdata_align;
-    __ve_tbss_rva = arg.tbss_rva;
-    __ve_tbss_size = arg.tbss_size;
-    __ve_tbss_align = arg.tbss_align;
-    __ve_self = arg.self_rva;
-    __ve_base_rva = arg.base_rva;
+    __ve_elf_info = arg.elf_info;
+    __ve_self = __ve_elf_info.self_rva;
 
     /* Verify the ELF headfer (pointed to by the base address). */
     if (_check_elf_header() != 0)
