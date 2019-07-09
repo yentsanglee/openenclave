@@ -81,6 +81,7 @@ done:
     return ret;
 }
 
+/* ATTN: revisit whether more than one thread is needed. */
 OE_SET_ENCLAVE_SGX(
     1,    /* ProductID */
     1,    /* SecurityVersion */
