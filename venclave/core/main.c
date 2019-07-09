@@ -424,12 +424,6 @@ int ve_handle_call_terminate_thread(
 
     *exit_status = 99;
 
-#if 0
-    uint32_t sec = (uint32_t)(2 + (ve_gettid() - __ve_main_pid) * 2);
-    ve_printf("sec=%u\n", sec);
-    ve_sleep(sec);
-#endif
-
     return 0;
 }
 
@@ -437,15 +431,6 @@ void _main_sig_handler(int arg)
 {
     (void)arg;
     ve_write(VE_STDERR_FILENO, "sighandler\n", 11);
-}
-
-void test_signals(void)
-{
-    if (ve_signal(VE_SIGUSR1, _main_sig_handler) == VE_SIG_ERR)
-        ve_panic("ve_signal() failed");
-
-    if (ve_kill(__ve_main_pid, VE_SIGUSR1) != 0)
-        ve_panic("ve_kill() failed");
 }
 
 static bool _called_sigusr1;
@@ -459,8 +444,6 @@ static void _sigusr1(int sig)
 int main(void)
 {
     int exit_status;
-
-    __ve_main_pid = ve_getpid();
 
     /* Self-test for signals. */
     {

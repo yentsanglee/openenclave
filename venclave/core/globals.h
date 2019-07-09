@@ -26,9 +26,6 @@ extern uint64_t __ve_self;
 /* The relative-virtual address of the first program segment (ELF header). */
 extern uint64_t __ve_base_rva;
 
-/* The PID of the main process. */
-extern int __ve_main_pid;
-
 /* Set the socket for the current thread. */
 void ve_set_sock(int sock);
 
