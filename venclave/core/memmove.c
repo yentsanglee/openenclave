@@ -13,7 +13,8 @@ void* memcpy(void* dest, const void* src, size_t n);
 
 #undef memmove
 
-VE_WEAK void* memmove(void* dest, const void* src, size_t n)
+/* Define this as weak since MUSL also defines one. */
+__attribute__((__weak__)) void* memmove(void* dest, const void* src, size_t n)
 {
     return __musl_memmove(dest, src, n);
 }

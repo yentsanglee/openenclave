@@ -10,8 +10,4 @@
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/internal/defs.h>
 
-#if defined(__GNUC__)
-#define VE_WEAK __attribute__((__weak__))
-#endif
-
 #endif /* _VE_ENCLAVE_COMMON_H */

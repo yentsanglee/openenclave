@@ -31,7 +31,7 @@ struct tm
 
 #undef __secs_to_tm
 
-VE_WEAK int __secs_to_tm(long long t, struct tm* tm)
+__attribute__((__weak__)) int __secs_to_tm(long long t, struct tm* tm)
 {
     return __musl_secs_to_tm(t, tm);
 }
