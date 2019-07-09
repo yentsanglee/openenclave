@@ -33,6 +33,7 @@ add_library(oevhost STATIC
     ../../host/strings.c
     ../../host/syscall_u_wrapper.c
     ../../host/sgx/quote.c
+    ../../host/sgx/report.c
     ${CMAKE_CURRENT_BINARY_DIR}/vproxyhostfp.c)
 
 add_dependencies(oevhost vproxyhostfp)

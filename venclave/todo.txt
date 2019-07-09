@@ -3,15 +3,27 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
+    (A) Add liboevenclave (remove _start symbol).
+
+    (A) Implement OE_ECALL_VERIFY_REPORT.
+
+    (A) Add attestation example.
+
     (A) Vectored exceptions.
 
     (A) Overhaul cmake rules for various libraries.
 
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
+    (B) Add OE_OCALL_GET_QE_ID_INFO
+
+    (B) Add OE_OCALL_GET_REVOCATION_INFO
+
     CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
-    (B) Add a stack guard page.
+    (C) Support full logging feature.
+
+    (C) Add a stack guard page.
 
     (C) Fix hang when one thread calls ve_exit()
 
