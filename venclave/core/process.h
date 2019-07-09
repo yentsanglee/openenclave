@@ -32,9 +32,9 @@
 
 #define VE_WEXITSTATUS(status) (((status)&0xff00) >> 8)
 
-VE_NO_RETURN void ve_exit(int status);
+OE_NO_RETURN void ve_exit(int status);
 
-VE_NO_RETURN void ve_abort(void);
+OE_NO_RETURN void ve_abort(void);
 
 int ve_gettid(void);
 

@@ -82,7 +82,6 @@ install(TARGETS oevend
 ##==============================================================================
 
 add_library(oevcore STATIC
-    assert.c
     calls.c
     clone.S
     enclave.c

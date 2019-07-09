@@ -29,15 +29,15 @@ int ve_ioctl(int fd, unsigned long request, ...)
     long x5;
     long x6;
 
-    ve_va_list ap;
-    ve_va_start(ap, request);
+    oe_va_list ap;
+    oe_va_start(ap, request);
     x1 = (long)fd;
     x2 = (long)request;
-    x3 = (long)ve_va_arg(ap, long);
-    x4 = (long)ve_va_arg(ap, long);
-    x5 = (long)ve_va_arg(ap, long);
-    x6 = (long)ve_va_arg(ap, long);
-    ve_va_end(ap);
+    x3 = (long)oe_va_arg(ap, long);
+    x4 = (long)oe_va_arg(ap, long);
+    x5 = (long)oe_va_arg(ap, long);
+    x6 = (long)oe_va_arg(ap, long);
+    oe_va_end(ap);
 
     return (int)ve_syscall6(VE_SYS_ioctl, x1, x2, x3, x4, x5, x6);
 }

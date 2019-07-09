@@ -10,7 +10,7 @@
 #include "thread.h"
 #include "time.h"
 
-VE_NO_RETURN void ve_exit(int status)
+OE_NO_RETURN void ve_exit(int status)
 {
     /* If this is a thread, then set the return value. */
     if (ve_getpid() != ve_gettid())
@@ -20,7 +20,7 @@ VE_NO_RETURN void ve_exit(int status)
         ve_syscall1(VE_SYS_exit, status);
 }
 
-VE_NO_RETURN void ve_abort(void)
+OE_NO_RETURN void ve_abort(void)
 {
     uint64_t retval = 0;
     static bool _abort_called;

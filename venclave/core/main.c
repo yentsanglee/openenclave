@@ -3,7 +3,6 @@
 
 #include <openenclave/internal/elf.h>
 #include "../common/msg.h"
-#include "assert.h"
 #include "calls.h"
 #include "common.h"
 #include "globals.h"

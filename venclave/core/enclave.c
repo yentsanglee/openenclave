@@ -14,7 +14,6 @@
 #include <openenclave/internal/sgxtypes.h>
 #include <openenclave/internal/thread.h>
 #include "../common/msg.h"
-#include "assert.h"
 #include "calls.h"
 #include "futex.h"
 #include "globals.h"
@@ -207,12 +206,12 @@ oe_result_t oe_log(log_level_t level, const char* fmt, ...)
 {
     if (level <= _active_log_level)
     {
-        ve_va_list ap;
+        oe_va_list ap;
 
-        ve_va_start(ap, fmt);
+        oe_va_start(ap, fmt);
         ve_printf("oe_log: %u: ", level);
         ve_vprintf(fmt, ap);
-        ve_va_end(ap);
+        oe_va_end(ap);
     }
 
     return OE_OK;
@@ -681,10 +680,10 @@ int oe_host_fprintf(int device, const char* fmt, ...)
 
 int oe_host_printf(const char* fmt, ...)
 {
-    ve_va_list ap;
-    ve_va_start(ap, fmt);
+    oe_va_list ap;
+    oe_va_start(ap, fmt);
     ve_vprintf(fmt, ap);
-    ve_va_end(ap);
+    oe_va_end(ap);
 
     return 0;
 }

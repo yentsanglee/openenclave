@@ -211,7 +211,7 @@ static void _put_x(uint64_t x)
     ve_put(ve_xstr(&buf, x, NULL));
 }
 
-void ve_vprintf(const char* format, ve_va_list ap)
+void ve_vprintf(const char* format, oe_va_list ap)
 {
     ve_lock(&__ve_print_lock);
 
@@ -230,28 +230,28 @@ void ve_vprintf(const char* format, ve_va_list ap)
                 case TYPE_none:
                 {
                     /* Skip unknown argument type. */
-                    ve_va_arg(ap, uint64_t);
+                    oe_va_arg(ap, uint64_t);
                     break;
                 }
                 case TYPE_s:
                 {
-                    _put_s(ve_va_arg(ap, char*));
+                    _put_s(oe_va_arg(ap, char*));
                     break;
                 }
                 case TYPE_c:
                 {
-                    _put_c((char)ve_va_arg(ap, int));
+                    _put_c((char)oe_va_arg(ap, int));
                     break;
                 }
                 case TYPE_o:
                 {
-                    _put_o(ve_va_arg(ap, unsigned int));
+                    _put_o(oe_va_arg(ap, unsigned int));
                     break;
                 }
                 case TYPE_d:
                 case TYPE_i:
                 {
-                    _put_d(ve_va_arg(ap, int));
+                    _put_d(oe_va_arg(ap, int));
                     break;
                 }
                 case TYPE_ld:
@@ -259,46 +259,46 @@ void ve_vprintf(const char* format, ve_va_list ap)
                 case TYPE_lld:
                 case TYPE_lli:
                 {
-                    _put_d(ve_va_arg(ap, int64_t));
+                    _put_d(oe_va_arg(ap, int64_t));
                     break;
                 }
                 case TYPE_u:
                 {
-                    _put_u(ve_va_arg(ap, unsigned int));
+                    _put_u(oe_va_arg(ap, unsigned int));
                     break;
                 }
                 case TYPE_lu:
                 case TYPE_llu:
                 {
-                    _put_u(ve_va_arg(ap, uint64_t));
+                    _put_u(oe_va_arg(ap, uint64_t));
                     break;
                 }
                 case TYPE_x:
                 case TYPE_X:
                 {
-                    _put_x(ve_va_arg(ap, unsigned int));
+                    _put_x(oe_va_arg(ap, unsigned int));
                     break;
                 }
                 case TYPE_lx:
                 case TYPE_llx:
                 {
-                    _put_x(ve_va_arg(ap, uint64_t));
+                    _put_x(oe_va_arg(ap, uint64_t));
                     break;
                 }
                 case TYPE_zd:
                 case TYPE_zi:
                 {
-                    _put_d(ve_va_arg(ap, int64_t));
+                    _put_d(oe_va_arg(ap, int64_t));
                     break;
                 }
                 case TYPE_zu:
                 {
-                    _put_u(ve_va_arg(ap, uint64_t));
+                    _put_u(oe_va_arg(ap, uint64_t));
                     break;
                 }
                 case TYPE_p:
                 {
-                    _put_x(ve_va_arg(ap, uint64_t));
+                    _put_x(oe_va_arg(ap, uint64_t));
                     break;
                 }
             }
@@ -314,9 +314,9 @@ void ve_vprintf(const char* format, ve_va_list ap)
 
 void ve_printf(const char* format, ...)
 {
-    ve_va_list ap;
+    oe_va_list ap;
 
-    ve_va_start(ap, format);
+    oe_va_start(ap, format);
     ve_vprintf(format, ap);
-    ve_va_end(ap);
+    oe_va_end(ap);
 }

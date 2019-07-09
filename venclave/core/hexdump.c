@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 #include "hexdump.h"
-#include "assert.h"
 #include "lock.h"
 #include "print.h"
 

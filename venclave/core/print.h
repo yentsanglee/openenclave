@@ -16,7 +16,7 @@ void ve_putc(char c);
 OE_PRINTF_FORMAT(1, 2)
 void ve_printf(const char* format, ...);
 
-void ve_vprintf(const char* format, ve_va_list ap);
+void ve_vprintf(const char* format, oe_va_list ap);
 
 extern ve_lock_t __ve_print_lock;
 
