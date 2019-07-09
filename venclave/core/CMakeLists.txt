@@ -83,7 +83,7 @@ install(TARGETS oevend
 
 add_library(oevcore STATIC
     assert.c
-    call.c
+    calls.c
     clone.S
     enclave.c
     futex.c
@@ -110,6 +110,7 @@ add_library(oevcore STATIC
     syscall.c
     thread.c
     time.c
+    ../common/call.c
     ../../enclave/core/assert.c
     ../../enclave/core/ctype.c
     ../../enclave/core/gmtime.c

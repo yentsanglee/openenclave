@@ -1,7 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-extern int __ve_pid;
+#include "call.h"
+#include "io.h"
 
 const char* ve_func_name(ve_func_t func)
 {

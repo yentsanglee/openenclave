@@ -1,8 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "../common/call.h"
-#include "call.h"
+#include "calls.h"
 #include "common.h"
 #include "globals.h"
 #include "io.h"
@@ -213,5 +212,3 @@ int ve_call_recv(int fd, uint64_t* retval)
 done:
     return ret;
 }
-
-#include "../common/call.c"

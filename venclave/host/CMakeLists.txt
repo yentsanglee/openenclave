@@ -14,7 +14,7 @@ add_custom_target(vproxyhostfp
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/vproxyhostfp.c)
 
 add_library(oevhost STATIC
-    call.c
+    calls.c
     enclave.c
     hostmalloc.c
     io.c
@@ -26,6 +26,7 @@ add_library(oevhost STATIC
     rand.c
     syscall.c
     ../common/fingerprint.c
+    ../common/call.c
     ../../common/result.c
     ../../common/safecrt.c
     ../../host/linux/hostthread.c

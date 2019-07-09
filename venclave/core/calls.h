@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#ifndef _VE_ENCLAVE_CALL_H
-#define _VE_ENCLAVE_CALL_H
+#ifndef _VE_ENCLAVE_CALLS_H
+#define _VE_ENCLAVE_CALLS_H
 
 #include "../common/call.h"
 #include "common.h"
@@ -41,4 +41,4 @@ int ve_call_free(int fd, void* ptr);
 
 int ve_handle_calls(int fd);
 
-#endif /* _VE_ENCLAVE_CALL_H */
+#endif /* _VE_ENCLAVE_CALLS_H */

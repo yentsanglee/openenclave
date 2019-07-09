@@ -7,7 +7,7 @@
 #include <openenclave/bits/defs.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "call.h"
+#include "calls.h"
 #include "heap.h"
 
 typedef struct _ve_enclave ve_enclave_t;
