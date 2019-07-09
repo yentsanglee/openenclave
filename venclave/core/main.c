@@ -7,6 +7,7 @@
 #include "common.h"
 #include "globals.h"
 #include "hexdump.h"
+#include "hostheap.h"
 #include "io.h"
 #include "malloc.h"
 #include "panic.h"
@@ -122,46 +123,6 @@ done:
         ve_close(sock);
 
     return 0;
-}
-
-static int _attach_host_heap(int shmid, const void* shmaddr, size_t shmsize)
-{
-    int ret = -1;
-    void* rval;
-    const int shmflg = VE_SHM_RND | VE_SHM_REMAP;
-
-    if (shmid == -1 || shmaddr == NULL || shmaddr == (void*)-1)
-        goto done;
-
-    /* Attach the host's shared memory heap. */
-    if ((rval = ve_shmat(shmid, shmaddr, shmflg)) == (void*)-1)
-    {
-        ve_printf(
-            "error: ve_shmat(1) failed: rval=%p shmid=%d shmaddr=%p\n",
-            rval,
-            shmid,
-            shmaddr);
-        goto done;
-    }
-
-    if (rval != shmaddr)
-    {
-        ve_printf(
-            "error: ve_shmat(2) failed: rval=%p shmid=%d shmaddr=%p\n",
-            rval,
-            shmid,
-            shmaddr);
-        goto done;
-    }
-
-    /* Save so it can be released on process exit. */
-    __ve_shmaddr = shmaddr;
-    __ve_shmsize = shmsize;
-
-    ret = 0;
-
-done:
-    return ret;
 }
 
 static int _check_elf_header()
@@ -297,7 +258,7 @@ static int _handle_init(void)
     ve_set_sock(arg.sock);
 
     /* Attach the host's shared memory into the enclave address space. */
-    if (_attach_host_heap(arg.shmid, arg.shmaddr, arg.shmsize) != 0)
+    if (ve_host_heap_attach(arg.shmid, arg.shmaddr, arg.shmsize) != 0)
     {
         ve_put("_attach_host_heap() failed\n");
         retval = -1;

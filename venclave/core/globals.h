@@ -6,10 +6,6 @@
 
 #include "common.h"
 
-/* Memory shared by the host. */
-extern const void* __ve_shmaddr;
-extern size_t __ve_shmsize;
-
 /* The .tdata section of this process (sent from the host). */
 extern size_t __ve_tdata_rva;
 extern size_t __ve_tdata_size;

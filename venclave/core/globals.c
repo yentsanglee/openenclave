@@ -3,9 +3,6 @@
 
 #include "globals.h"
 
-const void* __ve_shmaddr;
-size_t __ve_shmsize;
-
 size_t __ve_tdata_rva;
 size_t __ve_tdata_size;
 size_t __ve_tdata_align;

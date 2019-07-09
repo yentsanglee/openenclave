@@ -18,6 +18,7 @@
 #include "futex.h"
 #include "globals.h"
 #include "hexdump.h"
+#include "hostheap.h"
 #include "io.h"
 #include "lock.h"
 #include "malloc.h"
@@ -113,8 +114,8 @@ bool oe_is_within_enclave(const void* ptr, size_t size)
 {
     const uint64_t min = (uint64_t)ptr;
     const uint64_t max = (uint64_t)ptr + size;
-    const uint64_t lo = (uint64_t)__ve_shmaddr;
-    const uint64_t hi = (uint64_t)__ve_shmaddr + __ve_shmsize;
+    const uint64_t lo = (uint64_t)ve_host_heap_get_start();
+    const uint64_t hi = (uint64_t)ve_host_heap_get_end();
 
     if (min >= lo && min < hi)
         return false;
@@ -129,8 +130,8 @@ bool oe_is_outside_enclave(const void* ptr, size_t size)
 {
     const uint64_t min = (uint64_t)ptr;
     const uint64_t max = (uint64_t)ptr + size;
-    const uint64_t lo = (uint64_t)__ve_shmaddr;
-    const uint64_t hi = (uint64_t)__ve_shmaddr + __ve_shmsize;
+    const uint64_t lo = (uint64_t)ve_host_heap_get_start();
+    const uint64_t hi = (uint64_t)ve_host_heap_get_end();
 
     if (min < lo || min >= hi)
         return false;
