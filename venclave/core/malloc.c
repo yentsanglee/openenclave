@@ -80,7 +80,7 @@ int posix_memalign(void** memptr, size_t alignment, size_t size)
     return dlposix_memalign(memptr, alignment, size);
 }
 
-void* ve_malloc(size_t size)
+void* oe_malloc(size_t size)
 {
 #if defined(ZERO_FILL_MALLOCS)
     void* ptr;
@@ -94,27 +94,27 @@ void* ve_malloc(size_t size)
 #endif
 }
 
-void ve_free(void* ptr)
+void oe_free(void* ptr)
 {
     return free(ptr);
 }
 
-void* ve_calloc(size_t nmemb, size_t size)
+void* oe_calloc(size_t nmemb, size_t size)
 {
     return calloc(nmemb, size);
 }
 
-void* ve_realloc(void* ptr, size_t size)
+void* oe_realloc(void* ptr, size_t size)
 {
     return realloc(ptr, size);
 }
 
-void* ve_memalign(size_t alignment, size_t size)
+void* oe_memalign(size_t alignment, size_t size)
 {
     return memalign(alignment, size);
 }
 
-int ve_posix_memalign(void** memptr, size_t alignment, size_t size)
+int oe_posix_memalign(void** memptr, size_t alignment, size_t size)
 {
     return posix_memalign(memptr, alignment, size);
 }

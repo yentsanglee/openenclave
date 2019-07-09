@@ -367,7 +367,7 @@ static oe_result_t _handle_call_enclave_function(uint64_t arg_in)
         OE_RAISE(OE_NOT_FOUND);
 
     // Allocate buffers in enclave memory
-    buffer = input_buffer = ve_calloc(1, buffer_size);
+    buffer = input_buffer = oe_calloc(1, buffer_size);
     if (buffer == NULL)
         OE_RAISE(OE_OUT_OF_MEMORY);
 
@@ -405,7 +405,7 @@ static oe_result_t _handle_call_enclave_function(uint64_t arg_in)
 
 done:
     if (buffer)
-        ve_free(buffer);
+        oe_free(buffer);
 
     return result;
 }
@@ -593,7 +593,7 @@ int oe_host_vfprintf(int device, const char* fmt, oe_va_list ap_)
     /* If string was truncated, retry with correctly sized buffer */
     if (n >= (int)sizeof(buf))
     {
-        if (!(p = ve_malloc((uint32_t)n + 1)))
+        if (!(p = oe_malloc((uint32_t)n + 1)))
             goto done;
 
         oe_va_list ap;
@@ -610,7 +610,7 @@ int oe_host_vfprintf(int device, const char* fmt, oe_va_list ap_)
 done:
 
     if (p != buf)
-        ve_free(p);
+        oe_free(p);
 
     return ret;
 }
@@ -635,36 +635,6 @@ int oe_host_printf(const char* fmt, ...)
     oe_va_end(ap);
 
     return 0;
-}
-
-void* oe_malloc(size_t size)
-{
-    return ve_malloc(size);
-}
-
-void oe_free(void* ptr)
-{
-    return ve_free(ptr);
-}
-
-void* oe_calloc(size_t nmemb, size_t size)
-{
-    return ve_calloc(nmemb, size);
-}
-
-void* oe_realloc(void* ptr, size_t size)
-{
-    return ve_realloc(ptr, size);
-}
-
-void* oe_memalign(size_t alignment, size_t size)
-{
-    return ve_memalign(alignment, size);
-}
-
-int oe_posix_memalign(void** memptr, size_t alignment, size_t size)
-{
-    return ve_posix_memalign(memptr, alignment, size);
 }
 
 /* Non-secure replacement for RDRAND, which crashes Valgrind. */

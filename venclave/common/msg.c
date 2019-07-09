@@ -4,6 +4,10 @@
 #include "msg.h"
 #include "io.h"
 
+void* oe_calloc(size_t nmemb, size_t size);
+
+void oe_free(void* ptr);
+
 int ve_msg_send(int fd, ve_msg_type_t type, const void* data, size_t size)
 {
     int ret = -1;
@@ -15,7 +19,7 @@ int ve_msg_send(int fd, ve_msg_type_t type, const void* data, size_t size)
 
     msg_size = sizeof(ve_msg_t) + size;
 
-    if (!(msg = ve_calloc(1, msg_size)))
+    if (!(msg = oe_calloc(1, msg_size)))
         goto done;
 
     msg->magic = VE_MSG_MAGIC;
@@ -33,7 +37,7 @@ int ve_msg_send(int fd, ve_msg_type_t type, const void* data, size_t size)
 done:
 
     if (msg)
-        ve_free(msg);
+        oe_free(msg);
 
     return ret;
 }
@@ -93,7 +97,7 @@ int ve_msg_recv_any(int fd, ve_msg_type_t* type, void** data, size_t* size)
 
     if (msg.size)
     {
-        if (!(ptr = ve_calloc(1, msg.size)))
+        if (!(ptr = oe_calloc(1, msg.size)))
             goto done;
 
         if (ve_readn(fd, ptr, msg.size) != 0)
@@ -110,7 +114,7 @@ int ve_msg_recv_any(int fd, ve_msg_type_t* type, void** data, size_t* size)
 done:
 
     if (ptr)
-        ve_free(ptr);
+        oe_free(ptr);
 
     return ret;
 }

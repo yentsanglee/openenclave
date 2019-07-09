@@ -99,7 +99,7 @@ int ve_handle_call_add_thread(int fd, ve_call_buf_t* buf, int* exit_status)
         /* Create a new thread. */
         if (ve_thread_create(&thread, _thread_func, arg, stack_size) != 0)
         {
-            ve_free(arg);
+            oe_free(arg);
             goto done;
         }
 

@@ -123,7 +123,7 @@ static int _thread_func(void* arg_)
 {
     thread_arg_t arg = *(thread_arg_t*)arg_;
 
-    ve_free(arg_);
+    oe_free(arg_);
 
     /* Invoke the caller's thread routine and save the return value. */
     arg.thread->retval = arg.func(arg.arg);
@@ -171,7 +171,7 @@ int ve_thread_create(
         /* Suppress "unaddressable byte(s)" error in Valgrind. */
         const size_t EXTRA = 64;
 
-        if (!(tls = ve_calloc(
+        if (!(tls = oe_calloc(
                   1, main_tls_size + sizeof(struct _ve_thread) + EXTRA)))
             goto done;
     }
@@ -188,7 +188,7 @@ int ve_thread_create(
 
     /* Allocate and zero-fill the stack. */
     {
-        if (!(stack = ve_memalign(VE_PAGE_SIZE, stack_size)))
+        if (!(stack = oe_memalign(VE_PAGE_SIZE, stack_size)))
             goto done;
 
         memset(stack, 0, stack_size);
@@ -230,7 +230,7 @@ int ve_thread_create(
 
         /* Create the thread argument structure. */
         {
-            if (!(thread_arg = ve_calloc(1, sizeof(thread_arg_t))))
+            if (!(thread_arg = oe_calloc(1, sizeof(thread_arg_t))))
                 goto done;
 
             thread_arg->thread = thread;
@@ -247,7 +247,7 @@ int ve_thread_create(
                  child_tls,
                  &thread->ctid)) == -1)
         {
-            ve_free(thread_arg);
+            oe_free(thread_arg);
             goto done;
         }
     }
@@ -261,10 +261,10 @@ int ve_thread_create(
 done:
 
     if (stack)
-        ve_free(stack);
+        oe_free(stack);
 
     if (tls)
-        ve_free(tls);
+        oe_free(tls);
 
     return ret;
 }
@@ -289,10 +289,10 @@ int ve_thread_join(ve_thread_t thread, int* retval)
         *retval = thread->retval;
 
     /* Free the stack. */
-    ve_free(thread->stack);
+    oe_free(thread->stack);
 
     /* This frees the TLS and the tread_t struct. */
-    ve_free(thread->tls);
+    oe_free(thread->tls);
 
     ret = 0;
 

@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ve_calloc calloc
-#define ve_free free
-#define ve_memcpy memcpy
+#define oe_calloc calloc
+#define oe_free free
+#define oe_memcpy memcpy
 
 #include "../../common/msg.c"
