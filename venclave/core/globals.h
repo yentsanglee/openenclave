@@ -26,10 +26,4 @@ extern uint64_t __ve_self;
 /* The relative-virtual address of the first program segment (ELF header). */
 extern uint64_t __ve_base_rva;
 
-/* Set the socket for the current thread. */
-void ve_set_sock(int sock);
-
-/* Get the socket for the current thread. */
-int ve_get_sock(void);
-
 #endif /* _VE_ENCLAVE_GLOBALS_H */

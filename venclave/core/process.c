@@ -6,6 +6,7 @@
 #include "globals.h"
 #include "print.h"
 #include "signal.h"
+#include "socket.h"
 #include "syscall.h"
 #include "thread.h"
 #include "time.h"

@@ -16,16 +16,3 @@ size_t __ve_tbss_align;
 uint64_t __ve_self;
 
 uint64_t __ve_base_rva;
-
-/* The socket for the current thread. */
-static __thread int _sock = -1;
-
-void ve_set_sock(int sock)
-{
-    _sock = sock;
-}
-
-int ve_get_sock(void)
-{
-    return _sock;
-}
