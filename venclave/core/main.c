@@ -36,9 +36,6 @@ __thread uint64_t _thread_value_tls = THREAD_VALUE;
 
 static __thread int _pid_tls;
 
-static bool _called_constructor = false;
-static bool _called_destructor = false;
-
 static ve_thread_t _threads[MAX_THREADS];
 static size_t _nthreads;
 
@@ -46,15 +43,16 @@ static size_t _nthreads;
 int __ve_proxy_pid;
 int __ve_proxy_sock;
 
+static bool _called_constructor;
+static bool _called_destructor;
+
 __attribute__((constructor)) static void constructor(void)
 {
-    VE_T(ve_printf("encl: constructor()\n");)
     _called_constructor = true;
 }
 
 __attribute__((destructor)) static void destructor(void)
 {
-    VE_T(ve_printf("encl: destructor()\n");)
     _called_destructor = true;
 }
 
@@ -341,8 +339,6 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
 
         if (ve_thread_join(_threads[i], &retval) != 0)
             ve_panic("failed to join threads");
-
-        VE_T(ve_printf("encl: join: retval=%d\n", retval);)
     }
 
     /* Call the atexit handlers. */
@@ -380,8 +376,6 @@ int ve_handle_call_terminate_thread(
 {
     OE_UNUSED(fd);
     OE_UNUSED(buf);
-
-    VE_T(ve_printf("encl: thread exit: tid=%d\n", ve_gettid());)
 
     *exit_status = 99;
 

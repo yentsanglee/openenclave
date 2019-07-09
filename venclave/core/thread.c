@@ -244,8 +244,6 @@ int ve_thread_create(
             ve_free(thread_arg);
             goto done;
         }
-
-        VE_T(ve_printf("encl: new thread: rval=%d\n", rval));
     }
 
     *thread_out = (ve_thread_t)thread;

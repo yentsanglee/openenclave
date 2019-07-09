@@ -8,10 +8,4 @@
 
 #define VE_TRACE ve_printf("encl: trace: %s(%u)\n", __FILE__, __LINE__)
 
-#if defined(VE_DO_TRACE)
-#define VE_T(EXPR) EXPR
-#else
-#define VE_T(EXPR)
-#endif
-
 #endif /* _VE_ENCLAVE_TRACE_H */
