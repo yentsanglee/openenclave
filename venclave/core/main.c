@@ -415,32 +415,6 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
     return 0;
 }
 
-void test_malloc(int fd)
-{
-    char* p;
-    size_t n = 32;
-
-    if (!(p = ve_call_calloc(fd, 1, n)))
-    {
-        ve_puts("ve_call_calloc() failed\n");
-        ve_exit(1);
-    }
-
-    ve_strlcpy(p, "hello world!", n);
-
-    if (ve_strcmp(p, "hello world!") != 0)
-    {
-        ve_puts("ve_call_calloc() failed\n");
-        ve_exit(1);
-    }
-
-    if (ve_call_free(fd, p) != 0)
-    {
-        ve_puts("ve_call_free() failed\n");
-        ve_exit(1);
-    }
-}
-
 int ve_handle_call_terminate_thread(
     int fd,
     ve_call_buf_t* buf,

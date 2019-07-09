@@ -91,31 +91,6 @@ oe_enclave_t* oe_get_enclave(void)
     return _enclave;
 }
 
-void* oe_host_malloc(size_t size)
-{
-    void* ptr;
-
-    if ((ptr = ve_call_malloc(__ve_thread_sock_tls, size)))
-        ve_memset(ptr, 0, size);
-
-    return ptr;
-}
-
-void* oe_host_calloc(size_t nmemb, size_t size)
-{
-    return ve_call_calloc(__ve_thread_sock_tls, nmemb, size);
-}
-
-void* oe_host_realloc(void* ptr, size_t size)
-{
-    return ve_call_realloc(__ve_thread_sock_tls, ptr, size);
-}
-
-void oe_host_free(void* ptr)
-{
-    ve_call_free(__ve_thread_sock_tls, ptr);
-}
-
 // Function used by oeedger8r for allocating ocall buffers.
 void* oe_allocate_ocall_buffer(size_t size)
 {
@@ -131,34 +106,6 @@ void* oe_allocate_ocall_buffer(size_t size)
 void oe_free_ocall_buffer(void* buffer)
 {
     oe_host_free(buffer);
-}
-
-char* oe_host_strndup(const char* str, size_t n)
-{
-    char* p;
-    size_t len;
-
-    if (!str)
-        return NULL;
-
-    len = ve_strlen(str);
-
-    if (n < len)
-        len = n;
-
-    /* Would be an integer overflow in the next statement. */
-    if (len == OE_SIZE_MAX)
-        return NULL;
-
-    if (!(p = oe_host_malloc(len + 1)))
-        return NULL;
-
-    if (ve_memcpy(p, str, len) != OE_OK)
-        return NULL;
-
-    p[len] = '\0';
-
-    return p;
 }
 
 bool oe_is_within_enclave(const void* ptr, size_t size)

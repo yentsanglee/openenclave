@@ -29,14 +29,4 @@ int ve_handle_call_enclave_function(
 
 int ve_handle_calls(int fd);
 
-void* ve_call_malloc(int fd, size_t size);
-
-void* ve_call_calloc(int fd, size_t nmemb, size_t size);
-
-void* ve_call_realloc(int fd, void* ptr, size_t size);
-
-void* ve_call_memalign(int fd, size_t alignment, size_t size);
-
-int ve_call_free(int fd, void* ptr);
-
 #endif /* _VE_ENCLAVE_CALLS_H */

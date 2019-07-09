@@ -88,6 +88,7 @@ add_library(oevcore STATIC
     futex.c
     globals.c
     hexdump.c
+    hostmalloc.c
     io.c
     lock.c
     main.c
