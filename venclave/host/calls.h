@@ -6,8 +6,6 @@
 
 #include "../common/call.h"
 
-void ve_handle_call_ping(ve_call_buf_t* buf);
-
 int ve_handle_call_host_function(int fd, ve_call_buf_t* buf);
 
 int ve_handle_ocall(int fd, ve_call_buf_t* buf);
