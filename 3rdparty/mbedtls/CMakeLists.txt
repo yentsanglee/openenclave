@@ -28,7 +28,8 @@ set(MBEDTLS_COMPILE_OPTS
   -Wshadow
   # Disable conversion warnings inherited from OE.
   -Wno-sign-conversion
-  -Wno-conversion)
+  -Wno-conversion
+  -fPIE)
 
 if (CMAKE_COMPILER_IS_GNU)
   list(APPEND MBEDTLS_COMPILE_OPTS
@@ -57,9 +58,9 @@ if (USE_CLANGW)
 endif()
 
 # Sources for the three mbedtls libraries. We name the mbedcrypto library
-# as "mbedcrypto_static" because the exported target for all 3 mbedtls
+# as "mbedcrypto" because the exported target for all 3 mbedtls
 # libraries in OE is called "mbedcrypto."
-add_library(mbedcrypto_static STATIC
+add_library(mbedcrypto STATIC
   mbedtls/library/aes.c
   mbedtls/library/aesni.c
   mbedtls/library/arc4.c
@@ -142,45 +143,46 @@ add_library(mbedtls STATIC
   mbedtls/library/ssl_tls.c)
 
 # Make sure that we build with clang on Windows.
-maybe_build_using_clangw(mbedcrypto_static)
+maybe_build_using_clangw(mbedcrypto)
 maybe_build_using_clangw(mbedx509)
 maybe_build_using_clangw(mbedtls)
-
-# Change the mbedcrypto_static target to the real mbedcrypto library name.
-set_target_properties(mbedcrypto_static PROPERTIES OUTPUT_NAME "mbedcrypto")
 
 # Add the custom config file in the build interface only.
 # In the install interface, we will just replace the default
 # config file.
-target_compile_definitions(mbedcrypto_static
+target_compile_definitions(mbedcrypto
   PUBLIC $<BUILD_INTERFACE:MBEDTLS_CONFIG_FILE=<config.h$<ANGLE-R>>)
 
-target_compile_options(mbedcrypto_static PRIVATE ${MBEDTLS_COMPILE_OPTS})
+target_compile_definitions(mbedx509
+  PUBLIC $<BUILD_INTERFACE:MBEDTLS_CONFIG_FILE=<config.h$<ANGLE-R>>)
+
+target_compile_definitions(mbedtls
+  PUBLIC $<BUILD_INTERFACE:MBEDTLS_CONFIG_FILE=<config.h$<ANGLE-R>>)
+
+target_compile_options(mbedcrypto PRIVATE ${MBEDTLS_COMPILE_OPTS})
 target_compile_options(mbedx509 PRIVATE ${MBEDTLS_COMPILE_OPTS})
 target_compile_options(mbedtls PRIVATE ${MBEDTLS_COMPILE_OPTS})
 
-# We include ${CMAKE_CURRENT_BINARY_DIR} because the generated config.h
-# from the configure_file is located there.
-target_include_directories(mbedcrypto_static
-  PUBLIC   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include>
-           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/openenclave/3rdparty>)
+add_library(mbed_includes INTERFACE)
+
+target_include_directories(mbed_includes INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/openenclave/3rdparty>)
 
 # Link all the libraries.
-target_link_libraries(mbedcrypto_static PUBLIC oelibc oe_includes)
-target_link_libraries(mbedx509 PUBLIC mbedcrypto_static)
-target_link_libraries(mbedtls PUBLIC mbedx509)
+target_link_libraries(mbedcrypto PUBLIC mbed_includes oe_includes)
+target_link_libraries(mbedx509 PUBLIC mbed_includes oe_includes)
+target_link_libraries(mbedtls PUBLIC mbed_includes oe_includes)
 
 # Install the include files and the static libraries.
-install(TARGETS mbedcrypto_static mbedx509 mbedtls
+
+install(TARGETS mbedcrypto mbedx509 mbedtls mbed_includes
     EXPORT openenclave-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/mbedtls/include/mbedtls
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/openenclave/3rdparty)
+
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/openenclave/3rdparty/mbedtls/)
-
-# Create mbedcrypto export target.
-add_library(mbedcrypto INTERFACE)
-target_link_libraries(mbedcrypto INTERFACE mbedtls)
-install(TARGETS mbedcrypto EXPORT openenclave-targets)

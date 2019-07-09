@@ -3,13 +3,16 @@
 
 //==============================================================================
 //
-// _start(): 
+// _start():
 //
-//     The default entry point for the enclave image.
+//     The default entry point for the enclave image. This function bears the
+//     weak attribute so that it may be overriden by the system libraries
+//     when linking virtual enclaves.
 //
 //==============================================================================
 
 .globl _start
+.weak _start
 .type _start, @function
 _start:
 .cfi_startproc

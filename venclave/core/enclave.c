@@ -22,6 +22,7 @@
 #include "io.h"
 #include "lock.h"
 #include "malloc.h"
+#include "panic.h"
 #include "print.h"
 #include "process.h"
 #include "sbrk.h"
@@ -775,4 +776,10 @@ done:
         ve_unlock(&_proxy_sock_lock);
 
     return result;
+}
+
+/* Dummy function called by weak version _start() from liboeenclave */
+void oe_enter(void)
+{
+    ve_panic("oe_enter() called");
 }

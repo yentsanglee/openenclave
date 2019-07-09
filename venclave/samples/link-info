@@ -4,3 +4,4 @@
 ldd ~/openenclave/build/venclave/samples/vcxx/enc/vcxx_enc
 ldd ~/openenclave/build/venclave/samples/vsample1/enc/vsample1_enc
 ldd ~/openenclave/build/venclave/samples/echod/enc/echod_enc
+ldd ~/openenclave/build/venclave/samples/vcrypto/enc/vcrypto_enc
