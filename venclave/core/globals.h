@@ -10,9 +10,6 @@
 extern const void* __ve_shmaddr;
 extern size_t __ve_shmsize;
 
-/* Socket used to communicate with the host process. */
-extern int __ve_sock;
-
 /* The .tdata section of this process (sent from the host). */
 extern size_t __ve_tdata_rva;
 extern size_t __ve_tdata_size;
@@ -29,10 +26,13 @@ extern uint64_t __ve_self;
 /* The relative-virtual address of the first program segment (ELF header). */
 extern uint64_t __ve_base_rva;
 
-/* Socket for the current thread. */
-extern __thread int __ve_thread_sock_tls;
-
 /* The PID of the main process. */
 extern int __ve_main_pid;
+
+/* Set the socket for the current thread. */
+void ve_set_sock(int sock);
+
+/* Get the socket for the current thread. */
+int ve_get_sock(void);
 
 #endif /* _VE_ENCLAVE_GLOBALS_H */

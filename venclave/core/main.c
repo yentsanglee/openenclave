@@ -62,7 +62,8 @@ static int _thread_func(void* arg)
     int sock = (int)(int64_t)arg;
     int exit_status;
 
-    __ve_thread_sock_tls = sock;
+    /* Set the socket for the current thread. */
+    ve_set_sock(sock);
 
     _pid_tls = ve_getpid();
 
@@ -87,7 +88,7 @@ int ve_handle_call_add_thread(int fd, ve_call_buf_t* buf, int* exit_status)
     buf->retval = (uint64_t)-1;
 
     /* Receive the socket descriptor from the host. */
-    if ((sock = ve_recv_fd(__ve_sock)) < 0)
+    if ((sock = ve_recv_fd(ve_get_sock())) < 0)
         goto done;
 
     /* Create the new thread. */
@@ -292,18 +293,14 @@ static int _handle_init(void)
     if (_check_elf_header() != 0)
         ve_panic("elf header check failed");
 
-    /* Handle the request. */
+    /* Set the socket for the main thread. */
+    ve_set_sock(arg.sock);
+
+    /* Attach the host's shared memory into the enclave address space. */
+    if (_attach_host_heap(arg.shmid, arg.shmaddr, arg.shmsize) != 0)
     {
-        __ve_sock = arg.sock;
-
-        /* ATTN: use of this variable is tricky. */
-        __ve_thread_sock_tls = __ve_sock;
-
-        if (_attach_host_heap(arg.shmid, arg.shmaddr, arg.shmsize) != 0)
-        {
-            ve_put("_attach_host_heap() failed\n");
-            retval = -1;
-        }
+        ve_put("_attach_host_heap() failed\n");
+        retval = -1;
     }
 
 #if defined(USE_PROXY)
@@ -317,7 +314,7 @@ static int _handle_init(void)
 #endif /* defined(USE_PROXY) */
 
     /* Send response back on the socket. */
-    if (ve_writen(__ve_sock, &retval, sizeof(retval)) != 0)
+    if (ve_writen(ve_get_sock(), &retval, sizeof(retval)) != 0)
         goto done;
 
     ret = retval;
@@ -485,7 +482,7 @@ int main(void)
         ve_panic("ve_handle_init() failed");
 
     /* Handle messages over the main socket. */
-    if ((exit_status = ve_handle_calls(__ve_sock)) == -1)
+    if ((exit_status = ve_handle_calls(ve_get_sock())) == -1)
         ve_panic("ve_handle_calls() failed");
 
     /* Close the standard descriptors. */

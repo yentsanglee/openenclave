@@ -6,8 +6,6 @@
 const void* __ve_shmaddr;
 size_t __ve_shmsize;
 
-int __ve_sock = -1;
-
 size_t __ve_tdata_rva;
 size_t __ve_tdata_size;
 size_t __ve_tdata_align;
@@ -19,6 +17,17 @@ uint64_t __ve_self;
 
 uint64_t __ve_base_rva;
 
-__thread int __ve_thread_sock_tls;
-
 int __ve_main_pid;
+
+/* The socket for the current thread. */
+static __thread int _sock = -1;
+
+void ve_set_sock(int sock)
+{
+    _sock = sock;
+}
+
+int ve_get_sock(void)
+{
+    return _sock;
+}
