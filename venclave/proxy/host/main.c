@@ -31,7 +31,7 @@ static void _close_standard_devices(void)
     close(STDERR_FILENO);
 }
 
-static int _dervive_enclave_path(const char* host_path, char path[PATH_MAX])
+static int _derive_enclave_path(const char* host_path, char path[PATH_MAX])
 {
     int ret = -1;
     char* p;
@@ -216,7 +216,7 @@ int main(int argc, const char* argv[])
     }
 
     /* Form the name of the enclave from argv[0]. */
-    if (_dervive_enclave_path(argv[0], path) != 0)
+    if (_derive_enclave_path(argv[0], path) != 0)
         err("failed to drive the enclave path");
 
     /* Verify that the enclave exists. */
