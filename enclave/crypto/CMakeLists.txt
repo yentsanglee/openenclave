@@ -22,7 +22,8 @@ target_compile_options(oecryptombed PRIVATE -fPIE)
 
 target_compile_definitions(oecryptombed PUBLIC OE_BUILD_ENCLAVE)
 
-target_link_libraries(oecryptombed PRIVATE mbedcrypto oe_includes)
+target_link_libraries(oecryptombed
+    PRIVATE mbedcrypto mbed_includes oelibc_includes oe_includes oecore_cflags)
 
 set_property(TARGET oecryptombed PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
