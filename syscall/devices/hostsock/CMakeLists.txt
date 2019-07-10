@@ -11,11 +11,7 @@ target_include_directories(oehostsock PRIVATE
     ${CMAKE_BINARY_DIR}/syscall
     ${PROJECT_SOURCE_DIR}/include/openenclave/corelibc)
 
-target_link_libraries(oehostsock oe_includes)
-
-target_compile_options(oehostsock PRIVATE -fPIE)
-
-target_compile_definitions(oehostsock PUBLIC OE_BUILD_ENCLAVE)
+target_link_libraries(oehostsock oe_includes oecore_cflags)
 
 install(TARGETS oehostsock EXPORT openenclave-targets ARCHIVE
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)

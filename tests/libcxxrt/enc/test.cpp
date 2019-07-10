@@ -24,6 +24,8 @@ static bool verbose;
 
 void log_test(bool predicate, const char* file, int line, const char* message)
 {
+    (void)file;
+
     if (predicate)
     {
         printf("Test passed: %d: %s" OE_NEWLINE, line, message);

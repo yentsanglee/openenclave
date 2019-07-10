@@ -1,12 +1,6 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
-##==============================================================================
-##
-## oelibasm target:
-##
-##==============================================================================
-
 # Build the C library, using local sources and sources from musl.
 set(MUSLSRC ${PROJECT_SOURCE_DIR}/3rdparty/musl/musl/src)
 
@@ -33,6 +27,7 @@ elseif(OE_TRUSTZONE)
         ${MUSLSRC}/setjmp/aarch64/longjmp.s
         ${MUSLSRC}/setjmp/aarch64/setjmp.s)
 endif()
+
 
 maybe_build_using_clangw(oelibasm)
 
@@ -64,13 +59,7 @@ else()
         optee/exp2l.c)
 endif()
 
-##==============================================================================
-##
-## oelibcobj target:
-##
-##==============================================================================
-
-add_library(oelibcobj OBJECT
+add_library(oelibc STATIC
     arc4random.c
     atexit.c
     dladdr.c
@@ -92,7 +81,6 @@ add_library(oelibcobj OBJECT
     strerror.c
     sysconf.c
     time.c
-    __fdopen.c
     __printf_chk.c
     __vfprintf_chk.c
     ${MUSLSRC}/complex/cabs.c
@@ -443,7 +431,7 @@ add_library(oelibcobj OBJECT
     ${MUSLSRC}/misc/dirname.c
     ${MUSLSRC}/misc/getdomainname.c
     ${MUSLSRC}/misc/ioctl.c
-    #${MUSLSRC}/misc/nftw.c
+    ${MUSLSRC}/misc/nftw.c
     ${MUSLSRC}/misc/uname.c
     ${MUSLSRC}/mman/mmap.c
     ${MUSLSRC}/mman/munmap.c
@@ -486,10 +474,10 @@ add_library(oelibcobj OBJECT
     ${MUSLSRC}/network/gai_strerror.c
     ${MUSLSRC}/network/gethostbyaddr.c
     ${MUSLSRC}/network/gethostbyaddr_r.c
-    #${MUSLSRC}/network/gethostbyname2.c
-    #${MUSLSRC}/network/gethostbyname2_r.c
-    #${MUSLSRC}/network/gethostbyname.c
-    #${MUSLSRC}/network/gethostbyname_r.c
+    ${MUSLSRC}/network/gethostbyname2.c
+    ${MUSLSRC}/network/gethostbyname2_r.c
+    ${MUSLSRC}/network/gethostbyname.c
+    ${MUSLSRC}/network/gethostbyname_r.c
     ${MUSLSRC}/network/accept.c
     ${MUSLSRC}/network/bind.c
     ${MUSLSRC}/network/inet_pton.c
@@ -502,17 +490,17 @@ add_library(oelibcobj OBJECT
     ${MUSLSRC}/network/recv.c
     ${MUSLSRC}/network/recvfrom.c
     ${MUSLSRC}/network/recvmsg.c
-    #${MUSLSRC}/network/res_msend.c
+    ${MUSLSRC}/network/res_msend.c
     ${MUSLSRC}/network/res_mkquery.c
     ${MUSLSRC}/network/if_nametoindex.c
     ${MUSLSRC}/network/dn_expand.c
     ${MUSLSRC}/network/dns_parse.c
-    #${MUSLSRC}/network/res_query.c
+    ${MUSLSRC}/network/res_query.c
     ${MUSLSRC}/network/resolvconf.c
     ${MUSLSRC}/network/lookup_ipliteral.c
-    #${MUSLSRC}/network/res_msend.c
+    ${MUSLSRC}/network/res_msend.c
     ${MUSLSRC}/network/lookup_serv.c
-    #${MUSLSRC}/network/lookup_name.c
+    ${MUSLSRC}/network/lookup_name.c
     ${MUSLSRC}/prng/drand48.c
     ${MUSLSRC}/prng/lcong48.c
     ${MUSLSRC}/prng/lrand48.c
@@ -549,7 +537,7 @@ add_library(oelibcobj OBJECT
     ${MUSLSRC}/stdio/ext.c
     ${MUSLSRC}/stdio/fclose.c
     ${MUSLSRC}/stdio/__fclose_ca.c
-    #${MUSLSRC}/stdio/__fdopen.c
+    ${MUSLSRC}/stdio/__fdopen.c
     ${MUSLSRC}/stdio/feof.c
     ${MUSLSRC}/stdio/ferror.c
     ${MUSLSRC}/stdio/fflush.c
@@ -786,29 +774,29 @@ add_library(oelibcobj OBJECT
     ${PLATFORM_SRC}
 )
 
-maybe_build_using_clangw(oelibcobj)
+maybe_build_using_clangw(oelibc)
 
 # NOTE: This is the minimum required for musl sources.
-set_property(TARGET oelibcobj PROPERTY C_STANDARD 99)
+set_property(TARGET oelibc PROPERTY C_STANDARD 99)
 
-target_compile_options(oelibcobj PRIVATE
+target_compile_options(oelibc PRIVATE
     -fno-builtin-memcpy
     -fno-builtin-memset
     -ffreestanding)
 
 if (OE_SGX)
-    target_compile_options(oelibcobj PRIVATE -mrdrnd)
+    target_compile_options(oelibc PRIVATE -mrdrnd)
 endif()
 
 if (CMAKE_C_COMPILER_ID MATCHES GNU)
-  target_compile_options(oelibcobj PRIVATE
+  target_compile_options(oelibc PRIVATE
     -fexcess-precision=standard
     -frounding-math)
 endif ()
 
 # Ignore warnings from musl sources. First, shared warnings:
 if (CMAKE_C_COMPILER_ID MATCHES GNU OR CMAKE_C_COMPILER_ID MATCHES Clang OR USE_CLANGW)
-  target_compile_options(oelibcobj PRIVATE
+  target_compile_options(oelibc PRIVATE
     -Wno-missing-braces
     -Wno-parentheses
     -Wno-unknown-pragmas
@@ -819,7 +807,7 @@ endif ()
 
 # Second: compiler-specific warnings:
 if (CMAKE_C_COMPILER_ID MATCHES GNU)
-  target_compile_options(oelibcobj PRIVATE
+  target_compile_options(oelibc PRIVATE
     -Wno-jump-misses-init
     -Wno-maybe-uninitialized
     -Wno-unknown-pragmas
@@ -828,7 +816,7 @@ if (CMAKE_C_COMPILER_ID MATCHES GNU)
     -Wno-unused-value
     -Wno-unused-variable)
 elseif (CMAKE_C_COMPILER_ID MATCHES Clang OR USE_CLANGW)
-  target_compile_options(oelibcobj PRIVATE
+  target_compile_options(oelibc PRIVATE
     -Wno-dangling-else
     -Wno-ignored-attributes
     -Wno-logical-op-parentheses
@@ -837,66 +825,34 @@ elseif (CMAKE_C_COMPILER_ID MATCHES Clang OR USE_CLANGW)
     -Wno-unneeded-internal-declaration)
 endif ()
 
-target_compile_definitions(oelibcobj PRIVATE _XOPEN_SOURCE=700)
+target_compile_definitions(oelibc PRIVATE _XOPEN_SOURCE=700)
 
 if (USE_DEBUG_MALLOC)
-  target_compile_definitions(oelibcobj PRIVATE OE_USE_DEBUG_MALLOC)
+  target_compile_definitions(oelibc PRIVATE OE_USE_DEBUG_MALLOC)
 endif ()
-
-target_link_libraries(oelibcobj
-  PRIVATE oesyscall oe_includes oelibc_includes)
-
-target_compile_options(oelibcobj PRIVATE -fPIE)
-
-##==============================================================================
-##
-## oelibc target:
-##
-##==============================================================================
-
-add_library(oelibc STATIC)
 
 # This project (and its dependents) require the enclave headers and
 # library, and the musl headers.
 target_link_libraries(oelibc
-  PUBLIC oesyscall oecore oelibc_includes
-  PRIVATE oelibcobj oelibasm)
-
-set_property(TARGET oelibc PROPERTY
-  ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
-
-##==============================================================================
-##
-## oevlibc target:
-##
-##==============================================================================
-
-add_library(oevlibc STATIC)
-
-target_link_libraries(oevlibc
-  PUBLIC oesyscall oevcore oelibc_includes
-  PRIVATE oelibcobj oelibasm)
+  PUBLIC oe_includes
+  PUBLIC oelibc_includes
+  PUBLIC oecore_cflags
+  PRIVATE oelibasm)
 
 if (OE_SGX)
-target_include_directories(oelibcobj PRIVATE
+target_include_directories(oelibc PRIVATE
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/include
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/internal
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/arch/x86_64)
 else()
-target_include_directories(oelibcobj PRIVATE
+target_include_directories(oelibc PRIVATE
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/include
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/src/internal
   ${PROJECT_BINARY_DIR}/3rdparty/musl/musl/arch/aarch64)
 endif()
 
-set_property(TARGET oevlibc PROPERTY
+set_property(TARGET oelibc PROPERTY
   ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 
-##==============================================================================
-##
-## install targets:
-##
-##==============================================================================
-
-install(TARGETS oelibc oelibcobj oelibasm EXPORT openenclave-targets
+install(TARGETS oelibc oelibasm EXPORT openenclave-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)

@@ -21,4 +21,3 @@ if (CMAKE_C_COMPILER_ID MATCHES GNU)
 endif ()
 
 target_include_directories(print_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(print_enc oelibc)

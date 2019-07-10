@@ -24,7 +24,7 @@ extern "C" int main(int argc, const char* argv[]);
 
 extern "C" void _exit(int status)
 {
-    ocall_exit(status);
+    ocall_exit((uint64_t)status);
     abort();
 }
 
@@ -44,12 +44,14 @@ typedef void (*Handler)(int signal);
 
 Handler signal(int signal, Handler)
 {
+    (void)signal;
     /* Ignore! */
     return NULL;
 }
 
 extern "C" int close(int fd)
 {
+    (void)fd;
     OE_TEST("close() panic" == NULL);
     return 0;
 }

@@ -36,10 +36,10 @@ function(add_enclave)
      ${ARGN})
 
    add_executable(${ENCLAVE_TARGET} ${ENCLAVE_SOURCES})
-   target_link_libraries(${ENCLAVE_TARGET} oeenclave)
    if (ENCLAVE_CXX)
      target_link_libraries(${ENCLAVE_TARGET} oelibcxx)
    endif ()
+   target_link_libraries(${ENCLAVE_TARGET} oeenclave_libs)
    
   # Cross-compile if needed.
   if (USE_CLANGW)

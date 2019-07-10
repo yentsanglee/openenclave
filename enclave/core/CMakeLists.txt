@@ -59,6 +59,8 @@ elseif(OE_TRUSTZONE)
         optee/start.c)
 endif()
 
+add_library(oecore_cflags INTERFACE)
+
 add_library(oecore STATIC
     ../../common/safecrt.c
     ${MUSL_SRC_DIR}/prng/rand.c
@@ -96,7 +98,7 @@ set_source_files_properties(__secs_to_tm.c PROPERTIES
 
 maybe_build_using_clangw(oecore)
 
-target_link_libraries(oecore PUBLIC oe_includes)
+target_link_libraries(oecore_cflags INTERFACE oe_includes)
 
 if (CMAKE_C_COMPILER_ID MATCHES GNU)
     target_compile_options(oecore PRIVATE -Wjump-misses-init)
@@ -118,7 +120,7 @@ if (OE_SGX)
     set_source_files_properties(sgx/keys.c PROPERTIES COMPILE_FLAGS -Wno-type-limits)
 
     # -m64 is an x86_64 specific flag
-    target_compile_options(oecore PUBLIC -m64)
+    target_compile_options(oecore_cflags INTERFACE -m64)
 endif()
 
 if (CMAKE_C_COMPILER_ID MATCHES GNU)
@@ -130,7 +132,8 @@ endif ()
 # Hence the PUBLIC (and INTERFACE) use of these flags instead of -fPIC
 # or POSITION_INDEPENDENT_CODE, which would use the incorrect flag as
 # enclaves actually are executables.
-target_compile_options(oecore PUBLIC
+target_compile_options(oecore_cflags
+    INTERFACE
     -fPIE
     -nostdinc
     -fno-stack-protector
@@ -153,10 +156,12 @@ target_compile_options(oecore PUBLIC
     # user. There are valid reasons for an end user to use built-ins.
     $<BUILD_INTERFACE:-fno-builtin-malloc -fno-builtin-calloc -fno-builtin>)
 
-target_compile_options(oecore INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)
+target_compile_options(oecore_cflags
+    INTERFACE
+    $<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)
 
-target_compile_definitions(oecore
-    PUBLIC
+target_compile_definitions(oecore_cflags
+    INTERFACE
     OE_BUILD_ENCLAVE
     # NOTE: This definition is public to the rest of our project's
     # targets, but should not yet be exposed to consumers of our
@@ -164,13 +169,15 @@ target_compile_definitions(oecore
     $<BUILD_INTERFACE:OE_API_VERSION=2>)
 
 if(USE_LIBSGX)
-    target_compile_definitions(oecore PUBLIC OE_USE_LIBSGX)
+    target_compile_definitions(oecore_cflags INTERFACE OE_USE_LIBSGX)
 endif()
 
 if(USE_DEBUG_MALLOC)
     target_compile_definitions(oecore PRIVATE OE_USE_DEBUG_MALLOC)
     message("USE_DEBUG_MALLOC is set, building oecore with memory leak detection.")
 endif()
+
+target_link_libraries(oecore PRIVATE oecore_cflags)
 
 # Interface link flags for enclaves.
 target_link_libraries(oecore INTERFACE
@@ -180,4 +187,5 @@ target_link_libraries(oecore INTERFACE
     -Wl,-z,now)
 
 set_property(TARGET oecore PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
-install (TARGETS oecore EXPORT openenclave-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
+install (TARGETS oecore oecore_cflags EXPORT openenclave-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)

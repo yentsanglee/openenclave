@@ -56,11 +56,7 @@ target_include_directories(oesyscall PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${PROJECT_SOURCE_DIR}/include/openenclave/corelibc)
 
-target_link_libraries(oesyscall oe_includes)
-
-target_compile_options(oesyscall PRIVATE -fPIE)
-
-target_compile_definitions(oesyscall PUBLIC OE_BUILD_ENCLAVE)
+target_link_libraries(oesyscall oe_includes oecore_cflags)
 
 set_source_files_properties(
     ${CMAKE_CURRENT_BINARY_DIR}/syscall_t.c

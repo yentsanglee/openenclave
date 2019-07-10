@@ -45,7 +45,7 @@ function(add_mbed_test_enclave NAME)
     ${PROJECT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/tests
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/3rdparty/mbedtls/mbedtls-wrap-prefix/src/mbedtls-wrap/include/)
-  target_link_libraries(mbedtest_suite_${NAME} oelibc)
+  target_link_libraries(mbedtest_suite_${NAME} oeenclave_libs)
 
   maybe_build_using_clangw(mbedtest_suite_${NAME})
 
@@ -89,7 +89,7 @@ function(add_mbed_selftest_enclave)
     ${PROJECT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/tests
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/3rdparty/mbedtls/mbedtls-wrap-prefix/src/mbedtls-wrap/include/)
-  target_link_libraries(mbedtest_selftest oelibc)
+  target_link_libraries(mbedtest_selftest oeenclave_libs)
 
   # The following variables remain uninitialized on Linux and throw warnings
   # Calling the function maybe_build_using_clangw(mbedtest_selftest) skips setting

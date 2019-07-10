@@ -18,13 +18,15 @@ add_library(libunwindtest-support
         ${LIBUNWIND_TEST_DIR}/flush-cache.h
         test_support.c
         )
-target_link_libraries(libunwindtest-support PRIVATE oeenclave oelibc)
+
 target_compile_options(libunwindtest-support PRIVATE -Wno-error -DUNW_LOCAL_ONLY=1)
 target_include_directories(libunwindtest-support PUBLIC
         ${PROJECT_SOURCE_DIR}/3rdparty/libunwind
         ${PROJECT_BINARY_DIR}/3rdparty/libunwind
         ${PROJECT_SOURCE_DIR}/3rdparty/libunwind/libunwind/include
     )
+
+target_link_libraries(libunwindtest-support PUBLIC oelibcxx oeenclave_libs)
 
 function(add_libunwind_test_enc NAME TESTFILE)
     add_enclave(TARGET libunwindtest-${NAME}_enc CXX

@@ -3,6 +3,6 @@
 
 add_library(oecpio STATIC commands.c cpio.c strarr.c)
 
-target_link_libraries(oecpio PRIVATE oelibc oecore)
+target_link_libraries(oecpio PRIVATE oecore_cflags oelibc_includes oe_includes)
 
 maybe_build_using_clangw(oecpio)

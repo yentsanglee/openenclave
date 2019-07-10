@@ -14,4 +14,3 @@ add_enclave(TARGET memory_enc
 
 
 target_include_directories(memory_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(memory_enc oelibc)
