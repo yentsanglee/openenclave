@@ -14,6 +14,7 @@
 #include "enclave.h"
 #include "heap.h"
 #include "hostmalloc.h"
+#include "trace.h"
 
 /* The fingerprint of the version of oevproxy this library was built with. */
 extern const oe_fingerprint_t __ve_vproxyhostfp;
@@ -42,6 +43,34 @@ static ve_enclave_t* _cast_enclave(oe_enclave_t* enclave)
         return NULL;
 
     return enclave->venclave;
+}
+
+/* Check that the oevproxyenc enclave image exists. */
+static int _check_oevproxyenc(const char* oevproxyhost_path)
+{
+    int ret = -1;
+    const char* p;
+    char path[OE_PATH_MAX];
+
+    if (strlen(oevproxyhost_path) >= sizeof(path))
+        goto done;
+
+    /* Find the position of the "host" suffix. */
+    if (!(p = strrchr(oevproxyhost_path, 'h')) || strcmp(p, "host") != 0)
+        goto done;
+
+    /* Form the oevproxyenc with same prefix as the oevproxyhost path. */
+    strncpy(path, oevproxyhost_path, (size_t)(p - oevproxyhost_path));
+    strcat(path, "enc");
+
+    /* Check that the file is executable.*/
+    if (access(path, X_OK) != 0)
+        goto done;
+
+    ret = 0;
+
+done:
+    return ret;
 }
 
 /* Locate the oevproxyhost program (check build and install directory). */
@@ -74,14 +103,16 @@ done:
 
     if (!__ve_vproxyhost_path)
     {
-        fprintf(stderr, "failed to locate oevproxyhost program.");
+        fprintf(stderr, "*** failed to locate oevproxyhost program.");
         exit(1);
     }
 
     if (strlen(__ve_vproxyhost_path) >= OE_PATH_MAX)
     {
         fprintf(
-            stderr, "oevproxyhost path too long: %s\n", __ve_vproxyhost_path);
+            stderr,
+            "*** oevproxyhost path too long: %s\n",
+            __ve_vproxyhost_path);
         exit(1);
     }
 
@@ -99,6 +130,12 @@ static void _create_enclave_once(void)
 
     if (_locate_oevproxyhost() != 0)
         goto done;
+
+    if (_check_oevproxyenc(__ve_vproxyhost_path) != 0)
+    {
+        fprintf(stderr, "*** failed to locate oevproxyenc program.");
+        exit(1);
+    }
 
     _create_enclave_once_okay = true;
 

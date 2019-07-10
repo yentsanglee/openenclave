@@ -31,25 +31,23 @@ static void _close_standard_devices(void)
     close(STDERR_FILENO);
 }
 
-static int _derive_enclave_path(const char* host_path, char path[PATH_MAX])
+static int _derive_enclave_path(
+    const char* oevproxyhost_path,
+    char path[PATH_MAX])
 {
     int ret = -1;
     char* p;
 
-    if (strlen(host_path) >= PATH_MAX)
+    if (strlen(oevproxyhost_path) >= PATH_MAX)
         goto done;
 
-    strcpy(path, host_path);
-
-    if (strlen(path) < 4)
+    /* Find the position of the "host" suffix. */
+    if (!(p = strrchr(oevproxyhost_path, 'h')) || strcmp(p, "host") != 0)
         goto done;
 
-    p = path + strlen(path) - sizeof("host") + 1;
-
-    if (strcmp(p, "host") != 0)
-        goto done;
-
-    strcpy(p, "enc");
+    /* Form the oevproxyenc with same prefix as the oevproxyhost path. */
+    strncpy(path, oevproxyhost_path, (size_t)(p - oevproxyhost_path));
+    strcat(path, "enc");
 
     ret = 0;
 

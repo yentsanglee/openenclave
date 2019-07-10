@@ -47,6 +47,9 @@ target_compile_definitions(oevhost PRIVATE
 target_link_libraries(oevhost
     PUBLIC crypto oe_includes)
 
+# Prebuild the virtuaual proxy.
+add_dependencies(oevhost oevproxyhost oevproxyenc)
+
 target_include_directories(oevhost PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}/host)

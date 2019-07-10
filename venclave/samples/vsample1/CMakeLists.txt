@@ -13,7 +13,7 @@ add_test(vsample1
 
 include(../valgrind.cmake)
 
-add_test(vsample1-valgrind valgrind ${VALGRIND_OPTS}
-    ${CMAKE_CURRENT_BINARY_DIR}/host/vsample1_host
-    ${CMAKE_CURRENT_BINARY_DIR}/enc/vsample1_enc
-    ${TMPDIR})
+#add_test(vsample1-valgrind valgrind ${VALGRIND_OPTS}
+#    ${CMAKE_CURRENT_BINARY_DIR}/host/vsample1_host
+#    ${CMAKE_CURRENT_BINARY_DIR}/enc/vsample1_enc
+#    ${TMPDIR})
