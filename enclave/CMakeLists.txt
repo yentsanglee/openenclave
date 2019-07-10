@@ -37,11 +37,8 @@ if(CMAKE_C_COMPILER_ID MATCHES GNU)
 target_compile_options(oeenclave PRIVATE -Wjump-misses-init)
 endif()
 
-target_compile_options(oeenclave PRIVATE -fPIE)
-
-target_compile_definitions(oeenclave PUBLIC OE_BUILD_ENCLAVE)
-
-target_link_libraries(oeenclave PRIVATE oe_includes)
+target_link_libraries(oeenclave
+    PRIVATE mbed_includes oelibc_includes oe_includes oecore_cflags)
 
 set_property(TARGET oeenclave PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
 

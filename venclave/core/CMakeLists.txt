@@ -9,12 +9,12 @@
 
 add_library(oevcore_libc STATIC libc.c)
 
-target_compile_options(oevcore_libc PRIVATE -fPIE -nostdinc)
-
 set_property(TARGET oevcore_libc PROPERTY OUTPUT_NAME c)
 
 set_property(TARGET oevcore_libc PROPERTY
     ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/venclave)
+
+target_link_libraries(oevcore_libc PRIVATE oecore_cflags)
 
 install(TARGETS oevcore_libc
     EXPORT openenclave-targets
@@ -28,12 +28,12 @@ install(TARGETS oevcore_libc
 
 add_library(oevcore_libcxx STATIC libcxx.cpp)
 
-target_compile_options(oevcore_libcxx PRIVATE -fPIE -nostdinc)
-
 set_property(TARGET oevcore_libcxx PROPERTY OUTPUT_NAME stdc++)
 
 set_property(TARGET oevcore_libcxx PROPERTY
     ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/venclave)
+
+target_link_libraries(oevcore_libcxx PRIVATE oecore_cflags)
 
 install(TARGETS oevcore_libcxx
     EXPORT openenclave-targets
@@ -47,12 +47,12 @@ install(TARGETS oevcore_libcxx
 
 add_library(oevcore_libm STATIC libm.c)
 
-target_compile_options(oevcore_libm PRIVATE -fPIE -nostdinc)
-
 set_property(TARGET oevcore_libm PROPERTY OUTPUT_NAME m)
 
 set_property(TARGET oevcore_libm PROPERTY
     ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave/venclave)
+
+target_link_libraries(oevcore_libm PRIVATE oecore_cflags)
 
 install(TARGETS oevcore_libm
     EXPORT openenclave-targets
@@ -66,10 +66,10 @@ install(TARGETS oevcore_libm
 
 add_library(oevend SHARED libvend.c)
 
-target_link_libraries(oevend PRIVATE -nostdlib)
-
 set_property(TARGET oevend PROPERTY
     ARCHIVE_OUTPUT_DIRECTORY ${OE_LIBDIR}/openenclave/enclave)
+
+target_link_libraries(oevend PRIVATE -nostdlib oecore_cflags)
 
 install(TARGETS oevend
     EXPORT openenclave-targets
@@ -136,11 +136,8 @@ add_library(oevcore STATIC
     ../../enclave/core/strtok_r.c
     ../../enclave/core/strtoul.c)
 
-target_compile_options(oevcore PUBLIC -fPIE -nostdinc)
-
 target_compile_options(oevcore
     PUBLIC
-    -fPIE
     INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-fstack-protector-strong>
     INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-nostdinc++>)
 
@@ -152,6 +149,7 @@ target_link_libraries(oevcore
     oevcore_libcxx
     oevcore_libm
     oevend
+    oecore_cflags
     oe_includes)
 
 target_compile_definitions(oevcore PUBLIC OE_BUILD_ENCLAVE)
