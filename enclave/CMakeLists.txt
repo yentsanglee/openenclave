@@ -61,7 +61,25 @@ target_link_libraries(oeenclave_libs INTERFACE
     oecryptombed
     mbedx509
     mbedcrypto
-    oelibc
     oesyscall
+    oelibc
     oecore
+    oe_includes)
+
+##==============================================================================
+##
+## oevenclave_libs
+##
+##==============================================================================
+
+add_library(oevenclave_libs INTERFACE)
+
+target_link_libraries(oevenclave_libs INTERFACE
+    oeenclave
+    oecryptombed
+    mbedx509
+    mbedcrypto
+    oesyscall
+    oevlibc
+    oevcore
     oe_includes)

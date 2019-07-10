@@ -7,12 +7,4 @@ add_executable(echod_enc enc.c ${gen})
 
 target_include_directories(echod_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(echod_enc
-    -Wl,--warn-once
-    -Wl,--whole-archive
-    oevhostfs
-    oevhostsock
-    oevlibc
-    oevcore
-    -Wl,--no-whole-archive
-    oelibc_includes)
+target_link_libraries(echod_enc oehostfs oehostsock oevenclave_libs)

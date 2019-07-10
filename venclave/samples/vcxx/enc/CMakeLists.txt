@@ -9,9 +9,4 @@ target_compile_options(oevcore PRIVATE -fPIE)
 
 target_include_directories(vcxx_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(vcxx_enc
-    oelibcxx
-    #-Wl,--whole-archive
-    oevlibc
-    #-Wl,--no-whole-archive
-    oevcore)
+target_link_libraries(vcxx_enc oelibcxx oevenclave_libs)

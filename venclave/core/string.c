@@ -104,3 +104,19 @@ const char* ve_dstr(ve_dstr_buf* buf, int64_t x, size_t* size)
 
     return p;
 }
+
+__attribute__((weak)) int memcmp(const void* s1, const void* s2, size_t n)
+{
+    const unsigned char* p = (const unsigned char*)s1;
+    const unsigned char* q = (const unsigned char*)s2;
+
+    while (n--)
+    {
+        int r = *p++ - *q++;
+
+        if (r)
+            return r;
+    }
+
+    return 0;
+}

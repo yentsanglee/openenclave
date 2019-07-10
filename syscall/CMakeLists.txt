@@ -13,7 +13,7 @@ set(EDL_FILE ${EDL_DIR}/syscall.edl)
 
 add_custom_command(
     OUTPUT syscall_t.h syscall_t.c syscall_args.h
-    DEPENDS ${EDL_FILE}
+    DEPENDS ${EDL_FILE} edger8r
     COMMAND edger8r --search-path ${EDL_DIR} --trusted ${EDL_FILE})
 
 add_custom_target(syscall_trusted_edl
@@ -21,11 +21,11 @@ add_custom_target(syscall_trusted_edl
 
 ##==============================================================================
 ##
-## oesyscallobj target:
+## These rules build the oesyscall target.
 ##
 ##==============================================================================
 
-add_library(oesyscallobj OBJECT
+add_library(oesyscall STATIC
     syscall_t_wrapper.c
     consolefs.c
     device.c
@@ -47,64 +47,26 @@ add_library(oesyscallobj OBJECT
     unistd.c
     utsname.c)
 
-maybe_build_using_clangw(oesyscallobj)
+maybe_build_using_clangw(oesyscall)
 
-add_dependencies(oesyscallobj syscall_trusted_edl)
+add_dependencies(oesyscall syscall_trusted_edl)
 
-target_compile_definitions(oesyscallobj PRIVATE OE_BUILD_ENCLAVE)
-
-target_link_libraries(oesyscallobj PRIVATE oe_includes oelibc_includes)
-
-target_include_directories(oesyscallobj PRIVATE
+target_include_directories(oesyscall PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     ${PROJECT_SOURCE_DIR}/include/openenclave/corelibc)
 
-target_compile_options(oesyscallobj PRIVATE -fPIE)
+target_link_libraries(oesyscall oe_includes)
+
+target_compile_options(oesyscall PRIVATE -fPIE)
+
+target_compile_definitions(oesyscall PUBLIC OE_BUILD_ENCLAVE)
 
 set_source_files_properties(
     ${CMAKE_CURRENT_BINARY_DIR}/syscall_t.c
     PROPERTIES COMPILE_FLAGS -DOE_NEED_STDC_NAMES)
 
-##==============================================================================
-##
-## oesyscall target:
-##
-##==============================================================================
-
-add_library(oesyscall STATIC)
-
-target_link_libraries(oesyscall
-    PUBLIC oecore
-    PRIVATE oesyscallobj)
-
-##==============================================================================
-##
-## oevsyscall target:
-##
-##==============================================================================
-
-add_library(oevsyscall STATIC)
-
-target_link_libraries(oevsyscall
-    PUBLIC oevcore
-    PRIVATE oesyscallobj)
-
-##==============================================================================
-##
-## install targets:
-##
-##==============================================================================
-
-install(TARGETS oesyscall oevsyscall oesyscallobj
-    EXPORT openenclave-targets
-    ARCHIVE
+install(TARGETS oesyscall EXPORT openenclave-targets ARCHIVE
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
-
-##==============================================================================
-##
-## devices target:
-##
-##==============================================================================
 
 add_subdirectory(devices)

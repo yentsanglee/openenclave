@@ -846,6 +846,8 @@ endif ()
 target_link_libraries(oelibcobj
   PRIVATE oesyscall oe_includes oelibc_includes)
 
+target_compile_options(oelibcobj PRIVATE -fPIE)
+
 ##==============================================================================
 ##
 ## oelibc target:
@@ -872,7 +874,7 @@ set_property(TARGET oelibc PROPERTY
 add_library(oevlibc STATIC)
 
 target_link_libraries(oevlibc
-  PUBLIC oevsyscall oevcore oelibc_includes
+  PUBLIC oesyscall oevcore oelibc_includes
   PRIVATE oelibcobj oelibasm)
 
 if (OE_SGX)
