@@ -47,13 +47,13 @@ install(TARGETS oeenclave EXPORT openenclave-targets
 
 ##==============================================================================
 ##
-## oeenclave_libs
+## oeenclaveapp
 ##
 ##==============================================================================
 
-add_library(oeenclave_libs INTERFACE)
+add_library(oeenclaveapp INTERFACE)
 
-target_link_libraries(oeenclave_libs INTERFACE
+target_link_libraries(oeenclaveapp INTERFACE
     oeenclave
     oecryptombed
     mbedtls
@@ -64,15 +64,18 @@ target_link_libraries(oeenclave_libs INTERFACE
     oecore
     oe_includes)
 
+install(TARGETS oeenclaveapp EXPORT openenclave-targets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+
 ##==============================================================================
 ##
-## oevenclave_libs
+## oevenclaveapp
 ##
 ##==============================================================================
 
-add_library(oevenclave_libs INTERFACE)
+add_library(oevenclaveapp INTERFACE)
 
-target_link_libraries(oevenclave_libs INTERFACE
+target_link_libraries(oevenclaveapp INTERFACE
     oeenclave
     oecryptombed
     mbedtls
@@ -82,3 +85,6 @@ target_link_libraries(oevenclave_libs INTERFACE
     oesyscall
     oevcore
     oe_includes)
+
+install(TARGETS oevenclaveapp EXPORT openenclave-targets
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)

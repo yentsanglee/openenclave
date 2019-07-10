@@ -13,7 +13,7 @@ add_test(vcrypto
 
 include(../valgrind.cmake)
 
-#add_test(vcrypto-valgrind valgrind ${VALGRIND_OPTS}
-#    ${CMAKE_CURRENT_BINARY_DIR}/host/vcrypto_host
-#    ${CMAKE_CURRENT_BINARY_DIR}/enc/vcrypto_enc
-#    ${TMPDIR})
+add_test(vcrypto-valgrind valgrind ${VALGRIND_OPTS}
+    ${CMAKE_CURRENT_BINARY_DIR}/host/vcrypto_host
+    ${CMAKE_CURRENT_BINARY_DIR}/enc/vcrypto_enc
+    ${TMPDIR})

@@ -7,4 +7,4 @@ add_executable(echod_host host.c ${gen})
 
 target_include_directories(echod_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(echod_host oevhost pthread)
+target_link_libraries(echod_host oevhostapp)

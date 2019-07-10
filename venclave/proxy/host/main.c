@@ -46,7 +46,8 @@ static int _derive_enclave_path(
         goto done;
 
     /* Form the oevproxyenc with same prefix as the oevproxyhost path. */
-    strncpy(path, oevproxyhost_path, (size_t)(p - oevproxyhost_path));
+    *path = '\0';
+    strncat(path, oevproxyhost_path, (size_t)(p - oevproxyhost_path));
     strcat(path, "enc");
 
     ret = 0;

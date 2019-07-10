@@ -24,6 +24,7 @@
 # TODO: (2) Setup the dependency using `${BIN}_signed` instead of the
 # default custom target.
 # TODO: (3) Validate arguments into this function
+
 function(add_enclave)
 
    set(options CXX)
@@ -39,7 +40,7 @@ function(add_enclave)
    if (ENCLAVE_CXX)
      target_link_libraries(${ENCLAVE_TARGET} oelibcxx)
    endif ()
-   target_link_libraries(${ENCLAVE_TARGET} oeenclave_libs)
+   target_link_libraries(${ENCLAVE_TARGET} oeenclavetest)
    
   # Cross-compile if needed.
   if (USE_CLANGW)

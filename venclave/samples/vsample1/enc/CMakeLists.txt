@@ -7,4 +7,4 @@ add_executable(vsample1_enc enc.c ${gen})
 
 target_include_directories(vsample1_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(vsample1_enc oehostfs oevenclave_libs)
+target_link_libraries(vsample1_enc oehostfs oevenclaveapp)

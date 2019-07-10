@@ -7,4 +7,4 @@ add_executable(vsample1_host host.c ${gen})
 
 target_include_directories(vsample1_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(vsample1_host oevhost pthread)
+target_link_libraries(vsample1_host oevhostapp)

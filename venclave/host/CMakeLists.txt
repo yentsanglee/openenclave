@@ -56,3 +56,13 @@ target_include_directories(oevhost PRIVATE
 
 install(TARGETS oevhost EXPORT openenclave-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/host)
+
+##==============================================================================
+##
+## oevhostapp:
+##
+##==============================================================================
+
+add_library(oevhostapp INTERFACE)
+
+target_link_libraries(oevhostapp INTERFACE oevhost -lpthread)

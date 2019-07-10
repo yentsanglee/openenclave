@@ -7,4 +7,4 @@ add_executable(vcrypto_enc enc.c ${gen})
 
 target_include_directories(vcrypto_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(vcrypto_enc oevenclave_libs)
+target_link_libraries(vcrypto_enc oevenclaveapp)

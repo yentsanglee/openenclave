@@ -9,6 +9,6 @@ target_include_directories(oevproxyenc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 set_property(TARGET oevproxyenc PROPERTY RUNTIME_OUTPUT_DIRECTORY ${OE_BINDIR})
 
-target_link_libraries(oevproxyenc oeenclave_libs)
+target_link_libraries(oevproxyenc oeenclaveapp)
 
 install (TARGETS oevproxyenc DESTINATION ${CMAKE_INSTALL_BINDIR})

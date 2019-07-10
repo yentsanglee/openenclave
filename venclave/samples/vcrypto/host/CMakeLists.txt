@@ -7,4 +7,4 @@ add_executable(vcrypto_host host.c ${gen})
 
 target_include_directories(vcrypto_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(vcrypto_host oevhost pthread)
+target_link_libraries(vcrypto_host oevhostapp)

@@ -28,8 +28,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
         )
 endif ()
 
-target_link_libraries(libcxxtest-support PRIVATE oelibcxx oeenclave_libs)
-target_link_libraries(libcxxtest-support INTERFACE -Wl,--undefined=Test oeenclave_libs)
+target_link_libraries(libcxxtest-support PRIVATE oelibcxx oeenclaveapp)
+target_link_libraries(libcxxtest-support INTERFACE -Wl,--undefined=Test oeenclaveapp)
 
 target_include_directories(libcxxtest-support PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
@@ -59,7 +59,7 @@ function(add_libcxx_test_enc NAME CXXFILE)
         -UNDEBUG
         )
 
-    target_link_libraries(libcxxtest-${NAME}_enc oelibcxx oeenclave_libs)
+    target_link_libraries(libcxxtest-${NAME}_enc oelibcxx oeenclaveapp)
 
     # Clang does not support variants of operator delete[] taking size_t in C++14 unless
     # -fsized-deallocation is passed explicity. (Note, gcc 4.7/4.8/4.9 do not support this either.)
@@ -69,7 +69,7 @@ function(add_libcxx_test_enc NAME CXXFILE)
     endif()
 
     target_compile_definitions(libcxxtest-${NAME}_enc PRIVATE -DWITH_MAIN -D__TEST__="${CXXFILE}")
-    target_link_libraries(libcxxtest-${NAME}_enc libcxxtest-support oeenclave_libs)
+    target_link_libraries(libcxxtest-${NAME}_enc libcxxtest-support oeenclaveapp)
 endfunction(add_libcxx_test_enc)
 
 # iterate over the supported tests and create a binary for each.
