@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <openenclave/corelibc/stdio.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/edger8r/enclave.h>
 #include <openenclave/enclave.h>
@@ -193,6 +194,8 @@ int enc_test(bool* caught, bool* dynamic_cast_works, size_t* n_constructions)
 
     *n_constructions = num_constructions;
 
+    /* memory exhaustion tests not applicable to virtual enclaves. */
+#if !defined(OE_BUILD_VENCLAVE)
     /* Test std::bad_alloc */
     {
         bool bad_alloc_caught = false;
@@ -219,6 +222,7 @@ int enc_test(bool* caught, bool* dynamic_cast_works, size_t* n_constructions)
 
         OE_TEST(bad_alloc_caught == true);
     }
+#endif /* !defined(OE_BUILD_VENCLAVE) */
 
     return 0;
 }

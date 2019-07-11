@@ -8,4 +8,9 @@ if (BUILD_ENCLAVES)
 endif()
 
 add_enclave_test(tests/stdcxx  stdcxx_host stdcxx_enc OE_OK)
-add_enclave_test(tests/global_init_exception stdcxx_host global_init_exception_enc OE_ENCLAVE_ABORTING)
+
+# ATTN:VENCLAVE: graceful termination not working yet.
+if(NOT VENCLAVE)
+    add_enclave_test(tests/global_init_exception
+        stdcxx_host global_init_exception_enc OE_ENCLAVE_ABORTING)
+endif()

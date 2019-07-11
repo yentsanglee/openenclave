@@ -49,6 +49,7 @@ static void _malloc_stress_test(oe_enclave_t* enclave)
     _malloc_stress_test_multithread(enclave);
 }
 
+#if defined(OE_BUILD_SGX)
 static void _malloc_boundary_test(oe_enclave_t* enclave, uint32_t flags)
 {
     /* Test host malloc boundary. */
@@ -113,6 +114,7 @@ static void _malloc_boundary_test(oe_enclave_t* enclave, uint32_t flags)
         OE_OK);
     free(heapbuf);
 }
+#endif /* defined(OE_BUILD_SGX) */
 
 int main(int argc, const char* argv[])
 {
@@ -139,8 +141,10 @@ int main(int argc, const char* argv[])
     printf("===Starting malloc stress test.\n");
     _malloc_stress_test(enclave);
 
+#if defined(OE_BUILD_SGX)
     printf("===Starting malloc boundary test.\n");
     _malloc_boundary_test(enclave, flags);
+#endif /* defined(OE_BUILD_SGX) */
 
     printf("===All tests pass.\n");
 

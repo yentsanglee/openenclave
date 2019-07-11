@@ -11,6 +11,8 @@ cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 file(STRINGS "VERSION" OE_VERSION_WITH_V)
 string(REGEX REPLACE "^v" "" OE_VERSION ${OE_VERSION_WITH_V})
 
+option(VENCLAVE "Building virtual enclaves" ON)
+
 # Select the assembler
 # TODO: See #755: This should probably be removed
 if (UNIX)

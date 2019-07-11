@@ -86,6 +86,9 @@ add_library(oecore STATIC
     time.c
     ${PLATFORM_SRC})
 
+target_compile_definitions(oecore
+    PUBLIC OE_BUILD_SGX)
+
 # Suppress type conversion warnings introduced by 3rdparty code
 set_source_files_properties(${MUSL_SRC_DIR}/prng/rand.c ROPERTIES
     COMPILE_FLAGS -Wno-conversion)

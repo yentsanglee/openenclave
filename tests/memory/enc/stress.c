@@ -180,8 +180,13 @@ void init_malloc_stress_test()
 
 void malloc_stress_test(int threads)
 {
+#if defined(OE_BUILD_SGX)
     /* Get heap size. */
     size_t size = __oe_get_heap_size();
+#else
+    /* Test with 16 megabytes. */
+    size_t size = 16 * 1024 * 1024;
+#endif
 
     /* Use the heap divided by the number of threads. */
     size = size / (size_t)threads;

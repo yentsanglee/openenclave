@@ -156,7 +156,8 @@ target_link_libraries(oevcore
     oecore_cflags
     oe_includes)
 
-target_compile_definitions(oevcore PUBLIC OE_BUILD_ENCLAVE)
+target_compile_definitions(oevcore
+    PUBLIC OE_BUILD_VENCLAVE)
 
 target_include_directories(oevcore PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include

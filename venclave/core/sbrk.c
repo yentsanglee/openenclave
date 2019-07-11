@@ -45,6 +45,10 @@ void* ve_sbrk(intptr_t increment)
         if ((rval = ve_syscall1(VE_SYS_brk, addr)) == -1)
             goto done;
 
+        /* Fail if call was unable to change the break value. */
+        if (rval == (long)_brk_value)
+            goto done;
+
         old_brk_value = _brk_value;
         _brk_value = (void*)rval;
 

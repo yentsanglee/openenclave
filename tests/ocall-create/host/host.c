@@ -32,6 +32,7 @@ oe_result_t host_call_enc_double_ocall(
     int val)
 {
     printf("==== host_call_enc_double_ocall\n");
+    fflush(stdout);
     return enc_double_ocall(enclave, ret_val, val);
 }
 

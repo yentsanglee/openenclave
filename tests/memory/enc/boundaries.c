@@ -10,6 +10,8 @@
 #define BUFSIZE 1024
 #define ITERS 1024
 
+#define NON_PORTABLE
+
 void test_host_boundaries(buffer buf)
 {
     OE_TEST(oe_is_outside_enclave(buf.buf, buf.size));

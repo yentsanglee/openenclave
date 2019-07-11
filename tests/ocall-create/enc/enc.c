@@ -69,7 +69,9 @@ int enc_test_ocall_enclave(const char* path, uint32_t flags)
 
     /* Test OCALL on this enclave. */
     ret_val = 0;
+    oe_host_printf("<<<<<<<<<<<<<<<<<<<<<<\n");
     result = host_call_enc_double_ocall(&ret_result, enclave, &ret_val, seed);
+    oe_host_printf(">>>>>>>>>>>>>>>>>>>>>>\n");
     seed *= 2;
 
     OE_TEST(OE_OK == result);

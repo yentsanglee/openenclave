@@ -15,8 +15,11 @@ add_subdirectory(samples)
 
 add_library(oehosttest INTERFACE)
 
-#target_link_libraries(oehosttest INTERFACE oehostapp)
-target_link_libraries(oehosttest INTERFACE oevhostapp)
+if(VENCLAVE)
+    target_link_libraries(oehosttest INTERFACE oevhostapp)
+else()
+    target_link_libraries(oehosttest INTERFACE oehostapp)
+endif()
 
 install(TARGETS oehosttest EXPORT openenclave-targets)
 
@@ -28,7 +31,10 @@ install(TARGETS oehosttest EXPORT openenclave-targets)
 
 add_library(oeenclavetest INTERFACE)
 
-#target_link_libraries(oeenclavetest INTERFACE oeenclaveapp)
-target_link_libraries(oeenclavetest INTERFACE oevenclaveapp)
+if(VENCLAVE)
+    target_link_libraries(oeenclavetest INTERFACE oevenclaveapp)
+else()
+    target_link_libraries(oeenclavetest INTERFACE oeenclaveapp)
+endif()
 
 install(TARGETS oeenclavetest EXPORT openenclave-targets)

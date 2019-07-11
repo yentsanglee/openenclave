@@ -43,11 +43,13 @@ void enc_test(test_args* args)
         args->thread_data_addr = reinterpret_cast<uint64_t>(td);
     }
 
+#if defined(OE_BUILD_SGX)
     /* Get enclave offsets and bases */
     args->base = const_cast<void*>(__oe_get_enclave_base());
     args->base_heap_page = oe_get_base_heap_page();
     args->num_heap_pages = oe_get_num_heap_pages();
     args->num_pages = oe_get_num_pages();
+#endif
 
     /* Test the oe_setjmp/oe_longjmp functions */
     args->setjmp_result = TestSetjmp();
