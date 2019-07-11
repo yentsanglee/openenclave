@@ -67,4 +67,4 @@ if (NOT WIN32)
   # Re-enable strict aliasing. TODO: Remove this when #1717 is resolved.
   target_compile_options(edl_host PUBLIC -fstrict-aliasing -Werror=strict-aliasing)
 endif ()
-target_link_libraries(edl_host oehostapp)
+target_link_libraries(edl_host oehosttest)

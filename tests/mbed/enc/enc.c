@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include "mbed_t.h"
 
-int main(int argc, const char* argv[]);
+int test_main(int argc, const char* argv[]);
 struct mbed_args gmbed_args;
 
 void _exit(int status)
@@ -178,14 +178,14 @@ int test(
         // so drop all args when invoking the test, which will execute all
         // selftests
         static const char* noargs[2] = {NULL};
-        return_value = main(1, noargs);
+        return_value = test_main(1, noargs);
     }
     else
     {
         static const char* argv[] = {"test", "-v", "NULL"};
         static int argc = sizeof(argv) / sizeof(argv[0]);
         argv[2] = in_testname;
-        return_value = main(argc, argv);
+        return_value = test_main(argc, argv);
         args->skipped = gmbed_args.skipped;
         args->total = gmbed_args.total;
     }

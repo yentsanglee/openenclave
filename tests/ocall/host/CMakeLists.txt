@@ -7,4 +7,4 @@ add_executable(ocall_host host.cpp ${gen})
 
 target_include_directories(ocall_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(ocall_host oehostapp)
+target_link_libraries(ocall_host oehosttest)

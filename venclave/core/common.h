@@ -10,4 +10,6 @@
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/internal/defs.h>
 
+#define VE_WEAK __attribute__((weak))
+
 #endif /* _VE_ENCLAVE_COMMON_H */

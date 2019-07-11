@@ -105,7 +105,7 @@ const char* ve_dstr(ve_dstr_buf* buf, int64_t x, size_t* size)
     return p;
 }
 
-__attribute__((weak)) int memcmp(const void* s1, const void* s2, size_t n)
+VE_WEAK int memcmp(const void* s1, const void* s2, size_t n)
 {
     const unsigned char* p = (const unsigned char*)s1;
     const unsigned char* q = (const unsigned char*)s2;
@@ -119,4 +119,25 @@ __attribute__((weak)) int memcmp(const void* s1, const void* s2, size_t n)
     }
 
     return 0;
+}
+
+VE_WEAK void* memcpy(void* dest, const void* src, size_t n)
+{
+    uint8_t* p = (uint8_t*)dest;
+    const uint8_t* q = (const uint8_t*)src;
+
+    while (n--)
+        *p++ = *q++;
+
+    return dest;
+}
+
+VE_WEAK void* memset(void* s, int c, size_t n)
+{
+    volatile uint8_t* p = (volatile uint8_t*)s;
+
+    while (n--)
+        *p++ = (uint8_t)c;
+
+    return s;
 }

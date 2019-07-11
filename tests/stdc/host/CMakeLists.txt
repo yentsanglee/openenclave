@@ -10,4 +10,4 @@ target_include_directories(stdc_host PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(stdc_host oehostapp)
+target_link_libraries(stdc_host oehosttest)

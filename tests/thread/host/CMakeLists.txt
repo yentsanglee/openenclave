@@ -7,4 +7,4 @@ add_executable(thread_host host.cpp rwlocks_test_host.cpp ${gen})
 
 target_include_directories(thread_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(thread_host oehostapp)
+target_link_libraries(thread_host oehosttest)

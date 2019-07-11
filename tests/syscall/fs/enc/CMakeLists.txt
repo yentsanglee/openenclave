@@ -23,4 +23,4 @@ else()
 endif()
 
 target_link_libraries(fs_enc
-    ${OESGXFSENCLAVE} oelibcxx oecpio oehostfs oeenclaveapp)
+    ${OESGXFSENCLAVE} oelibcxx oecpio oehostfs oeenclavetest)

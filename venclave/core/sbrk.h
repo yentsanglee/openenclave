@@ -6,6 +6,9 @@
 
 #include "common.h"
 
+/* The break value after the first call to ve_sbrk(). */
+extern void* __ve_initial_brk_value;
+
 /* Change the location of the program break value (invokes brk system call). */
 void* ve_sbrk(intptr_t increment);
 

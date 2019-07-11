@@ -5,6 +5,8 @@
 #include "lock.h"
 #include "syscall.h"
 
+void* __ve_initial_brk_value;
+
 void* ve_sbrk(intptr_t increment)
 {
     void* ret = (void*)-1;
@@ -22,6 +24,9 @@ void* ve_sbrk(intptr_t increment)
             goto done;
 
         _brk_value = (void*)rval;
+
+        /* Save the initial break value (the base of the heap). */
+        __ve_initial_brk_value = _brk_value;
     }
 
     /* If increment is zero, then return the current break value. */

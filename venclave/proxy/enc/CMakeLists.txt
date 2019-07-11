@@ -3,7 +3,7 @@
 
 oeedl_file(../proxy.edl enclave gen)
 
-add_enclave(TARGET oevproxyenc SOURCES enc.c ${gen})
+add_executable(oevproxyenc enc.c ${gen})
 
 target_include_directories(oevproxyenc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

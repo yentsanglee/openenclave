@@ -14,4 +14,4 @@ add_custom_command(TARGET qeidentity_host
 )
 
 target_include_directories(qeidentity_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../common)
-target_link_libraries(qeidentity_host oehostapp)
+target_link_libraries(qeidentity_host oehosttest)

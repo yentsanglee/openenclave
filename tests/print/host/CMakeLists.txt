@@ -7,4 +7,4 @@ oeedl_file(../print.edl host gen)
 add_executable(print_host host.cpp ${gen})
 
 target_include_directories(print_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(print_host oehostapp)
+target_link_libraries(print_host oehosttest)

@@ -8,4 +8,4 @@ add_executable(ids_host host.c ${gen})
 
 target_include_directories(ids_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(ids_host oehostapp)
+target_link_libraries(ids_host oehosttest)

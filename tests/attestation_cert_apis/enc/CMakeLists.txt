@@ -9,4 +9,4 @@ add_executable(tls_enc enc.cpp ${gen})
 
 target_include_directories(tls_enc PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(tls_enc oeenclaveapp)
+target_link_libraries(tls_enc oeenclavetest)

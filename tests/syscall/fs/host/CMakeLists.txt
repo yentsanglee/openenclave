@@ -22,4 +22,4 @@ else()
     set(OESGXFSHOST "")
 endif()
 
-target_link_libraries(fs_host ${OESGXFSHOST} oehostapp)
+target_link_libraries(fs_host ${OESGXFSHOST} oehosttest)

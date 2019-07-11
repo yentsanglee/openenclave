@@ -570,3 +570,8 @@ void oe_log(log_level_t level, const char* fmt, ...)
         va_end(ap);
     }
 }
+
+uint32_t oe_get_create_flags(void)
+{
+    return OE_ENCLAVE_FLAG_DEBUG;
+}

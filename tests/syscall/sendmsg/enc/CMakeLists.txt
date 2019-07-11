@@ -13,4 +13,4 @@ add_executable(sendmsg_enc enc.c ../client.c ../server.c ${gen})
 
 maybe_build_using_clangw(sendmsg_enc)
 
-target_link_libraries(sendmsg_enc oehostsock oeenclaveapp)
+target_link_libraries(sendmsg_enc oehostsock oeenclavetest)

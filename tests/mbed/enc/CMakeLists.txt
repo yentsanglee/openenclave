@@ -38,6 +38,8 @@ function(add_mbed_test_enclave NAME)
     start.S
     ${gen})
 
+  target_compile_definitions(mbedtest_suite_${NAME} PUBLIC -Dmain=test_main)
+
   target_compile_options(mbedtest_suite_${NAME} PRIVATE -Wno-error)
   target_compile_definitions(mbedtest_suite_${NAME} PRIVATE -D__TEST__="${NAME}")
   target_include_directories(mbedtest_suite_${NAME} PRIVATE
@@ -45,7 +47,7 @@ function(add_mbed_test_enclave NAME)
     ${PROJECT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/tests
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/3rdparty/mbedtls/mbedtls-wrap-prefix/src/mbedtls-wrap/include/)
-  target_link_libraries(mbedtest_suite_${NAME} oeenclaveapp)
+  target_link_libraries(mbedtest_suite_${NAME} oeenclavetest)
 
   maybe_build_using_clangw(mbedtest_suite_${NAME})
 
@@ -83,13 +85,14 @@ function(add_mbed_selftest_enclave)
     ${gen})
 
   target_compile_options(mbedtest_selftest PRIVATE -Wno-conversion -Wno-pointer-arith)
+  target_compile_definitions(mbedtest_selftest PRIVATE -Dmain=test_main)
   target_compile_definitions(mbedtest_selftest PRIVATE -D__TEST__="selftest")
   target_include_directories(mbedtest_selftest PRIVATE
     ..
     ${PROJECT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/tests
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/3rdparty/mbedtls/mbedtls-wrap-prefix/src/mbedtls-wrap/include/)
-  target_link_libraries(mbedtest_selftest oeenclaveapp)
+  target_link_libraries(mbedtest_selftest oeenclavetest)
 
   # The following variables remain uninitialized on Linux and throw warnings
   # Calling the function maybe_build_using_clangw(mbedtest_selftest) skips setting

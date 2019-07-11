@@ -9,4 +9,4 @@ add_executable(cppException_host host.cpp ${gen})
 target_include_directories(cppException_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(cppException_host oehostapp)
+target_link_libraries(cppException_host oehosttest)

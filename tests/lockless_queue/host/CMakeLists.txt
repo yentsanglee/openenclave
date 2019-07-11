@@ -7,4 +7,4 @@ add_executable(lockless_queue_host host.c ${gen})
 
 target_include_directories(lockless_queue_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(lockless_queue_host oehostapp)
+target_link_libraries(lockless_queue_host oehosttest)

@@ -783,3 +783,43 @@ void oe_enter(void)
 {
     ve_panic("oe_enter() called");
 }
+
+const void* __oe_get_heap_base()
+{
+    return __ve_initial_brk_value;
+}
+
+size_t __oe_get_heap_size()
+{
+    return oe_enclave_properties_sgx.header.size_settings.num_heap_pages *
+           OE_PAGE_SIZE;
+}
+
+const void* __oe_get_heap_end()
+{
+    return (const uint8_t*)__oe_get_heap_base() + __oe_get_heap_size();
+}
+
+uint64_t oe_get_base_heap_page(void)
+{
+    const uint64_t heap_base = (uint64_t)__oe_get_heap_base();
+    const uint64_t enclave_base = (uint64_t)__oe_get_enclave_base();
+    return (heap_base - enclave_base) / OE_PAGE_SIZE;
+}
+
+uint64_t oe_get_num_heap_pages(void)
+{
+    return __oe_get_heap_size() / OE_PAGE_SIZE;
+}
+
+uint64_t __oe_get_enclave_size(void)
+{
+    /* Pick an arbitrary number bigger than the heap size. */
+    /* ATTN: revisit this! */
+    return __oe_get_heap_size() * 64;
+}
+
+uint64_t oe_get_num_pages(void)
+{
+    return __oe_get_enclave_size() / OE_PAGE_SIZE;
+}

@@ -8,4 +8,4 @@ add_executable(enclaveparam_host host.c ${gen})
 
 target_include_directories(enclaveparam_host PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(enclaveparam_host oehostapp)
+target_link_libraries(enclaveparam_host oehosttest)

@@ -10,4 +10,4 @@ target_include_directories(libunwind_host PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(libunwind_host oehostapp)
+target_link_libraries(libunwind_host oehosttest)

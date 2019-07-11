@@ -26,7 +26,7 @@ target_include_directories(libunwindtest-support PUBLIC
         ${PROJECT_SOURCE_DIR}/3rdparty/libunwind/libunwind/include
     )
 
-target_link_libraries(libunwindtest-support PUBLIC oelibcxx oeenclaveapp)
+target_link_libraries(libunwindtest-support PUBLIC oelibcxx oeenclavetest)
 
 function(add_libunwind_test_enc NAME TESTFILE)
     add_enclave(TARGET libunwindtest-${NAME}_enc CXX

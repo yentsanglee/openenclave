@@ -136,6 +136,9 @@ add_library(oevcore STATIC
     ../../enclave/core/strtok_r.c
     ../../enclave/core/strtoul.c)
 
+set_source_files_properties(../../enclave/core/sgx/jump.c
+    PROPERTIES COMPILE_FLAGS -O2)
+
 target_compile_options(oevcore
     PUBLIC
     INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-fstack-protector-strong>
@@ -143,6 +146,7 @@ target_compile_options(oevcore
 
 target_link_libraries(oevcore
     PUBLIC
+    #-Wl,-eoe_main
     -static-libgcc
     -L${OE_LIBDIR}/openenclave/enclave/venclave
     oevcore_libc

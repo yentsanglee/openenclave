@@ -64,8 +64,7 @@ target_link_libraries(oeenclaveapp INTERFACE
     oecore
     oe_includes)
 
-install(TARGETS oeenclaveapp EXPORT openenclave-targets
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+install(TARGETS oeenclaveapp EXPORT openenclave-targets)
 
 ##==============================================================================
 ##
@@ -86,5 +85,4 @@ target_link_libraries(oevenclaveapp INTERFACE
     oevcore
     oe_includes)
 
-install(TARGETS oevenclaveapp EXPORT openenclave-targets
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/enclave)
+install(TARGETS oevenclaveapp EXPORT openenclave-targets)

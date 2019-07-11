@@ -12,6 +12,7 @@
 //==============================================================================
 
 .globl _start
+.weak _start
 .type _start, @function
 _start:
 .cfi_startproc

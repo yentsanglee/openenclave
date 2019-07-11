@@ -389,7 +389,7 @@ static void _sigusr1(int sig)
     _called_sigusr1 = true;
 }
 
-int main(void)
+int oe_main(void)
 {
     int exit_status;
 
@@ -423,3 +423,17 @@ int main(void)
 
     return exit_status;
 }
+
+#if 0
+VE_WEAK
+int main(void)
+{
+    ve_panic("main() called");
+    return 1;
+}
+#else
+int main(void)
+{
+    return oe_main();
+}
+#endif

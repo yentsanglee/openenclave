@@ -31,6 +31,7 @@ add_library(oevhost STATIC
     ../../host/linux/hostthread.c
     ../../host/sgx/linux/aesm.c
     ../../host/strings.c
+    ../../host/error.c
     ../../host/syscall_u_wrapper.c
     ../../host/sgx/quote.c
     ../../host/sgx/report.c
@@ -66,3 +67,5 @@ install(TARGETS oevhost EXPORT openenclave-targets
 add_library(oevhostapp INTERFACE)
 
 target_link_libraries(oevhostapp INTERFACE oevhost -lpthread)
+
+install(TARGETS oevhostapp EXPORT openenclave-targets)

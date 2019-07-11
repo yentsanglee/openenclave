@@ -10,4 +10,4 @@ target_include_directories(libc_host PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(libc_host oehostapp)
+target_link_libraries(libc_host oehosttest)
