@@ -3,6 +3,10 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
+    (A) tests/memory: add upper bound for sbrk().
+`
+    (A) tests/memory: oe_is_outside_enclave() can never work on all host memory.
+
     (A) Add liboevenclave (remove _start symbol).
 
     (A) Implement OE_ECALL_VERIFY_REPORT.

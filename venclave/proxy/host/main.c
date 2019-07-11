@@ -130,6 +130,12 @@ done:
     return ret;
 }
 
+#if 0
+#define TRACE fprintf(stderr, "vproxy trace: %s(%u)\n", __FILE__, __LINE__)
+#else
+#define TRACE
+#endif
+
 static int _handle_messages(oe_enclave_t* enclave, int fd)
 {
     int ret = -1;
@@ -143,7 +149,10 @@ static int _handle_messages(oe_enclave_t* enclave, int fd)
     for (;;)
     {
         if (ve_msg_recv_any(fd, &type, &data, &size) != 0)
+        {
+            TRACE;
             goto done;
+        }
 
         switch (type)
         {
@@ -151,7 +160,10 @@ static int _handle_messages(oe_enclave_t* enclave, int fd)
             {
                 /* Send back response. */
                 if (ve_msg_send(fd, type, NULL, 0) != 0)
+                {
+                    TRACE;
                     goto done;
+                }
 
                 close(fd);
 
@@ -162,14 +174,20 @@ static int _handle_messages(oe_enclave_t* enclave, int fd)
             case VE_MSG_EGETKEY:
             {
                 if (_handle_egetkey_request(enclave, fd, data, size) != 0)
+                {
+                    TRACE;
                     goto done;
+                }
 
                 break;
             }
             case VE_MSG_EREPORT:
             {
                 if (_handle_ereport_request(enclave, fd, data, size) != 0)
+                {
+                    TRACE;
                     goto done;
+                }
 
                 break;
             }
@@ -184,6 +202,7 @@ done:
     if (data)
         free(data);
 
+    TRACE;
     return ret;
 }
 

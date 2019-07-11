@@ -659,6 +659,7 @@ uint64_t oe_rdrand(void)
         oe_spin_unlock(&_lock);
     }
 
+#if 0
     /* Initialize each byte with a function of the time. */
     for (size_t i = 0; i < sizeof(uint64_t); i++)
     {
@@ -676,6 +677,7 @@ uint64_t oe_rdrand(void)
 
         r.bytes[i] = xor;
     }
+#endif
 
     return r.word;
 }

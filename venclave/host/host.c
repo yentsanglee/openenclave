@@ -168,6 +168,9 @@ oe_result_t oe_create_enclave(
     if (!path || !enclave_out || config || config_size > 0)
         OE_RAISE(OE_INVALID_PARAMETER);
 
+    if (type != OE_ENCLAVE_TYPE_SGX)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
     /* If no debug mode flag. */
     if (!(flags & OE_ENCLAVE_FLAG_DEBUG))
         OE_RAISE(OE_INVALID_PARAMETER);
