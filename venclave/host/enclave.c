@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "enclave.h"
+#include <assert.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>

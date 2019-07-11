@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <assert.h>
 #include <openenclave/bits/safemath.h>
 #include <openenclave/edger8r/common.h>
 #include <openenclave/host.h>
@@ -104,17 +105,14 @@ done:
 
     if (!__ve_vproxyhost_path)
     {
-        fprintf(stderr, "*** failed to locate oevproxyhost program.");
-        exit(1);
+        assert("failed to locate oevproxyhost" == NULL);
+        abort();
     }
 
     if (strlen(__ve_vproxyhost_path) >= OE_PATH_MAX)
     {
-        fprintf(
-            stderr,
-            "*** oevproxyhost path too long: %s\n",
-            __ve_vproxyhost_path);
-        exit(1);
+        assert("oevproxyhost path too long" == NULL);
+        abort();
     }
 
     return ret;
@@ -134,8 +132,8 @@ static void _create_enclave_once(void)
 
     if (_check_oevproxyenc(__ve_vproxyhost_path) != 0)
     {
-        fprintf(stderr, "*** failed to locate oevproxyenc program.");
-        exit(1);
+        assert("cannot locate oevproxyenc" == NULL);
+        abort();
     }
 
     _create_enclave_once_okay = true;
@@ -424,6 +422,12 @@ static oe_result_t _handle_call_host_function(
     // Resolve which ocall table to use.
     if (args_ptr->table_id == OE_UINT64_MAX)
     {
+        if (!enclave)
+        {
+            assert("enclave is null" == NULL);
+            abort();
+        }
+
         ocall_table.ocalls = enclave->ocall_table;
         ocall_table.num_ocalls = enclave->ocall_table_size;
     }
