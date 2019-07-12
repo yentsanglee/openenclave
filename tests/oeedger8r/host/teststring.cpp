@@ -243,13 +243,17 @@ void test_string_edl_ecalls(oe_enclave_t* enclave)
     // Restore value.
     sprintf(str, "%s", str_value);
 
+#if !defined(OE_BUILD_VENCLAVE)
     // char* user check.
     OE_TEST(ecall_string_fun5(enclave, str) == OE_OK);
     OE_TEST(strcmp(str, "Hello") == 0);
+#endif
 
+#if !defined(OE_BUILD_VENCLAVE)
     // char* user check.
     OE_TEST(ecall_string_fun6(enclave, str) == OE_OK);
     OE_TEST(strcmp(str, "Hello") == 0);
+#endif
 
     // Multiple string params. One null.
     OE_TEST(ecall_string_fun7(enclave, str, NULL) == OE_OK);
@@ -401,13 +405,17 @@ void test_wstring_edl_ecalls(oe_enclave_t* enclave)
     // Restore value.
     swprintf(str, 50, L"%S", str_value);
 
+#if !defined(OE_BUILD_VENCLAVE)
     // wchar_t* user check.
     OE_TEST(ecall_wstring_fun5(enclave, str) == OE_OK);
     OE_TEST(wcscmp(str, L"Hello") == 0);
+#endif
 
+#if !defined(OE_BUILD_VENCLAVE)
     // wchar_t* user check.
     OE_TEST(ecall_wstring_fun6(enclave, str) == OE_OK);
     OE_TEST(wcscmp(str, L"Hello") == 0);
+#endif
 
     // Multiple wstring params. One null.
     OE_TEST(ecall_wstring_fun7(enclave, str, NULL) == OE_OK);

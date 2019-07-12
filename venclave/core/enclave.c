@@ -222,6 +222,8 @@ static void _handle_thread_wake_wait_ocall(uint64_t arg_in)
 
     _handle_thread_wake_ocall((uint64_t)args->waiter_tcs);
     _handle_thread_wait_ocall((uint64_t)args->self_tcs);
+
+    /* ATTN: who frees args ? */
 }
 
 oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)

@@ -96,9 +96,11 @@ static void test_ocall_pointer_fun(F ocall_pointer_fun)
             OE_TEST(p9[i] == (T)i + 1);
     }
 
+#if !defined(OE_BUILD_VENCLAVE)
     // p10 has not been changed.
     for (size_t i = 0; i < 16; ++i)
         OE_TEST(p10[i] == (T)(i + 1));
+#endif
 
     // p10 is returned.
     OE_TEST(ret == p10);
@@ -331,12 +333,14 @@ static T* ecall_pointer_fun_impl(
         }
     }
 
+#if !defined(OE_BUILD_VENCLAVE)
     // user-check
     if (p10)
     {
         OE_TEST(oe_is_outside_enclave(p10, sizeof(T) * 16));
         reverse(p10, 16);
     }
+#endif
 
     {
         // in

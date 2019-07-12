@@ -44,12 +44,14 @@ static void test_ocall_array_fun(F ocall_array_fun)
         T exp[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
         OE_TEST(array_compare(exp, (T*)a3) == 0);
     }
+#if !defined(OE_BUILD_VENCLAVE)
     {
         // a4 cannot be modified by host.
         // expected value is original value.
         T exp[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
         OE_TEST(array_compare(exp, (T*)a4) == 0);
     }
+#endif
 
     // Call with nulls.
     OE_TEST(ocall_array_fun(NULL, NULL, NULL, NULL) == OE_OK);
@@ -130,12 +132,16 @@ static void ecall_array_fun_impl(T a1[2], T a2[2][2], T a3[3][3], T a4[4][4])
         }
     }
 
+#if defined(OE_BUILD_VENCLAVE)
+    OE_UNUSED(a4);
+#else
     // user-check
     if (a4)
     {
         OE_TEST(!oe_is_within_enclave(a4, sizeof(T) * 4 * 4));
         reverse((T*)a4, 16);
     }
+#endif
 }
 
 void ecall_array_char(char a1[2], char a2[2][2], char a3[3][3], char a4[4][4])

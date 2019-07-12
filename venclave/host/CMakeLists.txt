@@ -55,6 +55,9 @@ target_include_directories(oevhost PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_BINARY_DIR}/host)
 
+target_compile_definitions(oevhost
+    PUBLIC OE_BUILD_VENCLAVE)
+
 install(TARGETS oevhost EXPORT openenclave-targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/openenclave/host)
 

@@ -23,7 +23,9 @@ void deepcopy_value(ShallowStruct s, uint64_t* ptr)
     OE_TEST(s.count == 7);
     OE_TEST(s.size == 64);
     OE_TEST(s.ptr == ptr);
+#if !defined(OE_BUILD_VENCLAVE)
     OE_TEST(oe_is_outside_enclave(s.ptr, sizeof(uint64_t)));
+#endif
 }
 
 // Assert that the struct is shallow-copied (even though it is passed
@@ -34,7 +36,9 @@ void deepcopy_shallow(ShallowStruct* s, uint64_t* ptr)
     OE_TEST(s->count == 7);
     OE_TEST(s->size == 64);
     OE_TEST(s->ptr == ptr);
+#if !defined(OE_BUILD_VENCLAVE)
     OE_TEST(oe_is_outside_enclave(s->ptr, sizeof(uint64_t)));
+#endif
 }
 
 // Assert that the struct is deep-copied such that `s->ptr` has a copy
@@ -169,7 +173,9 @@ void deepcopy_nested(NestedStruct* n)
     for (int i = 0; i < 4; ++i)
         OE_TEST(n->array_of_int[i] == i);
 
+#if !defined(OE_BUILD_VENCLAVE)
     OE_TEST(oe_is_outside_enclave(n->shallow_struct, sizeof(ShallowStruct)));
+#endif
 
     OE_TEST(oe_is_within_enclave(n->array_of_struct, 3 * sizeof(CountStruct)));
     for (size_t i = 0; i < 3; ++i)

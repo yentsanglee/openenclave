@@ -3,6 +3,8 @@
 
     AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
+    (A) Consider running host threads within host-heap stack (use clone).
+
     (A) Implement graceful enclave abort.
 
     (A) tests/memory: oe_is_outside_enclave() can never work on all host memory.

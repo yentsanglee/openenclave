@@ -31,11 +31,15 @@ void test_string_edl_ocalls()
     // Restore value.
     sprintf(str, "%s", str_value);
 
+#if !defined(OE_BUILD_VENCLAVE)
     // char* user check.
     OE_TEST(ocall_string_fun5(str) == OE_OK);
+#endif
 
+#if !defined(OE_BUILD_VENCLAVE)
     // char* user check.
     OE_TEST(ocall_string_fun6(str) == OE_OK);
+#endif
 
     // Multiple string params. One null.
     OE_TEST(ocall_string_fun7(str, NULL) == OE_OK);
@@ -177,11 +181,15 @@ void test_wstring_edl_ocalls()
     // Restore value.
     swprintf(str, 50, L"%S", str_value);
 
+#if !defined(OE_BUILD_VENCLAVE)
     // char* user check.
     OE_TEST(ocall_wstring_fun5(str) == OE_OK);
+#endif
 
+#if !defined(OE_BUILD_VENCLAVE)
     // char* user check.
     OE_TEST(ocall_wstring_fun6(str) == OE_OK);
+#endif
 
     // Multiple string params. One null.
     OE_TEST(ocall_wstring_fun7(str, NULL) == OE_OK);

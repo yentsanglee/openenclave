@@ -96,9 +96,11 @@ static void test_ecall_pointer_fun(oe_enclave_t* enclave, F ecall_pointer_fun)
             OE_TEST(p9[i] == (T)i + 1);
     }
 
+#if !defined(OE_BUILD_VENCLAVE)
     // p10 has been reversed.
     for (size_t i = 0; i < 16; ++i)
         OE_TEST(p10[i] == (T)(16 - i));
+#endif
 
     // p10 is returned.
     OE_TEST(ret == p10);
