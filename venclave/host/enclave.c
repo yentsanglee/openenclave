@@ -4,6 +4,7 @@
 #include "enclave.h"
 #include <assert.h>
 #include <errno.h>
+#include <openenclave/internal/raise.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -551,7 +552,7 @@ static void _release_thread(ve_enclave_t* enclave, thread_t* thread)
     }
 }
 
-int ve_enclave_call(
+oe_result_t ve_enclave_call(
     ve_enclave_t* enclave,
     ve_func_t func,
     uint64_t* retval,
@@ -562,18 +563,18 @@ int ve_enclave_call(
     uint64_t arg5,
     uint64_t arg6)
 {
-    int ret = -1;
+    oe_result_t result = OE_UNEXPECTED;
     int sock = -1;
     thread_t* thread = NULL;
 
     if (!enclave || func == VE_FUNC_RET || func == VE_FUNC_ERR)
-        goto done;
+        OE_RAISE(OE_INVALID_PARAMETER);
 
     if (!(thread = _assign_thread(enclave)))
-        goto done;
+        OE_RAISE(OE_OUT_OF_THREADS);
 
     if ((sock = thread->sock) < 0)
-        goto done;
+        OE_RAISE(OE_FAILURE);
 
     if (ve_call(
             sock,
@@ -588,14 +589,14 @@ int ve_enclave_call(
             ve_call_handler,
             enclave) != 0)
     {
-        goto done;
+        OE_RAISE(OE_FAILURE);
     }
 
-    ret = 0;
+    result = OE_OK;
 
 done:
 
     _release_thread(enclave, thread);
 
-    return ret;
+    return result;
 }

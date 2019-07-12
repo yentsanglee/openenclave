@@ -32,7 +32,7 @@ ve_enclave_t* ve_enclave_cast(void* ptr);
 int ve_enclave_get_settings(ve_enclave_t* enclave, ve_enclave_settings_t* buf);
 
 /* Assign thread and call into the enclave. */
-int ve_enclave_call(
+oe_result_t ve_enclave_call(
     ve_enclave_t* enclave,
     ve_func_t func,
     uint64_t* retval,
@@ -43,15 +43,13 @@ int ve_enclave_call(
     uint64_t arg5,
     uint64_t arg6);
 
-OE_INLINE int ve_enclave_call0(
-    ve_enclave_t* enclave,
-    ve_func_t func,
-    uint64_t* retval)
+OE_INLINE oe_result_t
+ve_enclave_call0(ve_enclave_t* enclave, ve_func_t func, uint64_t* retval)
 {
     return ve_enclave_call(enclave, func, retval, 0, 0, 0, 0, 0, 0);
 }
 
-OE_INLINE int ve_enclave_call1(
+OE_INLINE oe_result_t ve_enclave_call1(
     ve_enclave_t* enclave,
     ve_func_t func,
     uint64_t* retval,
@@ -60,7 +58,7 @@ OE_INLINE int ve_enclave_call1(
     return ve_enclave_call(enclave, func, retval, arg1, 0, 0, 0, 0, 0);
 }
 
-OE_INLINE int ve_enclave_call2(
+OE_INLINE oe_result_t ve_enclave_call2(
     ve_enclave_t* enclave,
     ve_func_t func,
     uint64_t* retval,
@@ -70,7 +68,7 @@ OE_INLINE int ve_enclave_call2(
     return ve_enclave_call(enclave, func, retval, arg1, arg2, 0, 0, 0, 0);
 }
 
-OE_INLINE int ve_enclave_call3(
+OE_INLINE oe_result_t ve_enclave_call3(
     ve_enclave_t* enclave,
     ve_func_t func,
     uint64_t* retval,
@@ -81,7 +79,7 @@ OE_INLINE int ve_enclave_call3(
     return ve_enclave_call(enclave, func, retval, arg1, arg2, arg3, 0, 0, 0);
 }
 
-OE_INLINE int ve_enclave_call4(
+OE_INLINE oe_result_t ve_enclave_call4(
     ve_enclave_t* enclave,
     ve_func_t func,
     uint64_t* retval,
@@ -93,7 +91,7 @@ OE_INLINE int ve_enclave_call4(
     return ve_enclave_call(enclave, func, retval, arg1, arg2, arg3, arg4, 0, 0);
 }
 
-OE_INLINE int ve_enclave_call5(
+OE_INLINE oe_result_t ve_enclave_call5(
     ve_enclave_t* enclave,
     ve_func_t func,
     uint64_t* retval,
@@ -107,7 +105,7 @@ OE_INLINE int ve_enclave_call5(
         enclave, func, retval, arg1, arg2, arg3, arg4, arg5, 0);
 }
 
-OE_INLINE int ve_enclave_call6(
+OE_INLINE oe_result_t ve_enclave_call6(
     ve_enclave_t* enclave,
     ve_func_t func,
     uint64_t* retval,

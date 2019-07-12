@@ -12,7 +12,6 @@
 #include <cstring>
 #include <thread>
 #include <vector>
-#include "../../../host/sgx/enclave.h"
 #include "thread_u.h"
 
 const size_t NUM_THREADS = 8;
@@ -153,7 +152,11 @@ void test_thread_wake_wait(oe_enclave_t* enclave)
 
 void* lock_and_unlock_thread1(oe_enclave_t* enclave)
 {
+#if defined(OE_BUILD_VENCLAVE)
+    const size_t ITERS = 200;
+#else
     const size_t ITERS = 20000;
+#endif
 
     for (size_t i = 0; i < ITERS; ++i)
     {
@@ -170,7 +173,11 @@ void* lock_and_unlock_thread1(oe_enclave_t* enclave)
 
 void* lock_and_unlock_thread2(oe_enclave_t* enclave)
 {
+#if defined(OE_BUILD_VENCLAVE)
+    const size_t ITERS = 200;
+#else
     const size_t ITERS = 20000;
+#endif
 
     for (size_t i = 0; i < ITERS; ++i)
     {
@@ -243,10 +250,10 @@ void test_tcs_exhaustion(oe_enclave_t* enclave)
 {
     std::vector<std::thread> threads;
     // Set the test_tcs_count to a value greater than the enclave TCSCount
-    const size_t test_tcs_req_count = enclave->num_bindings * 2;
+    const size_t test_tcs_req_count = TCS_COUNT * 2;
     printf(
-        "test_tcs_exhaustion - Number of TCS bindings in enclave=%zu\n",
-        enclave->num_bindings);
+        "test_tcs_exhaustion - Number of TCS bindings in enclave=%u\n",
+        TCS_COUNT);
 
     for (size_t i = 0; i < test_tcs_req_count; i++)
     {
@@ -278,7 +285,7 @@ void test_tcs_exhaustion(oe_enclave_t* enclave)
     OE_TEST(
         tcs_used_thread_count + g_tcs_out_thread_count == test_tcs_req_count);
     // Sanity test that we are not reusing the bindings
-    OE_TEST(tcs_used_thread_count <= enclave->num_bindings);
+    OE_TEST(tcs_used_thread_count <= TCS_COUNT);
 }
 
 size_t host_tcs_out_thread_count()
