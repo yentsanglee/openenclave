@@ -137,7 +137,11 @@ void test_thread_wake_wait_cxx(oe_enclave_t* enclave)
 
 void lock_and_unlock_cxx_thread1(oe_enclave_t* enclave)
 {
+#if defined(OE_BUILD_VENCLAVE)
+    const size_t ITERS = 500;
+#else
     const size_t ITERS = 20000;
+#endif
 
     for (size_t i = 0; i < ITERS; ++i)
     {
@@ -152,7 +156,11 @@ void lock_and_unlock_cxx_thread1(oe_enclave_t* enclave)
 
 void lock_and_unlock_cxx_thread2(oe_enclave_t* enclave)
 {
+#if defined(OE_BUILD_VENCLAVE)
+    const size_t ITERS = 500;
+#else
     const size_t ITERS = 20000;
+#endif
 
     for (size_t i = 0; i < ITERS; ++i)
     {
