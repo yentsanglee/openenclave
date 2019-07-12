@@ -23,7 +23,16 @@ int ve_thread_set_retval(int retval);
 
 volatile int* ve_thread_get_futex_addr(ve_thread_t thread);
 
-/* Return pointer to the the two extra pages that follow the thread struct. */
+/* Return pointer to the two extra pages that follow the thread struct. */
 uint8_t* ve_thread_get_extra(ve_thread_t thread);
+
+/* Reinitialize the thread's TLS to its original values. */
+int ve_thread_reinitialize_tls(void);
+
+/* Set the socket for the current thread. */
+void ve_thread_set_sock(int sock);
+
+/* Get the socket for the current thread. */
+int ve_thread_get_sock(void);
 
 #endif /* _VE_ENCLAVE_THREAD_H */

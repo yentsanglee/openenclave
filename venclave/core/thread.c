@@ -6,6 +6,7 @@
 #include "futex.h"
 #include "hexdump.h"
 #include "malloc.h"
+#include "panic.h"
 #include "print.h"
 #include "process.h"
 #include "signal.h"
@@ -43,7 +44,9 @@ struct _ve_thread
     volatile int ctid;
     int retval;
     int futex_addr;
-    uint8_t padding[3992];
+    int sock;
+    int pad;
+    uint8_t padding[3984];
 
     /* Leave extra space for the thread-data struct and the tsd page. */
     uint8_t extra[2 * OE_PAGE_SIZE];
@@ -69,6 +72,10 @@ ve_thread_t ve_thread_self(void)
     struct _ve_thread* thread = NULL;
     const long ARCH_GET_FS = 0x1003;
     ve_syscall2(VE_SYS_arch_prctl, ARCH_GET_FS, (long)&thread);
+
+    if (!thread)
+        ve_panic("ve_thread_self() failed");
+
     return thread;
 }
 
@@ -79,8 +86,8 @@ static int _get_tls(
 {
     int ret = -1;
     const uint8_t* p;
-    size_t align = 0;
     ve_elf_info_t elf_info;
+    size_t align;
 
     if (tls)
         *tls = NULL;
@@ -92,6 +99,11 @@ static int _get_tls(
         goto done;
 
     ve_elf_get_info(&elf_info);
+
+#if 1
+    ve_printf("tdata: [%lu:%lu]\n", elf_info.tdata_size, elf_info.tdata_align);
+    ve_printf("tbss:  [%lu:%lu]\n", elf_info.tbss_size, elf_info.tbss_align);
+#endif
 
     if (elf_info.tdata_size == 0 && elf_info.tbss_size == 0)
         goto done;
@@ -107,8 +119,12 @@ static int _get_tls(
         goto done;
 
     p = (const uint8_t*)thread;
-    p -= _round_up_to_multiple(elf_info.tdata_size, align);
+
+    /* Skip tbss alignment when the size if only 4. */
+    // if (!(elf_info.tbss_size == 4 && elf_info.tbss_align == 4))
     p -= _round_up_to_multiple(elf_info.tbss_size, align);
+
+    p -= _round_up_to_multiple(elf_info.tdata_size, align);
 
     *tls = p;
     *tls_size = (size_t)((const uint8_t*)thread - p);
@@ -159,6 +175,10 @@ int ve_thread_create(
     /* Get the TLS data from the main thread. */
     if (_get_tls(main_thread, &main_tls, &main_tls_size) != 0)
         goto done;
+
+#if 1
+    ve_hexdump(main_tls, main_tls_size);
+#endif
 
     ve_elf_get_info(&elf_info);
 
@@ -326,4 +346,64 @@ volatile int* ve_thread_get_futex_addr(ve_thread_t thread)
 uint8_t* ve_thread_get_extra(ve_thread_t thread)
 {
     return thread ? thread->extra : NULL;
+}
+
+int ve_thread_reinitialize_tls(void)
+{
+    int ret = -1;
+    ve_thread_t thread;
+    ve_elf_info_t elf_info;
+
+    /* If not a thread. */
+    if ((ve_getpid() == ve_gettid()))
+        goto done;
+
+    /* Get the current thread. */
+    if (!(thread = ve_thread_self()))
+        goto done;
+
+    /* Fetch the ELF information structure. */
+    ve_elf_get_info(&elf_info);
+
+    /* Recopy the .tdata section onto the tls. */
+    {
+        uint8_t* baseaddr = ((uint8_t*)ve_elf_get_baseaddr());
+        void* tdata = baseaddr + elf_info.tdata_rva;
+        memcpy(thread->tls, tdata, elf_info.tdata_size);
+    }
+
+done:
+    return ret;
+}
+
+static int _main_sock;
+
+/* Set the socket for the current thread. */
+void ve_thread_set_sock(int sock)
+{
+    /* If this is the main thread. */
+    if (ve_getpid() == ve_gettid())
+    {
+        _main_sock = sock;
+    }
+    else
+    {
+        ve_thread_t thread = ve_thread_self();
+        thread->sock = sock;
+    }
+}
+
+/* Get the socket for the current thread. */
+int ve_thread_get_sock(void)
+{
+    /* If this is the main thread. */
+    if (ve_getpid() == ve_gettid())
+    {
+        return _main_sock;
+    }
+    else
+    {
+        ve_thread_t thread = ve_thread_self();
+        return thread->sock;
+    }
 }

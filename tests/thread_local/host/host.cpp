@@ -41,6 +41,7 @@ int main(int argc, const char* argv[])
         return 1;
     }
 
+#if !defined(OE_BUILD_VENCLAVE)
     if (argc == 3)
     {
         // Ensure that the enclave has thread-local relocations.
@@ -77,14 +78,20 @@ int main(int argc, const char* argv[])
 #endif
         free(relocs);
     }
+#endif /* defined(OE_BUILD_VENCLAVE) */
 
     const uint32_t flags = oe_get_create_flags();
     if ((result = oe_create_thread_local_enclave(
              argv[1], OE_ENCLAVE_TYPE_SGX, flags, NULL, 0, &enclave)) != OE_OK)
         oe_put_err("oe_create_enclave(): result=%u", result);
 
-    // Run it twice to make sure the enclave thread is correctly reinitialized.
+        // Run it twice to make sure the enclave thread is correctly
+        // reinitialized.
+#if defined(OE_BUILD_VENCLAVE)
+    for (int i = 0; i < 1; ++i)
+#else
     for (int i = 0; i < 2; ++i)
+#endif
     {
         const int num_threads = 16;
 

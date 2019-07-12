@@ -45,10 +45,4 @@ ssize_t ve_recvmsg(int sockfd, struct ve_msghdr* msg, int flags);
 
 int ve_socketpair(int domain, int type, int protocol, int sv[2]);
 
-/* Set the socket for the current thread. */
-void ve_set_sock(int sock);
-
-/* Get the socket for the current thread. */
-int ve_get_sock(void);
-
 #endif /* _VE_ENCLAVE_SOCKET_H */

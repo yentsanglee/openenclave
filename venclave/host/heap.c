@@ -2,7 +2,9 @@
 // Licensed under the MIT License.
 
 #include "heap.h"
+#include <errno.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/shm.h>
 
@@ -20,8 +22,14 @@ int ve_heap_create(ve_heap_t* heap, size_t heap_size)
     if (!heap || heap_size == 0)
         goto done;
 
+    errno = 0;
+
     if ((shmid = shmget(IPC_PRIVATE, heap_size, PERM)) == -1)
+    {
+        printf("HEAP_SIZE=%zu\n", heap_size);
+        printf("ERRNO=%d\n", errno);
         goto done;
+    }
 
     if ((shmaddr = shmat(shmid, NULL, 0)) == (void*)-1)
         goto done;

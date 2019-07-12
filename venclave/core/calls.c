@@ -7,7 +7,9 @@
 #include "malloc.h"
 #include "panic.h"
 #include "process.h"
+#include "socket.h"
 #include "string.h"
+#include "thread.h"
 #include "trace.h"
 
 static int _handle_call(int fd, ve_call_buf_t* buf, int* exit_status)

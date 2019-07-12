@@ -250,7 +250,7 @@ oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)
         case OE_OCALL_GET_QE_TARGET_INFO:
         case OE_OCALL_GET_QUOTE:
         {
-            const int sock = ve_get_sock();
+            const int sock = ve_thread_get_sock();
             uint64_t retval = 0;
 
             if (ve_call2(sock, VE_FUNC_OCALL, &retval, func, arg_in) != 0)
@@ -475,7 +475,7 @@ oe_result_t oe_call_host_function_by_table_id(
 
     /* Call the host function with these arguments. */
     {
-        int sock = ve_get_sock();
+        int sock = ve_thread_get_sock();
         ve_func_t func = VE_FUNC_CALL_HOST_FUNCTION;
         uint64_t retval = 0;
 

@@ -26,15 +26,20 @@
 
 #define MAX_THREADS 1024
 
-#define THREAD_VALUE 0xaabbccddeeff1122
+//#define THREAD_VALUE_INITIALIZER 0x0123456789ABCDEF
+#define THREAD_VALUE_INITIALIZER 0xAAAAAAAAAAAAAAAA
 
 #if 1
 #define USE_PROXY
 #endif
 
-__thread uint64_t _thread_value_tls = THREAD_VALUE;
-
-static __thread int _pid_tls;
+__thread uint64_t pattern1 = 0x1111111111111111;
+__thread uint64_t pattern2 = 0x2222222222222222;
+__thread uint64_t pattern3 = 0x3333333333333333;
+__thread uint64_t _thread_value_tls = THREAD_VALUE_INITIALIZER;
+__thread uint64_t pattern4 = 0x4444444444444444;
+__thread uint64_t pattern5 = 0x5555555555555555;
+__thread uint64_t pattern6 = 0x6666666666666666;
 
 static ve_thread_t _threads[MAX_THREADS];
 static size_t _nthreads;
@@ -62,12 +67,14 @@ static int _thread_func(void* arg)
     int exit_status;
 
     /* Set the socket for the current thread. */
-    ve_set_sock(sock);
+    ve_thread_set_sock(sock);
 
-    _pid_tls = ve_getpid();
+#if 1
+    ve_printf("_thread_value_tls=%lx\n", _thread_value_tls);
+#endif
 
-    if (_thread_value_tls != THREAD_VALUE)
-        ve_panic("_thread_value_tls != THREAD_VALUE");
+    if (_thread_value_tls != THREAD_VALUE_INITIALIZER)
+        ve_panic("_thread_value_tls != THREAD_VALUE_INITIALIZER");
 
     _thread_value_tls = 0;
 
@@ -87,7 +94,7 @@ int ve_handle_call_add_thread(int fd, ve_call_buf_t* buf, int* exit_status)
     buf->retval = (uint64_t)-1;
 
     /* Receive the socket descriptor from the host. */
-    if ((sock = ve_recv_fd(ve_get_sock())) < 0)
+    if ((sock = ve_recv_fd(ve_thread_get_sock())) < 0)
         goto done;
 
     /* Create the new thread. */
@@ -224,8 +231,6 @@ static int _handle_init(void)
     ve_init_arg_t arg;
     int retval = 0;
 
-    _pid_tls = ve_getpid();
-
     /* Receive request from standard input. */
     {
         if (ve_readn(VE_STDIN_FILENO, &arg, sizeof(arg)) != 0)
@@ -246,7 +251,7 @@ static int _handle_init(void)
         ve_panic("elf header check failed");
 
     /* Set the socket for the main thread. */
-    ve_set_sock(arg.sock);
+    ve_thread_set_sock(arg.sock);
 
     /* Attach the host's shared memory into the enclave address space. */
     if (ve_host_heap_attach(arg.shmid, arg.shmaddr, arg.shmsize) != 0)
@@ -266,7 +271,7 @@ static int _handle_init(void)
 #endif /* defined(USE_PROXY) */
 
     /* Send response back on the socket. */
-    if (ve_writen(ve_get_sock(), &retval, sizeof(retval)) != 0)
+    if (ve_writen(ve_thread_get_sock(), &retval, sizeof(retval)) != 0)
         goto done;
 
     ret = retval;
@@ -393,6 +398,10 @@ int oe_main(void)
 {
     int exit_status;
 
+    /* Self-test for TLS. */
+    if (_thread_value_tls != THREAD_VALUE_INITIALIZER)
+        ve_panic("encl: main: _thread_value_tls != THREAD_VALUE_INITIALIZER");
+
     /* Self-test for signals. */
     {
         ve_signal(VE_SIGUSR1, _sigusr1);
@@ -404,16 +413,12 @@ int oe_main(void)
         ve_signal(VE_SIGUSR1, VE_SIG_DFL);
     }
 
-#if 0
-    test_signals();
-#endif
-
     /* Wait here to be initialized and to receive the main socket. */
     if (_handle_init() != 0)
         ve_panic("ve_handle_init() failed");
 
     /* Handle messages over the main socket. */
-    if ((exit_status = ve_handle_calls(ve_get_sock())) == -1)
+    if ((exit_status = ve_handle_calls(ve_thread_get_sock())) == -1)
         ve_panic("ve_handle_calls() failed");
 
     /* Close the standard descriptors. */
@@ -424,16 +429,7 @@ int oe_main(void)
     return exit_status;
 }
 
-#if 0
-VE_WEAK
-int main(void)
-{
-    ve_panic("main() called");
-    return 1;
-}
-#else
 int main(void)
 {
     return oe_main();
 }
-#endif

@@ -40,7 +40,7 @@ OE_NO_RETURN void ve_abort(void)
 
     /* Ask the host to call abort(). */
     if (abort)
-        ve_call0(ve_get_sock(), VE_FUNC_ABORT, &retval);
+        ve_call0(ve_thread_get_sock(), VE_FUNC_ABORT, &retval);
 
     *((volatile int*)0) = 0;
     ve_exit(127);

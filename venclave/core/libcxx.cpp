@@ -96,13 +96,15 @@ extern "C" void __cxx_global_var_init(void)
 {
     const char MSG[] = "__cxx_global_var_init panic\n";
     _put(MSG, sizeof(MSG) - 1);
-    //_abort();
+    _abort();
     (void)_abort;
 }
 
 extern "C" void __cxa_thread_atexit(void)
 {
+#if 0
     const char MSG[] = "__cxa_thread_atexit panic\n";
     _put(MSG, sizeof(MSG) - 1);
-    //_abort();
+    _abort();
+#endif
 }
