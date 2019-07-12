@@ -5,10 +5,14 @@
 #define _VE_HOST_ENCLAVE_H
 
 #include <openenclave/bits/defs.h>
+#include <openenclave/host.h>
+#include <pthread.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "calls.h"
 #include "heap.h"
+
+#define MAX_THREADS 1024
 
 typedef struct _ve_enclave ve_enclave_t;
 
@@ -18,6 +22,12 @@ int ve_enclave_create(
     ve_enclave_t** enclave_out);
 
 int ve_enclave_terminate(ve_enclave_t* enclave);
+
+void ve_enclave_set_data(ve_enclave_t* enclave, void* data);
+
+void* ve_enclave_get_data(ve_enclave_t* enclave);
+
+ve_enclave_t* ve_enclave_cast(void* ptr);
 
 int ve_enclave_get_settings(ve_enclave_t* enclave, ve_enclave_settings_t* buf);
 

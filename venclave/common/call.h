@@ -100,6 +100,8 @@ typedef struct _ve_init_arg
 
 const char* ve_func_name(ve_func_t func);
 
+typedef int (*ve_call_handler_t)(void* handler_arg, int fd, ve_call_buf_t* buf);
+
 int ve_call_send(
     int fd,
     ve_func_t func,
@@ -110,72 +112,11 @@ int ve_call_send(
     uint64_t arg5,
     uint64_t arg6);
 
-OE_INLINE int ve_call_send0(int fd, ve_func_t func)
-{
-    return ve_call_send(fd, func, 0, 0, 0, 0, 0, 0);
-}
-
-OE_INLINE int ve_call_send1(int fd, ve_func_t func, uint64_t arg1)
-{
-    return ve_call_send(fd, func, arg1, 0, 0, 0, 0, 0);
-}
-
-OE_INLINE int ve_call_send2(
+int ve_call_recv(
     int fd,
-    ve_func_t func,
-    uint64_t arg1,
-    uint64_t arg2)
-{
-    return ve_call_send(fd, func, arg1, arg2, 0, 0, 0, 0);
-}
-
-OE_INLINE int ve_call_send3(
-    int fd,
-    ve_func_t func,
-    uint64_t arg1,
-    uint64_t arg2,
-    uint64_t arg3)
-{
-    return ve_call_send(fd, func, arg1, arg2, arg3, 0, 0, 0);
-}
-
-OE_INLINE int ve_call_send4(
-    int fd,
-    ve_func_t func,
-    uint64_t arg1,
-    uint64_t arg2,
-    uint64_t arg3,
-    uint64_t arg4)
-{
-    return ve_call_send(fd, func, arg1, arg2, arg3, arg4, 0, 0);
-}
-
-OE_INLINE int ve_call_send5(
-    int fd,
-    ve_func_t func,
-    uint64_t arg1,
-    uint64_t arg2,
-    uint64_t arg3,
-    uint64_t arg4,
-    uint64_t arg5)
-{
-    return ve_call_send(fd, func, arg1, arg2, arg3, arg4, arg5, 0);
-}
-
-OE_INLINE int ve_call_send6(
-    int fd,
-    ve_func_t func,
-    uint64_t arg1,
-    uint64_t arg2,
-    uint64_t arg3,
-    uint64_t arg4,
-    uint64_t arg5,
-    uint64_t arg6)
-{
-    return ve_call_send(fd, func, arg1, arg2, arg3, arg4, arg5, arg6);
-}
-
-int ve_call_recv(int fd, uint64_t* retval);
+    uint64_t* retval,
+    ve_call_handler_t handler,
+    void* handler_arg);
 
 int ve_call(
     int fd,
@@ -186,16 +127,18 @@ int ve_call(
     uint64_t arg3,
     uint64_t arg4,
     uint64_t arg5,
-    uint64_t arg6);
+    uint64_t arg6,
+    ve_call_handler_t handler,
+    void* handler_arg);
 
 OE_INLINE int ve_call0(int fd, ve_func_t func, uint64_t* retval)
 {
-    return ve_call(fd, func, retval, 0, 0, 0, 0, 0, 0);
+    return ve_call(fd, func, retval, 0, 0, 0, 0, 0, 0, NULL, NULL);
 }
 
 OE_INLINE int ve_call1(int fd, ve_func_t func, uint64_t* retval, uint64_t arg1)
 {
-    return ve_call(fd, func, retval, arg1, 0, 0, 0, 0, 0);
+    return ve_call(fd, func, retval, arg1, 0, 0, 0, 0, 0, NULL, NULL);
 }
 
 OE_INLINE int ve_call2(
@@ -205,7 +148,7 @@ OE_INLINE int ve_call2(
     uint64_t arg1,
     uint64_t arg2)
 {
-    return ve_call(fd, func, retval, arg1, arg2, 0, 0, 0, 0);
+    return ve_call(fd, func, retval, arg1, arg2, 0, 0, 0, 0, NULL, NULL);
 }
 
 OE_INLINE int ve_call3(
@@ -216,7 +159,7 @@ OE_INLINE int ve_call3(
     uint64_t arg2,
     uint64_t arg3)
 {
-    return ve_call(fd, func, retval, arg1, arg2, arg3, 0, 0, 0);
+    return ve_call(fd, func, retval, arg1, arg2, arg3, 0, 0, 0, NULL, NULL);
 }
 
 OE_INLINE int ve_call4(
@@ -228,7 +171,7 @@ OE_INLINE int ve_call4(
     uint64_t arg3,
     uint64_t arg4)
 {
-    return ve_call(fd, func, retval, arg1, arg2, arg3, arg4, 0, 0);
+    return ve_call(fd, func, retval, arg1, arg2, arg3, arg4, 0, 0, NULL, NULL);
 }
 
 OE_INLINE int ve_call5(
@@ -241,7 +184,8 @@ OE_INLINE int ve_call5(
     uint64_t arg4,
     uint64_t arg5)
 {
-    return ve_call(fd, func, retval, arg1, arg2, arg3, arg4, arg5, 0);
+    return ve_call(
+        fd, func, retval, arg1, arg2, arg3, arg4, arg5, 0, NULL, NULL);
 }
 
 OE_INLINE int ve_call6(
@@ -255,7 +199,8 @@ OE_INLINE int ve_call6(
     uint64_t arg5,
     uint64_t arg6)
 {
-    return ve_call(fd, func, retval, arg1, arg2, arg3, arg4, arg5, arg6);
+    return ve_call(
+        fd, func, retval, arg1, arg2, arg3, arg4, arg5, arg6, NULL, NULL);
 }
 
 #endif /* _VE_CALL_H */

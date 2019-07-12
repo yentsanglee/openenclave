@@ -254,7 +254,9 @@ oe_result_t oe_ocall(uint16_t func, uint64_t arg_in, uint64_t* arg_out)
             uint64_t retval = 0;
 
             if (ve_call2(sock, VE_FUNC_OCALL, &retval, func, arg_in) != 0)
+            {
                 OE_RAISE(OE_FAILURE);
+            }
 
             if (retval != 0)
                 OE_RAISE(OE_FAILURE);
@@ -478,7 +480,9 @@ oe_result_t oe_call_host_function_by_table_id(
         uint64_t retval = 0;
 
         if (ve_call1(sock, func, &retval, (uint64_t)args) != 0)
+        {
             OE_RAISE(OE_FAILURE);
+        }
 
         if (retval != 0)
             OE_RAISE(OE_FAILURE);

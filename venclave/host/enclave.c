@@ -18,9 +18,12 @@
 #include "heap.h"
 #include "hostmalloc.h"
 
-#define MAX_THREADS 1024
-
 #define VE_PAGE_SIZE 4096
+
+#define MAGIC 0xd77aba04
+
+extern const char* __ve_arg0;
+extern const char* __ve_vproxyhost_path;
 
 typedef struct _thread
 {
@@ -32,6 +35,7 @@ typedef struct _thread
 
 struct _ve_enclave
 {
+    uint32_t magic;
     int pid;
     int sock;
     int child_sock;
@@ -41,10 +45,26 @@ struct _ve_enclave
     thread_t threads[MAX_THREADS];
     size_t nthreads;
     pthread_spinlock_t lock;
+
+    void* data;
 };
 
-extern const char* __ve_arg0;
-extern const char* __ve_vproxyhost_path;
+void ve_enclave_set_data(ve_enclave_t* enclave, void* data)
+{
+    if (enclave)
+        enclave->data = data;
+}
+
+void* ve_enclave_get_data(ve_enclave_t* enclave)
+{
+    return enclave ? enclave->data : NULL;
+}
+
+ve_enclave_t* ve_enclave_cast(void* ptr)
+{
+    ve_enclave_t* enclave = (ve_enclave_t*)ptr;
+    return (enclave && enclave->magic == MAGIC) ? enclave : NULL;
+}
 
 static int _init_child(
     ve_enclave_t* enclave,
@@ -178,8 +198,21 @@ static int _terminate_enclave_process(ve_enclave_t* enclave)
         const int child_sock = enclave->threads[i].child_sock;
         uint64_t retval;
 
-        if (ve_call0(sock, VE_FUNC_TERMINATE_THREAD, &retval) != 0)
+        if (ve_call(
+                sock,
+                VE_FUNC_TERMINATE_THREAD,
+                &retval,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                ve_call_handler,
+                enclave) != 0)
+        {
             goto done;
+        }
 
         close(sock);
         close(child_sock);
@@ -191,8 +224,21 @@ static int _terminate_enclave_process(ve_enclave_t* enclave)
         const int child_sock = enclave->child_sock;
         uint64_t retval;
 
-        if (ve_call0(sock, VE_FUNC_TERMINATE, &retval) != 0)
+        if (ve_call(
+                sock,
+                VE_FUNC_TERMINATE,
+                &retval,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                ve_call_handler,
+                enclave) != 0)
+        {
             goto done;
+        }
 
         close(sock);
         close(child_sock);
@@ -222,8 +268,12 @@ static int _add_enclave_thread(
         goto done;
 
     /* Send the request. */
-    if (ve_call_send2(enclave->sock, VE_FUNC_ADD_THREAD, tcs, stack_size) != 0)
+    if (ve_call_send(
+            enclave->sock, VE_FUNC_ADD_THREAD, tcs, stack_size, 0, 0, 0, 0) !=
+        0)
+    {
         goto done;
+    }
 
     /* Send the fd to the enclave after send but before receive. */
     if (send_fd(enclave->sock, socks[1]) != 0)
@@ -233,7 +283,12 @@ static int _add_enclave_thread(
     {
         uint64_t retval;
 
-        if (ve_call_recv(enclave->sock, &retval) != 0 || retval != 0)
+        if (ve_call_recv(enclave->sock, &retval, ve_call_handler, enclave) != 0)
+        {
+            goto done;
+        }
+
+        if (retval != 0)
             goto done;
     }
 
@@ -294,8 +349,21 @@ static int _call_post_init(ve_enclave_t* enclave)
 
     sock = enclave->sock;
 
-    if (ve_call0(enclave->sock, VE_FUNC_POST_INIT, &retval) != 0)
+    if (ve_call(
+            enclave->sock,
+            VE_FUNC_POST_INIT,
+            &retval,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            ve_call_handler,
+            enclave) != 0)
+    {
         goto done;
+    }
 
     if (retval != 0)
         goto done;
@@ -330,6 +398,8 @@ int ve_enclave_create(
     if (!(enclave = calloc(1, sizeof(ve_enclave_t))))
         goto done;
 
+    enclave->magic = MAGIC;
+
     enclave->heap = heap;
 
     pthread_spin_init(&enclave->lock, PTHREAD_PROCESS_PRIVATE);
@@ -363,7 +433,11 @@ done:
 
     if (enclave)
     {
-        /* ATTN: cleanup enclave stuff */
+        enclave->magic = 0;
+        ;
+        free(enclave);
+
+        /* ATTN: terminate the enclave on error! */
     }
 
     return ret;
@@ -415,8 +489,21 @@ int ve_enclave_get_settings(ve_enclave_t* enclave, ve_enclave_settings_t* buf)
 
     sock = enclave->sock;
 
-    if (ve_call1(sock, VE_FUNC_GET_SETTINGS, &retval, (uint64_t)settings) != 0)
+    if (ve_call(
+            sock,
+            VE_FUNC_GET_SETTINGS,
+            &retval,
+            (uint64_t)settings,
+            0,
+            0,
+            0,
+            0,
+            0,
+            ve_call_handler,
+            enclave) != 0)
+    {
         goto done;
+    }
 
     if (retval != 0)
         goto done;
@@ -488,8 +575,21 @@ int ve_enclave_call(
     if ((sock = thread->sock) < 0)
         goto done;
 
-    if (ve_call(sock, func, retval, arg1, arg2, arg3, arg4, arg5, arg6) != 0)
+    if (ve_call(
+            sock,
+            func,
+            retval,
+            arg1,
+            arg2,
+            arg3,
+            arg4,
+            arg5,
+            arg6,
+            ve_call_handler,
+            enclave) != 0)
+    {
         goto done;
+    }
 
     ret = 0;
 

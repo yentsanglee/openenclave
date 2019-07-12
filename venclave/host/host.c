@@ -36,8 +36,6 @@ extern ve_heap_t __ve_heap;
 
 static bool _create_enclave_once_okay = false;
 
-static __thread oe_enclave_t* _enclave_tls;
-
 static ve_enclave_t* _cast_enclave(oe_enclave_t* enclave)
 {
     if (!enclave || enclave->magic != ENCLAVE_MAGIC)
@@ -201,6 +199,9 @@ oe_result_t oe_create_enclave(
         enclave->venclave = venclave;
     }
 
+    /* Set the enclave back pointer. */
+    ve_enclave_set_data(venclave, enclave);
+
     /* Initialize the encalve */
     {
         ve_enclave_t* ve = enclave->venclave;
@@ -314,15 +315,8 @@ oe_result_t oe_call_enclave_function_by_table_id(
         const ve_func_t func = VE_FUNC_CALL_ENCLAVE_FUNCTION;
         uint64_t retval = 0;
 
-        _enclave_tls = enclave;
-
         if (ve_enclave_call1(ve, func, &retval, (uint64_t)args) != 0)
-        {
-            _enclave_tls = NULL;
             OE_RAISE(OE_FAILURE);
-        }
-
-        _enclave_tls = NULL;
 
         OE_CHECK((oe_result_t)retval);
     }
@@ -484,12 +478,25 @@ done:
     return result;
 }
 
-int ve_handle_call_host_function(int fd, ve_call_buf_t* buf)
+int ve_handle_call_host_function(void* handler_arg, int fd, ve_call_buf_t* buf)
 {
+    int ret = -1;
+    ve_enclave_t* venclave = ve_enclave_cast(handler_arg);
+    oe_enclave_t* enclave = (oe_enclave_t*)ve_enclave_get_data(venclave);
+
     OE_UNUSED(fd);
 
-    buf->retval = (uint64_t)_handle_call_host_function(buf->arg1, _enclave_tls);
-    return 0;
+    assert(venclave);
+
+    if (!venclave)
+        goto done;
+
+    buf->retval = (uint64_t)_handle_call_host_function(buf->arg1, enclave);
+
+    ret = 0;
+
+done:
+    return ret;
 }
 
 void HandleGetQETargetInfo(uint64_t arg_in)
@@ -508,11 +515,12 @@ void HandleGetQuote(uint64_t arg_in)
     OE_UNUSED(arg_in);
 }
 
-int ve_handle_ocall(int fd, ve_call_buf_t* buf)
+int ve_handle_ocall(void* handler_arg, int fd, ve_call_buf_t* buf)
 {
     int ret = -1;
 
     OE_UNUSED(fd);
+    OE_UNUSED(handler_arg);
 
     switch ((oe_func_t)buf->arg1)
     {

@@ -87,6 +87,78 @@ done:
     return ret;
 }
 
+int ve_call_recv(
+    int fd,
+    uint64_t* retval,
+    ve_call_handler_t handler,
+    void* handler_arg)
+{
+    int ret = -1;
+
+    if (retval)
+        *retval = 0;
+
+    if (fd < 0)
+        goto done;
+
+    /* Receive response. */
+    for (;;)
+    {
+        ve_call_buf_t in;
+
+        if (ve_readn(fd, &in, sizeof(in)) != 0)
+            goto done;
+
+        switch (in.func)
+        {
+            case VE_FUNC_RET:
+            {
+                if (retval)
+                    *retval = in.retval;
+
+                ret = 0;
+                goto done;
+            }
+            case VE_FUNC_ERR:
+            {
+                goto done;
+            }
+            default:
+            {
+                if (handler)
+                {
+                    ve_call_buf_t out;
+
+                    ve_call_buf_clear(&out);
+
+                    if ((*handler)(handler_arg, fd, &in) == 0)
+                    {
+                        out.func = VE_FUNC_RET;
+                        out.retval = in.retval;
+                    }
+                    else
+                    {
+                        out.func = VE_FUNC_ERR;
+                    }
+
+                    if (ve_writen(fd, &out, sizeof(out)) != 0)
+                        goto done;
+
+                    /* Go back to waiting for return from original call. */
+                    continue;
+                }
+                else
+                {
+                    goto done;
+                }
+            }
+        }
+    }
+
+done:
+    return ret;
+}
+
 int ve_call(
     int fd,
     ve_func_t func,
@@ -96,14 +168,16 @@ int ve_call(
     uint64_t arg3,
     uint64_t arg4,
     uint64_t arg5,
-    uint64_t arg6)
+    uint64_t arg6,
+    ve_call_handler_t handler,
+    void* handler_arg)
 {
     int ret = -1;
 
     if (ve_call_send(fd, func, arg1, arg2, arg3, arg4, arg5, arg6) != 0)
         goto done;
 
-    if (ve_call_recv(fd, retval) != 0)
+    if (ve_call_recv(fd, retval, handler, handler_arg) != 0)
         goto done;
 
     ret = 0;
