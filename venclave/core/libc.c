@@ -30,9 +30,7 @@ void __libc_csu_fini(void)
     extern void (*__fini_array_end)(void);
 
     for (fn = &__fini_array_end - 1; fn >= &__fini_array_start; fn--)
-    {
         (*fn)();
-    }
 }
 
 void __libc_csu_init(void)

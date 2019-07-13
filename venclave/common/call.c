@@ -14,8 +14,6 @@ const char* ve_func_name(ve_func_t func)
             return "ERR";
         case VE_FUNC_INIT:
             return "INIT";
-        case VE_FUNC_POST_INIT:
-            return "POST_INIT";
         case VE_FUNC_ADD_THREAD:
             return "ADD_THREAD";
         case VE_FUNC_TERMINATE_THREAD:

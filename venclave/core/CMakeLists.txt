@@ -92,6 +92,7 @@ add_library(oevcore STATIC
     hostmalloc.c
     io.c
     lock.c
+    initfini.c
     main.c
     malloc.c
     memmove.c

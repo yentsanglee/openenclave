@@ -19,6 +19,7 @@
 #include "futex.h"
 #include "hexdump.h"
 #include "hostheap.h"
+#include "initfini.h"
 #include "io.h"
 #include "lock.h"
 #include "malloc.h"
@@ -415,10 +416,17 @@ done:
 
 int ve_handle_init_enclave(int fd, ve_call_buf_t* buf, int* exit_status)
 {
+    extern void __libc_csu_init(void);
+
     OE_UNUSED(fd);
     OE_UNUSED(exit_status);
 
+    /* Henceforth retrieved with oe_get_enclave(). */
     _enclave = (oe_enclave_t*)buf->arg1;
+
+    /* Invoke constructors, which may perform ocalls. */
+    ve_call_init_functions();
+
     buf->retval = 0;
 
     return 0;

@@ -8,6 +8,7 @@
 #include "elf.h"
 #include "hexdump.h"
 #include "hostheap.h"
+#include "initfini.h"
 #include "io.h"
 #include "malloc.h"
 #include "panic.h"
@@ -43,19 +44,6 @@ static size_t _nthreads;
 /* pid and socket for the child proxy process. */
 int __ve_proxy_pid;
 int __ve_proxy_sock;
-
-static bool _called_constructor;
-static bool _called_destructor;
-
-__attribute__((constructor)) static void constructor(void)
-{
-    _called_constructor = true;
-}
-
-__attribute__((destructor)) static void destructor(void)
-{
-    _called_destructor = true;
-}
 
 static int _thread_func(void* arg)
 {
@@ -276,20 +264,6 @@ done:
     return ret;
 }
 
-int ve_handle_post_init(int fd, ve_call_buf_t* buf, int* exit_status)
-{
-    extern void __libc_csu_init(void);
-
-    OE_UNUSED(fd);
-    OE_UNUSED(buf);
-    OE_UNUSED(exit_status);
-
-    /* Invoke constructors, which may perform ocalls. */
-    __libc_csu_init();
-
-    return 0;
-}
-
 static void _terminate_proxy(int pid, int sock)
 {
     int status = 0;
@@ -341,15 +315,8 @@ int ve_handle_call_terminate(int fd, ve_call_buf_t* buf, int* exit_status)
         oe_call_atexit_functions();
     }
 
-    /* Call any destructors. */
-    {
-        extern void __libc_csu_fini(void);
-        __libc_csu_fini();
-
-        /* Self-test for destructors. */
-        if (!_called_destructor)
-            ve_panic("_destructor() not called");
-    }
+    /* Call destructors. */
+    ve_call_fini_functions();
 
 #if defined(USE_PROXY)
 

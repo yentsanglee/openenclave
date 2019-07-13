@@ -16,10 +16,6 @@ static int _handle_call(int fd, ve_call_buf_t* buf, int* exit_status)
 {
     switch (buf->func)
     {
-        case VE_FUNC_POST_INIT:
-        {
-            return ve_handle_post_init(fd, buf, exit_status);
-        }
         case VE_FUNC_ADD_THREAD:
         {
             return ve_handle_call_add_thread(fd, buf, exit_status);

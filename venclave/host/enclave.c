@@ -342,40 +342,6 @@ done:
 
 extern int __ve_pid;
 
-static int _call_post_init(ve_enclave_t* enclave)
-{
-    int ret = -1;
-    uint64_t retval;
-    int sock;
-
-    sock = enclave->sock;
-
-    if (ve_call(
-            enclave->sock,
-            VE_FUNC_POST_INIT,
-            &retval,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            ve_call_handler,
-            enclave) != 0)
-    {
-        goto done;
-    }
-
-    if (retval != 0)
-        goto done;
-
-    ret = 0;
-
-done:
-
-    return ret;
-}
-
 int ve_enclave_create(
     const char* path,
     ve_heap_t* heap,
@@ -406,10 +372,6 @@ int ve_enclave_create(
     pthread_spin_init(&enclave->lock, PTHREAD_PROCESS_PRIVATE);
 
     if ((enclave->pid = _fork_exec_enclave(path, enclave, &elf_info)) == -1)
-        goto done;
-
-    /* Perform post-initialization (to invoke constructors). */
-    if (_call_post_init(enclave) != 0)
         goto done;
 
     /* Get the enclave settings. */

@@ -59,9 +59,9 @@ if (UNIX OR ADD_WINDOWS_ENCLAVE_TESTS OR USE_CLANGW)
         endif()
         add_subdirectory(echo)
         add_subdirectory(enclaveparam)
+add_subdirectory(getenclave)
         if(NOT VENCLAVE)
             # ATTN: need to set enclave instance before global constructors.
-            add_subdirectory(getenclave)
             add_subdirectory(hostcalls)
             add_subdirectory(libc)
             # ATTN: Need to call TSD destructors.
