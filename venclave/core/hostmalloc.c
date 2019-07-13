@@ -4,6 +4,7 @@
 #include <openenclave/enclave.h>
 #include "calls.h"
 #include "panic.h"
+#include "print.h"
 #include "socket.h"
 #include "string.h"
 #include "thread.h"

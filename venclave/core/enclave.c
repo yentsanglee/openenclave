@@ -797,3 +797,7 @@ void oe_enter(void)
 {
     ve_panic("oe_enter() called");
 }
+
+void oe_disable_debug_malloc_check(void)
+{
+}
