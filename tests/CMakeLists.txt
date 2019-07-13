@@ -117,9 +117,7 @@ if (OE_SGX AND UNIX)
        add_subdirectory(libunwind)
    endif()
    add_subdirectory(crypto)
-   if(NOT VENCLAVE)
-       add_subdirectory(crypto_crls_cert_chains)
-   endif()
+   add_subdirectory(crypto_crls_cert_chains)
 
    # Attestation supported only on Linux
    add_subdirectory(qeidentity)
