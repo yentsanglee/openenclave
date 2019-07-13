@@ -88,6 +88,8 @@ static int _get_tls(
     const uint8_t* p;
     ve_elf_info_t elf_info;
     size_t align;
+    ptrdiff_t off1 = -1;
+    ptrdiff_t off2 = -1;
 
     if (tls)
         *tls = NULL;
@@ -100,7 +102,7 @@ static int _get_tls(
 
     ve_elf_get_info(&elf_info);
 
-#if 1
+#if 0
     ve_printf("tdata: [%lu:%lu]\n", elf_info.tdata_size, elf_info.tdata_align);
     ve_printf("tbss:  [%lu:%lu]\n", elf_info.tbss_size, elf_info.tbss_align);
 #endif
@@ -120,11 +122,58 @@ static int _get_tls(
 
     p = (const uint8_t*)thread;
 
-    /* Skip tbss alignment when the size if only 4. */
-    // if (!(elf_info.tbss_size == 4 && elf_info.tbss_align == 4))
+    /* Estimate the start address of the main thread's TLS. */
     p -= _round_up_to_multiple(elf_info.tbss_size, align);
-
     p -= _round_up_to_multiple(elf_info.tdata_size, align);
+
+    /* The abolve calculation sometimes overshoots the start of the main
+     * thread's TLS. To resolve this, find the offset of __ve_magic_tls
+     * with the .tdata segment and within the main TLS. Then correct
+     * the pointer by the difference.
+     */
+
+    /* Find the offset of __ve_magic_tls within .tdata. */
+    {
+        const uint8_t* base = ((const uint8_t*)ve_elf_get_baseaddr());
+        const uint64_t* data = (const uint64_t*)(base + elf_info.tdata_rva);
+        size_t size = elf_info.tdata_size / sizeof(uint64_t);
+
+        for (size_t i = 0; i < size; i++)
+        {
+            if (data[i] == VE_MAGIC_TLS_INITIALIZER)
+            {
+                off1 = (const uint8_t*)&data[i] - (const uint8_t*)data;
+                break;
+            }
+        }
+
+        if (off1 == -1)
+            goto done;
+    }
+
+    /* Find the offset of __ve_magic_tls within the main TLS area. */
+    {
+        const uint64_t* data = (const uint64_t*)p;
+        size_t size = (size_t)((const uint8_t*)thread - p) / sizeof(uint64_t);
+
+        for (size_t i = 0; i < size; i++)
+        {
+            if (data[i] == VE_MAGIC_TLS_INITIALIZER)
+            {
+                off2 = (const uint8_t*)&data[i] - (const uint8_t*)data;
+                break;
+            }
+        }
+
+        if (off2 == -1)
+            goto done;
+    }
+
+    if (off2 < off1)
+        goto done;
+
+    /* Correct the pointer. */
+    p += (off2 - off1);
 
     *tls = p;
     *tls_size = (size_t)((const uint8_t*)thread - p);
@@ -176,7 +225,7 @@ int ve_thread_create(
     if (_get_tls(main_thread, &main_tls, &main_tls_size) != 0)
         goto done;
 
-#if 1
+#if 0
     ve_hexdump(main_tls, main_tls_size);
 #endif
 

@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "heap.h"
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -26,13 +27,15 @@ int ve_heap_create(ve_heap_t* heap, size_t heap_size)
 
     if ((shmid = shmget(IPC_PRIVATE, heap_size, PERM)) == -1)
     {
-        printf("HEAP_SIZE=%zu\n", heap_size);
-        printf("ERRNO=%d\n", errno);
+        assert("shmget failed" == NULL);
         goto done;
     }
 
     if ((shmaddr = shmat(shmid, NULL, 0)) == (void*)-1)
+    {
+        assert("shmat failed" == NULL);
         goto done;
+    }
 
     heap->shmid = shmid;
     heap->shmaddr = shmaddr;

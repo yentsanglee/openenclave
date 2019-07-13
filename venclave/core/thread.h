@@ -7,6 +7,8 @@
 #include "common.h"
 #include "lock.h"
 
+#define VE_MAGIC_TLS_INITIALIZER 0xad3c6c3491a64801
+
 typedef struct _ve_thread* ve_thread_t;
 
 ve_thread_t ve_thread_self(void);

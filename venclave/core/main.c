@@ -33,13 +33,9 @@
 #define USE_PROXY
 #endif
 
-__thread uint64_t pattern1 = 0x1111111111111111;
-__thread uint64_t pattern2 = 0x2222222222222222;
-__thread uint64_t pattern3 = 0x3333333333333333;
 __thread uint64_t _thread_value_tls = THREAD_VALUE_INITIALIZER;
-__thread uint64_t pattern4 = 0x4444444444444444;
-__thread uint64_t pattern5 = 0x5555555555555555;
-__thread uint64_t pattern6 = 0x6666666666666666;
+
+__thread uint64_t __ve_magic_tls = VE_MAGIC_TLS_INITIALIZER;
 
 static ve_thread_t _threads[MAX_THREADS];
 static size_t _nthreads;
