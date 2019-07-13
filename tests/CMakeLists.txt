@@ -63,7 +63,7 @@ if (UNIX OR ADD_WINDOWS_ENCLAVE_TESTS OR USE_CLANGW)
         if(NOT VENCLAVE)
             # ATTN: test_host_malloc() writes to host stack pointer.
             add_subdirectory(hostcalls)
-            # ATTN: need to set enclave instance before global constructors.
+            # ATTN: lots of failures.
             add_subdirectory(libc)
             # ATTN: Need to call TSD destructors.
             add_subdirectory(ocall)
