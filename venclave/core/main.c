@@ -65,7 +65,7 @@ static int _thread_func(void* arg)
     /* Set the socket for the current thread. */
     ve_thread_set_sock(sock);
 
-#if 1
+#if 0
     ve_printf("_thread_value_tls=%lx\n", _thread_value_tls);
 #endif
 
