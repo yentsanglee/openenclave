@@ -107,6 +107,10 @@ int main(int argc, const char* argv[])
     if ((result = test_get_key(enclave)) != OE_OK)
         err("test_get_key() failed: %s\n", oe_result_str(result));
 
+    const char str[] = "hello";
+
+    if ((result = test_host_stack_memory(enclave, str)) != OE_OK)
+        err("test_get_key() failed: %s\n", oe_result_str(result));
 #if 0
     {
         int retval;

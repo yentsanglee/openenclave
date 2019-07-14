@@ -127,3 +127,5 @@ if (OE_SGX AND UNIX)
        add_subdirectory(tls_e2e)
    endif()
 endif()
+
+#add_subdirectory(ecall_ocall)

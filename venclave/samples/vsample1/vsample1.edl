@@ -11,6 +11,8 @@ enclave {
         public void test_files([string, in] const char* path);
 
         public void test_get_key();
+
+        public void test_host_stack_memory([user_check] const char* str);
     };
 
     untrusted {

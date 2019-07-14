@@ -1,7 +1,13 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#define _GNU_SOURCE
+
 #include <assert.h>
+#include <dlfcn.h>
+#include <fcntl.h>
+#include <linux/futex.h>
+#include <malloc.h>
 #include <openenclave/bits/safemath.h>
 #include <openenclave/edger8r/common.h>
 #include <openenclave/host.h>
@@ -11,6 +17,11 @@
 #include <openenclave/internal/report.h>
 #include <openenclave/internal/utils.h>
 #include <pthread.h>
+#include <sched.h>
+#include <signal.h>
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include "enclave.h"
 #include "heap.h"
@@ -31,8 +42,6 @@ struct _oe_enclave
     size_t ocall_table_size;
     ve_enclave_t* venclave;
 };
-
-extern ve_heap_t __ve_heap;
 
 static bool _create_enclave_once_okay = false;
 
@@ -118,9 +127,13 @@ done:
 
 static void _create_enclave_once(void)
 {
+#if !defined(VE_USE_SHARED_MEMORY_STACK)
+
     /* Create the host heap to be shared with enclaves. */
     if (ve_heap_create(&__ve_heap, VE_HEAP_SIZE) != 0)
         goto done;
+
+#endif /* !defined(VE_USE_SHARED_MEMORY_STACK) */
 
     /* Register the syscall OCALLs. */
     oe_register_syscall_ocall_function_table();
@@ -493,6 +506,7 @@ int ve_handle_call_host_function(void* handler_arg, int fd, ve_call_buf_t* buf)
     ret = 0;
 
 done:
+
     return ret;
 }
 
@@ -587,3 +601,131 @@ uint32_t oe_get_create_flags(void)
 {
     return OE_ENCLAVE_FLAG_DEBUG;
 }
+
+/*
+**==============================================================================
+**
+** Wrap the main() function, running it in a new thread with a shared-memory
+** stack. This allows the enclave to access host stack memory.
+**
+**==============================================================================
+*/
+
+#if defined(VE_USE_SHARED_MEMORY_STACK)
+
+extern int main(int argc, char* argv[], char* envp[]);
+
+typedef struct _main_arg
+{
+    int argc;
+    char** argv;
+    char** envp;
+} main_arg_t;
+
+static int _main_thread(void* arg_)
+{
+    main_arg_t* arg = (main_arg_t*)arg_;
+    return main(arg->argc, arg->argv, arg->envp);
+}
+
+/* This function wraps and runs main() in a new thread and stack. */
+static int _main(int argc, char** argv, char** envp)
+{
+    void* stack = NULL;
+    int rval;
+
+    /* Create the host stack (shared with enclaves). */
+    if (ve_heap_create(&__ve_heap, VE_HEAP_SIZE) != 0)
+    {
+        fprintf(
+            stderr, "%s(%u): ve_heap_create() failed\n", __FILE__, __LINE__);
+        fflush(stderr);
+        abort();
+    }
+
+    /* Allocate a stack for the new main thread from the shared heap. */
+    {
+        if (!(stack = ve_host_memalign(4096, VE_STACK_SIZE)))
+        {
+            fprintf(
+                stderr,
+                "%s(%u): ve_host_memalign() failed\n",
+                __FILE__,
+                __LINE__);
+            fflush(stderr);
+            abort();
+        }
+
+        memset(stack, 0, VE_STACK_SIZE);
+    }
+
+    /* Clone the main thread, creating a new main thread. */
+    {
+        int flags = 0;
+        uint8_t* child_stack = (uint8_t*)stack + VE_STACK_SIZE;
+        main_arg_t arg;
+        int status;
+
+        flags |= CLONE_VM;
+        flags |= CLONE_FS;
+        flags |= CLONE_FILES;
+        flags |= CLONE_SIGHAND;
+        flags |= CLONE_SYSVSEM;
+        flags |= CLONE_DETACHED;
+        flags |= SIGCHLD;
+
+        arg.argc = argc;
+        arg.argv = argv;
+        arg.envp = envp;
+
+        if ((rval = clone(
+                 _main_thread, child_stack, flags, &arg, NULL, NULL, NULL)) ==
+            -1)
+        {
+            fprintf(stderr, "%s(%u): clone() failed\n", __FILE__, __LINE__);
+            fflush(stderr);
+            abort();
+        }
+
+        if (rval < 0)
+        {
+            fprintf(stderr, "%s(%u): bad rval\n", __FILE__, __LINE__);
+            fflush(stderr);
+            abort();
+        }
+
+        /* Wait for new main thrad to exit. */
+        if (waitpid(rval, &status, 0) != rval)
+        {
+            fprintf(stderr, "%s(%u): waitpid() failed\n", __FILE__, __LINE__);
+            fflush(stderr);
+            abort();
+        }
+
+        return WEXITSTATUS(status);
+    }
+}
+
+int __libc_start_main(
+    int (*main)(int, char**, char**),
+    int argc,
+    char** argv,
+    int (*init)(int, char**, char**),
+    void (*fini)(void),
+    void (*rtld_fini)(void),
+    void* stack_end)
+{
+    typeof(&__libc_start_main) next = dlsym(RTLD_NEXT, "__libc_start_main");
+
+    (void)main;
+
+    if (!next)
+    {
+        fprintf(stderr, "%s(%u): dlsym() failed\n", __FILE__, __LINE__);
+        abort();
+    }
+
+    return next(_main, argc, argv, init, fini, rtld_fini, stack_end);
+}
+
+#endif /* defined(VE_USE_SHARED_MEMORY_STACK) */

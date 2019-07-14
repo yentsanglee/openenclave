@@ -6,8 +6,6 @@
 
 #include <stddef.h>
 
-#define VE_HEAP_SIZE (1024 * 1024)
-
 /* The malloc heap shared with enclaves. */
 typedef struct _ve_heap
 {
@@ -17,5 +15,7 @@ typedef struct _ve_heap
 } ve_heap_t;
 
 int ve_heap_create(ve_heap_t* heap, size_t heap_size);
+
+extern ve_heap_t __ve_heap;
 
 #endif /* _VE_HOST_HEAP_H */

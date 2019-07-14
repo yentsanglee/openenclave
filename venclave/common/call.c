@@ -3,6 +3,7 @@
 
 #include "call.h"
 #include "io.h"
+#include "trace.h"
 
 const char* ve_func_name(ve_func_t func)
 {

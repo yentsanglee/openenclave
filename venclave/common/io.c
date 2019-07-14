@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "io.h"
+#include "trace.h"
 
 int ve_readn(int fd, void* buf, size_t count)
 {

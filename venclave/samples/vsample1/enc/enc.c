@@ -167,6 +167,13 @@ void test_get_key(void)
     printf("\n");
 }
 
+void test_host_stack_memory(const char* str)
+{
+    printf("=== enter test_host_stack_memory()\n");
+    printf("str{%s}\n", str);
+    printf("=== leave test_host_stack_memory()\n");
+}
+
 OE_SET_ENCLAVE_SGX(
     1,    /* ProductID */
     1,    /* SecurityVersion */

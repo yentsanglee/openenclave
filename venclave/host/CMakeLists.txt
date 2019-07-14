@@ -35,6 +35,18 @@ add_library(oevhost STATIC
     ../../host/syscall_u_wrapper.c
     ../../host/sgx/quote.c
     ../../host/sgx/report.c
+    ../../host/../common/asn1.c
+    ../../common/cert.c
+    ../../host/crypto/openssl/asn1.c
+    ../../host/crypto/openssl/cert.c
+    ../../host/crypto/openssl/crl.c
+    ../../host/crypto/openssl/ec.c
+    ../../host/crypto/openssl/hmac.c
+    ../../host/crypto/openssl/init.c
+    ../../host/crypto/openssl/key.c
+    ../../host/crypto/openssl/random.c
+    ../../host/crypto/openssl/rsa.c
+    ../../host/crypto/openssl/sha.c
     ${CMAKE_CURRENT_BINARY_DIR}/vproxyhostfp.c)
 
 add_dependencies(oevhost vproxyhostfp)
@@ -56,6 +68,9 @@ target_include_directories(oevhost PRIVATE
     ${CMAKE_BINARY_DIR}/host)
 
 target_compile_definitions(oevhost
+    PRIVATE VE_HEAP_SIZE=33554432
+    PRIVATE VE_STACK_SIZE=1048576
+    PRIVATE VE_USE_SHARED_MEMORY_STACK
     PUBLIC OE_BUILD_VENCLAVE)
 
 install(TARGETS oevhost EXPORT openenclave-targets
@@ -69,6 +84,6 @@ install(TARGETS oevhost EXPORT openenclave-targets
 
 add_library(oevhostapp INTERFACE)
 
-target_link_libraries(oevhostapp INTERFACE oevhost -lpthread)
+target_link_libraries(oevhostapp INTERFACE oevhost -lpthread -ldl)
 
 install(TARGETS oevhostapp EXPORT openenclave-targets)

@@ -19,6 +19,8 @@
 
     (A) Overhaul cmake rules for various libraries.
 
+    (A) Fix use of ptid and ctid in liboevcore (ctid is always zero).
+
     BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
 
     (B) Add OE_OCALL_GET_QE_ID_INFO

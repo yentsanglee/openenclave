@@ -1,9 +1,13 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#define _GNU_SOURCE
+
 #include "enclave.h"
 #include <assert.h>
 #include <errno.h>
+#include <malloc.h>
+#include <openenclave/internal/defs.h>
 #include <openenclave/internal/raise.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -18,6 +22,7 @@
 #include "err.h"
 #include "heap.h"
 #include "hostmalloc.h"
+#include "trace.h"
 
 #define VE_PAGE_SIZE 4096
 
@@ -110,33 +115,22 @@ done:
     return ret;
 }
 
-static pid_t _fork_exec_enclave(
-    const char* path,
-    ve_enclave_t* enclave,
-    ve_elf_info_t* elf_info)
+typedef struct _fork_arg
 {
-    pid_t ret = -1;
-    pid_t pid;
-    int fds[2] = {-1, -1};
-    int socks[2] = {-1, -1};
+    const char* path;
+    int fds[2];
+    int socks[2];
+} fork_arg_t;
 
-    if (!path || access(path, X_OK) != 0 || !enclave)
-        goto done;
+static int _fork(fork_arg_t* arg)
+{
+    int pid;
 
-    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, socks) == -1)
-        goto done;
-
-    if (pipe(fds) == -1)
-        goto done;
-
-    if ((pid = fork()) < 0)
-        goto done;
-
-    /* If child. */
-    if (pid == 0)
+    if ((pid = fork()) == 0)
     {
-        char* argv[2] = {(char*)path, NULL};
-        dup2(fds[0], STDIN_FILENO);
+        char* argv[2] = {(char*)arg->path, NULL};
+
+        dup2(arg->fds[0], STDIN_FILENO);
 
         /* Close all non-standard file descriptors except socks[1]. */
         {
@@ -144,12 +138,12 @@ static pid_t _fork_exec_enclave(
 
             for (int i = STDERR_FILENO + 1; i <= max_fd; i++)
             {
-                if (i != socks[1])
+                if (i != arg->socks[1])
                     close(i);
             }
         }
 
-        execv(path, argv);
+        execv(arg->path, argv);
 
         fprintf(
             stderr,
@@ -160,27 +154,90 @@ static pid_t _fork_exec_enclave(
         abort();
     }
 
-    enclave->sock = socks[0];
-    enclave->child_sock = socks[1];
+    return pid;
+}
 
-    if (_init_child(enclave, fds[1], socks[1], elf_info) != 0)
+#if defined(VE_USE_SHARED_MEMORY_STACK)
+static void* _fork_thread(void* arg)
+{
+    return (void*)(long)_fork((fork_arg_t*)arg);
+}
+#endif /* defined(VE_USE_SHARED_MEMORY_STACK) */
+
+static pid_t _fork_exec_enclave(
+    const char* path,
+    ve_enclave_t* enclave,
+    ve_elf_info_t* elf_info)
+{
+    pid_t ret = -1;
+    pid_t pid;
+    fork_arg_t arg = {
+        .path = path,
+        .fds = {-1, -1},
+        .socks = {-1, -1},
+    };
+
+    if (!path || access(path, X_OK) != 0 || !enclave)
+        goto done;
+
+    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, arg.socks) == -1)
+        goto done;
+
+    if (pipe(arg.fds) == -1)
+        goto done;
+
+#if defined(VE_USE_SHARED_MEMORY_STACK)
+    /* fork() fails with a shared-memory stack, so create a new thread. */
+    {
+        pthread_t tid;
+        pthread_attr_t attr;
+        void* stack;
+        const size_t stack_size = 1024 * 1024;
+        void* retval = NULL;
+
+        if (!(stack = memalign(OE_PAGE_SIZE, stack_size)))
+            goto done;
+
+        pthread_attr_init(&attr);
+        pthread_attr_setstack(&attr, stack, stack_size);
+
+        if (pthread_create(&tid, &attr, _fork_thread, &arg) != 0)
+            goto done;
+
+        if (pthread_join(tid, &retval) != 0)
+            goto done;
+
+        free(stack);
+
+        pid = (int)(long)retval;
+    }
+#else  /* !defined(VE_USE_SHARED_MEMORY_STACK) */
+    {
+        pid = _fork(&arg);
+    }
+#endif /* !defined(VE_USE_SHARED_MEMORY_STACK) */
+
+    enclave->sock = arg.socks[0];
+    enclave->child_sock = arg.socks[1];
+
+    if (_init_child(enclave, arg.fds[1], arg.socks[1], elf_info) != 0)
         goto done;
 
     ret = pid;
 
 done:
 
-    if (fds[0] != -1)
-        close(fds[0]);
+    if (arg.fds[0] != -1)
+        close(arg.fds[0]);
 
-    if (fds[1] != -1)
-        close(fds[1]);
+    if (arg.fds[1] != -1)
+        close(arg.fds[1]);
 
-    if (socks[1] != -1)
-        close(socks[1]);
+    if (arg.socks[1] != -1)
+        close(arg.socks[1]);
 
-    if (ret == -1 && socks[0] != -1)
-        close(socks[0]);
+    if (ret == -1 && arg.socks[0] != -1)
+        close(arg.socks[0]);
 
     return ret;
 }

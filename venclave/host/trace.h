@@ -6,6 +6,11 @@
 
 #include <stdio.h>
 
-#define VE_TRACE printf("host: trace: %s(%u)\n", __FILE__, __LINE__)
+#define VE_TRACE                                             \
+    do                                                       \
+    {                                                        \
+        printf("host: trace: %s(%u)\n", __FILE__, __LINE__); \
+        fflush(stdout);                                      \
+    } while (0)
 
 #endif /* _VE_HOST_TRACE_H */

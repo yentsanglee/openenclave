@@ -9,11 +9,13 @@
 #include <string.h>
 #include <sys/shm.h>
 
+ve_heap_t __ve_heap;
+
 /* Create a shared-memory heap for making ecalls and ocalls. */
 int ve_heap_create(ve_heap_t* heap, size_t heap_size)
 {
     int ret = -1;
-    const int PERM = (S_IRUSR | S_IWUSR);
+    const int shmflg = (IPC_CREAT | S_IRUSR | S_IWUSR);
     int shmid = -1;
     void* shmaddr = (void*)-1;
 
@@ -25,7 +27,7 @@ int ve_heap_create(ve_heap_t* heap, size_t heap_size)
 
     errno = 0;
 
-    if ((shmid = shmget(IPC_PRIVATE, heap_size, PERM)) == -1)
+    if ((shmid = shmget(IPC_PRIVATE, heap_size, shmflg)) == -1)
     {
         assert("shmget failed" == NULL);
         goto done;

@@ -270,7 +270,9 @@ int main(int argc, const char* argv[])
     enclave_wrap enc1(argv[1], flags);
     // verify initial OCall succeeded
     OE_TEST(g_init_ocall_values.size() == 1);
+#if !defined(OE_BUILD_VENCLAVE)
     OE_TEST(g_init_ocall_values[0] != NULL);
+#endif
     OE_TEST(g_init_ocall_values[0] == enc1.get_base());
     test_init_ocall_result(enc1.get_id());
 
@@ -281,8 +283,10 @@ int main(int argc, const char* argv[])
     enclave_wrap enc2(argv[1], flags);
     // verify initial OCall succeeded
     OE_TEST(g_init_ocall_values.size() == 2);
+#if !defined(OE_BUILD_VENCLAVE)
     OE_TEST(g_init_ocall_values[1] != NULL);
     OE_TEST(g_init_ocall_values[1] != g_init_ocall_values[0]);
+#endif
     OE_TEST(g_init_ocall_values[1] == enc2.get_base());
     test_init_ocall_result(enc2.get_id());
 
