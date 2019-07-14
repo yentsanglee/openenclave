@@ -36,6 +36,12 @@ void* oe_host_realloc(void* ptr, size_t size)
     uint64_t retval = 0;
     const int sock = ve_thread_get_sock();
 
+    if (ptr && size == 0)
+    {
+        oe_host_free(ptr);
+        return NULL;
+    }
+
     if (ve_call2(sock, VE_FUNC_REALLOC, &retval, (uint64_t)ptr, size) != 0)
         return NULL;
 

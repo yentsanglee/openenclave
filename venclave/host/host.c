@@ -12,6 +12,7 @@
 #include <openenclave/edger8r/common.h>
 #include <openenclave/host.h>
 #include <openenclave/internal/calls.h>
+#include <openenclave/internal/defs.h>
 #include <openenclave/internal/fingerprint.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/report.h>
@@ -645,7 +646,7 @@ static int _main(int argc, char** argv, char** envp)
 
     /* Allocate a stack for the new main thread from the shared heap. */
     {
-        if (!(stack = ve_host_memalign(4096, VE_STACK_SIZE)))
+        if (!(stack = ve_host_memalign(OE_PAGE_SIZE, VE_STACK_SIZE)))
         {
             fprintf(
                 stderr,

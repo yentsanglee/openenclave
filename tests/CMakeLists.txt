@@ -129,3 +129,4 @@ if (OE_SGX AND UNIX)
 endif()
 
 #add_subdirectory(ecall_ocall)
+#add_subdirectory(hostcalls)
