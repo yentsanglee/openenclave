@@ -120,8 +120,10 @@ static int _test_single_key(
         return -1;
     }
 
+#if !defined(OE_BUILD_VENCLAVE)
     oe_free_key(key2, key2size, keyinfo2, keyinfo2_size);
     oe_free_key(key4, key4size, NULL, 0);
+#endif
     return 0;
 }
 

@@ -47,6 +47,7 @@ add_library(oevhost STATIC
     ../../host/crypto/openssl/random.c
     ../../host/crypto/openssl/rsa.c
     ../../host/crypto/openssl/sha.c
+    ../../host/asym_keys.c
     ${CMAKE_CURRENT_BINARY_DIR}/vproxyhostfp.c)
 
 add_dependencies(oevhost vproxyhostfp)

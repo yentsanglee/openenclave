@@ -11,6 +11,7 @@
 #include <openenclave/bits/safemath.h>
 #include <openenclave/edger8r/common.h>
 #include <openenclave/host.h>
+#include <openenclave/internal/asym_keys.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/fingerprint.h>
@@ -601,6 +602,128 @@ void oe_log(log_level_t level, const char* fmt, ...)
 uint32_t oe_get_create_flags(void)
 {
     return OE_ENCLAVE_FLAG_DEBUG;
+}
+
+static int _to_heap(void** data, size_t size)
+{
+    int ret = -1;
+    void* p;
+
+    if (!data)
+        goto done;
+
+    if (*data)
+    {
+        /* Allocate at least one byte. */
+        size_t n = size ? size : 1;
+
+        if (!(p = ve_host_malloc(n)))
+            goto done;
+
+        memcpy(p, *data, size);
+        *data = p;
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
+
+oe_result_t oe_ecall(
+    oe_enclave_t* enclave,
+    uint16_t func,
+    uint64_t arg,
+    uint64_t* arg_out_ptr)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    void* ptr1 = NULL;
+    void* ptr2 = NULL;
+    void* ptr3 = NULL;
+    void* ptr4 = NULL;
+
+    if (arg_out_ptr)
+        *arg_out_ptr = 0;
+
+    if (!enclave)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Fix up certain messages types. */
+    switch ((oe_func_t)func)
+    {
+        case OE_ECALL_GET_PUBLIC_KEY:
+        {
+            oe_get_public_key_args_t* args = (oe_get_public_key_args_t*)arg;
+
+            if (_to_heap((void**)&args->key_info, args->key_info_size) != 0)
+            {
+                OE_RAISE(OE_OUT_OF_MEMORY);
+            }
+
+            ptr1 = (void*)args->key_info;
+
+            if (_to_heap(
+                    (void**)&args->key_params.user_data,
+                    args->key_params.user_data_size) != 0)
+            {
+                OE_RAISE(OE_OUT_OF_MEMORY);
+            }
+
+            ptr2 = args->key_params.user_data;
+            break;
+        }
+        case OE_ECALL_GET_PUBLIC_KEY_BY_POLICY:
+        {
+            oe_get_public_key_by_policy_args_t* args;
+
+            args = (oe_get_public_key_by_policy_args_t*)arg;
+
+            if (_to_heap((void**)&args->key_info, args->key_info_size) != 0)
+            {
+                OE_RAISE(OE_OUT_OF_MEMORY);
+            }
+
+            ptr2 = (void*)args->key_info;
+
+            if (_to_heap(
+                    (void**)&args->key_params.user_data,
+                    args->key_params.user_data_size) != 0)
+            {
+                OE_RAISE(OE_OUT_OF_MEMORY);
+            }
+
+            ptr3 = args->key_params.user_data;
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    /* Call into the enclave. */
+    {
+        ve_enclave_t* ve = enclave->venclave;
+        uint64_t retval = 0;
+
+        OE_CHECK(ve_enclave_call2(ve, VE_FUNC_ECALL, &retval, func, arg));
+
+        if (arg_out_ptr)
+            *arg_out_ptr = retval;
+    }
+
+    result = OE_OK;
+
+done:
+
+    /* ATTN: consider restoring the original pointer. */
+
+    ve_host_free(ptr1);
+    ve_host_free(ptr2);
+    ve_host_free(ptr3);
+    ve_host_free(ptr4);
+
+    return result;
 }
 
 /*

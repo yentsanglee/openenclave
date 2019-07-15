@@ -23,6 +23,8 @@ oe_result_t oe_get_public_key_by_policy(
     oe_result_t result = OE_UNEXPECTED;
     oe_get_public_key_by_policy_args_t args;
 
+    memset(&args, 0, sizeof(args));
+
     if (!key_buffer || !key_buffer_size || !key_info || !key_info_size)
         OE_RAISE(OE_INVALID_PARAMETER);
 
@@ -55,6 +57,8 @@ oe_result_t oe_get_public_key(
 {
     oe_result_t result = OE_UNEXPECTED;
     oe_get_public_key_args_t args;
+
+    memset(&args, 0, sizeof(args));
 
     if (!key_buffer || !key_buffer_size)
         OE_RAISE(OE_INVALID_PARAMETER);

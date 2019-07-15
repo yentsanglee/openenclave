@@ -432,6 +432,42 @@ int ve_handle_init_enclave(int fd, ve_call_buf_t* buf, int* exit_status)
     return 0;
 }
 
+int ve_handle_ecall(int fd, ve_call_buf_t* buf, int* exit_status)
+{
+    extern void oe_handle_get_public_key(uint64_t arg_in);
+    extern void oe_handle_get_public_key_by_policy(uint64_t arg_in);
+    oe_func_t func = (oe_func_t)buf->arg1;
+
+    OE_UNUSED(fd);
+    OE_UNUSED(exit_status);
+
+    switch (func)
+    {
+        case OE_ECALL_GET_PUBLIC_KEY:
+        {
+            oe_handle_get_public_key(buf->arg2);
+            buf->retval = 0;
+            break;
+        }
+        case OE_ECALL_GET_PUBLIC_KEY_BY_POLICY:
+        {
+            oe_handle_get_public_key_by_policy(buf->arg2);
+            buf->retval = 0;
+            break;
+        }
+        default:
+        {
+            ve_printf("*********************************\n");
+            ve_printf("*********************************\n");
+            ve_printf("*********************************\n");
+            ve_printf("ve_handle_ecall() failed\n");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 int ve_handle_call_enclave_function(
     int fd,
     ve_call_buf_t* buf,

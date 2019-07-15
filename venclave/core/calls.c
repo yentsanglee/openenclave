@@ -36,12 +36,20 @@ static int _handle_call(int fd, ve_call_buf_t* buf, int* exit_status)
         {
             return ve_handle_init_enclave(fd, buf, exit_status);
         }
+        case VE_FUNC_ECALL:
+        {
+            return ve_handle_ecall(fd, buf, exit_status);
+        }
         case VE_FUNC_CALL_ENCLAVE_FUNCTION:
         {
             return ve_handle_call_enclave_function(fd, buf, exit_status);
         }
         default:
         {
+            ve_printf("*********************************\n");
+            ve_printf("*********************************\n");
+            ve_printf("*********************************\n");
+            ve_printf("_handle_call() failed\n");
             return -1;
         }
     }

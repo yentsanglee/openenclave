@@ -5,15 +5,16 @@
 //
 // _start():
 //
-//     The default entry point for the enclave image. This function bears the
-//     weak attribute so that it may be overriden by the system libraries
-//     when linking virtual enclaves.
+//     The default entry point for the enclave image.
+//
+//     Added the weak attribute so that a strong _start() can be linked
+//     when using virtual enclaves.
 //
 //==============================================================================
 
 .globl _start
-.weak _start
 .type _start, @function
+.weak _start
 _start:
 .cfi_startproc
     jmp oe_enter

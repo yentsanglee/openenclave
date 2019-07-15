@@ -18,6 +18,7 @@ if (OE_SGX)
         sgx/report.c
         sgx/revocationinfo.c
         sgx/start.S
+        sgx/main.c
     )
 elseif(OE_TRUSTZONE)
     message("TODO: ADD ARM files.")
@@ -35,6 +36,10 @@ maybe_build_using_clangw(oeenclave)
 
 if(CMAKE_C_COMPILER_ID MATCHES GNU)
 target_compile_options(oeenclave PRIVATE -Wjump-misses-init)
+endif()
+
+if(VENCLAVE)
+    target_compile_definitions(oeenclave PUBLIC OE_BUILD_VENCLAVE)
 endif()
 
 target_link_libraries(oeenclave

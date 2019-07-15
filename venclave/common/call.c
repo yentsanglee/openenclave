@@ -35,6 +35,8 @@ const char* ve_func_name(ve_func_t func)
             return "GET_SETTINGS";
         case VE_FUNC_INIT_ENCLAVE:
             return "INIT_ENCLAVE";
+        case VE_FUNC_ECALL:
+            return "ECALL";
         case VE_FUNC_CALL_ENCLAVE_FUNCTION:
             return "VE_FUNC_CALL_ENCLAVE_FUNCTION";
         case VE_FUNC_CALL_HOST_FUNCTION:

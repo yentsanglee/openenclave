@@ -24,5 +24,6 @@ void __oe_put_err(const char* file, unsigned int line, const char* format, ...)
     va_end(ap);
 
     fprintf(stderr, "\n");
+    fflush(stderr);
     exit(1);
 }

@@ -357,6 +357,7 @@ static void _sigusr1(int sig)
     _called_sigusr1 = true;
 }
 
+/* The real main() resides in liboeenclave. */
 int oe_main(void)
 {
     int exit_status;
@@ -390,9 +391,4 @@ int oe_main(void)
     ve_close(VE_STDERR_FILENO);
 
     return exit_status;
-}
-
-int main(void)
-{
-    return oe_main();
 }
