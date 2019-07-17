@@ -2,7 +2,10 @@
 // Licensed under the MIT License.
 
 #include "key.h"
-//#include <openenclave/bits/safecrt.h>
+#include <assert.h>
+#include <openenclave/bits/safecrt.h>
+#include <openenclave/bits/safemath.h>
+#include <openenclave/internal/pem.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
 //#include <string.h>
@@ -38,17 +41,17 @@ done:
 }
 
 oe_result_t oe_bcrypt_key_get_blob(
-    oe_bcrypt_key_t* key,
+    const oe_bcrypt_key_t* key,
     uint64_t magic,
     LPCWSTR blob_type,
-    ULONG** blob_data,
+    BYTE** blob_data,
     ULONG* blob_size)
 {
     oe_result_t result = OE_UNEXPECTED;
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     ULONG export_size = 0;
     ULONG output_size = 0;
-    ULONG* export_data = NULL;
+    BYTE* export_data = NULL;
 
     if (blob_data)
         *blob_data = NULL;
@@ -96,7 +99,7 @@ done:
     return result;
 }
 
-static oe_result_t _rsa_pem_to_der(
+static oe_result_t _bcrypt_pem_to_der(
     const uint8_t* pem_data,
     size_t pem_size,
     uint8_t** der_data,
@@ -107,10 +110,8 @@ static oe_result_t _rsa_pem_to_der(
     DWORD der_local_size = 0;
     BOOL success;
 
-    if (!pem_data || !der_data | !der_size)
-        OE_RAISE(OE_INVALID_PARAMETER);
-
-    if (pem_size == 0 || pem_size > MAXDWORD)
+    if (!pem_data || pem_size == 0 || pem_size > MAXDWORD || !der_data ||
+        !der_size)
         OE_RAISE(OE_INVALID_PARAMETER);
 
     /* Subtract 1, since BCrypt doesn't count the null terminator.*/
@@ -125,7 +126,7 @@ static oe_result_t _rsa_pem_to_der(
         NULL,
         NULL);
 
-    /* With a null buffer, CryptStringToA returns true and sets the size. */
+    /* Should return true and set der_local_size when given a null buffer */
     if (!success)
         OE_RAISE_MSG(
             OE_CRYPTO_ERROR,
@@ -171,7 +172,7 @@ oe_result_t oe_bcrypt_read_key_pem(
     const uint8_t* pem_data,
     size_t pem_size,
     oe_bcrypt_key_t* key,
-    oe_bcrypt_read_key_args_t key_args,
+    oe_bcrypt_key_format_t key_args,
     uint64_t magic)
 {
     oe_result_t result = OE_UNEXPECTED;
@@ -188,7 +189,7 @@ oe_result_t oe_bcrypt_read_key_pem(
         OE_RAISE(OE_INVALID_PARAMETER);
 
     /* Step 1: Convert PEM to DER. */
-    OE_CHECK(_rsa_pem_to_der(pem_data, pem_size, &der_data, &der_size));
+    OE_CHECK(_bcrypt_pem_to_der(pem_data, pem_size, &der_data, &der_size));
 
     /* Step 2: Decode DER to Crypt object. */
     // TODO: split this into separate codepaths as needed
@@ -303,6 +304,256 @@ done:
         free(der_data);
         der_size = 0;
     }
+
+    return result;
+}
+
+static oe_result_t _bcrypt_der_to_pem(
+    const BYTE* der_data,
+    DWORD der_size,
+    uint8_t** pem_data,
+    size_t* pem_size)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    uint8_t* pem_local = NULL;
+    DWORD pem_local_size = 0;
+    BOOL success;
+
+    if (!der_data || der_size == 0 || der_size > MAXDWORD || !pem_data ||
+        !pem_size)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    success = CryptBinaryToStringA(
+        der_data,
+        der_size,
+        CRYPT_STRING_BASE64 | CRYPT_STRING_NOCR,
+        NULL,
+        &pem_local_size);
+
+    /* Should return true and set pem_local_size when given a null buffer.
+     * Resulting pem_local_size includes null terminator. */
+    if (!success)
+        OE_RAISE_MSG(
+            OE_CRYPTO_ERROR,
+            "CryptBinaryToStringA failed (err=%#x)\n",
+            GetLastError());
+
+    /* Need to allocate and write the PEM header/footer manually because
+     * BCrypt only supports the cert/CRL/CSR headers.
+     * The size also accounts for LF characters at the end of each line. */
+    const DWORD pem_headers_size =
+        OE_PEM_BEGIN_PUBLIC_KEY_LEN + OE_PEM_END_PUBLIC_KEY_LEN + 2;
+    OE_CHECK(
+        oe_safe_add_u32(pem_local_size, pem_headers_size, &pem_local_size));
+
+    pem_local = (uint8_t*)malloc(pem_local_size);
+    if (pem_local == NULL)
+        OE_RAISE(OE_OUT_OF_MEMORY);
+
+    {
+        /* Write the begin public key header */
+        uint8_t* pos = pem_local;
+        DWORD size_left = pem_local_size;
+
+        OE_CHECK(oe_memcpy_s(
+            pos,
+            size_left,
+            OE_PEM_BEGIN_PUBLIC_KEY,
+            OE_PEM_BEGIN_PUBLIC_KEY_LEN));
+        pos += OE_PEM_BEGIN_PUBLIC_KEY_LEN;
+        size_left -= OE_PEM_BEGIN_PUBLIC_KEY_LEN;
+
+        /* Write a LF character */
+        *pos++ = 0x0A;
+        size_left--;
+
+        /* Write the encoded key data */
+        DWORD written_size = size_left;
+        success = CryptBinaryToStringA(
+            der_data,
+            der_size,
+            CRYPT_STRING_BASE64 | CRYPT_STRING_NOCR,
+            pos,
+            &written_size);
+
+        if (!success)
+            OE_RAISE_MSG(
+                OE_CRYPTO_ERROR,
+                "CryptBinaryToStringA failed (err=%#x)\n",
+                GetLastError());
+
+        /* Assert null-terminator at end of string.
+         * This method overwrites it to extend the string for the end footer */
+        pos += written_size;
+        assert(*pos == '\0');
+        size_left -= written_size;
+
+        /* Write the end public key footer */
+        OE_CHECK(oe_memcpy_s(
+            pos, size_left, OE_PEM_END_PUBLIC_KEY, OE_PEM_END_PUBLIC_KEY_LEN));
+        pos += OE_PEM_END_PUBLIC_KEY_LEN;
+        size_left -= OE_PEM_END_PUBLIC_KEY_LEN;
+
+        /* Add LF and null-terminator */
+        OE_CHECK(size_left == 2 ? OE_OK : OE_UNEXPECTED);
+        *pos++ = 0x0A;
+        *pos++ = 0x00;
+    }
+
+    *pem_data = (uint8_t*)pem_local;
+    *pem_size = (size_t)pem_local_size;
+    result = OE_OK;
+    pem_local = NULL;
+
+done:
+    if (pem_local)
+    {
+        oe_secure_zero_fill(pem_local, pem_local_size);
+        free(pem_local);
+        pem_local_size = 0;
+    }
+
+    return result;
+}
+
+/* TODO: generalize oe_bcrypt_key_format_t */
+oe_result_t oe_bcrypt_write_key_pem(
+    const oe_bcrypt_key_t* key,
+    oe_bcrypt_key_format_t key_args,
+    uint64_t magic,
+    uint8_t* pem_data,
+    size_t* pem_size)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    uint8_t* key_blob = NULL;
+    DWORD key_blob_size = 0;
+    uint8_t* rsa_blob = NULL;
+    DWORD rsa_blob_size = 0;
+    uint8_t* encoded_blob = NULL;
+    DWORD encoded_blob_size = 0;
+    uint8_t* pem_blob = NULL;
+    size_t pem_blob_size = 0;
+
+    /* Check parameters */
+    if (!oe_bcrypt_key_is_valid(key, magic) || !key_args.input_type ||
+        !key_args.key_algorithm || !key_args.key_blob_type || !pem_size)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* If buffer is null, then size must be zero */
+    if (!pem_data && *pem_size != 0)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Get the key blob from key handle */
+    OE_CHECK(oe_bcrypt_key_get_blob(
+        key, magic, key_args.key_blob_type, &key_blob, &key_blob_size));
+
+    /* Step 2: Encode DER blob to ASN object. */
+    // TODO: split this into separate codepaths as needed
+    if (key_args.input_type == X509_PUBLIC_KEY_INFO)
+    {
+        BOOL success = CryptEncodeObjectEx(
+            X509_ASN_ENCODING,
+            CNG_RSA_PUBLIC_KEY_BLOB,
+            key_blob,
+            CRYPT_ENCODE_ALLOC_FLAG,
+            NULL,
+            &rsa_blob,
+            &rsa_blob_size);
+
+        if (!success)
+            OE_RAISE_MSG(
+                OE_CRYPTO_ERROR,
+                "CryptEncodeObjectEx failed (err=%#x)\n",
+                GetLastError());
+
+        // TODO: Generalize this
+        CERT_PUBLIC_KEY_INFO keyinfo = {
+            .Algorithm = szOID_RSA_RSA,
+            .PublicKey = {.pbData = rsa_blob, .cbData = rsa_blob_size}};
+
+        success = CryptEncodeObjectEx(
+            X509_ASN_ENCODING,
+            X509_PUBLIC_KEY_INFO,
+            &keyinfo,
+            CRYPT_ENCODE_ALLOC_FLAG,
+            NULL,
+            &encoded_blob,
+            &encoded_blob_size);
+
+        if (!success)
+            OE_RAISE_MSG(
+                OE_CRYPTO_ERROR,
+                "CryptEncodeObjectEx failed (err=%#x)\n",
+                GetLastError());
+    }
+    else
+    {
+        BOOL success = CryptEncodeObjectEx(
+            X509_ASN_ENCODING,
+            key_args.input_type,
+            key_blob,
+            CRYPT_ENCODE_ALLOC_FLAG,
+            NULL,
+            &encoded_blob,
+            &encoded_blob_size);
+
+        if (!success)
+            OE_RAISE_MSG(
+                OE_CRYPTO_ERROR,
+                "CryptEncodeObjectEx failed (err=%#x)\n",
+                GetLastError());
+    }
+
+    /* Convert DER to PEM. */
+    OE_CHECK(_bcrypt_der_to_pem(
+        encoded_blob, encoded_blob_size, &pem_blob, &pem_blob_size));
+
+    /* Check buffer size and populate required size */
+    if (*pem_size < pem_blob_size)
+    {
+        *pem_size = pem_blob_size;
+        OE_RAISE_NO_TRACE(OE_BUFFER_TOO_SMALL);
+    }
+
+    /* Copy result to output buffer */
+    OE_CHECK(oe_memcpy_s(pem_data, *pem_size, pem_blob, pem_blob_size));
+    *pem_size = pem_blob_size;
+
+    result = OE_OK;
+
+done:
+    /*
+     * Make sure to zero out all confidential (private key) data.
+     * Note that encoded_blob must be freed with LocalFree and before rsa_blob
+     * due to constraints in CryptObjectEncodeEx.
+     */
+    // if (encoded_blob)
+    //{
+    //    oe_secure_zero_fill(encoded_blob, encoded_blob_size);
+    //    LocalFree(encoded_blob);
+    //    encoded_blob_size = 0;
+    //}
+
+    // if (rsa_blob)
+    //{
+    //    oe_secure_zero_fill(rsa_blob, rsa_blob_size);
+    //    LocalFree(rsa_blob);
+    //    rsa_blob_size = 0;
+    //}
+
+    // if (pem_blob)
+    //{
+    //    oe_secure_zero_fill(pem_blob, pem_blob_size);
+    //    free(pem_blob);
+    //    pem_blob_size = 0;
+    //}
+
+    // if (key_blob)
+    //{
+    //    oe_secure_zero_fill(key_blob, key_blob_size);
+    //    free(key_blob);
+    //    key_blob_size = 0;
+    //}
 
     return result;
 }
@@ -508,59 +759,59 @@ void oe_public_key_init(
 //    uint64_t magic)
 //{
 //    oe_result_t result = OE_UNEXPECTED;
-//    BIO* bio = NULL;
-//    const oe_public_key_t* impl = (const oe_public_key_t*)key;
-//    const char null_terminator = '\0';
-//
-//    /* Check parameters */
-//    if (!oe_public_key_is_valid(impl, magic) || !size)
-//        OE_RAISE(OE_INVALID_PARAMETER);
-//
-//    /* If buffer is null, then size must be zero */
-//    if (!data && *size != 0)
-//        OE_RAISE(OE_INVALID_PARAMETER);
-//
-//    /* Create memory BIO object to write key to */
-//    if (!(bio = BIO_new(BIO_s_mem())))
-//        OE_RAISE(OE_CRYPTO_ERROR);
-//
-//    /* Write key to BIO */
-//    if (!PEM_write_bio_PUBKEY(bio, impl->pkey))
-//        OE_RAISE(OE_CRYPTO_ERROR);
-//
-//    /* Write a NULL terminator onto BIO */
-//    if (BIO_write(bio, &null_terminator, sizeof(null_terminator)) <= 0)
-//        OE_RAISE(OE_CRYPTO_ERROR);
-//
-//    /* Copy the BIO onto caller's memory */
-//    {
-//        BUF_MEM* mem;
-//
-//        if (!BIO_get_mem_ptr(bio, &mem))
-//            OE_RAISE(OE_CRYPTO_ERROR);
-//
-//        /* If buffer is too small */
-//        if (*size < mem->length)
-//        {
-//            *size = mem->length;
-//            OE_RAISE(OE_BUFFER_TOO_SMALL);
-//        }
-//
-//        /* Copy result to output buffer */
-//        OE_CHECK(oe_memcpy_s(data, *size, mem->data, mem->length));
-//        *size = mem->length;
-//    }
-//
-//    result = OE_OK;
-//
+//   BIO* bio = NULL;
+//   const oe_public_key_t* impl = (const oe_public_key_t*)key;
+//   const char null_terminator = '\0';
+
+//   /* Check parameters */
+//   if (!oe_public_key_is_valid(impl, magic) || !size)
+//       OE_RAISE(OE_INVALID_PARAMETER);
+
+//   /* If buffer is null, then size must be zero */
+//   if (!data && *size != 0)
+//       OE_RAISE(OE_INVALID_PARAMETER);
+
+//   /* Create memory BIO object to write key to */
+//   if (!(bio = BIO_new(BIO_s_mem())))
+//       OE_RAISE(OE_CRYPTO_ERROR);
+
+//   /* Write key to BIO */
+//   if (!PEM_write_bio_PUBKEY(bio, impl->pkey))
+//       OE_RAISE(OE_CRYPTO_ERROR);
+
+//   /* Write a NULL terminator onto BIO */
+//   if (BIO_write(bio, &null_terminator, sizeof(null_terminator)) <= 0)
+//       OE_RAISE(OE_CRYPTO_ERROR);
+
+//   /* Copy the BIO onto caller's memory */
+//   {
+//       BUF_MEM* mem;
+
+//       if (!BIO_get_mem_ptr(bio, &mem))
+//           OE_RAISE(OE_CRYPTO_ERROR);
+
+//       /* If buffer is too small */
+//       if (*size < mem->length)
+//       {
+//           *size = mem->length;
+//           OE_RAISE(OE_BUFFER_TOO_SMALL);
+//       }
+
+//       /* Copy result to output buffer */
+//       OE_CHECK(oe_memcpy_s(data, *size, mem->data, mem->length));
+//       *size = mem->length;
+//   }
+
+//   result = OE_OK;
+
 // done:
-//
-//    if (bio)
-//        BIO_free(bio);
-//
-//    return result;
+
+//   if (bio)
+//       BIO_free(bio);
+
+//   return result;
 //}
-//
+
 // oe_result_t oe_private_key_free(oe_private_key_t* key, uint64_t magic)
 //{
 //    oe_result_t result = OE_UNEXPECTED;
@@ -684,58 +935,62 @@ void oe_public_key_init(
 //
 //    return result;
 //}
-//
-// oe_result_t oe_public_key_verify(
-//    const oe_public_key_t* public_key,
-//    oe_hash_type_t hash_type,
-//    const void* hash_data,
-//    size_t hash_size,
-//    const uint8_t* signature,
-//    size_t signature_size,
-//    uint64_t magic)
-//{
-//    oe_result_t result = OE_UNEXPECTED;
-//    const oe_public_key_t* impl = (const oe_public_key_t*)public_key;
-//    EVP_PKEY_CTX* ctx = NULL;
-//
-//    /* Check for null parameters */
-//    if (!oe_public_key_is_valid(impl, magic) || !hash_data || !hash_size ||
-//        !signature || !signature_size)
-//    {
-//        OE_RAISE(OE_INVALID_PARAMETER);
-//    }
-//
-//    /* Check that hash buffer is big enough (hash_type is size of that hash)
-//    */ if (hash_type > hash_size)
-//        OE_RAISE(OE_INVALID_PARAMETER);
-//
-//    /* Initialize OpenSSL */
-//    oe_initialize_openssl();
-//
-//    /* Create signing context */
-//    if (!(ctx = EVP_PKEY_CTX_new(impl->pkey, NULL)))
-//        OE_RAISE(OE_CRYPTO_ERROR);
-//
-//    /* Initialize the signing context */
-//    if (EVP_PKEY_verify_init(ctx) <= 0)
-//        OE_RAISE(OE_CRYPTO_ERROR);
-//
-//    /* Set the MD type for the signing operation */
-//    if (EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()) <= 0)
-//        OE_RAISE(OE_CRYPTO_ERROR);
-//
-//    /* Compute the signature */
-//    if (EVP_PKEY_verify(ctx, signature, signature_size, hash_data, hash_size)
-//    <=
-//        0)
-//        OE_RAISE(OE_VERIFY_FAILED);
-//
-//    result = OE_OK;
-//
-// done:
-//
-//    if (ctx)
-//        EVP_PKEY_CTX_free(ctx);
-//
-//    return result;
-//}
+
+oe_result_t oe_public_key_verify(
+    const oe_public_key_t* public_key,
+    oe_hash_type_t hash_type,
+    const void* hash_data,
+    size_t hash_size,
+    const uint8_t* signature,
+    size_t signature_size,
+    uint64_t magic)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    const oe_bcrypt_key_t* impl = (const oe_bcrypt_key_t*)public_key;
+    BCRYPT_PKCS1_PADDING_INFO pad_info = {0};
+
+    /* Check for null parameters */
+    if (!oe_bcrypt_key_is_valid(impl, magic) || !hash_data || !hash_size ||
+        hash_size > MAXDWORD || !signature || !signature_size ||
+        signature_size > MAXDWORD)
+    {
+        OE_RAISE(OE_INVALID_PARAMETER);
+    }
+
+    switch (hash_type)
+    {
+        case OE_HASH_TYPE_SHA256:
+            pad_info.pszAlgId = BCRYPT_SHA256_ALGORITHM;
+            break;
+        case OE_HASH_TYPE_SHA512:
+            pad_info.pszAlgId = BCRYPT_SHA512_ALGORITHM;
+            break;
+        default:
+            OE_RAISE_MSG(
+                OE_INVALID_PARAMETER,
+                "Undefined oe_hash_type_t %x\n",
+                hash_type);
+            break;
+    }
+
+    NTSTATUS status = BCryptVerifySignature(
+        impl->pkey,
+        &pad_info,
+        (PUCHAR)hash_data,
+        (ULONG)hash_size,
+        (PUCHAR)signature,
+        (ULONG)signature_size,
+        BCRYPT_PAD_PKCS1 /* Default type used by SGX RSA signatures */
+    );
+
+    if (!BCRYPT_SUCCESS(status))
+        OE_RAISE_MSG(
+            OE_CRYPTO_ERROR,
+            "BCryptVerifySignature failed (err=%#x)\n",
+            status);
+
+    result = OE_OK;
+
+done:
+    return result;
+}

@@ -8,10 +8,10 @@ void TestAll()
     // TestASN1();
     // TestCRL();
     // TestEC();
-    // TestRandom();
-    // TestRdrand();
+    TestRandom();
+    TestRdrand();
     TestRSA();
-    // TestHMAC();
-    // TestKDF();
-    // TestSHA();
+    TestHMAC();
+    TestKDF();
+    TestSHA();
 }

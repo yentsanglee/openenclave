@@ -4,6 +4,7 @@
 #include "../rsa.h"
 #include "bcrypt.h"
 #include "key.h"
+#include "rsa.h"
 
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/internal/raise.h>
@@ -21,12 +22,12 @@ static const uint64_t _PUBLIC_KEY_MAGIC = 0x8f8f72170025426d;
 OE_STATIC_ASSERT(sizeof(oe_public_key_t) <= sizeof(oe_rsa_public_key_t));
 OE_STATIC_ASSERT(sizeof(oe_private_key_t) <= sizeof(oe_rsa_private_key_t));
 
-static const oe_bcrypt_read_key_args_t _PRIVATE_RSA_KEY_ARGS = {
+static const oe_bcrypt_key_format_t _PRIVATE_RSA_KEY_ARGS = {
     CNG_RSA_PRIVATE_KEY_BLOB,
     BCRYPT_RSA_ALG_HANDLE,
     BCRYPT_RSAPRIVATE_BLOB};
 
-static const oe_bcrypt_read_key_args_t _PUBLIC_RSA_KEY_ARGS = {
+static const oe_bcrypt_key_format_t _PUBLIC_RSA_KEY_ARGS = {
     X509_PUBLIC_KEY_INFO,
     BCRYPT_RSA_ALG_HANDLE,
     BCRYPT_RSAPUBLIC_BLOB};
@@ -92,8 +93,7 @@ void oe_rsa_public_key_init(
     oe_rsa_public_key_t* public_key,
     BCRYPT_KEY_HANDLE* pkey)
 {
-    return oe_public_key_init(
-        (oe_public_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
+    oe_public_key_init((oe_public_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
 }
 
 oe_result_t oe_rsa_private_key_read_pem(
@@ -104,25 +104,26 @@ oe_result_t oe_rsa_private_key_read_pem(
     return oe_bcrypt_read_key_pem(
         pem_data,
         pem_size,
-        private_key,
+        (oe_bcrypt_key_t*)private_key,
         _PRIVATE_RSA_KEY_ARGS,
         _PRIVATE_KEY_MAGIC);
 }
 
-/* Used by tests/crypto/ec_tests */
-oe_result_t oe_rsa_private_key_write_pem(
-    const oe_rsa_private_key_t* private_key,
-    uint8_t* pem_data,
-    size_t* pem_size)
-{
-    return OE_UNSUPPORTED;
-    //    return oe_private_key_write_pem(
-    //        (const oe_private_key_t*)private_key,
-    //        pem_data,
-    //        pem_size,
-    //        _private_key_write_pem_callback,
-    //        _PRIVATE_KEY_MAGIC);
-}
+/* Used by tests/crypto/rse_tests
+ * Removing the test since there's no production use for it.
+ */
+// oe_result_t oe_rsa_private_key_write_pem(
+//    const oe_rsa_private_key_t* private_key,
+//    uint8_t* pem_data,
+//    size_t* pem_size)
+//{
+//    return oe_private_key_write_pem(
+//        (const oe_private_key_t*)private_key,
+//        pem_data,
+//        pem_size,
+//        _private_key_write_pem_callback,
+//        _PRIVATE_KEY_MAGIC);
+//}
 
 /* Used by tests/crypto/rsa_tests */
 oe_result_t oe_rsa_public_key_read_pem(
@@ -133,33 +134,35 @@ oe_result_t oe_rsa_public_key_read_pem(
     return oe_bcrypt_read_key_pem(
         pem_data,
         pem_size,
-        public_key,
+        (oe_bcrypt_key_t*)public_key,
         _PUBLIC_RSA_KEY_ARGS,
         _PUBLIC_KEY_MAGIC);
 }
 
-/* Used by tests/crypto/rsa_tests */
+/* Used by tests/crypto/rsa_tests
+ * Also used by common/cert.c for tlsverifier.c now */
 oe_result_t oe_rsa_public_key_write_pem(
-    const oe_rsa_public_key_t* private_key,
+    const oe_rsa_public_key_t* public_key,
     uint8_t* pem_data,
     size_t* pem_size)
 {
-    return OE_UNSUPPORTED;
-    //    return oe_public_key_write_pem(
-    //        (const oe_public_key_t*)private_key,
-    //        pem_data,
-    //        pem_size,
-    //        _PUBLIC_KEY_MAGIC);
+    return oe_bcrypt_write_key_pem(
+        (const oe_bcrypt_key_t*)public_key,
+        _PUBLIC_RSA_KEY_ARGS,
+        _PUBLIC_KEY_MAGIC,
+        pem_data,
+        pem_size);
 }
 
 oe_result_t oe_rsa_private_key_free(oe_rsa_private_key_t* private_key)
 {
-    return oe_bcrypt_key_free(private_key, _PRIVATE_KEY_MAGIC);
+    return oe_bcrypt_key_free(
+        (oe_bcrypt_key_t*)private_key, _PRIVATE_KEY_MAGIC);
 }
 
 oe_result_t oe_rsa_public_key_free(oe_rsa_public_key_t* public_key)
 {
-    return oe_bcrypt_key_free(public_key, _PUBLIC_KEY_MAGIC);
+    return oe_bcrypt_key_free((oe_bcrypt_key_t*)public_key, _PUBLIC_KEY_MAGIC);
 }
 
 oe_result_t oe_rsa_private_key_sign(
@@ -266,15 +269,14 @@ oe_result_t oe_rsa_public_key_verify(
     const uint8_t* signature,
     size_t signature_size)
 {
-    return OE_UNSUPPORTED;
-    //    return oe_public_key_verify(
-    //        (oe_public_key_t*)public_key,
-    //        hash_type,
-    //        hash_data,
-    //        hash_size,
-    //        signature,
-    //        signature_size,
-    //        _PUBLIC_KEY_MAGIC);
+    return oe_public_key_verify(
+        (oe_public_key_t*)public_key,
+        hash_type,
+        hash_data,
+        hash_size,
+        signature,
+        signature_size,
+        _PUBLIC_KEY_MAGIC);
 }
 
 /* Used by tests/crypto/rsa_tests */
@@ -430,13 +432,10 @@ oe_result_t oe_rsa_public_key_equal(
     /* key1 and key2 are both BCRYPT_RSAKEY_BLOB structures
      * which should be comparable as raw byte buffers.
      */
-    ULONG* key1 = NULL;
-    ULONG* key2 = NULL;
+    BYTE* key1 = NULL;
+    BYTE* key2 = NULL;
     ULONG key1_size = 0;
     ULONG key2_size = 0;
-    ULONG* foo = &key1_size;
-    if (!foo)
-        goto done;
 
     if (equal)
         *equal = false;
@@ -457,21 +456,24 @@ oe_result_t oe_rsa_public_key_equal(
         &key2,
         &key2_size));
 
-    if (key1_size == key2_size & memcmp(key1, key2, key1_size) == 0)
+    if ((key1_size == key2_size) &&
+        oe_constant_time_mem_equal(key1, key2, key1_size))
+    {
         *equal = true;
+    }
 
     result = OE_OK;
 
 done:
     if (key1)
     {
-        oe_secure_zero_fill((ULONG*)key1, key1_size);
+        oe_secure_zero_fill(key1, key1_size);
         free(key1);
     }
 
     if (key2)
     {
-        oe_secure_zero_fill((ULONG*)key2, key2_size);
+        oe_secure_zero_fill(key2, key2_size);
         free(key2);
     }
     return result;

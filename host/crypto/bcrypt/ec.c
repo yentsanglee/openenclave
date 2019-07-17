@@ -13,6 +13,7 @@
 //#include <string.h>
 //#include "init.h"
 #include "bcrypt.h"
+#include "ec.h"
 #include "key.h"
 
 /* Magic numbers for the EC key implementation structures */
@@ -22,12 +23,12 @@ static const uint64_t _PUBLIC_KEY_MAGIC = 0xb1d39580c1f14c02;
 OE_STATIC_ASSERT(sizeof(oe_public_key_t) <= sizeof(oe_ec_public_key_t));
 OE_STATIC_ASSERT(sizeof(oe_private_key_t) <= sizeof(oe_ec_private_key_t));
 
-// static const oe_bcrypt_read_key_args_t _PRIVATE_EC_KEY_ARGS = {
+// static const oe_bcrypt_key_format_t _PRIVATE_EC_KEY_ARGS = {
 //    X509_ECC_PRIVATE_KEY,
 //    BCRYPT_ECDSA_P256_ALGORITHM,
 //    BCRYPT_ECCPRIVATE_BLOB};
 
-static const oe_bcrypt_read_key_args_t _PUBLIC_EC_KEY_ARGS = {
+static const oe_bcrypt_key_format_t _PUBLIC_EC_KEY_ARGS = {
     szOID_ECC_PUBLIC_KEY,
     BCRYPT_ECDSA_P256_ALGORITHM,
     BCRYPT_ECCPUBLIC_BLOB};
@@ -261,13 +262,14 @@ static DWORD _get_bcrypt_magic(oe_ec_type_t ec_type)
 //
 //    return result;
 //}
-//
-// void oe_ec_public_key_init(oe_ec_public_key_t* public_key, EVP_PKEY* pkey)
-//{
-//    return oe_public_key_init(
-//        (oe_public_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
-//}
-//
+
+void oe_ec_public_key_init(
+    oe_ec_public_key_t* public_key,
+    BCRYPT_KEY_HANDLE* pkey)
+{
+    oe_public_key_init((oe_public_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
+}
+
 // void oe_ec_private_key_init(oe_ec_private_key_t* private_key, EVP_PKEY* pkey)
 //{
 //    return oe_private_key_init(
@@ -310,7 +312,11 @@ oe_result_t oe_ec_public_key_read_pem(
     size_t pem_size)
 {
     return oe_bcrypt_read_key_pem(
-        pem_data, pem_size, public_key, _PUBLIC_EC_KEY_ARGS, _PUBLIC_KEY_MAGIC);
+        pem_data,
+        pem_size,
+        (oe_bcrypt_key_t*)public_key,
+        _PUBLIC_EC_KEY_ARGS,
+        _PUBLIC_KEY_MAGIC);
 }
 
 /* Used by tests/crypto/ec_tests */
@@ -337,7 +343,7 @@ oe_result_t oe_ec_private_key_free(oe_ec_private_key_t* private_key)
 
 oe_result_t oe_ec_public_key_free(oe_ec_public_key_t* public_key)
 {
-    return oe_bcrypt_key_free(public_key, _PUBLIC_KEY_MAGIC);
+    return oe_bcrypt_key_free((oe_bcrypt_key_t*)public_key, _PUBLIC_KEY_MAGIC);
 }
 
 /* Used by tests/crypto/ec_tests */
@@ -368,29 +374,14 @@ oe_result_t oe_ec_public_key_verify(
     const uint8_t* signature,
     size_t signature_size)
 {
-    oe_result_t result = OE_UNEXPECTED;
-    OE_UNUSED(hash_type);
-
-    NTSTATUS status = BCryptVerifySignature(
-        ((const oe_bcrypt_key_t*)public_key)->pkey,
-        NULL, /*paddingInfo depends on padding type below */
+    return oe_public_key_verify(
+        (oe_public_key_t*)public_key,
+        hash_type,
         hash_data,
         hash_size,
         signature,
         signature_size,
-        NULL /* TODO: BCRYPT_PAD_PKCS1 or BCRYPT_PAD_PSS? */
-    );
-
-    if (!BCRYPT_SUCCESS(status))
-        OE_RAISE_MSG(
-            OE_CRYPTO_ERROR,
-            "BCryptVerifySignature failed (err=%#x)\n",
-            status);
-
-    result = OE_OK;
-
-done:
-    return result;
+        _PUBLIC_KEY_MAGIC);
 }
 
 /* Used by tests/crypto/ec_tests */
@@ -551,7 +542,7 @@ oe_result_t _bcrypt_get_key_blob(
 done:
     if (result != OE_OK && *key_blob)
     {
-        oe_secure_zero_fill(key_blob, key_blob_size);
+        oe_secure_zero_fill(key_blob, *key_blob_size);
         free(*key_blob);
         *key_blob = NULL;
         *key_blob_size = 0;
@@ -566,17 +557,18 @@ oe_result_t oe_ec_public_key_equal(
     bool* equal)
 {
     oe_result_t result = OE_UNEXPECTED;
-    BCRYPT_ECCKEY_BLOB* ec1 = NULL;
+
+    /* ec1 and ec2 are both BCRYPT_ECCKEY_BLOB structures
+     * which should be comparable as raw byte buffers.
+     */
+    BYTE* ec1 = NULL;
+    BYTE* ec2 = NULL;
     ULONG ec1_size = 0;
-    BCRYPT_ECCKEY_BLOB* ec2 = NULL;
     ULONG ec2_size = 0;
 
     if (equal)
         *equal = false;
-
-    /* Reject bad parameters */
-    if (!oe_bcrypt_key_is_valid(public_key1, _PUBLIC_KEY_MAGIC) ||
-        !oe_bcrypt_key_is_valid(public_key2, _PUBLIC_KEY_MAGIC) || !equal)
+    else
         OE_RAISE(OE_INVALID_PARAMETER);
 
     OE_CHECK(_bcrypt_get_key_blob(
@@ -599,8 +591,7 @@ oe_result_t oe_ec_public_key_equal(
      }
      All fields must match between the two EC keys to be equal.
      */
-    if (ec1_size == ec2_size &&
-        oe_constant_time_mem_equal(ec1, ec2, ec1_size) == 0)
+    if (ec1_size == ec2_size && oe_constant_time_mem_equal(ec1, ec2, ec1_size))
     {
         *equal = true;
     }
@@ -612,13 +603,12 @@ done:
     {
         oe_secure_zero_fill(ec1, ec1_size);
         free(ec1);
-        ec1 = NULL;
     }
+
     if (ec2)
     {
         oe_secure_zero_fill(ec2, ec2_size);
         free(ec2);
-        ec2 = NULL;
     }
 
     return result;
@@ -662,7 +652,7 @@ oe_result_t oe_ec_public_key_from_coordinates(
                 "ec_type=%#x\n",
                 ec_type);
         ecc_key_blob->dwMagic = ecc_key_magic;
-        ecc_key_blob->cbKey = x_size;
+        ecc_key_blob->cbKey = (ULONG)x_size;
 
         uint8_t* ecc_key_x = ecc_key_buffer + sizeof(BCRYPT_ECCKEY_BLOB);
         uint8_t* ecc_key_y = ecc_key_x + x_size;
@@ -723,7 +713,7 @@ oe_result_t oe_ecdsa_signature_write_der(
     oe_result_t result = OE_UNEXPECTED;
 
     /* Reject invalid parameters */
-    if (!signature_size || signature_size > MAXDWORD || !r_data || !r_size ||
+    if (!signature_size || *signature_size > MAXDWORD || !r_data || !r_size ||
         r_size > OE_INT_MAX || !s_data || !s_size || s_size > OE_INT_MAX)
         OE_RAISE(OE_INVALID_PARAMETER);
 
@@ -734,12 +724,12 @@ oe_result_t oe_ecdsa_signature_write_der(
     {
         /* TODO: Verify endian is compatible with sgx_ecdsa256_signature_t*/
         /* TODO: Verify leading-zero encoding does not cause issues */
-        DWORD encoded_size = *signature_size;
+        DWORD encoded_size = (DWORD)(*signature_size);
         CERT_ECC_SIGNATURE ecc_sig;
-        ecc_sig.r.cbData = r_size;
-        ecc_sig.r.pbData = r_data;
-        ecc_sig.s.cbData = s_size;
-        ecc_sig.s.pbData = s_data;
+        ecc_sig.r.cbData = (DWORD)r_size;
+        ecc_sig.r.pbData = (BYTE*)r_data;
+        ecc_sig.s.cbData = (DWORD)s_size;
+        ecc_sig.s.pbData = (BYTE*)s_data;
 
         BOOL success = CryptEncodeObjectEx(
             X509_ASN_ENCODING,

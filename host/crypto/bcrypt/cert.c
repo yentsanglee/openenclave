@@ -13,12 +13,15 @@
 #include <openenclave/internal/utils.h>
 //#include <pthread.h>
 //#include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 //#include <string.h>
 //#include "crl.h"
 //#include "ec.h"
 //#include "init.h"
 #include "bcrypt.h"
+#include "ec.h"
+#include "key.h"
 #include "rsa.h"
 
 /*
@@ -54,6 +57,7 @@ done:
     return result;
 }
 
+/* TODO: Consolidate with _rsa_pem_to_der in rsa.c */
 oe_result_t _bcrypt_pem_to_der(
     const void* pem_data,
     size_t pem_size,
@@ -160,11 +164,15 @@ oe_result_t _get_next_pem_cert(
     if (!cert_end || *cert_begin == '\0' || cert_end <= cert_begin)
         return (OE_NOT_FOUND);
 
-    // PEM cert footer must have at least newline or null-terminator in pem_data
-    // buffer to be valid.
-    OE_CHECK(
-        oe_safe_add_u64(cert_end, OE_PEM_END_CERTIFICATE_LEN + 1, &cert_end));
-    OE_CHECK(oe_safe_sub_u64(cert_end, cert_begin, &found_pem_size));
+    /* PEM cert footer must have at least newline or null-terminator in pem_data
+     * buffer to be valid. */
+    assert(sizeof(void*) == sizeof(uint64_t));
+    OE_CHECK(oe_safe_add_u64(
+        (uint64_t)cert_end,
+        OE_PEM_END_CERTIFICATE_LEN + 1,
+        (uint64_t*)&cert_end));
+    OE_CHECK(oe_safe_sub_u64(
+        (uint64_t)cert_end, (uint64_t)cert_begin, &found_pem_size));
 
     found_pem = malloc(found_pem_size);
     if (!found_pem)
@@ -174,11 +182,14 @@ oe_result_t _get_next_pem_cert(
         oe_memcpy_s(found_pem, found_pem_size, cert_begin, found_pem_size - 1));
     found_pem[found_pem_size - 1] = '\0';
 
-    // Note that pem_cert offset may not equal the starting read_pos,
-    // so we infer the remaining_size from the new read_pos
-    OE_CHECK(
-        oe_safe_add_u64(*pem_read_pos, *pem_bytes_remaining, &pem_data_end));
-    OE_CHECK(oe_safe_sub_u64(pem_data_end, cert_end, pem_bytes_remaining));
+    /* Note that pem_cert offset may not equal the starting read_pos,
+     * so we infer the remaining_size from the new read_pos. */
+    OE_CHECK(oe_safe_add_u64(
+        (uint64_t)*pem_read_pos,
+        *pem_bytes_remaining,
+        (uint64_t*)&pem_data_end));
+    OE_CHECK(oe_safe_sub_u64(
+        (uint64_t)pem_data_end, (uint64_t)cert_end, pem_bytes_remaining));
 
     *pem_read_pos = cert_end;
     *pem_cert = found_pem;
@@ -199,10 +210,10 @@ done:
 typedef struct _cert
 {
     uint64_t magic;
-    PCERT_CONTEXT cert;
+    PCCERT_CONTEXT cert;
 } cert_t;
 
-static void _cert_init(cert_t* impl, PCERT_CONTEXT cert)
+static void _cert_init(cert_t* impl, PCCERT_CONTEXT cert)
 {
     if (impl)
     {
@@ -231,13 +242,13 @@ static void _cert_clear(cert_t* impl)
 typedef struct _cert_chain
 {
     uint64_t magic;
-    PCERT_CHAIN_CONTEXT cert_chain;
+    PCCERT_CHAIN_CONTEXT cert_chain;
     HCERTSTORE cert_store;
 } cert_chain_t;
 
 static void _cert_chain_init(
     cert_chain_t* impl,
-    PCERT_CHAIN_CONTEXT cert_chain,
+    PCCERT_CHAIN_CONTEXT cert_chain,
     HCERTSTORE cert_store)
 {
     if (impl)
@@ -506,9 +517,9 @@ static void _cert_chain_clear(cert_chain_t* impl)
 
 // Find the last certificate in the chain and then verify that it's a
 // self-signed certificate (a root certificate).
-static PCERT_CONTEXT _find_root_cert(PCERT_CHAIN_CONTEXT chain)
+static PCCERT_CONTEXT _find_root_cert(PCCERT_CHAIN_CONTEXT chain)
 {
-    PCERT_CONTEXT root_cert = NULL;
+    PCCERT_CONTEXT root_cert = NULL;
     DWORD cert_count = 0;
     if (chain && chain->cChain > 0 && chain->rgpChain[0]->cElement > 0)
     {
@@ -541,10 +552,10 @@ static oe_result_t _bcrypt_get_cert_chain(
     PCCERT_CONTEXT cert_context,
     HCERTSTORE trusted_store,
     size_t expected_chain_length,
-    PCERT_CHAIN_CONTEXT* cert_chain)
+    PCCERT_CHAIN_CONTEXT* cert_chain)
 {
     oe_result_t result = OE_UNEXPECTED;
-    PCERT_CHAIN_CONTEXT found_chain = NULL;
+    PCCERT_CHAIN_CONTEXT found_chain = NULL;
 
     if (cert_chain)
         *cert_chain = NULL;
@@ -558,13 +569,14 @@ static oe_result_t _bcrypt_get_cert_chain(
      * calls.
      */
     if (!CertGetCertificateChain(
-            NULL,                           // use the default engine
-            cert_context,                   // pointer to the end certificate
-            NULL,                           // use the default time
-            trusted_store,                  // search custom store
-            &_OE_DEFAULT_CERT_CHAIN_PARAMS, // use default chain params
-            _OE_DEFAULT_CERT_CHAIN_FLAGS,   // use specified chain flags
-            NULL,                           // currently reserved
+            NULL,          // use the default engine
+            cert_context,  // pointer to the end certificate
+            NULL,          // use the default time
+            trusted_store, // search custom store
+            (PCERT_CHAIN_PARA)&_OE_DEFAULT_CERT_CHAIN_PARAMS, // use default
+                                                              // chain params
+            _OE_DEFAULT_CERT_CHAIN_FLAGS, // use specified chain flags
+            NULL,                         // currently reserved
             &found_chain)) // return a pointer to the chain created
     {
         DWORD err = GetLastError();
@@ -604,7 +616,7 @@ static oe_result_t _verify_whole_chain(PCCERT_CHAIN_CONTEXT cert_chain)
     if (!CertVerifyCertificateChainPolicy(
             CERT_CHAIN_POLICY_BASIC_CONSTRAINTS,
             cert_chain,
-            &_OE_DEFAULT_CERT_CHAIN_POLICY,
+            (PCERT_CHAIN_POLICY_PARA)&_OE_DEFAULT_CERT_CHAIN_POLICY,
             &policy_status))
     {
         OE_RAISE_MSG(
@@ -622,7 +634,42 @@ static oe_result_t _verify_whole_chain(PCCERT_CHAIN_CONTEXT cert_chain)
             policy_status.dwError);
     }
 
-    // TODO: Check the CERT_CHAIN_POLICY_STATUS on the
+    // TODO: Check the CERT_CHAIN_POLICY_STATUS on the cert chain
+    result = OE_OK;
+
+done:
+    return result;
+}
+
+oe_result_t _bcrypt_get_public_key_from_cert(
+    const oe_cert_t* cert,
+    BCRYPT_KEY_HANDLE* public_key)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    const cert_t* impl = (const cert_t*)cert;
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+
+    if (public_key)
+        *public_key = NULL;
+
+    /* Reject invalid parameters */
+    if (!_cert_is_valid(impl) || !public_key)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Get public key */
+    status = CryptImportPublicKeyInfoEx2(
+        X509_ASN_ENCODING,
+        &impl->cert->pCertInfo->SubjectPublicKeyInfo,
+        0,
+        NULL,
+        public_key);
+
+    if (!BCRYPT_SUCCESS(status))
+        OE_RAISE_MSG(
+            OE_CRYPTO_ERROR,
+            "CryptImportPublicKeyInfoEx2 failed, err=%#x\n",
+            status);
+
     result = OE_OK;
 
 done:
@@ -647,17 +694,42 @@ oe_result_t oe_cert_read_pem(
     cert_t* impl = (cert_t*)cert;
     BYTE* der_data = NULL;
     DWORD der_size = 0;
-    PCERT_CONTEXT cert_context = NULL;
 
     /* Zero-initialize the implementation */
     if (impl)
         impl->magic = 0;
 
     OE_CHECK(_bcrypt_pem_to_der(pem_data, pem_size, &der_data, &der_size));
+    OE_CHECK(oe_cert_read_der(cert, der_data, der_size));
+
+    result = OE_OK;
+
+done:
+    if (der_data)
+        free(der_data);
+
+    return result;
+}
+
+oe_result_t oe_cert_read_der(
+    oe_cert_t* cert,
+    const void* der_data,
+    size_t der_size)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    cert_t* impl = (cert_t*)cert;
+    PCCERT_CONTEXT cert_context = NULL;
+
+    /* Zero-initialize the implementation */
+    if (impl)
+        impl->magic = 0;
+
+    if (der_size > MAXDWORD)
+        OE_RAISE(OE_INVALID_PARAMETER);
 
     /* Create the CERT_CONTEXT from DER data */
     cert_context = CertCreateCertificateContext(
-        X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, der_data, der_size);
+        X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, der_data, (DWORD)der_size);
 
     if (!cert_context)
         OE_RAISE_MSG(
@@ -674,50 +746,7 @@ done:
     if (cert_context)
         CertFreeCertificateContext(cert_context);
 
-    if (der_data)
-        free(der_data);
-
     return result;
-}
-
-oe_result_t oe_cert_read_der(
-    oe_cert_t* cert,
-    const void* der_data,
-    size_t der_size)
-{
-    return OE_UNSUPPORTED;
-    //    oe_result_t result = OE_UNEXPECTED;
-    //    Cert* impl = (Cert*)cert;
-    //    X509* x509 = NULL;
-    //    unsigned char* p = NULL;
-    //
-    //    /* Zero-initialize the implementation */
-    //    if (impl)
-    //        impl->magic = 0;
-    //
-    //    /* Check parameters */
-    //    if (!der_data || !der_size || der_size > OE_INT_MAX || !cert)
-    //        OE_RAISE(OE_INVALID_PARAMETER);
-    //
-    //    /* Initialize OpenSSL (if not already initialized) */
-    //    oe_initialize_openssl();
-    //
-    //    p = (unsigned char*)der_data;
-    //
-    //    /* Convert the PEM BIO into a certificate object */
-    //    if (!(x509 = d2i_X509(NULL, (const unsigned char**)&p, (int)der_size)))
-    //        OE_RAISE(OE_FAILURE);
-    //
-    //    _cert_init(impl, x509);
-    //    x509 = NULL;
-    //
-    //    result = OE_OK;
-    //
-    //done:
-    //
-    //    X509_free(x509);
-    //
-    //    return result;
 }
 
 oe_result_t oe_cert_free(oe_cert_t* cert)
@@ -765,7 +794,7 @@ oe_result_t oe_cert_chain_read_pem(
     // TODO: Refactor apart into:
     // - _bcrypt_load_pem_as_cert_store
     // - _bcrypt_get_cert_chain_from_store
-    HCERTSTORE store = CertOpenStore(CERT_STORE_PROV_MEMORY, 0, NULL, 0, NULL);
+    HCERTSTORE store = CertOpenStore(CERT_STORE_PROV_MEMORY, 0, 0, 0, NULL);
     if (!store)
         OE_RAISE_MSG(
             OE_CRYPTO_ERROR, "CertOpenStore failed, err=%#x\n", GetLastError());
@@ -913,50 +942,57 @@ oe_result_t oe_cert_verify(
         OE_RAISE_MSG(OE_INVALID_PARAMETER, "Invalid cert parameter", NULL);
 
     /* Check for invalid chain parameter */
-    if (!_cert_chain_is_valid(chain_impl))
+    if (chain && !_cert_chain_is_valid(chain_impl))
         OE_RAISE_MSG(OE_INVALID_PARAMETER, "Invalid chain parameter", NULL);
 
     /* Create a store for the verification */
-    cert_store = CertOpenStore(CERT_STORE_PROV_MEMORY, 0, NULL, 0, NULL);
+    cert_store = CertOpenStore(CERT_STORE_PROV_MEMORY, 0, 0, 0, NULL);
     if (!cert_store)
         OE_RAISE_MSG(OE_CRYPTO_ERROR, "Failed to allocate X509 store", NULL);
 
-    /* Add certs in chain to cert store */
-    if (chain_impl->cert_chain->cChain > 0 &&
-        chain_impl->cert_chain->rgpChain[0])
+    /* Add certs in chain to cert store, if any */
+    if (chain)
     {
-        chain_count = chain_impl->cert_chain->rgpChain[0]->cElement;
-    }
-    else
-    {
-        OE_RAISE_MSG(
-            OE_INVALID_PARAMETER,
-            "Invalid chain parameter contains no certs",
-            NULL);
-    }
-
-    for (int i = 0; i < chain_count; i++)
-    {
-        if (!CertAddCertificateContextToStore(
-                cert_store,
-                chain_impl->cert_chain->rgpChain[0]
-                    ->rgpElement[i]
-                    ->pCertContext,
-                CERT_STORE_ADD_REPLACE_EXISTING,
-                NULL))
+        if (chain_impl->cert_chain->cChain > 0 &&
+            chain_impl->cert_chain->rgpChain[0])
+        {
+            chain_count = chain_impl->cert_chain->rgpChain[0]->cElement;
+        }
+        else
         {
             OE_RAISE_MSG(
-                OE_CRYPTO_ERROR,
-                "CertAddCertificateContextToStore failed, err=%#x\n",
-                GetLastError());
+                OE_INVALID_PARAMETER,
+                "Invalid chain parameter contains no certs",
+                NULL);
+        }
+
+        for (DWORD i = 0; i < chain_count; i++)
+        {
+            if (!CertAddCertificateContextToStore(
+                    cert_store,
+                    chain_impl->cert_chain->rgpChain[0]
+                        ->rgpElement[i]
+                        ->pCertContext,
+                    CERT_STORE_ADD_REPLACE_EXISTING,
+                    NULL))
+            {
+                OE_RAISE_MSG(
+                    OE_CRYPTO_ERROR,
+                    "CertAddCertificateContextToStore failed, err=%#x\n",
+                    GetLastError());
+            }
         }
     }
 
     /* Add CRLs to cert store */
     for (int j = 0; j < num_crls; j++)
     {
+        /* TODO: update when bcrypt impl of oe_crl_t defines a substructure */
         if (!CertAddCRLContextToStore(
-                cert_store, crls[j], CERT_STORE_ADD_REPLACE_EXISTING, NULL))
+                cert_store,
+                (PCCRL_CONTEXT)crls[j],
+                CERT_STORE_ADD_REPLACE_EXISTING,
+                NULL))
         {
             OE_RAISE_MSG(
                 OE_CRYPTO_ERROR,
@@ -992,42 +1028,29 @@ oe_result_t oe_cert_get_rsa_public_key(
     oe_rsa_public_key_t* public_key)
 {
     oe_result_t result = OE_UNEXPECTED;
-    const cert_t* impl = (const cert_t*)cert;
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    BCRYPT_KEY_HANDLE pkey = NULL;
+    BCRYPT_KEY_HANDLE key_handle = NULL;
 
     /* Clear public key for all error pathways */
     if (public_key)
         oe_secure_zero_fill(public_key, sizeof(oe_rsa_public_key_t));
 
     /* Reject invalid parameters */
-    if (!_cert_is_valid(impl) || !public_key)
+    if (!cert || !public_key)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    /* Get public key */
-    status = CryptImportPublicKeyInfoEx2(
-        X509_ASN_ENCODING,
-        &impl->cert->pCertInfo->SubjectPublicKeyInfo,
-        0,
-        NULL,
-        &pkey);
-
-    if (!BCRYPT_SUCCESS(status))
-        OE_RAISE_MSG(
-            OE_CRYPTO_ERROR,
-            "CryptImportPublicKeyInfoEx2 failed, err=%#x\n",
-            status);
+    OE_CHECK(_bcrypt_get_public_key_from_cert(cert, &key_handle));
 
     /* Initialize the RSA public key */
-    oe_rsa_public_key_init(public_key, pkey);
-    pkey = NULL;
+    oe_rsa_public_key_init(public_key, key_handle);
+    key_handle = NULL;
 
     result = OE_OK;
 
 done:
-    if (pkey)
+    if (key_handle)
     {
-        BCryptDestroyKey(pkey);
+        BCryptDestroyKey(key_handle);
     }
 
     return result;
@@ -1037,48 +1060,33 @@ oe_result_t oe_cert_get_ec_public_key(
     const oe_cert_t* cert,
     oe_ec_public_key_t* public_key)
 {
-    return OE_UNSUPPORTED;
-    //    oe_result_t result = OE_UNEXPECTED;
-    //    const cert_t* impl = (const cert_t*)cert;
-    //    EVP_PKEY* pkey = NULL;
-    //
-    //    /* Clear public key for all error pathways */
-    //    if (public_key)
-    //        oe_secure_zero_fill(public_key, sizeof(oe_ec_public_key_t));
-    //
-    //    /* Reject invalid parameters */
-    //    if (!_cert_is_valid(impl) || !public_key)
-    //        OE_RAISE(OE_INVALID_PARAMETER);
-    //
-    //    /* Get public key (increments reference count) */
-    //    if (!(pkey = X509_get_pubkey(impl->cert)))
-    //        OE_RAISE(OE_FAILURE);
-    //
-    //    /* If this is not an EC key */
-    //    {
-    //        EC_KEY* ec;
-    //
-    //        if (!(ec = EVP_PKEY_get1_EC_KEY(pkey)))
-    //            OE_RAISE(OE_FAILURE);
-    //
-    //        EC_KEY_free(ec);
-    //    }
-    //
-    //    /* Initialize the EC public key */
-    //    oe_ec_public_key_init(public_key, pkey);
-    //    pkey = NULL;
-    //
-    //    result = OE_OK;
-    //
-    // done:
-    //
-    //    if (pkey)
-    //    {
-    //        /* Decrement reference count (incremented above) */
-    //        EVP_PKEY_free(pkey);
-    //    }
-    //
-    //    return result;
+    oe_result_t result = OE_UNEXPECTED;
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+    BCRYPT_KEY_HANDLE key_handle = NULL;
+
+    /* Clear public key for all error pathways */
+    if (public_key)
+        oe_secure_zero_fill(public_key, sizeof(oe_ec_public_key_t));
+
+    /* Reject invalid parameters */
+    if (!cert || !public_key)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    OE_CHECK(_bcrypt_get_public_key_from_cert(cert, &key_handle));
+
+    /* Initialize the EC public key */
+    oe_ec_public_key_init(public_key, key_handle);
+    key_handle = NULL;
+
+    result = OE_OK;
+
+done:
+    if (key_handle)
+    {
+        BCryptDestroyKey(key_handle);
+    }
+
+    return result;
 }
 
 /* Used by tests/crypto/ec_tests|rsa_tests */
@@ -1118,7 +1126,7 @@ oe_result_t oe_cert_chain_get_cert(
     oe_result_t result = OE_UNEXPECTED;
     const cert_chain_t* impl = (const cert_chain_t*)chain;
     size_t length;
-    PCERT_CONTEXT found_cert = NULL;
+    PCCERT_CONTEXT found_cert = NULL;
 
     /* Clear the output certificate for all error pathways */
     if (cert)

@@ -328,8 +328,7 @@ done:
 
 void oe_rsa_public_key_init(oe_rsa_public_key_t* public_key, EVP_PKEY* pkey)
 {
-    return oe_public_key_init(
-        (oe_public_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
+    oe_public_key_init((oe_public_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
 }
 
 oe_result_t oe_rsa_private_key_read_pem(
@@ -372,12 +371,12 @@ oe_result_t oe_rsa_public_key_read_pem(
 }
 
 oe_result_t oe_rsa_public_key_write_pem(
-    const oe_rsa_public_key_t* private_key,
+    const oe_rsa_public_key_t* public_key,
     uint8_t* pem_data,
     size_t* pem_size)
 {
     return oe_public_key_write_pem(
-        (const oe_public_key_t*)private_key,
+        (const oe_public_key_t*)public_key,
         pem_data,
         pem_size,
         _PUBLIC_KEY_MAGIC);
