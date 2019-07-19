@@ -210,6 +210,7 @@ if (BUILD_ENCLAVES)
 endif()
 
 if (OE_SGX)
+  add_subdirectory(idl)
   add_subdirectory(debugger)
 endif()
 
