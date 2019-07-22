@@ -4,7 +4,7 @@
 //#include <ctype.h>
 #include <openenclave/bits/result.h>
 #include <openenclave/bits/safecrt.h>
-#include <openenclave/bits/safemath.h>
+//#include <openenclave/bits/safemath.h>
 //#include <openenclave/internal/asn1.h>
 #include <openenclave/internal/cert.h>
 #include <openenclave/internal/hexdump.h>
@@ -22,6 +22,7 @@
 #include "bcrypt.h"
 #include "ec.h"
 #include "key.h"
+#include "pem.h"
 #include "rsa.h"
 
 /*
@@ -44,165 +45,6 @@ static const CERT_CHAIN_PARA _OE_DEFAULT_CERT_CHAIN_PARAMS = {
 static const DWORD _OE_DEFAULT_CERT_CHAIN_FLAGS =
     CERT_CHAIN_CACHE_END_CERT | CERT_CHAIN_REVOCATION_CHECK_CACHE_ONLY |
     CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL;
-
-inline oe_result_t _check_pem_args(const void* pem_data, size_t pem_size)
-{
-    oe_result_t result = OE_OK;
-
-    /* Must have pem_size-1 non-zero characters followed by zero-terminator */
-    if (!pem_data || !pem_size || pem_size > OE_INT_MAX ||
-        strnlen((const char*)pem_data, pem_size) != pem_size - 1)
-        OE_RAISE(OE_INVALID_PARAMETER);
-done:
-    return result;
-}
-
-/* TODO: Consolidate with _rsa_pem_to_der in rsa.c */
-oe_result_t _bcrypt_pem_to_der(
-    const void* pem_data,
-    size_t pem_size,
-    BYTE** der_data,
-    DWORD* der_size)
-{
-    oe_result_t result = OE_UNEXPECTED;
-    BYTE* output = NULL;
-    DWORD output_size = 0;
-
-    if (der_data)
-        *der_data = NULL;
-
-    if (der_size)
-        *der_size = 0;
-
-    /* Check parameters */
-    if (!der_data || !der_size)
-        OE_RAISE(OE_INVALID_PARAMETER);
-
-    OE_CHECK(_check_pem_args(pem_data, pem_size));
-
-    /* Strip base64 header/footers and convert from PEM format to DER format */
-    if (!CryptStringToBinaryA(
-            pem_data,
-            0,
-            CRYPT_STRING_BASE64HEADER,
-            NULL,
-            &output_size,
-            NULL,
-            NULL))
-    {
-        OE_RAISE_MSG(
-            OE_CRYPTO_ERROR,
-            "CryptStringToBinaryA failed err=%#x\n",
-            GetLastError());
-    }
-
-    output = (BYTE*)malloc(output_size);
-    if (!output)
-        OE_RAISE(OE_OUT_OF_MEMORY);
-
-    if (!CryptStringToBinaryA(
-            pem_data,
-            0,
-            CRYPT_STRING_BASE64HEADER,
-            output,
-            &output_size,
-            NULL,
-            NULL))
-    {
-        OE_RAISE_MSG(
-            OE_CRYPTO_ERROR,
-            "CryptStringToBinaryA failed, err=%#x\n",
-            GetLastError());
-    }
-
-    *der_size = output_size;
-    *der_data = output;
-    output = NULL;
-    result = OE_OK;
-
-done:
-    if (output)
-        free(output);
-
-    return result;
-}
-
-oe_result_t _get_next_pem_cert(
-    const void** pem_read_pos,
-    size_t* pem_bytes_remaining,
-    char** pem_cert,
-    size_t* pem_cert_size)
-{
-    oe_result_t result = OE_UNEXPECTED;
-    const char* cert_begin = NULL;
-    const char* cert_end = NULL;
-    char* found_pem = NULL;
-    size_t found_pem_size = 0;
-    const void* pem_data_end = NULL;
-
-    if (pem_cert)
-        *pem_cert = NULL;
-
-    if (pem_cert_size)
-        *pem_cert_size = 0;
-
-    /* Check parameters */
-    if (!pem_read_pos || !pem_bytes_remaining || !pem_cert || !pem_cert_size)
-        OE_RAISE(OE_INVALID_PARAMETER);
-
-    OE_CHECK(_check_pem_args(*pem_read_pos, *pem_bytes_remaining));
-
-    cert_begin = (unsigned char*)strstr(
-        (const char*)*pem_read_pos, OE_PEM_BEGIN_CERTIFICATE);
-
-    if (!cert_begin || *cert_begin == '\0')
-        return (OE_NOT_FOUND);
-
-    cert_end = (unsigned char*)strstr(
-        (const char*)*pem_read_pos, OE_PEM_END_CERTIFICATE);
-
-    if (!cert_end || *cert_begin == '\0' || cert_end <= cert_begin)
-        return (OE_NOT_FOUND);
-
-    /* PEM cert footer must have at least newline or null-terminator in pem_data
-     * buffer to be valid. */
-    assert(sizeof(void*) == sizeof(uint64_t));
-    OE_CHECK(oe_safe_add_u64(
-        (uint64_t)cert_end,
-        OE_PEM_END_CERTIFICATE_LEN + 1,
-        (uint64_t*)&cert_end));
-    OE_CHECK(oe_safe_sub_u64(
-        (uint64_t)cert_end, (uint64_t)cert_begin, &found_pem_size));
-
-    found_pem = malloc(found_pem_size);
-    if (!found_pem)
-        OE_RAISE(OE_OUT_OF_MEMORY);
-
-    OE_CHECK(
-        oe_memcpy_s(found_pem, found_pem_size, cert_begin, found_pem_size - 1));
-    found_pem[found_pem_size - 1] = '\0';
-
-    /* Note that pem_cert offset may not equal the starting read_pos,
-     * so we infer the remaining_size from the new read_pos. */
-    OE_CHECK(oe_safe_add_u64(
-        (uint64_t)*pem_read_pos,
-        *pem_bytes_remaining,
-        (uint64_t*)&pem_data_end));
-    OE_CHECK(oe_safe_sub_u64(
-        (uint64_t)pem_data_end, (uint64_t)cert_end, pem_bytes_remaining));
-
-    *pem_read_pos = cert_end;
-    *pem_cert = found_pem;
-    *pem_cert_size = found_pem_size;
-
-    result = OE_OK;
-
-done:
-    if (result != OE_OK && found_pem)
-        free(found_pem);
-
-    return result;
-}
 
 /* Randomly generated magic number */
 #define OE_CERT_MAGIC 0xbc8e184285de4d2a
@@ -699,7 +541,7 @@ oe_result_t oe_cert_read_pem(
     if (impl)
         impl->magic = 0;
 
-    OE_CHECK(_bcrypt_pem_to_der(pem_data, pem_size, &der_data, &der_size));
+    OE_CHECK(oe_bcrypt_pem_to_der(pem_data, pem_size, &der_data, &der_size));
     OE_CHECK(oe_cert_read_der(cert, der_data, der_size));
 
     result = OE_OK;
@@ -805,14 +647,14 @@ oe_result_t oe_cert_chain_read_pem(
     while (remaining_size >
            OE_PEM_BEGIN_CERTIFICATE_LEN + OE_PEM_END_CERTIFICATE_LEN)
     {
-        find_result = _get_next_pem_cert(
+        find_result = oe_get_next_pem_cert(
             &read_pos, &remaining_size, &pem_cert, &pem_cert_size);
         if (find_result == OE_NOT_FOUND)
             break;
         else if (find_result != OE_OK)
             OE_RAISE(find_result);
 
-        OE_CHECK(_bcrypt_pem_to_der(
+        OE_CHECK(oe_bcrypt_pem_to_der(
             pem_cert, pem_cert_size, &der.pbData, &der.cbData));
         free(pem_cert);
         pem_cert = NULL;
@@ -1198,72 +1040,41 @@ oe_result_t oe_cert_find_extension(
     uint8_t* data,
     size_t* size)
 {
-    return OE_UNSUPPORTED;
-    //    oe_result_t result = OE_UNEXPECTED;
-    //    const cert_t* impl = (const cert_t*)cert;
-    //    const STACK_OF(X509_EXTENSION) * extensions;
-    //    int num_extensions;
-    //
-    //    /* Reject invalid parameters */
-    //    if (!_cert_is_valid(impl) || !oid || !size)
-    //        OE_RAISE(OE_INVALID_PARAMETER);
-    //
-    //    /* Set a pointer to the stack of extensions (possibly NULL) */
-    //    if (!(extensions = X509_get0_extensions(impl->cert)))
-    //        OE_RAISE(OE_NOT_FOUND);
-    //
-    //    /* Get the number of extensions (possibly zero) */
-    //    num_extensions = sk_X509_EXTENSION_num(extensions);
-    //
-    //    /* Find the certificate with this OID */
-    //    for (int i = 0; i < num_extensions; i++)
-    //    {
-    //        X509_EXTENSION* ext;
-    //        ASN1_OBJECT* obj;
-    //        oe_oid_string_t ext_oid;
-    //
-    //        /* Get the i-th extension from the stack */
-    //        if (!(ext = sk_X509_EXTENSION_value(extensions, i)))
-    //            OE_RAISE(OE_FAILURE);
-    //
-    //        /* Get the OID */
-    //        if (!(obj = X509_EXTENSION_get_object(ext)))
-    //            OE_RAISE(OE_FAILURE);
-    //
-    //        /* Get the string name of the OID */
-    //        if (!OBJ_obj2txt(ext_oid.buf, sizeof(ext_oid.buf), obj, 1))
-    //            OE_RAISE(OE_FAILURE);
-    //
-    //        /* If found then get the data */
-    //        if (strcmp(ext_oid.buf, oid) == 0)
-    //        {
-    //            ASN1_OCTET_STRING* str;
-    //
-    //            /* Get the data from the extension */
-    //            if (!(str = X509_EXTENSION_get_data(ext)))
-    //                OE_RAISE(OE_FAILURE);
-    //
-    //            /* If the caller's buffer is too small, raise error */
-    //            if ((size_t)str->length > *size)
-    //            {
-    //                *size = (size_t)str->length;
-    //                OE_RAISE(OE_BUFFER_TOO_SMALL);
-    //            }
-    //
-    //            if (data)
-    //            {
-    //                OE_CHECK(
-    //                    oe_memcpy_s(data, *size, str->data,
-    //                    (size_t)str->length));
-    //                *size = (size_t)str->length;
-    //                result = OE_OK;
-    //                goto done;
-    //            }
-    //        }
-    //    }
-    //
-    //    result = OE_NOT_FOUND;
-    //
-    // done:
-    //    return result;
+    oe_result_t result = OE_UNEXPECTED;
+    cert_t* impl = (cert_t*)cert;
+
+    /* Reject invalid parameters */
+    if (!_cert_is_valid(impl) || !oid || !size)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Find the certificate with this OID */
+    PCERT_EXTENSION extension = CertFindExtension(
+        oid,
+        impl->cert->pCertInfo->cExtension,
+        impl->cert->pCertInfo->rgExtension);
+
+    if (!extension)
+        OE_RAISE(OE_NOT_FOUND);
+
+    /* If the caller's buffer is too small, raise error */
+    if (extension->Value.cbData > *size)
+    {
+        *size = extension->Value.cbData;
+        OE_RAISE(OE_BUFFER_TOO_SMALL);
+    }
+
+    if (data)
+    {
+        OE_CHECK(oe_memcpy_s(
+            data,
+            *size,
+            extension->Value.pbData,
+            extension->Value.cbData));
+        *size = extension->Value.cbData;
+    }
+
+    result = OE_OK;
+
+done:
+    return result;
 }

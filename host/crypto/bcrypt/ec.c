@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-//#include "ec.h"
+#include <assert.h>
 #include <openenclave/bits/safecrt.h>
 //#include <openenclave/internal/defs.h>
 #include <openenclave/internal/ec.h>
@@ -15,6 +15,9 @@
 #include "bcrypt.h"
 #include "ec.h"
 #include "key.h"
+#include "pem.h"
+
+#include <openenclave/internal/hexdump.h>
 
 /* Magic numbers for the EC key implementation structures */
 static const uint64_t _PRIVATE_KEY_MAGIC = 0x19a751419ae04bbc;
@@ -23,14 +26,14 @@ static const uint64_t _PUBLIC_KEY_MAGIC = 0xb1d39580c1f14c02;
 OE_STATIC_ASSERT(sizeof(oe_public_key_t) <= sizeof(oe_ec_public_key_t));
 OE_STATIC_ASSERT(sizeof(oe_private_key_t) <= sizeof(oe_ec_private_key_t));
 
-// static const oe_bcrypt_key_format_t _PRIVATE_EC_KEY_ARGS = {
-//    X509_ECC_PRIVATE_KEY,
-//    BCRYPT_ECDSA_P256_ALGORITHM,
-//    BCRYPT_ECCPRIVATE_BLOB};
+static const oe_bcrypt_key_format_t _PRIVATE_EC_KEY_ARGS = {
+    X509_ECC_PRIVATE_KEY,
+    BCRYPT_ECDSA_P256_ALG_HANDLE,
+    BCRYPT_ECCPRIVATE_BLOB};
 
 static const oe_bcrypt_key_format_t _PUBLIC_EC_KEY_ARGS = {
     szOID_ECC_PUBLIC_KEY,
-    BCRYPT_ECDSA_P256_ALGORITHM,
+    BCRYPT_ECDSA_P256_ALG_HANDLE,
     BCRYPT_ECCPUBLIC_BLOB};
 
 static const DWORD OE_BCRYPT_UNSUPPORTED_EC_TYPE = 0;
@@ -179,7 +182,7 @@ static DWORD _get_bcrypt_magic(oe_ec_type_t ec_type)
 //            OE_RAISE(OE_CRYPTO_ERROR);
 //
 //        /* Initialize the public key */
-//        oe_public_key_init(public_key, pkey_public, _PUBLIC_KEY_MAGIC);
+//        oe_bcrypt_key_init(public_key, pkey_public, _PUBLIC_KEY_MAGIC);
 //
 //        /* Keep these from being freed below */
 //        ec_public = NULL;
@@ -267,14 +270,8 @@ void oe_ec_public_key_init(
     oe_ec_public_key_t* public_key,
     BCRYPT_KEY_HANDLE* pkey)
 {
-    oe_public_key_init((oe_public_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
+    oe_bcrypt_key_init((oe_bcrypt_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
 }
-
-// void oe_ec_private_key_init(oe_ec_private_key_t* private_key, EVP_PKEY* pkey)
-//{
-//    return oe_private_key_init(
-//        (oe_private_key_t*)private_key, pkey, _PRIVATE_KEY_MAGIC);
-//}
 
 /* Used by tests/crypto/ec_tests */
 oe_result_t oe_ec_private_key_read_pem(
@@ -282,13 +279,135 @@ oe_result_t oe_ec_private_key_read_pem(
     const uint8_t* pem_data,
     size_t pem_size)
 {
-    return OE_UNSUPPORTED;
-    // return oe_private_key_read_pem(
-    //    pem_data,
-    //    pem_size,
-    //    (oe_private_key_t*)private_key,
-    //    EVP_PKEY_EC,
-    //    _PRIVATE_KEY_MAGIC);
+    oe_result_t result = OE_UNEXPECTED;
+    oe_bcrypt_key_t* impl = (oe_bcrypt_key_t*)private_key;
+    uint8_t* der_data = NULL;
+    DWORD der_size = 0;
+    uint8_t* key_blob = NULL;
+    DWORD key_blob_size = 0;
+    BCRYPT_KEY_HANDLE handle = NULL;
+
+    /* Zero-initialize the key */
+    if (private_key)
+        oe_secure_zero_fill(private_key, sizeof(oe_ec_private_key_t));
+    else
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    /* Convert PEM to DER, this also validates PEM parameters. */
+    OE_CHECK(oe_bcrypt_pem_to_der(pem_data, pem_size, &der_data, &der_size));
+
+    /* Decode the PEM into CRYPT_ECC_PRIVATE_KEY_INFO struct */
+    BOOL success = CryptDecodeObjectEx(
+        X509_ASN_ENCODING,
+        _PRIVATE_EC_KEY_ARGS.encoding,
+        der_data,
+        der_size,
+        CRYPT_DECODE_ALLOC_FLAG | CRYPT_DECODE_NOCOPY_FLAG,
+        NULL,
+        &key_blob,
+        &key_blob_size);
+
+    if (!success)
+        OE_RAISE_MSG(
+            OE_CRYPTO_ERROR,
+            "CryptDecodeObjectEx failed (err=%#x)\n",
+            GetLastError());
+
+    PCRYPT_ECC_PRIVATE_KEY_INFO keyinfo = (PCRYPT_ECC_PRIVATE_KEY_INFO)key_blob;
+
+    /* We want to import the CRYPT_ECC_PRIVATE_KEY_INFO into a
+     * BCRYPT_KEY_HANDLE for use, but BCrypt doesn't offer any methods
+     * to do this directly, so manually convert it into a
+     * BCRYPT_ECCPRIVATE_BLOB for BCryptImportKeyPair.
+     *
+     * See documentation of BCRYPT_ECCKEY_BLOB at:
+     https://docs.microsoft.com/en-us/windows/desktop/api/bcrypt/ns-bcrypt-_bcrypt_ecckey_blob
+     *
+     *    struct BCRYPT_ECCPRIVATE_BLOB
+     *    {
+     *       struct BCRYPT_ECCKEY_BLOB
+     *       {
+     *           ULONG dwMagic;
+     *           ULONG cbKey;
+     *       };
+     *       BYTE X[cbKey]; // Big-endian
+     *       BYTE Y[cbKey]; // Big-endian
+     *       BYTE d[cbKey]; // Big-endian
+     *    }
+     */
+
+    DWORD bcrypt_key_blob_size =
+        sizeof(BCRYPT_ECCKEY_BLOB) + (3 * keyinfo->PrivateKey.cbData);
+    uint8_t* bcrypt_key_blob = (uint8_t*)malloc(bcrypt_key_blob_size);
+    if (!bcrypt_key_blob)
+        OE_RAISE(OE_OUT_OF_MEMORY);
+
+    BCRYPT_ECCKEY_BLOB* key_header = (BCRYPT_ECCKEY_BLOB*)bcrypt_key_blob;
+
+    /* TODO: derive magic and algId from keyinfo->szCurveOid.
+     * This only supports P256 as specified by ec.c fixed mapping. */
+    key_header->dwMagic = BCRYPT_ECDSA_PRIVATE_P256_MAGIC;
+    key_header->cbKey = keyinfo->PrivateKey.cbData;
+
+    /* We could CryptDecodeObjectEx on keyinfo.PublicKey to extract the
+     * ASN-decoded X & Y values from the CRYPT_BIT_BLOB, but it turns
+     * out that BCrypt will recompute them from the private key on
+     * import if they are zeroed out, so we skip that here. */
+    uint8_t* public_key = bcrypt_key_blob + sizeof(BCRYPT_ECCKEY_BLOB);
+    DWORD public_key_size = 2 * key_header->cbKey;
+    oe_secure_zero_fill(public_key, public_key_size);
+
+    /* Copy in the private key into d */
+    uint8_t* d = bcrypt_key_blob + sizeof(BCRYPT_ECCKEY_BLOB) + public_key_size;
+    OE_CHECK(oe_memcpy_s(
+        d,
+        key_header->cbKey,
+        keyinfo->PrivateKey.pbData,
+        keyinfo->PrivateKey.cbData));
+
+    NTSTATUS status = BCryptImportKeyPair(
+        _PRIVATE_EC_KEY_ARGS.key_algorithm,
+        NULL,
+        _PRIVATE_EC_KEY_ARGS.key_blob_type,
+        &handle,
+        bcrypt_key_blob,
+        bcrypt_key_blob_size,
+        0);
+
+    if (!BCRYPT_SUCCESS(status))
+        OE_RAISE_MSG(
+            OE_CRYPTO_ERROR, "BCryptImportKeyPair failed (err=%#x)\n", status);
+
+    /* Wrap BCrypt key handle as oe_bcrypt_key_t. */
+    oe_bcrypt_key_init(impl, handle, _PRIVATE_KEY_MAGIC);
+    handle = NULL;
+
+    result = OE_OK;
+
+done:
+    if (handle)
+        BCryptDestroyKey(handle);
+
+    /*
+     * Make sure to zero out all confidential (private key) data.
+     * Note that key_blob must be freed with LocalFree and before der_data
+     * due to the use of CRYPT_DECODE_NOCOPY_FLAG in CryptObjectDecodeEx.
+     */
+    if (key_blob)
+    {
+        oe_secure_zero_fill(key_blob, key_blob_size);
+        LocalFree(key_blob);
+        key_blob_size = 0;
+    }
+
+    if (der_data)
+    {
+        oe_secure_zero_fill(der_data, der_size);
+        free(der_data);
+        der_size = 0;
+    }
+
+    return result;
 }
 
 /* Used by tests/crypto/ec_tests */
@@ -321,24 +440,23 @@ oe_result_t oe_ec_public_key_read_pem(
 
 /* Used by tests/crypto/ec_tests */
 oe_result_t oe_ec_public_key_write_pem(
-    const oe_ec_public_key_t* private_key,
+    const oe_ec_public_key_t* public_key,
     uint8_t* pem_data,
     size_t* pem_size)
 {
-    return OE_UNSUPPORTED;
-    // return oe_public_key_write_pem(
-    //    (const oe_public_key_t*)private_key,
-    //    pem_data,
-    //    pem_size,
-    //    _PUBLIC_KEY_MAGIC);
+    return oe_bcrypt_write_key_pem(
+        (const oe_bcrypt_key_t*)public_key,
+        _PUBLIC_EC_KEY_ARGS,
+        _PUBLIC_KEY_MAGIC,
+        pem_data,
+        pem_size);
 }
 
 /* Used by tests/crypto/ec_tests */
 oe_result_t oe_ec_private_key_free(oe_ec_private_key_t* private_key)
 {
-    return OE_UNSUPPORTED;
-    // return oe_private_key_free(
-    //    (oe_private_key_t*)private_key, _PRIVATE_KEY_MAGIC);
+    return oe_bcrypt_key_free(
+        (oe_bcrypt_key_t*)private_key, _PRIVATE_KEY_MAGIC);
 }
 
 oe_result_t oe_ec_public_key_free(oe_ec_public_key_t* public_key)
@@ -355,15 +473,68 @@ oe_result_t oe_ec_private_key_sign(
     uint8_t* signature,
     size_t* signature_size)
 {
-    return OE_UNSUPPORTED;
-    // return oe_private_key_sign(
-    //    (oe_private_key_t*)private_key,
-    //    hash_type,
-    //    hash_data,
-    //    hash_size,
-    //    signature,
-    //    signature_size,
-    //    _PRIVATE_KEY_MAGIC);
+    oe_result_t result = OE_UNEXPECTED;
+    uint8_t* raw_signature = NULL;
+    size_t raw_signature_size = 0;
+
+    {
+        oe_result_t size_result = oe_private_key_sign(
+            (oe_private_key_t*)private_key,
+            NULL,
+            hash_data,
+            hash_size,
+            NULL,
+            &raw_signature_size,
+            _PRIVATE_KEY_MAGIC);
+
+        if (size_result == OE_BUFFER_TOO_SMALL)
+        {
+            raw_signature = (uint8_t*)malloc(raw_signature_size);
+            if (!raw_signature)
+                OE_RAISE(OE_OUT_OF_MEMORY);
+            size_result = OE_OK;
+        }
+        OE_CHECK(size_result);
+    }
+
+    OE_CHECK(oe_private_key_sign(
+        (oe_private_key_t*)private_key,
+        NULL,
+        hash_data,
+        hash_size,
+        raw_signature,
+        &raw_signature_size,
+        _PRIVATE_KEY_MAGIC));
+
+    {
+        /* BCrypt produces a binary blob signature of the form: { r, s },
+         * where r & s are the same length as the EC key. This needs to
+         * be encoded into the X509_ECC_SIGNATURE DER format to be compatible
+         * with OpenSSL ECDSA output. */
+        assert(raw_signature_size % 2 == 0);
+
+        size_t r_size = raw_signature_size / 2;
+        size_t s_size = r_size;
+        uint8_t* r = raw_signature;
+        uint8_t* s = raw_signature + r_size;
+
+        OE_CHECK(oe_ecdsa_signature_write_der(
+            signature, signature_size, r, r_size, s, s_size));
+
+        char raw[1024] = {0};
+        char pem[1024] = {0};
+        oe_hex_string(raw, sizeof(raw), raw_signature, raw_signature_size);
+        oe_hex_string(pem, sizeof(pem), signature, *signature_size);
+        assert(pem[0]);
+    }
+
+    result = OE_OK;
+
+done:
+    if (raw_signature)
+        free(raw_signature);
+
+    return result;
 }
 
 oe_result_t oe_ec_public_key_verify(
@@ -374,14 +545,76 @@ oe_result_t oe_ec_public_key_verify(
     const uint8_t* signature,
     size_t signature_size)
 {
-    return oe_public_key_verify(
+    oe_result_t result = OE_UNEXPECTED;
+    BYTE* ecc_sig_blob = NULL;
+    DWORD ecc_sig_blob_size = 0;
+    BYTE* raw_signature = NULL;
+    DWORD raw_signature_size = 0;
+
+    /* Check parameters, hash & key are checked in oe_public_key_verify */
+    if (!signature || !signature_size || signature_size > MAXDWORD)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    BOOL success = CryptDecodeObjectEx(
+        X509_ASN_ENCODING,
+        X509_ECC_SIGNATURE,
+        signature,
+        (DWORD)signature_size,
+        CRYPT_DECODE_ALLOC_FLAG | CRYPT_DECODE_NOCOPY_FLAG,
+        NULL,
+        &ecc_sig_blob,
+        &ecc_sig_blob_size);
+
+    if (!success)
+        OE_RAISE_MSG(
+            OE_CRYPTO_ERROR,
+            "CryptDecodeObjectEx failed (err=%#x)\n",
+            GetLastError());
+
+    {
+        /* Copy r & s into a contiguous buffer */
+        CERT_ECC_SIGNATURE* ecc_sig = (CERT_ECC_SIGNATURE*)ecc_sig_blob;
+        raw_signature_size = ecc_sig->r.cbData + ecc_sig->s.cbData;
+        raw_signature = (BYTE*)malloc(raw_signature_size);
+        if (!raw_signature)
+            OE_RAISE(OE_OUT_OF_MEMORY);
+        OE_CHECK(oe_memcpy_s(
+            raw_signature,
+            raw_signature_size,
+            ecc_sig->r.pbData,
+            ecc_sig->s.cbData));
+        OE_CHECK(oe_memcpy_s(
+            raw_signature + ecc_sig->r.cbData,
+            raw_signature_size - ecc_sig->r.cbData,
+            ecc_sig->s.pbData,
+            ecc_sig->s.cbData));
+
+        char raw[1024] = {0};
+        char pem[1024] = {0};
+        oe_hex_string(raw, sizeof(raw), raw_signature, raw_signature_size);
+        oe_hex_string(pem, sizeof(pem), signature, signature_size);
+        assert(pem[0]);
+    }
+
+    OE_CHECK(oe_public_key_verify(
         (oe_public_key_t*)public_key,
-        hash_type,
+        NULL,
         hash_data,
         hash_size,
-        signature,
-        signature_size,
-        _PUBLIC_KEY_MAGIC);
+        raw_signature,
+        raw_signature_size,
+        _PUBLIC_KEY_MAGIC));
+
+    result = OE_OK;
+
+done:
+    if (raw_signature)
+        free(raw_signature);
+
+    if (ecc_sig_blob)
+        LocalFree(ecc_sig_blob);
+
+    return result;
 }
 
 /* Used by tests/crypto/ec_tests */
@@ -577,20 +810,9 @@ oe_result_t oe_ec_public_key_equal(
     OE_CHECK(_bcrypt_get_key_blob(
         (oe_bcrypt_key_t*)public_key2, BCRYPT_ECCPUBLIC_BLOB, &ec2, &ec2_size));
 
-    /* See documentation of BCRYPT_ECCKEY_BLOB at:
-     https://docs.microsoft.com/en-us/windows/desktop/api/bcrypt/ns-bcrypt-_bcrypt_ecckey_blob
-     struct BCRYPT_ECCPUBLIC_BLOB
-     {
-        struct BCRYPT_ECCKEY_BLOB
-        {
-            ULONG dwMagic;
-            ULONG cbKey;
-        };
-        BYTE X[cbKey]; // Big-endian
-        BYTE Y[cbKey]; // Big-endian
-     }
-     All fields must match between the two EC keys to be equal.
-     */
+    /* All fields must match between the two EC keys to be equal.
+     * See oe_ec_public_key_from_coordinates comments for description of
+     * BCRYPT_ECCPUBLIC_BLOB */
     if (ec1_size == ec2_size && oe_constant_time_mem_equal(ec1, ec2, ec1_size))
     {
         *equal = true;
@@ -635,14 +857,28 @@ oe_result_t oe_ec_public_key_from_coordinates(
         !y_size || y_size > OE_INT_MAX || x_size != y_size)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    /* Construct a BCRYPT_ECCPUBLIC_BLOB */
+    /* Construct a BCRYPT_ECCPUBLIC_BLOB from X & Y coordinates.
+     *
+     * See documentation of BCRYPT_ECCKEY_BLOB at:
+     https://docs.microsoft.com/en-us/windows/desktop/api/bcrypt/ns-bcrypt-_bcrypt_ecckey_blob
+     *
+     *    struct BCRYPT_ECCPUBLIC_BLOB
+     *    {
+     *       struct BCRYPT_ECCKEY_BLOB
+     *       {
+     *           ULONG dwMagic;
+     *           ULONG cbKey;
+     *       };
+     *       BYTE X[cbKey]; // Big-endian
+     *       BYTE Y[cbKey]; // Big-endian
+     *    }
+     */
     {
         ecc_key_buffer_size = sizeof(BCRYPT_ECCKEY_BLOB) + 2 * x_size;
         ecc_key_buffer = (uint8_t*)malloc(ecc_key_buffer_size);
         if (!ecc_key_buffer)
             OE_RAISE(OE_OUT_OF_MEMORY);
 
-        /* TODO: check struct alignment */
         BCRYPT_ECCKEY_BLOB* ecc_key_blob = (BCRYPT_ECCKEY_BLOB*)ecc_key_buffer;
         DWORD ecc_key_magic = _get_bcrypt_magic(ec_type);
         if (ecc_key_magic == OE_BCRYPT_UNSUPPORTED_EC_TYPE)
@@ -657,14 +893,13 @@ oe_result_t oe_ec_public_key_from_coordinates(
         uint8_t* ecc_key_x = ecc_key_buffer + sizeof(BCRYPT_ECCKEY_BLOB);
         uint8_t* ecc_key_y = ecc_key_x + x_size;
 
-        /* TODO: check if leading zero is needed */
         oe_memcpy_s(ecc_key_x, x_size, x_data, x_size);
         oe_memcpy_s(ecc_key_y, y_size, y_data, y_size);
     }
 
     /* Import the key blob to obtain the key handle */
     {
-        BOOL success = BCryptImportKeyPair(
+        NTSTATUS status = BCryptImportKeyPair(
             BCRYPT_ECDSA_P256_ALG_HANDLE,
             NULL,
             BCRYPT_ECCPUBLIC_BLOB,
@@ -673,11 +908,12 @@ oe_result_t oe_ec_public_key_from_coordinates(
             (DWORD)ecc_key_buffer_size,
             0); /* No dwFlags */
 
-        if (!success)
+        if (!BCRYPT_SUCCESS(status))
         {
-            DWORD err = GetLastError();
             OE_RAISE_MSG(
-                OE_CRYPTO_ERROR, "BCryptImportKeyPair failed(err=%#x)\n", err);
+                OE_CRYPTO_ERROR,
+                "BCryptImportKeyPair failed(err=%#x)\n",
+                status);
         }
 
         /* wrap as oe_ec_public_key_t compatible type */
@@ -735,9 +971,9 @@ oe_result_t oe_ecdsa_signature_write_der(
             X509_ASN_ENCODING,
             X509_ECC_SIGNATURE,
             &ecc_sig,
-            CRYPT_ENCODE_ALLOC_FLAG,
+            0,
             NULL,
-            &signature,
+            signature,
             &encoded_size);
 
         if (!success)

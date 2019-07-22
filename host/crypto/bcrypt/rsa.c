@@ -28,9 +28,51 @@ static const oe_bcrypt_key_format_t _PRIVATE_RSA_KEY_ARGS = {
     BCRYPT_RSAPRIVATE_BLOB};
 
 static const oe_bcrypt_key_format_t _PUBLIC_RSA_KEY_ARGS = {
-    X509_PUBLIC_KEY_INFO,
+    szOID_RSA_RSA,
     BCRYPT_RSA_ALG_HANDLE,
     BCRYPT_RSAPUBLIC_BLOB};
+
+/* Caller is responsible for freeing padding_info->config */
+static oe_result_t _get_padding_info(
+    oe_hash_type_t hash_type,
+    size_t hash_size,
+    oe_bcrypt_padding_info_t* padding_info)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    PCWSTR hash_algorithm = NULL;
+
+    /* Check for support hash types and correct sizes. */
+    switch (hash_type)
+    {
+        case OE_HASH_TYPE_SHA256:
+            if (hash_size != 32)
+                OE_RAISE(OE_INVALID_PARAMETER);
+            hash_algorithm = BCRYPT_SHA256_ALGORITHM;
+            break;
+        case OE_HASH_TYPE_SHA512:
+            if (hash_size != 64)
+                OE_RAISE(OE_INVALID_PARAMETER);
+            hash_algorithm = BCRYPT_SHA512_ALGORITHM;
+            break;
+        default:
+            OE_RAISE(OE_INVALID_PARAMETER);
+    }
+
+    /*
+     * Note that we use the less secure PKCS1 signature padding
+     * because Intel requires it for SGX enclave signatures.
+     */
+    padding_info->type = BCRYPT_PAD_PKCS1;
+    padding_info->config = malloc(sizeof(BCRYPT_PKCS1_PADDING_INFO));
+    BCRYPT_PKCS1_PADDING_INFO* info =
+        (BCRYPT_PKCS1_PADDING_INFO*)(padding_info->config);
+    info->pszAlgId = hash_algorithm;
+
+    result = OE_OK;
+
+done:
+    return result;
+}
 
 static oe_result_t _get_public_rsa_blob_info(
     BCRYPT_KEY_HANDLE key,
@@ -93,7 +135,7 @@ void oe_rsa_public_key_init(
     oe_rsa_public_key_t* public_key,
     BCRYPT_KEY_HANDLE* pkey)
 {
-    oe_public_key_init((oe_public_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
+    oe_bcrypt_key_init((oe_bcrypt_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
 }
 
 oe_result_t oe_rsa_private_key_read_pem(
@@ -174,89 +216,23 @@ oe_result_t oe_rsa_private_key_sign(
     size_t* signature_size)
 {
     oe_result_t result = OE_UNEXPECTED;
-    const oe_private_key_t* impl = (const oe_private_key_t*)private_key;
-
-    /* Check for null parameters and invalid sizes. */
-    if (!oe_bcrypt_key_is_valid(impl, _PRIVATE_KEY_MAGIC) || !hash_data ||
-        !hash_size || hash_size > MAXDWORD || !signature_size ||
-        *signature_size > MAXDWORD)
-    {
-        OE_RAISE(OE_INVALID_PARAMETER);
-    }
-
-    /* If signature buffer is null, then signature size must be zero */
-    if (!signature && *signature_size != 0)
-        OE_RAISE(OE_INVALID_PARAMETER);
-
-    {
-        ULONG sig_size;
-        NTSTATUS status;
-        BCRYPT_PKCS1_PADDING_INFO info;
-        uint8_t hash_data_copy[64];
-
-        /* Check for support hash types and correct sizes. */
-        switch (hash_type)
-        {
-            case OE_HASH_TYPE_SHA256:
-                if (hash_size != 32)
-                    OE_RAISE(OE_INVALID_PARAMETER);
-                info.pszAlgId = BCRYPT_SHA256_ALGORITHM;
-                break;
-            case OE_HASH_TYPE_SHA512:
-                if (hash_size != 64)
-                    OE_RAISE(OE_INVALID_PARAMETER);
-                info.pszAlgId = BCRYPT_SHA512_ALGORITHM;
-                break;
-            default:
-                OE_RAISE(OE_INVALID_PARAMETER);
-        }
-
-        /* Need to make a copy since BCryptSignHash's pbInput isn't const. */
-        OE_CHECK(oe_memcpy_s(
-            hash_data_copy, sizeof(hash_data_copy), hash_data, hash_size));
-
-        /* Determine the size of the signature; fail if buffer is too small */
-        status = BCryptSignHash(
-            impl->pkey,
-            &info,
-            hash_data_copy,
-            (ULONG)hash_size,
-            NULL,
-            0,
-            &sig_size,
-            BCRYPT_PAD_PKCS1);
-
-        if (sig_size > *signature_size)
-        {
-            *signature_size = sig_size;
-            OE_RAISE(OE_BUFFER_TOO_SMALL);
-        }
-
-        /*
-         * Perform the signing now. Note that we use the less secure PKCS1
-         * signature padding because Intel requires it. However, this is
-         * fine since there are no known attacks on PKCS1 signature
-         * verification.
-         */
-        status = BCryptSignHash(
-            impl->pkey,
-            &info,
-            hash_data_copy,
-            (ULONG)hash_size,
-            signature,
-            sig_size,
-            &sig_size,
-            BCRYPT_PAD_PKCS1);
-
-        if (!BCRYPT_SUCCESS(status))
-            OE_RAISE(OE_CRYPTO_ERROR);
-
-        *signature_size = sig_size;
-    }
+    oe_bcrypt_padding_info_t padding_info = {0};
+    OE_CHECK(_get_padding_info(hash_type, hash_size, &padding_info));
+    OE_CHECK(oe_private_key_sign(
+        (oe_private_key_t*)private_key,
+        &padding_info,
+        hash_data,
+        hash_size,
+        signature,
+        signature_size,
+        _PRIVATE_KEY_MAGIC));
 
     result = OE_OK;
 
 done:
+    if (padding_info.config)
+        free(padding_info.config);
+
     return result;
 }
 
@@ -269,14 +245,25 @@ oe_result_t oe_rsa_public_key_verify(
     const uint8_t* signature,
     size_t signature_size)
 {
-    return oe_public_key_verify(
+    oe_result_t result = OE_UNEXPECTED;
+    oe_bcrypt_padding_info_t padding_info = {0};
+    OE_CHECK(_get_padding_info(hash_type, hash_size, &padding_info));
+    OE_CHECK(oe_public_key_verify(
         (oe_public_key_t*)public_key,
-        hash_type,
+        &padding_info,
         hash_data,
         hash_size,
         signature,
         signature_size,
-        _PUBLIC_KEY_MAGIC);
+        _PUBLIC_KEY_MAGIC));
+
+    result = OE_OK;
+
+done:
+    if (padding_info.config)
+        free(padding_info.config);
+
+    return result;
 }
 
 /* Used by tests/crypto/rsa_tests */

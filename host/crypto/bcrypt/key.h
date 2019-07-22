@@ -17,10 +17,16 @@ typedef struct _oe_bcrypt_key
 
 typedef struct _oe_bcrypt_key_format
 {
-    LPCSTR input_type;
+    LPCSTR encoding;
     BCRYPT_ALG_HANDLE key_algorithm;
     LPCWSTR key_blob_type;
 } oe_bcrypt_key_format_t;
+
+typedef struct _oe_bcrypt_padding_info
+{
+    uint32_t type;
+    void* config;
+} oe_bcrypt_padding_info_t;
 
 // typedef oe_result_t (
 //    *oe_private_key_write_pem_callback)(BIO* bio, EVP_PKEY* pkey);
@@ -50,8 +56,8 @@ oe_result_t oe_bcrypt_write_key_pem(
     uint8_t* pem_data,
     size_t* pem_size);
 
-void oe_public_key_init(
-    oe_public_key_t* public_key,
+void oe_bcrypt_key_init(
+    oe_bcrypt_key_t* key,
     BCRYPT_KEY_HANDLE* pkey,
     uint64_t magic);
 
@@ -87,18 +93,18 @@ oe_result_t oe_public_key_write_pem(
     size_t* size,
     uint64_t magic);
 
-// oe_result_t oe_private_key_sign(
-//    const oe_private_key_t* private_key,
-//    oe_hash_type_t hash_type,
-//    const void* hash_data,
-//    size_t hash_size,
-//    uint8_t* signature,
-//    size_t* signature_size,
-//    uint64_t magic);
+ oe_result_t oe_private_key_sign(
+    const oe_private_key_t* private_key,
+    const oe_bcrypt_padding_info_t* padding_info,
+    const void* hash_data,
+    size_t hash_size,
+    uint8_t* signature,
+    size_t* signature_size,
+    uint64_t magic);
 
 oe_result_t oe_public_key_verify(
     const oe_public_key_t* public_key,
-    oe_hash_type_t hash_type,
+    const oe_bcrypt_padding_info_t* padding_info,
     const void* hash_data,
     size_t hash_size,
     const uint8_t* signature,

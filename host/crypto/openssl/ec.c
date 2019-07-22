@@ -2,7 +2,7 @@
 // Licensed under the MIT License.
 
 #include "ec.h"
-#include <openenclave/bits/safecrt.h>
+//#include <openenclave/bits/safecrt.h>
 #include <openenclave/internal/defs.h>
 #include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/raise.h>
@@ -299,12 +299,12 @@ oe_result_t oe_ec_public_key_read_pem(
 }
 
 oe_result_t oe_ec_public_key_write_pem(
-    const oe_ec_public_key_t* private_key,
+    const oe_ec_public_key_t* public_key,
     uint8_t* pem_data,
     size_t* pem_size)
 {
     return oe_public_key_write_pem(
-        (const oe_public_key_t*)private_key,
+        (const oe_public_key_t*)public_key,
         pem_data,
         pem_size,
         _PUBLIC_KEY_MAGIC);

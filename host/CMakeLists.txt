@@ -55,6 +55,7 @@ elseif (WIN32)
     crypto/bcrypt/ec.c
     crypto/bcrypt/hmac.c
     crypto/bcrypt/key.c
+    crypto/bcrypt/pem.c
     crypto/bcrypt/random.c
     crypto/bcrypt/rsa.c
     crypto/bcrypt/sha.c
