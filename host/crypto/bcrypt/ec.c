@@ -52,6 +52,17 @@ static DWORD _get_bcrypt_magic(oe_ec_type_t ec_type)
             return OE_BCRYPT_UNSUPPORTED_EC_TYPE;
     }
 }
+
+static inline void _mem_reverse(void* dest_, const void* src_, size_t n)
+{
+    unsigned char* dest = (unsigned char*)dest_;
+    const unsigned char* src = (const unsigned char*)src_;
+    const unsigned char* end = src + n;
+
+    while (n--)
+        *dest++ = *--end;
+}
+
 // static int _get_nid(oe_ec_type_t ec_type)
 //{
 //    switch (ec_type)
@@ -476,6 +487,7 @@ oe_result_t oe_ec_private_key_sign(
     oe_result_t result = OE_UNEXPECTED;
     uint8_t* raw_signature = NULL;
     size_t raw_signature_size = 0;
+    size_t max_encoded_size = 0;
 
     {
         oe_result_t size_result = oe_private_key_sign(
@@ -497,6 +509,27 @@ oe_result_t oe_ec_private_key_sign(
         OE_CHECK(size_result);
     }
 
+    /* ECDSA signatures are randomized, which may lead to different encoding
+     * sizes on subsequent calls. To avoid this, this method always returns
+     * the upper limit of the encoding size.
+     *
+     * BCrypt produces a binary blob signature of the form: { r, s },
+     * where r & s are the same length as the EC key which are stable
+     * across different invocations of signing.
+     *
+     * The size of the DER encoding is then at most:
+     *
+     * TAG[1] + LEN[2] for SEQUENCE < 256 total bytes, covers up to ECP521 keys
+     * + TAG[1] + LEN[1] + (Leading 0x0)[1] + [r_size] for INTEGER of r
+     * + TAG[1] + LEN[1] + (Leading 0x0)[1] + [s_size] for INTEGER of s
+     */
+    max_encoded_size = 9 + raw_signature_size;
+    if (!signature)
+    {
+        *signature_size = max_encoded_size;
+        OE_RAISE(OE_BUFFER_TOO_SMALL);
+    }
+
     OE_CHECK(oe_private_key_sign(
         (oe_private_key_t*)private_key,
         NULL,
@@ -507,10 +540,8 @@ oe_result_t oe_ec_private_key_sign(
         _PRIVATE_KEY_MAGIC));
 
     {
-        /* BCrypt produces a binary blob signature of the form: { r, s },
-         * where r & s are the same length as the EC key. This needs to
-         * be encoded into the X509_ECC_SIGNATURE DER format to be compatible
-         * with OpenSSL ECDSA output. */
+        /* Encode the BCrypt binary signature blob into X509_ECC_SIGNATURE DER
+         * format to be compatible with OpenSSL ECDSA output. */
         assert(raw_signature_size % 2 == 0);
 
         size_t r_size = raw_signature_size / 2;
@@ -518,14 +549,13 @@ oe_result_t oe_ec_private_key_sign(
         uint8_t* r = raw_signature;
         uint8_t* s = raw_signature + r_size;
 
-        OE_CHECK(oe_ecdsa_signature_write_der(
-            signature, signature_size, r, r_size, s, s_size));
-
-        char raw[1024] = {0};
-        char pem[1024] = {0};
-        oe_hex_string(raw, sizeof(raw), raw_signature, raw_signature_size);
-        oe_hex_string(pem, sizeof(pem), signature, *signature_size);
-        assert(pem[0]);
+        {
+            oe_result_t encode_result = oe_ecdsa_signature_write_der(
+                signature, signature_size, r, r_size, s, s_size);
+            if (encode_result == OE_BUFFER_TOO_SMALL)
+                *signature_size = max_encoded_size;
+            OE_CHECK(encode_result);
+        }
     }
 
     result = OE_OK;
@@ -572,28 +602,18 @@ oe_result_t oe_ec_public_key_verify(
             GetLastError());
 
     {
-        /* Copy r & s into a contiguous buffer */
+        /* Copy r & s into a contiguous buffer from big to little-endian */
         CERT_ECC_SIGNATURE* ecc_sig = (CERT_ECC_SIGNATURE*)ecc_sig_blob;
         raw_signature_size = ecc_sig->r.cbData + ecc_sig->s.cbData;
         raw_signature = (BYTE*)malloc(raw_signature_size);
         if (!raw_signature)
             OE_RAISE(OE_OUT_OF_MEMORY);
-        OE_CHECK(oe_memcpy_s(
-            raw_signature,
-            raw_signature_size,
-            ecc_sig->r.pbData,
-            ecc_sig->s.cbData));
-        OE_CHECK(oe_memcpy_s(
-            raw_signature + ecc_sig->r.cbData,
-            raw_signature_size - ecc_sig->r.cbData,
-            ecc_sig->s.pbData,
-            ecc_sig->s.cbData));
 
-        char raw[1024] = {0};
-        char pem[1024] = {0};
-        oe_hex_string(raw, sizeof(raw), raw_signature, raw_signature_size);
-        oe_hex_string(pem, sizeof(pem), signature, signature_size);
-        assert(pem[0]);
+        _mem_reverse(raw_signature, ecc_sig->r.pbData, ecc_sig->r.cbData);
+        _mem_reverse(
+            raw_signature + ecc_sig->r.cbData,
+            ecc_sig->s.pbData,
+            ecc_sig->s.cbData);
     }
 
     OE_CHECK(oe_public_key_verify(
@@ -917,9 +937,8 @@ oe_result_t oe_ec_public_key_from_coordinates(
         }
 
         /* wrap as oe_ec_public_key_t compatible type */
-        oe_bcrypt_key_t* ecc_key = (oe_bcrypt_key_t*)public_key;
-        ecc_key->magic = _PUBLIC_KEY_MAGIC;
-        ecc_key->pkey = ecc_key_handle;
+        oe_bcrypt_key_init(
+            (oe_bcrypt_key_t*)public_key, ecc_key_handle, _PUBLIC_KEY_MAGIC);
         ecc_key_handle = NULL;
     }
 
@@ -947,6 +966,9 @@ oe_result_t oe_ecdsa_signature_write_der(
     size_t s_size)
 {
     oe_result_t result = OE_UNEXPECTED;
+    DWORD encoded_size = (DWORD)(*signature_size);
+    BYTE* r = NULL;
+    BYTE* s = NULL;
 
     /* Reject invalid parameters */
     if (!signature_size || *signature_size > MAXDWORD || !r_data || !r_size ||
@@ -957,16 +979,20 @@ oe_result_t oe_ecdsa_signature_write_der(
     if (!signature && *signature_size != 0)
         OE_RAISE(OE_INVALID_PARAMETER);
 
-    {
-        /* TODO: Verify endian is compatible with sgx_ecdsa256_signature_t*/
-        /* TODO: Verify leading-zero encoding does not cause issues */
-        DWORD encoded_size = (DWORD)(*signature_size);
-        CERT_ECC_SIGNATURE ecc_sig;
-        ecc_sig.r.cbData = (DWORD)r_size;
-        ecc_sig.r.pbData = (BYTE*)r_data;
-        ecc_sig.s.cbData = (DWORD)s_size;
-        ecc_sig.s.pbData = (BYTE*)s_data;
+    /* Convert the r & s data into the expected ASN big-endian format */
+    r = (BYTE*)malloc(s_size);
+    if (!r)
+        OE_RAISE(OE_OUT_OF_MEMORY);
+    _mem_reverse(r, r_data, r_size);
 
+    s = (BYTE*)malloc(r_size);
+    if (!s)
+        OE_RAISE(OE_OUT_OF_MEMORY);
+    _mem_reverse(s, s_data, s_size);
+
+    /* Encode the ECDSA siganture */
+    {
+        CERT_ECC_SIGNATURE ecc_sig = {(DWORD)r_size, r, (DWORD)s_size, s};
         BOOL success = CryptEncodeObjectEx(
             X509_ASN_ENCODING,
             X509_ECC_SIGNATURE,
@@ -976,27 +1002,37 @@ oe_result_t oe_ecdsa_signature_write_der(
             signature,
             &encoded_size);
 
-        if (!success)
-        {
-            DWORD err = GetLastError();
-            OE_RAISE_MSG(
-                OE_CRYPTO_ERROR, "CryptEncodeObjectEx failed (err=%#x)\n", err);
-        }
-
-        /* Check whether buffer is too small */
-        if ((size_t)encoded_size > *signature_size)
+        /* CryptEncodeObjectEx will not raise an error if signature was
+         * NULL but oe_ecdsa_signature_write_der still needs to raise
+         * OE_BUFFER_TOO_SMALL in that case. */
+        if (encoded_size > *signature_size)
         {
             *signature_size = (size_t)encoded_size;
             OE_RAISE(OE_BUFFER_TOO_SMALL);
         }
 
-        /* Set the size of the output buffer */
-        *signature_size = (size_t)encoded_size;
+        if (!success)
+        {
+            /* The buffer too small case should already be handled before */
+            DWORD err = GetLastError();
+            assert(err != ERROR_MORE_DATA);
+            OE_RAISE_MSG(
+                OE_CRYPTO_ERROR, "CryptEncodeObjectEx failed (err=%#x)\n", err);
+        }
     }
+
+    /* Set the size of the output buffer */
+    *signature_size = (size_t)encoded_size;
 
     result = OE_OK;
 
 done:
+    if (r)
+        free(r);
+
+    if (s)
+        free(s);
+
     return result;
 }
 

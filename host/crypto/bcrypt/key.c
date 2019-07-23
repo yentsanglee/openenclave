@@ -200,8 +200,7 @@ oe_result_t oe_bcrypt_read_key_pem(
     }
 
     /* Wrap BCrypt key handle as oe_bcrypt_key_t. */
-    key->magic = magic;
-    key->pkey = handle;
+    oe_bcrypt_key_init(key, handle, magic);
     handle = NULL;
 
     result = OE_OK;

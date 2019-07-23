@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include "pem.h"
 #include <assert.h>
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/bits/safemath.h>
@@ -8,7 +9,6 @@
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
 #include "bcrypt.h"
-#include "pem.h"
 
 static inline oe_result_t _check_pem_args(const void* pem_data, size_t pem_size)
 {

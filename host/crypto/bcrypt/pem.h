@@ -4,6 +4,7 @@
 #ifndef _OE_HOST_CRYPTO_PEM_H
 #define _OE_HOST_CRYPTO_PEM_H
 
+#include <Windows.h>
 #include <openenclave/bits/result.h>
 #include <openenclave/bits/types.h>
 

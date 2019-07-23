@@ -501,8 +501,7 @@ oe_result_t oe_rsa_get_public_key_from_private(
         if (!BCRYPT_SUCCESS(status))
             OE_RAISE(OE_CRYPTO_ERROR);
 
-        ((oe_public_key_t*)public_key)->magic = _PUBLIC_KEY_MAGIC;
-        ((oe_public_key_t*)public_key)->pkey = public_key_handle;
+        oe_rsa_public_key_init(public_key, public_key_handle);
     }
 
     result = OE_OK;

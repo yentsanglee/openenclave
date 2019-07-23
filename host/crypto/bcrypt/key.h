@@ -93,7 +93,7 @@ oe_result_t oe_public_key_write_pem(
     size_t* size,
     uint64_t magic);
 
- oe_result_t oe_private_key_sign(
+oe_result_t oe_private_key_sign(
     const oe_private_key_t* private_key,
     const oe_bcrypt_padding_info_t* padding_info,
     const void* hash_data,

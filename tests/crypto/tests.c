@@ -7,10 +7,10 @@ void TestAll()
 {
     // TestASN1();
     // TestCRL();
-    TestRSA(); // Test for regressions in keys.c
     TestEC();
     TestRandom();
     TestRdrand();
+    TestRSA();
     TestHMAC();
     TestKDF();
     TestSHA();

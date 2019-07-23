@@ -1066,10 +1066,7 @@ oe_result_t oe_cert_find_extension(
     if (data)
     {
         OE_CHECK(oe_memcpy_s(
-            data,
-            *size,
-            extension->Value.pbData,
-            extension->Value.cbData));
+            data, *size, extension->Value.pbData, extension->Value.cbData));
         *size = extension->Value.cbData;
     }
 

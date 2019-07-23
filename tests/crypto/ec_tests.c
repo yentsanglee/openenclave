@@ -213,7 +213,7 @@ static void _test_generate_common(
 }
 
 /* oe_ec_generate_key_pair is not used in production code */
-//static void _test_generate()
+// static void _test_generate()
 //{
 //    printf("=== begin %s()\n", __FUNCTION__);
 //
@@ -947,14 +947,11 @@ void TestEC()
     _test_cert_with_extensions();
     _test_cert_without_extensions();
     //_test_crl_distribution_points();
-
-    /* TODO: Failing test under investigation */
     _test_sign_and_verify();
-
     //_test_generate(); /* Disabled as unused by production code */
-    //_test_generate_from_private();
-    //_test_private_key_limits();
-    //_test_write_private();
+    _test_generate_from_private();
+    _test_private_key_limits();
+    _test_write_private();
     _test_write_public();
     _test_cert_methods();
     _test_key_from_bytes();
@@ -962,7 +959,4 @@ void TestEC()
 
     /* TEMP: Reorder failing tests after passing ones to keep compiler happy */
     _test_crl_distribution_points();
-    _test_generate_from_private();
-    _test_private_key_limits();
-    _test_write_private();
 }
