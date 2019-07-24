@@ -58,6 +58,7 @@ endif()
 
 add_library(oelibc STATIC
     arc4random.c
+    assert.c
     atexit.c
     dladdr.c
     errno.c
