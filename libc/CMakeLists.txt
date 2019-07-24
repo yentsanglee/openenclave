@@ -189,7 +189,6 @@ add_library(oelibc STATIC
     ${MUSLSRC}/env/putenv.c
     ${MUSLSRC}/env/setenv.c
     ${MUSLSRC}/env/unsetenv.c
-    ${MUSLSRC}/exit/assert.c
     ${MUSLSRC}/exit/_Exit.c
     ${MUSLSRC}/fenv/fegetexceptflag.c
     ${MUSLSRC}/fenv/feholdexcept.c
