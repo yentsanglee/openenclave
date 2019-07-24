@@ -87,7 +87,7 @@ typedef struct _url
 /**
  * Get CRL distribution points from given cert.
  */
-
+#if 0
 static oe_result_t _get_crl_distribution_point(oe_cert_t* cert, char** url)
 {
     oe_result_t result = OE_FAILURE;
@@ -114,7 +114,7 @@ static oe_result_t _get_crl_distribution_point(oe_cert_t* cert, char** url)
             cert, &urls, &num_urls, buffer, &buffer_size);
     }
 
-    if (result == OE_OK)
+	if (result == OE_OK)
     {
         // At most 1 distribution point is expected.
         if (num_urls != 1)
@@ -140,6 +140,7 @@ done:
     oe_free(buffer);
     return result;
 }
+#endif
 
 static void _trace_datetime(const char* msg, const oe_datetime_t* date)
 {
@@ -189,9 +190,24 @@ oe_result_t oe_enforce_revocation(
         sizeof(parsed_extension_info.fmspc)));
 
     // Gather CRL distribution point URLs from certs.
-    OE_CHECK(
-        _get_crl_distribution_point(intermediate_cert, &intermediate_crl_url));
-    OE_CHECK(_get_crl_distribution_point(leaf_cert, &leaf_crl_url));
+	// ASN1 parsing isn't implemented, so just hardcode for now.
+	    const char* intel_crl_leaf = 
+		"https://api.trustedservices.intel.com/sgx/certification/v1/pckcrl?ca=processor";
+    const char* intel_crl_intermediate =
+        "https://certificates.trustedservices.intel.com/IntelSGXRootCA.crl";
+
+
+    //OE_CHECK(
+    //    _get_crl_distribution_point(intermediate_cert, &intermediate_crl_url));
+    //OE_CHECK(_get_crl_distribution_point(leaf_cert, &leaf_crl_url));
+
+	leaf_crl_url = oe_malloc(oe_strlen(intel_crl_leaf) + 1);
+    memcpy(leaf_crl_url, intel_crl_leaf, oe_strlen(intel_crl_leaf) + 1);
+    intermediate_crl_url = oe_malloc(oe_strlen(intel_crl_intermediate) + 1);
+    memcpy(
+        intermediate_crl_url,
+        intel_crl_intermediate,
+        oe_strlen(intel_crl_intermediate) + 1);
 
     revocation_args.crl_urls[0] = leaf_crl_url;
     revocation_args.crl_urls[1] = intermediate_crl_url;
