@@ -2,14 +2,10 @@
 // Licensed under the MIT License.
 
 #include "ec.h"
-//#include <openenclave/bits/safecrt.h>
-#include <openenclave/internal/defs.h>
-#include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
 #include <openssl/obj_mac.h>
 #include <openssl/pem.h>
-#include <string.h>
 #include "init.h"
 #include "key.h"
 

@@ -946,7 +946,7 @@ void TestEC()
 
     _test_cert_with_extensions();
     _test_cert_without_extensions();
-    //_test_crl_distribution_points();
+    _test_crl_distribution_points();
     _test_sign_and_verify();
     //_test_generate(); /* Disabled as unused by production code */
     _test_generate_from_private();
@@ -956,7 +956,4 @@ void TestEC()
     _test_cert_methods();
     _test_key_from_bytes();
     _test_cert_chain_read();
-
-    /* TEMP: Reorder failing tests after passing ones to keep compiler happy */
-    _test_crl_distribution_points();
 }

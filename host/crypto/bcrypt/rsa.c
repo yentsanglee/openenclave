@@ -22,15 +22,65 @@ static const uint64_t _PUBLIC_KEY_MAGIC = 0x8f8f72170025426d;
 OE_STATIC_ASSERT(sizeof(oe_public_key_t) <= sizeof(oe_rsa_public_key_t));
 OE_STATIC_ASSERT(sizeof(oe_private_key_t) <= sizeof(oe_rsa_private_key_t));
 
-static const oe_bcrypt_key_format_t _PRIVATE_RSA_KEY_ARGS = {
-    CNG_RSA_PRIVATE_KEY_BLOB,
-    BCRYPT_RSA_ALG_HANDLE,
-    BCRYPT_RSAPRIVATE_BLOB};
+static oe_result_t _bcrypt_decode_rsa_private_key(
+    const BYTE* data,
+    DWORD data_size,
+    BCRYPT_KEY_HANDLE* handle)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    uint8_t* key_blob = NULL;
+    DWORD key_blob_size = 0;
 
-static const oe_bcrypt_key_format_t _PUBLIC_RSA_KEY_ARGS = {
-    szOID_RSA_RSA,
-    BCRYPT_RSA_ALG_HANDLE,
-    BCRYPT_RSAPUBLIC_BLOB};
+    BOOL success = CryptDecodeObjectEx(
+        X509_ASN_ENCODING,
+        CNG_RSA_PRIVATE_KEY_BLOB,
+        data,
+        data_size,
+        CRYPT_DECODE_ALLOC_FLAG | CRYPT_DECODE_NOCOPY_FLAG,
+        NULL,
+        &key_blob,
+        &key_blob_size);
+
+    if (!success)
+        OE_RAISE_MSG(
+            OE_CRYPTO_ERROR,
+            "CryptDecodeObjectEx failed (err=%#x)\n",
+            GetLastError());
+
+    NTSTATUS status = BCryptImportKeyPair(
+        BCRYPT_RSA_ALG_HANDLE,
+        NULL,
+        BCRYPT_RSAPRIVATE_BLOB,
+        handle,
+        key_blob,
+        key_blob_size,
+        0);
+
+    if (!BCRYPT_SUCCESS(status))
+        OE_RAISE_MSG(
+            OE_CRYPTO_ERROR, "BCryptImportKeyPair failed (err=%#x)\n", status);
+
+    result = OE_OK;
+
+done:
+    if (key_blob)
+    {
+        oe_secure_zero_fill(key_blob, key_blob_size);
+        LocalFree(key_blob);
+        key_blob_size = 0;
+    }
+
+    return result;
+}
+
+static oe_result_t _bcrypt_encode_rsa_public_key(
+    const BCRYPT_KEY_HANDLE handle,
+    BYTE** der_data,
+    DWORD* der_data_size)
+{
+    return oe_bcrypt_encode_x509_public_key(
+        handle, szOID_RSA_RSA, der_data, der_data_size);
+}
 
 /* Caller is responsible for freeing padding_info->config */
 static oe_result_t _get_padding_info(
@@ -143,12 +193,12 @@ oe_result_t oe_rsa_private_key_read_pem(
     const uint8_t* pem_data,
     size_t pem_size)
 {
-    return oe_bcrypt_read_key_pem(
+    return oe_bcrypt_key_read_pem(
         pem_data,
         pem_size,
-        (oe_bcrypt_key_t*)private_key,
-        _PRIVATE_RSA_KEY_ARGS,
-        _PRIVATE_KEY_MAGIC);
+        _PRIVATE_KEY_MAGIC,
+        _bcrypt_decode_rsa_private_key,
+        (oe_bcrypt_key_t*)private_key);
 }
 
 /* Used by tests/crypto/rse_tests
@@ -173,12 +223,12 @@ oe_result_t oe_rsa_public_key_read_pem(
     const uint8_t* pem_data,
     size_t pem_size)
 {
-    return oe_bcrypt_read_key_pem(
+    return oe_bcrypt_key_read_pem(
         pem_data,
         pem_size,
-        (oe_bcrypt_key_t*)public_key,
-        _PUBLIC_RSA_KEY_ARGS,
-        _PUBLIC_KEY_MAGIC);
+        _PUBLIC_KEY_MAGIC,
+        oe_bcrypt_decode_x509_public_key,
+        (oe_bcrypt_key_t*)public_key);
 }
 
 /* Used by tests/crypto/rsa_tests
@@ -188,10 +238,10 @@ oe_result_t oe_rsa_public_key_write_pem(
     uint8_t* pem_data,
     size_t* pem_size)
 {
-    return oe_bcrypt_write_key_pem(
+    return oe_bcrypt_key_write_pem(
         (const oe_bcrypt_key_t*)public_key,
-        _PUBLIC_RSA_KEY_ARGS,
         _PUBLIC_KEY_MAGIC,
+        _bcrypt_encode_rsa_public_key,
         pem_data,
         pem_size);
 }
@@ -276,22 +326,6 @@ oe_result_t oe_rsa_generate_key_pair(
     oe_rsa_public_key_t* public_key)
 {
     return OE_UNSUPPORTED;
-    //    oe_result_t result = OE_UNEXPECTED;
-    //    BCRYPT_ALG_HANDLE rsa_handle = NULL;
-    //    BCRYPT_KEY_HANDLE key = NULL;
-    //    NTSTATUS status =
-    //        BCryptOpenAlgorithmProvider(&rsa_handle, BCRYPT_RSA_ALGORITHM,
-    //        NULL, 0);
-    //    if (!BCRYPT_SUCCESS(status))
-    //        OE_RAISE_MSG(
-    //            OE_CRYPTO_ERROR,
-    //            "BCryptOpenAlgorithmProvider failed, err=%#x",
-    //            status);
-    //
-    //    status = BCryptGenerateKeyPair(rsa_handle, &key, bits, 0);
-    //
-    // done:
-    //    return result;
 }
 
 oe_result_t oe_rsa_public_key_get_modulus(
