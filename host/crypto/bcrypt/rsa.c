@@ -1,23 +1,16 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "../rsa.h"
-#include "bcrypt.h"
-#include "key.h"
-#include "rsa.h"
-
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/rsa.h>
 #include <openenclave/internal/utils.h>
 
-/*
- * Magic numbers for the RSA key implementation structures. These values
- * were copied from the linux rsa.c file. These can be consolidated once
- * more crypto code is ported to Windows.
- */
-static const uint64_t _PRIVATE_KEY_MAGIC = 0x7bf635929a714b2c;
-static const uint64_t _PUBLIC_KEY_MAGIC = 0x8f8f72170025426d;
+#include "../magic.h"
+#include "../rsa.h"
+#include "bcrypt.h"
+#include "key.h"
+#include "rsa.h"
 
 OE_STATIC_ASSERT(sizeof(oe_public_key_t) <= sizeof(oe_rsa_public_key_t));
 OE_STATIC_ASSERT(sizeof(oe_private_key_t) <= sizeof(oe_rsa_private_key_t));
@@ -185,7 +178,8 @@ void oe_rsa_public_key_init(
     oe_rsa_public_key_t* public_key,
     BCRYPT_KEY_HANDLE* pkey)
 {
-    oe_bcrypt_key_init((oe_bcrypt_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
+    oe_bcrypt_key_init(
+        (oe_bcrypt_key_t*)public_key, pkey, OE_RSA_PUBLIC_KEY_MAGIC);
 }
 
 oe_result_t oe_rsa_private_key_read_pem(
@@ -196,7 +190,7 @@ oe_result_t oe_rsa_private_key_read_pem(
     return oe_bcrypt_key_read_pem(
         pem_data,
         pem_size,
-        _PRIVATE_KEY_MAGIC,
+        OE_RSA_PRIVATE_KEY_MAGIC,
         _bcrypt_decode_rsa_private_key,
         (oe_bcrypt_key_t*)private_key);
 }
@@ -214,7 +208,7 @@ oe_result_t oe_rsa_private_key_read_pem(
 //        pem_data,
 //        pem_size,
 //        _private_key_write_pem_callback,
-//        _PRIVATE_KEY_MAGIC);
+//        OE_RSA_PRIVATE_KEY_MAGIC);
 //}
 
 /* Used by tests/crypto/rsa_tests */
@@ -226,7 +220,7 @@ oe_result_t oe_rsa_public_key_read_pem(
     return oe_bcrypt_key_read_pem(
         pem_data,
         pem_size,
-        _PUBLIC_KEY_MAGIC,
+        OE_RSA_PUBLIC_KEY_MAGIC,
         oe_bcrypt_decode_x509_public_key,
         (oe_bcrypt_key_t*)public_key);
 }
@@ -240,7 +234,7 @@ oe_result_t oe_rsa_public_key_write_pem(
 {
     return oe_bcrypt_key_write_pem(
         (const oe_bcrypt_key_t*)public_key,
-        _PUBLIC_KEY_MAGIC,
+        OE_RSA_PUBLIC_KEY_MAGIC,
         _bcrypt_encode_rsa_public_key,
         pem_data,
         pem_size);
@@ -249,12 +243,13 @@ oe_result_t oe_rsa_public_key_write_pem(
 oe_result_t oe_rsa_private_key_free(oe_rsa_private_key_t* private_key)
 {
     return oe_bcrypt_key_free(
-        (oe_bcrypt_key_t*)private_key, _PRIVATE_KEY_MAGIC);
+        (oe_bcrypt_key_t*)private_key, OE_RSA_PRIVATE_KEY_MAGIC);
 }
 
 oe_result_t oe_rsa_public_key_free(oe_rsa_public_key_t* public_key)
 {
-    return oe_bcrypt_key_free((oe_bcrypt_key_t*)public_key, _PUBLIC_KEY_MAGIC);
+    return oe_bcrypt_key_free(
+        (oe_bcrypt_key_t*)public_key, OE_RSA_PUBLIC_KEY_MAGIC);
 }
 
 oe_result_t oe_rsa_private_key_sign(
@@ -275,7 +270,7 @@ oe_result_t oe_rsa_private_key_sign(
         hash_size,
         signature,
         signature_size,
-        _PRIVATE_KEY_MAGIC));
+        OE_RSA_PRIVATE_KEY_MAGIC));
 
     result = OE_OK;
 
@@ -305,7 +300,7 @@ oe_result_t oe_rsa_public_key_verify(
         hash_size,
         signature,
         signature_size,
-        _PUBLIC_KEY_MAGIC));
+        OE_RSA_PUBLIC_KEY_MAGIC));
 
     result = OE_OK;
 
@@ -340,8 +335,8 @@ oe_result_t oe_rsa_public_key_get_modulus(
     BCRYPT_RSAKEY_BLOB* keyblob;
 
     /* Check for null parameters and invalid sizes. */
-    if (!oe_bcrypt_key_is_valid(impl, _PUBLIC_KEY_MAGIC) || !buffer_size ||
-        *buffer_size > MAXDWORD)
+    if (!oe_bcrypt_key_is_valid(impl, OE_RSA_PUBLIC_KEY_MAGIC) ||
+        !buffer_size || *buffer_size > MAXDWORD)
     {
         OE_RAISE(OE_INVALID_PARAMETER);
     }
@@ -398,8 +393,8 @@ oe_result_t oe_rsa_public_key_get_exponent(
     BCRYPT_RSAKEY_BLOB* keyblob;
 
     /* Check for null parameters and invalid sizes. */
-    if (!oe_bcrypt_key_is_valid(impl, _PUBLIC_KEY_MAGIC) || !buffer_size ||
-        *buffer_size > MAXDWORD)
+    if (!oe_bcrypt_key_is_valid(impl, OE_RSA_PUBLIC_KEY_MAGIC) ||
+        !buffer_size || *buffer_size > MAXDWORD)
     {
         OE_RAISE(OE_INVALID_PARAMETER);
     }
@@ -465,14 +460,14 @@ oe_result_t oe_rsa_public_key_equal(
 
     OE_CHECK(oe_bcrypt_key_get_blob(
         (oe_bcrypt_key_t*)public_key1,
-        _PUBLIC_KEY_MAGIC,
+        OE_RSA_PUBLIC_KEY_MAGIC,
         BCRYPT_RSAPUBLIC_BLOB,
         &key1,
         &key1_size));
 
     OE_CHECK(oe_bcrypt_key_get_blob(
         (oe_bcrypt_key_t*)public_key2,
-        _PUBLIC_KEY_MAGIC,
+        OE_RSA_PUBLIC_KEY_MAGIC,
         BCRYPT_RSAPUBLIC_BLOB,
         &key2,
         &key2_size));
@@ -509,7 +504,7 @@ oe_result_t oe_rsa_get_public_key_from_private(
     uint8_t* keybuf = NULL;
     ULONG keybuf_size;
 
-    if (!oe_bcrypt_key_is_valid(impl, _PRIVATE_KEY_MAGIC) || !public_key)
+    if (!oe_bcrypt_key_is_valid(impl, OE_RSA_PRIVATE_KEY_MAGIC) || !public_key)
         OE_RAISE(OE_INVALID_PARAMETER);
 
     OE_CHECK(_get_public_rsa_blob_info(impl->pkey, &keybuf, &keybuf_size));

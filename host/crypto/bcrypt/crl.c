@@ -12,9 +12,7 @@
 //#include <openssl/x509.h>
 //#include <string.h>
 //#include <time.h>
-
-/* Randomly generated magic number */
-#define OE_CRL_MAGIC 0xe8c993b1cca24906
+#include "../magic.h"
 
 //#if OPENSSL_VERSION_NUMBER < 0x10100000L
 ///* Needed for compatibility with ssl1.1 */

@@ -1,19 +1,17 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "ec.h"
 #include <assert.h>
 #include <openenclave/bits/safecrt.h>
 #include <openenclave/internal/ec.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
+
+#include "../magic.h"
 #include "bcrypt.h"
+#include "ec.h"
 #include "key.h"
 #include "pem.h"
-
-/* Magic numbers for the EC key implementation structures */
-static const uint64_t _PRIVATE_KEY_MAGIC = 0x19a751419ae04bbc;
-static const uint64_t _PUBLIC_KEY_MAGIC = 0xb1d39580c1f14c02;
 
 OE_STATIC_ASSERT(sizeof(oe_public_key_t) <= sizeof(oe_ec_public_key_t));
 OE_STATIC_ASSERT(sizeof(oe_private_key_t) <= sizeof(oe_ec_private_key_t));
@@ -296,14 +294,16 @@ void oe_ec_public_key_init(
     oe_ec_public_key_t* public_key,
     BCRYPT_KEY_HANDLE* pkey)
 {
-    oe_bcrypt_key_init((oe_bcrypt_key_t*)public_key, pkey, _PUBLIC_KEY_MAGIC);
+    oe_bcrypt_key_init(
+        (oe_bcrypt_key_t*)public_key, pkey, OE_RSA_PUBLIC_KEY_MAGIC);
 }
 
 void oe_ec_private_key_init(
     oe_ec_private_key_t* private_key,
     BCRYPT_KEY_HANDLE* pkey)
 {
-    oe_bcrypt_key_init((oe_bcrypt_key_t*)private_key, pkey, _PRIVATE_KEY_MAGIC);
+    oe_bcrypt_key_init(
+        (oe_bcrypt_key_t*)private_key, pkey, OE_EC_PRIVATE_KEY_MAGIC);
 }
 
 /* Used by tests/crypto/ec_tests */
@@ -315,7 +315,7 @@ oe_result_t oe_ec_private_key_read_pem(
     return oe_bcrypt_key_read_pem(
         pem_data,
         pem_size,
-        _PRIVATE_KEY_MAGIC,
+        OE_EC_PRIVATE_KEY_MAGIC,
         _bcrypt_decode_ec_private_key,
         (oe_bcrypt_key_t*)private_key);
 }
@@ -328,7 +328,7 @@ oe_result_t oe_ec_private_key_write_pem(
 {
     return oe_bcrypt_key_write_pem(
         (const oe_bcrypt_key_t*)private_key,
-        _PRIVATE_KEY_MAGIC,
+        OE_EC_PRIVATE_KEY_MAGIC,
         _bcrypt_encode_ec_private_key,
         pem_data,
         pem_size);
@@ -342,7 +342,7 @@ oe_result_t oe_ec_public_key_read_pem(
     return oe_bcrypt_key_read_pem(
         pem_data,
         pem_size,
-        _PUBLIC_KEY_MAGIC,
+        OE_RSA_PUBLIC_KEY_MAGIC,
         oe_bcrypt_decode_x509_public_key,
         (oe_bcrypt_key_t*)public_key);
 }
@@ -355,7 +355,7 @@ oe_result_t oe_ec_public_key_write_pem(
 {
     return oe_bcrypt_key_write_pem(
         (const oe_bcrypt_key_t*)public_key,
-        _PUBLIC_KEY_MAGIC,
+        OE_RSA_PUBLIC_KEY_MAGIC,
         _bcrypt_encode_ec_public_key,
         pem_data,
         pem_size);
@@ -365,12 +365,13 @@ oe_result_t oe_ec_public_key_write_pem(
 oe_result_t oe_ec_private_key_free(oe_ec_private_key_t* private_key)
 {
     return oe_bcrypt_key_free(
-        (oe_bcrypt_key_t*)private_key, _PRIVATE_KEY_MAGIC);
+        (oe_bcrypt_key_t*)private_key, OE_EC_PRIVATE_KEY_MAGIC);
 }
 
 oe_result_t oe_ec_public_key_free(oe_ec_public_key_t* public_key)
 {
-    return oe_bcrypt_key_free((oe_bcrypt_key_t*)public_key, _PUBLIC_KEY_MAGIC);
+    return oe_bcrypt_key_free(
+        (oe_bcrypt_key_t*)public_key, OE_RSA_PUBLIC_KEY_MAGIC);
 }
 
 /* Used by tests/crypto/ec_tests */
@@ -395,7 +396,7 @@ oe_result_t oe_ec_private_key_sign(
             hash_size,
             NULL,
             &raw_signature_size,
-            _PRIVATE_KEY_MAGIC);
+            OE_EC_PRIVATE_KEY_MAGIC);
 
         if (size_result == OE_BUFFER_TOO_SMALL)
         {
@@ -435,7 +436,7 @@ oe_result_t oe_ec_private_key_sign(
         hash_size,
         raw_signature,
         &raw_signature_size,
-        _PRIVATE_KEY_MAGIC));
+        OE_EC_PRIVATE_KEY_MAGIC));
 
     {
         /* Encode the BCrypt binary signature blob into X509_ECC_SIGNATURE DER
@@ -524,7 +525,7 @@ oe_result_t oe_ec_public_key_verify(
         hash_size,
         raw_signature,
         raw_signature_size,
-        _PUBLIC_KEY_MAGIC));
+        OE_RSA_PUBLIC_KEY_MAGIC));
 
     result = OE_OK;
 
@@ -672,14 +673,14 @@ oe_result_t oe_ec_public_key_equal(
 
     OE_CHECK(oe_bcrypt_key_get_blob(
         (oe_bcrypt_key_t*)public_key1,
-        _PUBLIC_KEY_MAGIC,
+        OE_RSA_PUBLIC_KEY_MAGIC,
         BCRYPT_ECCPUBLIC_BLOB,
         &ec1,
         &ec1_size));
 
     OE_CHECK(oe_bcrypt_key_get_blob(
         (oe_bcrypt_key_t*)public_key2,
-        _PUBLIC_KEY_MAGIC,
+        OE_RSA_PUBLIC_KEY_MAGIC,
         BCRYPT_ECCPUBLIC_BLOB,
         &ec2,
         &ec2_size));

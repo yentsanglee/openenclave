@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include "../magic.h"
 #include "crl.h"
 #include "ec.h"
 #include "init.h"
@@ -31,9 +32,6 @@
 **
 **==============================================================================
 */
-
-/* Randomly generated magic number */
-#define OE_CERT_MAGIC 0xbc8e184285de4d2a
 
 typedef struct _cert
 {
@@ -63,9 +61,6 @@ static void _cert_clear(Cert* impl)
         impl->x509 = NULL;
     }
 }
-
-/* Randomly generated magic number */
-#define OE_CERT_CHAIN_MAGIC 0xa5ddf70fb28f4480
 
 typedef struct _cert_chain
 {
