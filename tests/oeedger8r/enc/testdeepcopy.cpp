@@ -7,6 +7,7 @@
 #include <openenclave/corelibc/string.h>
 #include <openenclave/enclave.h>
 #include <openenclave/internal/tests.h>
+#include <string.h>
 #include "all_t.h"
 
 static uint64_t data[8] = {0x1112131415161718,
@@ -222,20 +223,14 @@ void deepcopy_iovec(IOVEC* iov, size_t n)
         {
             case 0:
                 OE_TEST(oe_strcmp(str, "red") == 0);
+                memcpy(str, "0000000", 8);
                 break;
             case 1:
-                OE_TEST(oe_strcmp(str, "green") == 0);
-                break;
-            case 2:
-                OE_TEST(oe_strcmp(str, "blue") == 0);
+                OE_TEST(str == NULL);
                 break;
             default:
                 OE_TEST(false);
                 break;
         }
-
-        const char c = (char)('0' + i);
-        memset(str, c, len);
-        str[len - 1] = '\0';
     }
 }

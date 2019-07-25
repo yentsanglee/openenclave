@@ -181,20 +181,14 @@ void test_deepcopy_edl_ecalls(oe_enclave_t* enclave)
     {
         IOVEC iov[3];
         char buf0[8] = "red";
-        char buf1[8] = "green";
-        char buf2[8] = "blue";
 
         iov[0].base = (void*)buf0;
         iov[0].len = sizeof(buf0);
-        iov[1].base = (void*)buf1;
-        iov[1].len = sizeof(buf1);
-        iov[2].base = (void*)buf2;
-        iov[2].len = sizeof(buf2);
+        iov[1].base = NULL;
+        iov[1].len = 0;
 
         OE_TEST(deepcopy_iovec(enclave, iov, OE_COUNTOF(iov)) == OE_OK);
         OE_TEST(memcmp(buf0, "0000000", 8) == 0);
-        OE_TEST(memcmp(buf1, "1111111", 8) == 0);
-        OE_TEST(memcmp(buf2, "2222222", 8) == 0);
     }
 
     printf("=== test_deepcopy_edl_ecalls passed\n");
