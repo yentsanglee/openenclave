@@ -226,6 +226,7 @@ oe_result_t oe_get_next_pem_cert(
     const char* cert_begin = NULL;
     const char* cert_end = NULL;
     char* found_pem = NULL;
+    size_t read_pem_length = 0;
     size_t found_pem_size = 0;
     const void* pem_data_end = NULL;
 
@@ -252,23 +253,24 @@ oe_result_t oe_get_next_pem_cert(
     if (!cert_end || *cert_begin == '\0' || cert_end <= cert_begin)
         return (OE_NOT_FOUND);
 
-    /* PEM cert footer must have at least newline or null-terminator in pem_data
-     * buffer to be valid. */
+    /* PEM cert footer should have at least newline or null-terminator in
+     * pem_data buffer to be valid, but Intel concatenated cert chains in
+     * their quote format don't have it. */
     assert(sizeof(void*) == sizeof(uint64_t));
     OE_CHECK(oe_safe_add_u64(
-        (uint64_t)cert_end,
-        OE_PEM_END_CERTIFICATE_LEN + 1,
-        (uint64_t*)&cert_end));
+        (uint64_t)cert_end, OE_PEM_END_CERTIFICATE_LEN, (uint64_t*)&cert_end));
     OE_CHECK(oe_safe_sub_u64(
-        (uint64_t)cert_end, (uint64_t)cert_begin, &found_pem_size));
+        (uint64_t)cert_end, (uint64_t)cert_begin, &read_pem_length));
 
+    /* Allocate additional space for null-terminator */
+    found_pem_size = read_pem_length + 1;
     found_pem = malloc(found_pem_size);
     if (!found_pem)
         OE_RAISE(OE_OUT_OF_MEMORY);
 
     OE_CHECK(
-        oe_memcpy_s(found_pem, found_pem_size, cert_begin, found_pem_size - 1));
-    found_pem[found_pem_size - 1] = '\0';
+        oe_memcpy_s(found_pem, found_pem_size, cert_begin, read_pem_length));
+    found_pem[read_pem_length] = '\0';
 
     /* Note that pem_cert offset may not equal the starting read_pos,
      * so we infer the remaining_size from the new read_pos. */
