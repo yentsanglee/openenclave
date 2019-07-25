@@ -210,7 +210,7 @@ void deepcopy_out_count(CountStruct* s)
 void deepcopy_iovec(IOVEC* iov, size_t n)
 {
     OE_TEST(!(n && !iov));
-    OE_TEST(n == 3);
+    OE_TEST(n == 2);
 
     for (size_t i = 0; i < n; i++)
     {
