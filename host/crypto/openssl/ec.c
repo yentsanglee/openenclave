@@ -140,7 +140,8 @@ static oe_result_t _generate_key_pair(
             OE_RAISE(OE_CRYPTO_ERROR);
 
         /* Initialize the private key */
-        oe_private_key_init(private_key, pkey_private, OE_RSA_PRIVATE_KEY_MAGIC);
+        oe_private_key_init(
+            private_key, pkey_private, OE_RSA_PRIVATE_KEY_MAGIC);
 
         /* Keep these from being freed below */
         ec_private = NULL;
@@ -244,7 +245,8 @@ done:
 
 void oe_ec_public_key_init(oe_ec_public_key_t* public_key, EVP_PKEY* pkey)
 {
-    oe_public_key_init((oe_public_key_t*)public_key, pkey, OE_RSA_PUBLIC_KEY_MAGIC);
+    oe_public_key_init(
+        (oe_public_key_t*)public_key, pkey, OE_RSA_PUBLIC_KEY_MAGIC);
 }
 
 void oe_ec_private_key_init(oe_ec_private_key_t* private_key, EVP_PKEY* pkey)
@@ -312,7 +314,8 @@ oe_result_t oe_ec_private_key_free(oe_ec_private_key_t* private_key)
 
 oe_result_t oe_ec_public_key_free(oe_ec_public_key_t* public_key)
 {
-    return oe_public_key_free((oe_public_key_t*)public_key, OE_RSA_PUBLIC_KEY_MAGIC);
+    return oe_public_key_free(
+        (oe_public_key_t*)public_key, OE_RSA_PUBLIC_KEY_MAGIC);
 }
 
 oe_result_t oe_ec_private_key_sign(

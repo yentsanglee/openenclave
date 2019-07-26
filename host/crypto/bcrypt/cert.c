@@ -1,26 +1,19 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-//#include <ctype.h>
+#include <assert.h>
 #include <openenclave/bits/result.h>
 #include <openenclave/bits/safecrt.h>
-//#include <openenclave/bits/safemath.h>
-//#include <openenclave/internal/asn1.h>
 #include <openenclave/internal/cert.h>
 #include <openenclave/internal/hexdump.h>
 #include <openenclave/internal/pem.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
-//#include <pthread.h>
-//#include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
-//#include <string.h>
-//#include "crl.h"
-//#include "ec.h"
-//#include "init.h"
+
 #include "../magic.h"
 #include "bcrypt.h"
+#include "crl.h"
 #include "ec.h"
 #include "key.h"
 #include "pem.h"
@@ -44,8 +37,9 @@ static const CERT_CHAIN_PARA _OE_DEFAULT_CERT_CHAIN_PARAMS = {
     .cbSize = sizeof(CERT_CHAIN_PARA)};
 
 static const DWORD _OE_DEFAULT_CERT_CHAIN_FLAGS =
-    CERT_CHAIN_CACHE_END_CERT | CERT_CHAIN_REVOCATION_CHECK_CACHE_ONLY |
-    CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL;
+    /* CERT_CHAIN_CACHE_END_CERT | CERT_CHAIN_REVOCATION_CHECK_CACHE_ONLY |
+    CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL |*/
+    CERT_CHAIN_REVOCATION_CHECK_CHAIN;
 
 typedef struct _cert
 {
@@ -53,7 +47,7 @@ typedef struct _cert
     PCCERT_CONTEXT cert;
 } cert_t;
 
-static void _cert_init(cert_t* impl, PCCERT_CONTEXT cert)
+OE_INLINE void _cert_init(cert_t* impl, PCCERT_CONTEXT cert)
 {
     if (impl)
     {
@@ -62,12 +56,12 @@ static void _cert_init(cert_t* impl, PCCERT_CONTEXT cert)
     }
 }
 
-static bool _cert_is_valid(const cert_t* impl)
+OE_INLINE bool _cert_is_valid(const cert_t* impl)
 {
     return impl && (impl->magic == OE_CERT_MAGIC) && impl->cert;
 }
 
-static void _cert_clear(cert_t* impl)
+OE_INLINE void _cert_destroy(cert_t* impl)
 {
     if (impl)
     {
@@ -111,246 +105,6 @@ static void _cert_chain_clear(cert_chain_t* impl)
         impl->cert_store = NULL;
     }
 }
-
-// static STACK_OF(X509) * _read_cert_chain(const char* pem)
-//{
-//    STACK_OF(X509)* result = NULL;
-//    STACK_OF(X509)* sk = NULL;
-//    BIO* bio = NULL;
-//    PCERT_CONTEXT cert = NULL;
-//
-//    // Check parameters:
-//    if (!pem)
-//        goto done;
-//
-//    // Create empty X509 stack:
-//    if (!(sk = sk_X509_new_null()))
-//        goto done;
-//
-//    while (*pem)
-//    {
-//        const char* end;
-//
-//        /* The PEM certificate must start with this */
-//        if (strncmp(
-//                pem, OE_PEM_CERT_HEADERIFICATE, OE_PEM_CERT_HEADERIFICATE_LEN)
-//                !=
-//            0)
-//            goto done;
-//
-//        /* Find the end of this PEM certificate */
-//        {
-//            if (!(end = strstr(pem, OE_PEM_CERT_FOOTERIFICATE)))
-//                goto done;
-//
-//            end += OE_PEM_CERT_FOOTERIFICATE_LEN;
-//        }
-//
-//        /* Skip trailing spaces */
-//        while (isspace(*end))
-//            end++;
-//
-//        /* Create a BIO for this certificate */
-//        if (!(bio = BIO_new_mem_buf(pem, (int)(end - pem))))
-//            goto done;
-//
-//        /* Read BIO into X509 object */
-//        if (!(cert = PEM_read_bio_X509(bio, NULL, 0, NULL)))
-//            goto done;
-//
-//        // Push certificate onto stack:
-//        {
-//            if (!sk_X509_push(sk, cert))
-//                goto done;
-//
-//            cert = NULL;
-//        }
-//
-//        // Release the bio:
-//        BIO_free(bio);
-//        bio = NULL;
-//
-//        pem = end;
-//    }
-//
-//    result = sk;
-//    sk = NULL;
-//
-// done:
-//
-//    if (bio)
-//        BIO_free(bio);
-//
-//    if (sk)
-//        sk_X509_pop_free(sk, X509_free);
-//
-//    return result;
-//}
-//
-///* Clone the certificate to clear any verification state */
-// static PCERT_CONTEXT _clone_cert(PCERT_CONTEXT cert)
-//{
-//    PCERT_CONTEXT ret = NULL;
-//    BIO* out = NULL;
-//    BIO* in = NULL;
-//    BUF_MEM* mem;
-//
-//    if (!cert)
-//        goto done;
-//
-//    if (!(out = BIO_new(BIO_s_mem())))
-//        goto done;
-//
-//    if (!PEM_write_bio_X509(out, cert))
-//        goto done;
-//
-//    if (!BIO_get_mem_ptr(out, &mem))
-//        goto done;
-//
-//    if (mem->length > OE_INT_MAX)
-//        goto done;
-//
-//    if (!(in = BIO_new_mem_buf(mem->data, (int)mem->length)))
-//        goto done;
-//
-//    ret = PEM_read_bio_X509(in, NULL, 0, NULL);
-//
-// done:
-//
-//    if (out)
-//        BIO_free(out);
-//
-//    if (in)
-//        BIO_free(in);
-//
-//    return ret;
-//}
-//
-//#if OPENSSL_VERSION_NUMBER < 0x10100000L
-///* Needed because some versions of OpenSSL do not support X509_up_ref() */
-// static int X509_up_ref(PCERT_CONTEXT cert)
-//{
-//    if (!cert)
-//        return 0;
-//
-//    CRYPTO_add(&cert->references, 1, CRYPTO_LOCK_X509);
-//    return 1;
-//}
-//
-///* Needed because some versions of OpenSSL do not support X509_CRL_up_ref() */
-// static int X509_CRL_up_ref(X509_CRL* cert_crl)
-//{
-//    if (!cert_crl)
-//        return 0;
-//
-//    CRYPTO_add(&cert_crl->references, 1, CRYPTO_LOCK_X509_CRL);
-//    return 1;
-//}
-//
-// static const STACK_OF(X509_EXTENSION) * X509_get0_extensions(const
-// PCERT_CONTEXT x)
-//{
-//    if (!x->cert_info)
-//    {
-//        return NULL;
-//    }
-//    return x->cert_info->extensions;
-//}
-//
-//#endif
-//
-// static oe_result_t _cert_chain_get_length(const cert_chain_t* impl, int*
-// length)
-//{
-//    oe_result_t result = OE_UNEXPECTED;
-//    int num;
-//
-//    *length = 0;
-//
-//    if ((num = sk_X509_num(impl->sk)) <= 0)
-//        OE_RAISE(OE_FAILURE);
-//
-//    *length = num;
-//
-//    result = OE_OK;
-//
-// done:
-//    return result;
-//}
-//
-// static STACK_OF(X509) * _clone_chain(STACK_OF(X509) * chain)
-//{
-//    STACK_OF(X509)* sk = NULL;
-//    int n = sk_X509_num(chain);
-//
-//    if (!(sk = sk_X509_new(NULL)))
-//        return NULL;
-//
-//    for (int i = 0; i < n; i++)
-//    {
-//        PCERT_CONTEXT cert;
-//
-//        if (!(cert = sk_X509_value(chain, (int)i)))
-//            return NULL;
-//
-//        if (!(cert = _clone_cert(cert)))
-//            return NULL;
-//
-//        if (!sk_X509_push(sk, cert))
-//            return NULL;
-//    }
-//
-//    return sk;
-//}
-//
-// static oe_result_t _verify_cert(PCERT_CONTEXT cert_, STACK_OF(X509) * chain_)
-//{
-//    oe_result_t result = OE_UNEXPECTED;
-//    X509_STORE_CTX* ctx = NULL;
-//    PCERT_CONTEXT cert = NULL;
-//    STACK_OF(X509)* chain = NULL;
-//
-//    /* Clone the certificate to clear any cached verification state */
-//    if (!(cert = _clone_cert(cert_)))
-//        OE_RAISE(OE_FAILURE);
-//
-//    /* Clone the chain to clear any cached verification state */
-//    if (!(chain = _clone_chain(chain_)))
-//        OE_RAISE(OE_FAILURE);
-//
-//    /* Create a context for verification */
-//    if (!(ctx = X509_STORE_CTX_new()))
-//        OE_RAISE(OE_FAILURE);
-//
-//    /* Initialize the context that will be used to verify the certificate */
-//    if (!X509_STORE_CTX_init(ctx, NULL, NULL, NULL))
-//        OE_RAISE(OE_FAILURE);
-//
-//    /* Inject the certificate into the verification context */
-//    X509_STORE_CTX_set_cert(ctx, cert);
-//
-//    /* Set the CA chain into the verification context */
-//    X509_STORE_CTX_trusted_stack(ctx, chain);
-//
-//    /* Finally verify the certificate */
-//    if (!X509_verify_cert(ctx))
-//        OE_RAISE(OE_FAILURE);
-//
-//    result = OE_OK;
-//
-// done:
-//
-//    if (cert)
-//        X509_free(cert);
-//
-//    if (chain)
-//        sk_X509_pop_free(chain, X509_free);
-//
-//    if (ctx)
-//        X509_STORE_CTX_free(ctx);
-//
-//    return result;
-//}
 
 // Find the last certificate in the chain and then verify that it's a
 // self-signed certificate (a root certificate).
@@ -597,7 +351,7 @@ oe_result_t oe_cert_free(oe_cert_t* cert)
 
     /* Free the certificate */
     CertFreeCertificateContext(impl->cert);
-    _cert_clear(impl);
+    _cert_destroy(impl);
 
     result = OE_OK;
 
@@ -819,17 +573,68 @@ oe_result_t oe_cert_verify(
                     GetLastError());
             }
         }
+
+        /* DEBUG */
+        {
+            BOOL success = CryptVerifyCertificateSignatureEx(
+                0,
+                X509_ASN_ENCODING,
+                CRYPT_VERIFY_CERT_SIGN_SUBJECT_CERT,
+                (PCERT_CONTEXT)chain_impl->cert_chain->rgpChain[0]
+                    ->rgpElement[1]
+                    ->pCertContext,
+                CRYPT_VERIFY_CERT_SIGN_ISSUER_CERT,
+                (PCERT_CONTEXT)chain_impl->cert_chain->rgpChain[0]
+                    ->rgpElement[1]
+                    ->pCertContext,
+                CRYPT_VERIFY_CERT_SIGN_DISABLE_MD2_MD4_FLAG,
+                NULL);
+            assert(success);
+
+            success = CryptVerifyCertificateSignatureEx(
+                0,
+                X509_ASN_ENCODING,
+                CRYPT_VERIFY_CERT_SIGN_SUBJECT_CERT,
+                (PCERT_CONTEXT)cert_impl->cert,
+                CRYPT_VERIFY_CERT_SIGN_ISSUER_CERT,
+                (PCERT_CONTEXT)chain_impl->cert_chain->rgpChain[0]
+                    ->rgpElement[1]
+                    ->pCertContext,
+                CRYPT_VERIFY_CERT_SIGN_DISABLE_MD2_MD4_FLAG,
+                NULL);
+            assert(success);
+        }
     }
 
     /* Add CRLs to cert store */
     for (int j = 0; j < num_crls; j++)
     {
-        /* TODO: update when bcrypt impl of oe_crl_t defines a substructure */
+        PCCRL_CONTEXT crl_context;
+        OE_CHECK(oe_crl_get_context(crls[j], &crl_context));
+
+        /* DEBUG */
+        {
+            BOOL success = CryptVerifyCertificateSignatureEx(
+                0,
+                X509_ASN_ENCODING,
+                CRYPT_VERIFY_CERT_SIGN_SUBJECT_CRL,
+                (PCRL_CONTEXT)crl_context,
+                CRYPT_VERIFY_CERT_SIGN_ISSUER_CERT,
+                (PCERT_CONTEXT)chain_impl->cert_chain->rgpChain[0]
+                    ->rgpElement[1]
+                    ->pCertContext,
+                CRYPT_VERIFY_CERT_SIGN_DISABLE_MD2_MD4_FLAG |
+                    CRYPT_VERIFY_CERT_SIGN_SET_STRONG_PROPERTIES_FLAG,
+                NULL);
+            if (!success)
+                OE_RAISE_MSG(
+                    OE_CRYPTO_ERROR,
+                    "CryptVerifyCertificateSignatureEx failed, err=%#x\n",
+                    GetLastError());
+        }
+
         if (!CertAddCRLContextToStore(
-                cert_store,
-                (PCCRL_CONTEXT)crls[j],
-                CERT_STORE_ADD_REPLACE_EXISTING,
-                NULL))
+                cert_store, crl_context, CERT_STORE_ADD_REPLACE_EXISTING, NULL))
         {
             OE_RAISE_MSG(
                 OE_CRYPTO_ERROR,

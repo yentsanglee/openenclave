@@ -6,7 +6,7 @@
 void TestAll()
 {
     // TestASN1();
-    // TestCRL();
+    TestCRL();
     TestEC();
     TestRandom();
     TestRdrand();
