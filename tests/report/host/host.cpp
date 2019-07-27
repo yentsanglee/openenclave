@@ -83,6 +83,15 @@ int main(int argc, const char* argv[])
 		if (SetEnvironmentVariableW(L"SystemRoot", L"C:\\Windows") == 0)
             exit(1);
 	}
+
+	if (!GetEnvironmentVariableW(L"LOCALAPPDATA", path, _MAX_PATH))
+    {
+        if (GetLastError() != ERROR_ENVVAR_NOT_FOUND)
+            exit(1);
+
+        if (SetEnvironmentVariableW(L"LOCALAPPDATA", L"C:\\Users\\akagup\\AppData\\Local") == 0)
+            exit(1);
+    }
 #endif
 
     const uint32_t flags = oe_get_create_flags();
