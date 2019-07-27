@@ -350,12 +350,12 @@ static oe_result_t _verify_whole_chain(
         bool isRootCert = (cert_count == i + 1);
         PCERT_CONTEXT cert =
             (PCERT_CONTEXT)cert_chain->rgpChain[0]->rgpElement[i]->pCertContext;
-        PCERT_CHAIN_ELEMENT issuer_element = NULL;
+        PCERT_CHAIN_ELEMENT* issuer_element = NULL;
         PCERT_CONTEXT issuer = cert;
         if (!isRootCert)
         {
-            issuer_element = cert_chain->rgpChain[0]->rgpElement[i + 1];
-            issuer = (PCERT_CONTEXT)issuer_element->pCertContext;
+            issuer_element = &cert_chain->rgpChain[0]->rgpElement[i + 1];
+            issuer = (PCERT_CONTEXT)((*issuer_element)->pCertContext);
         }
 
         BOOL success = CryptVerifyCertificateSignatureEx(
@@ -383,7 +383,7 @@ static oe_result_t _verify_whole_chain(
             {
                 CertFreeCRLContext(found_crl);
                 OE_CHECK(_check_revocation(
-                    cert, &issuer_element, cert_count - 1, cert_store));
+                    cert, issuer_element, cert_count - 1 - i, cert_store));
             }
         }
     }
