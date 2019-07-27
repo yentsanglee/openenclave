@@ -151,7 +151,7 @@ oe_result_t oe_crl_get_update_dates(
         OE_CHECK(_filetime_to_oe_datetime(&crl_info->ThisUpdate, last));
 
     if (next)
-        OE_CHECK(_filetime_to_oe_datetime(&crl_info->NextUpdate, last));
+        OE_CHECK(_filetime_to_oe_datetime(&crl_info->NextUpdate, next));
 
     result = OE_OK;
 

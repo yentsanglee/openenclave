@@ -29,17 +29,33 @@
 
 #define _OE_CERT_CHAIN_LENGTH_ANY 0
 
+static const DWORD _OE_DEFAULT_GET_CRL_FLAGS = CERT_STORE_SIGNATURE_FLAG |
+                                               CERT_STORE_TIME_VALIDITY_FLAG |
+                                               CERT_STORE_BASE_CRL_FLAG;
+
 static const CERT_CHAIN_POLICY_PARA _OE_DEFAULT_CERT_CHAIN_POLICY = {
     .cbSize = sizeof(CERT_CHAIN_POLICY_PARA),
     .dwFlags = 0};
 
+static const CERT_STRONG_SIGN_PARA _OE_DEFAULT_SIGN_PARAMS = {
+    .cbSize = sizeof(CERT_STRONG_SIGN_PARA),
+    .dwInfoChoice = CERT_STRONG_SIGN_OID_INFO_CHOICE,
+    .pszOID = szOID_CERT_STRONG_SIGN_OS_1};
+
 static const CERT_CHAIN_PARA _OE_DEFAULT_CERT_CHAIN_PARAMS = {
-    .cbSize = sizeof(CERT_CHAIN_PARA)};
+    .cbSize = sizeof(CERT_CHAIN_PARA),
+    .RequestedUsage = {{0}},
+    .RequestedIssuancePolicy = {{0}},
+    .dwUrlRetrievalTimeout = 0,
+    .fCheckRevocationFreshnessTime = FALSE,
+    .dwRevocationFreshnessTime = 0,
+    .pftCacheResync = NULL,
+    .pStrongSignPara = &_OE_DEFAULT_SIGN_PARAMS,
+    .dwStrongSignFlags = 0};
 
 static const DWORD _OE_DEFAULT_CERT_CHAIN_FLAGS =
-    /* CERT_CHAIN_CACHE_END_CERT | CERT_CHAIN_REVOCATION_CHECK_CACHE_ONLY |
-    CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL |*/
-    CERT_CHAIN_REVOCATION_CHECK_CHAIN;
+    CERT_CHAIN_CACHE_END_CERT | CERT_CHAIN_REVOCATION_CHECK_CACHE_ONLY |
+    CERT_CHAIN_CACHE_ONLY_URL_RETRIEVAL | CERT_CHAIN_REVOCATION_CHECK_CHAIN;
 
 typedef struct _cert
 {
@@ -193,7 +209,100 @@ done:
     return result;
 }
 
-static oe_result_t _verify_whole_chain(PCCERT_CHAIN_CONTEXT cert_chain)
+static oe_result_t _check_revocation(
+    PCCERT_CONTEXT cert,
+    PCERT_CHAIN_ELEMENT* cert_issuers,
+    DWORD cert_issuers_count,
+    HCERTSTORE cert_store)
+{
+    oe_result_t result = OE_UNEXPECTED;
+
+    bool is_validated = false;
+    DWORD flags = _OE_DEFAULT_GET_CRL_FLAGS;
+    PCCRL_CONTEXT prev_crl = NULL;
+    PCCRL_CONTEXT crl = CertGetCRLFromStore(
+        cert_store, cert_issuers[0]->pCertContext, prev_crl, &flags);
+
+    /* TODO: This implementation does not support delta CRLs yet.
+     * It will need to collate all CRLs per issuer with the base
+     * and then pass them into a single CertVerifyCRLRevocation check. */
+    while (crl && (flags & CERT_STORE_BASE_CRL_FLAG))
+    {
+        flags = _OE_DEFAULT_GET_CRL_FLAGS;
+        crl = CertGetCRLFromStore(
+            cert_store, cert_issuers[0]->pCertContext, crl, &flags);
+    }
+
+    if (crl)
+    {
+        if (flags & CERT_STORE_SIGNATURE_FLAG)
+            OE_RAISE_MSG(
+                OE_VERIFY_FAILED,
+                "CertGetCRLFromStore: CRL failed signature validation.\n",
+                NULL);
+
+        if (flags & CERT_STORE_TIME_VALIDITY_FLAG)
+            OE_RAISE_MSG(
+                OE_VERIFY_CRL_EXPIRED,
+                "CertGetCRLFromStore: CRL out of time validity.\n",
+                NULL);
+
+        if (CertIsValidCRLForCertificate(cert, crl, 0, NULL))
+        {
+            if (!CertVerifyCRLRevocation(
+                    X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+                    cert->pCertInfo,
+                    1,
+                    (PCRL_INFO*)&crl->pCrlInfo))
+            {
+                OE_RAISE(OE_VERIFY_REVOKED);
+            }
+
+            is_validated = true;
+        }
+    }
+    else
+    {
+        DWORD error = GetLastError();
+        if (error != CRYPT_E_NOT_FOUND)
+            OE_RAISE_MSG(
+                OE_CRYPTO_ERROR,
+                "CertGetCRLFromStore failed, err=%#x\n",
+                error);
+    }
+
+    /* This method doesn't fail out immediately if it can't find an applicable
+     * CRL as one of them could be issued by a CA higher in the chain. Given an
+     * existing validation, it's also possible (albeit irrgular) for a higher
+     * CA to revoke the cert still. */
+    if (cert_issuers_count > 1)
+    {
+        oe_result_t parent_result = _check_revocation(
+            cert, &cert_issuers[1], cert_issuers_count - 1, cert_store);
+
+        /* The parent issuer not having an applicable CRL for the cert is not
+         * necessarily an error, since is_validated may already be true. */
+        if (parent_result == OE_OK)
+            is_validated = true;
+        else if (parent_result != OE_VERIFY_CRL_MISSING)
+            OE_RAISE(parent_result);
+    }
+
+    if (!is_validated)
+        OE_RAISE(OE_VERIFY_CRL_MISSING);
+
+    result = OE_OK;
+
+done:
+    if (crl)
+        CertFreeCRLContext(crl);
+
+    return result;
+}
+
+static oe_result_t _verify_whole_chain(
+    HCERTSTORE cert_store,
+    PCCERT_CHAIN_CONTEXT cert_chain)
 {
     oe_result_t result = OE_UNEXPECTED;
     CERT_CHAIN_POLICY_STATUS policy_status = {
@@ -202,8 +311,17 @@ static oe_result_t _verify_whole_chain(PCCERT_CHAIN_CONTEXT cert_chain)
     if (!_find_root_cert(cert_chain))
         OE_RAISE_MSG(OE_VERIFY_FAILED, "No root certificate found\n", NULL);
 
-    // Sanity check; CertGetCertificateChain shouldn't produce
-    // chains that violates basic constraints anyway.
+    /* NOTE: This only validates the cert chain structure for basic
+     * constraints such as path length. Cert chains generated via
+     * CertGetCertificateChain should already be valid in that regard.
+     *
+     * Ideally, this should try to run CERT_CHAIN_POLICY_AUTHENTICODE,
+     * which will also check cert_chain->TrustStatus for signature and
+     * revocation errors, but given the current parameterization, it is
+     * flagging CERT_TRUST_IS_NOT_SIGNATURE_VALID which seems to be flowing
+     * from CERT_TRUST_IS_UNTRUSTED_ROOT, which is expected given that the
+     * attestation cert trust is independent of the Windows root trust
+     */
     if (!CertVerifyCertificateChainPolicy(
             CERT_CHAIN_POLICY_BASIC_CONSTRAINTS,
             cert_chain,
@@ -216,16 +334,59 @@ static oe_result_t _verify_whole_chain(PCCERT_CHAIN_CONTEXT cert_chain)
             NULL);
     }
 
-    // TODO: Map verification errors to oe errors
+    /* Success on CertVerifyCertificateChainPolicy does not indicate 
+     * successful validation, that's reflected in the policy_status */
     if (policy_status.dwError != ERROR_SUCCESS)
-    {
         OE_RAISE_MSG(
             OE_VERIFY_FAILED,
             "CertVerifyCertificateChainPolicy failed, err=%#x\n",
             policy_status.dwError);
+
+    /* Explicitly walk the chain and validate the signatures */
+    DWORD cert_count = cert_chain->rgpChain[0]->cElement;
+    for (DWORD i = 0; i < cert_count; i++)
+    {
+        bool isRootCert = (cert_count == i + 1);
+        PCERT_CONTEXT cert =
+            (PCERT_CONTEXT)cert_chain->rgpChain[0]->rgpElement[i]->pCertContext;
+        PCERT_CHAIN_ELEMENT issuer_element = NULL;
+        PCERT_CONTEXT issuer = cert;
+        if (!isRootCert)
+        {
+            issuer_element = cert_chain->rgpChain[0]->rgpElement[i + 1];
+            issuer = (PCERT_CONTEXT)issuer_element->pCertContext;
+        }
+
+        BOOL success = CryptVerifyCertificateSignatureEx(
+            0,
+            X509_ASN_ENCODING,
+            CRYPT_VERIFY_CERT_SIGN_SUBJECT_CERT,
+            cert,
+            CRYPT_VERIFY_CERT_SIGN_ISSUER_CERT,
+            issuer,
+            CRYPT_VERIFY_CERT_SIGN_DISABLE_MD2_MD4_FLAG,
+            NULL);
+
+        if (!success)
+            OE_RAISE_MSG(
+                OE_CRYPTO_ERROR,
+                "CryptVerifyCertificateSignatureEx failed, err=%#x\n",
+                GetLastError());
+
+        /* Perform CRL validations if certificate trust store provided 
+         * contains any CRLs */
+        if (!isRootCert && cert_store)
+        {
+            PCCRL_CONTEXT found_crl = CertEnumCRLsInStore(cert_store, NULL);
+            if (found_crl)
+            {
+                CertFreeCRLContext(found_crl);
+                OE_CHECK(_check_revocation(
+                    cert, &issuer_element, cert_count - 1, cert_store));
+            }
+        }
     }
 
-    // TODO: Check the CERT_CHAIN_POLICY_STATUS on the cert chain
     result = OE_OK;
 
 done:
@@ -428,8 +589,8 @@ oe_result_t oe_cert_chain_read_pem(
         der.cbData = 0;
     }
 
-    // Trace: check if added certs matches found_certs consider adding a limit
-    // check prior to this
+    // Trace: check if added certs matches found_certs consider adding a
+    // limit check prior to this
     while (cert_context = CertEnumCertificatesInStore(store, cert_context))
     {
         found_certs++;
@@ -465,7 +626,7 @@ oe_result_t oe_cert_chain_read_pem(
             "pem_data does not contain a valid cert chain\n",
             NULL);
 
-    OE_CHECK(_verify_whole_chain(cert_chain));
+    OE_CHECK(_verify_whole_chain(NULL, cert_chain));
 
     _cert_chain_init(impl, cert_chain, store);
     result = OE_OK;
@@ -573,37 +734,6 @@ oe_result_t oe_cert_verify(
                     GetLastError());
             }
         }
-
-        /* DEBUG */
-        {
-            BOOL success = CryptVerifyCertificateSignatureEx(
-                0,
-                X509_ASN_ENCODING,
-                CRYPT_VERIFY_CERT_SIGN_SUBJECT_CERT,
-                (PCERT_CONTEXT)chain_impl->cert_chain->rgpChain[0]
-                    ->rgpElement[1]
-                    ->pCertContext,
-                CRYPT_VERIFY_CERT_SIGN_ISSUER_CERT,
-                (PCERT_CONTEXT)chain_impl->cert_chain->rgpChain[0]
-                    ->rgpElement[1]
-                    ->pCertContext,
-                CRYPT_VERIFY_CERT_SIGN_DISABLE_MD2_MD4_FLAG,
-                NULL);
-            assert(success);
-
-            success = CryptVerifyCertificateSignatureEx(
-                0,
-                X509_ASN_ENCODING,
-                CRYPT_VERIFY_CERT_SIGN_SUBJECT_CERT,
-                (PCERT_CONTEXT)cert_impl->cert,
-                CRYPT_VERIFY_CERT_SIGN_ISSUER_CERT,
-                (PCERT_CONTEXT)chain_impl->cert_chain->rgpChain[0]
-                    ->rgpElement[1]
-                    ->pCertContext,
-                CRYPT_VERIFY_CERT_SIGN_DISABLE_MD2_MD4_FLAG,
-                NULL);
-            assert(success);
-        }
     }
 
     /* Add CRLs to cert store */
@@ -611,27 +741,6 @@ oe_result_t oe_cert_verify(
     {
         PCCRL_CONTEXT crl_context;
         OE_CHECK(oe_crl_get_context(crls[j], &crl_context));
-
-        /* DEBUG */
-        {
-            BOOL success = CryptVerifyCertificateSignatureEx(
-                0,
-                X509_ASN_ENCODING,
-                CRYPT_VERIFY_CERT_SIGN_SUBJECT_CRL,
-                (PCRL_CONTEXT)crl_context,
-                CRYPT_VERIFY_CERT_SIGN_ISSUER_CERT,
-                (PCERT_CONTEXT)chain_impl->cert_chain->rgpChain[0]
-                    ->rgpElement[1]
-                    ->pCertContext,
-                CRYPT_VERIFY_CERT_SIGN_DISABLE_MD2_MD4_FLAG |
-                    CRYPT_VERIFY_CERT_SIGN_SET_STRONG_PROPERTIES_FLAG,
-                NULL);
-            if (!success)
-                OE_RAISE_MSG(
-                    OE_CRYPTO_ERROR,
-                    "CryptVerifyCertificateSignatureEx failed, err=%#x\n",
-                    GetLastError());
-        }
 
         if (!CertAddCRLContextToStore(
                 cert_store, crl_context, CERT_STORE_ADD_REPLACE_EXISTING, NULL))
@@ -650,7 +759,7 @@ oe_result_t oe_cert_verify(
         OE_RAISE_MSG(
             OE_VERIFY_FAILED, "No valid cert chain could be found\n", NULL);
 
-    OE_CHECK(_verify_whole_chain(cert_chain));
+    OE_CHECK(_verify_whole_chain(cert_store, cert_chain));
 
     result = OE_OK;
 
