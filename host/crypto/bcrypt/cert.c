@@ -10,6 +10,7 @@
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/utils.h>
 #include <stdlib.h>
+#include <wchar.h>
 
 #include "../magic.h"
 #include "bcrypt.h"
@@ -428,6 +429,47 @@ done:
     return result;
 }
 
+oe_result_t _get_key_algorithm(
+    BCRYPT_KEY_HANDLE key,
+    void** buf,
+    size_t* bufsize)
+{
+    oe_result_t result = OE_UNEXPECTED;
+    void* buf_local = NULL;
+    ULONG written;
+    NTSTATUS status;
+
+    if (!key || !buf || !bufsize)
+        OE_RAISE(OE_INVALID_PARAMETER);
+
+    status =
+        BCryptGetProperty(key, BCRYPT_ALGORITHM_NAME, NULL, 0, &written, 0);
+
+    if (!BCRYPT_SUCCESS(status))
+        OE_RAISE(OE_CRYPTO_ERROR);
+
+    buf_local = malloc(written);
+    if (buf_local == NULL)
+        OE_RAISE(OE_OUT_OF_MEMORY);
+
+    status = BCryptGetProperty(
+        key, BCRYPT_ALGORITHM_NAME, buf_local, written, &written, 0);
+
+    if (!BCRYPT_SUCCESS(status))
+        OE_RAISE(OE_CRYPTO_ERROR);
+
+    *buf = buf_local;
+    *bufsize = written;
+    buf_local = NULL;
+    result = OE_OK;
+
+done:
+    if (buf_local)
+        free(buf_local);
+
+    return result;
+}
+
 /*
 **==============================================================================
 **
@@ -781,6 +823,8 @@ oe_result_t oe_cert_get_rsa_public_key(
     oe_result_t result = OE_UNEXPECTED;
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     BCRYPT_KEY_HANDLE key_handle = NULL;
+    wchar_t* key_alg_name = NULL;
+    size_t key_alg_name_size;
 
     /* Clear public key for all error pathways */
     if (public_key)
@@ -791,6 +835,14 @@ oe_result_t oe_cert_get_rsa_public_key(
         OE_RAISE(OE_INVALID_PARAMETER);
 
     OE_CHECK(_bcrypt_get_public_key_from_cert(cert, &key_handle));
+
+    /* Check if RSA key. */
+    result = _get_key_algorithm(key_handle, &key_alg_name, &key_alg_name_size);
+    if (result != OE_OK)
+        OE_RAISE(OE_PUBLIC_KEY_NOT_FOUND);
+
+    if (wcscmp(key_alg_name, BCRYPT_RSA_ALGORITHM) != 0)
+        OE_RAISE(OE_PUBLIC_KEY_NOT_FOUND);
 
     /* Initialize the RSA public key */
     oe_rsa_public_key_init(public_key, key_handle);
@@ -804,6 +856,9 @@ done:
         BCryptDestroyKey(key_handle);
     }
 
+    if (key_alg_name)
+        free(key_alg_name);
+
     return result;
 }
 
@@ -814,6 +869,8 @@ oe_result_t oe_cert_get_ec_public_key(
     oe_result_t result = OE_UNEXPECTED;
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     BCRYPT_KEY_HANDLE key_handle = NULL;
+    wchar_t* key_alg_name = NULL;
+    size_t key_alg_name_size;
 
     /* Clear public key for all error pathways */
     if (public_key)
@@ -824,6 +881,21 @@ oe_result_t oe_cert_get_ec_public_key(
         OE_RAISE(OE_INVALID_PARAMETER);
 
     OE_CHECK(_bcrypt_get_public_key_from_cert(cert, &key_handle));
+
+    /* Check if EC key. */
+    result = _get_key_algorithm(key_handle, &key_alg_name, &key_alg_name_size);
+    if (result != OE_OK)
+        OE_RAISE(OE_PUBLIC_KEY_NOT_FOUND);
+
+    if (wcsncmp(
+            key_alg_name,
+            BCRYPT_ECDSA_ALGORITHM,
+            _countof(BCRYPT_ECDSA_ALGORITHM) - 1) != 0 &&
+        wcsncmp(
+            key_alg_name,
+            BCRYPT_ECDH_ALGORITHM,
+            _countof(BCRYPT_ECDH_ALGORITHM) - 1) != 0)
+		OE_RAISE(OE_PUBLIC_KEY_NOT_FOUND);
 
     /* Initialize the EC public key */
     oe_ec_public_key_init(public_key, key_handle);
@@ -836,6 +908,9 @@ done:
     {
         BCryptDestroyKey(key_handle);
     }
+
+    if (key_alg_name)
+        free(key_alg_name);
 
     return result;
 }

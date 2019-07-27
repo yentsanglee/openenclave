@@ -63,6 +63,7 @@ if (UNIX OR ADD_WINDOWS_ENCLAVE_TESTS OR USE_CLANGW)
         add_subdirectory(stdc)
         add_subdirectory(syscall)
         add_subdirectory(VectorException)
+		add_subdirectory(attestation_cert_apis)
     endif()
 
 add_subdirectory(create-errors)
@@ -91,6 +92,5 @@ if (OE_SGX AND UNIX)
 
    # Attestation supported only on Linux
    add_subdirectory(qeidentity)
-   add_subdirectory(attestation_cert_apis)
    add_subdirectory(tls_e2e)
 endif()
