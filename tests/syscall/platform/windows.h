@@ -143,4 +143,227 @@ OE_INLINE bool test_would_block()
     return WSAGetLastError() == WSAEWOULDBLOCK;
 }
 
+r
+
+// Allocates char* string which follows the expected rules for
+// enclaves. Paths in the format
+// <driveletter>:\<item>\<item> -> /<driveletter>/<item>/item>
+// <driveletter>:/<item>/<item> -> /<driveletter>/<item>/item>
+// paths without drive letter are detected and the drive added
+// /<item>/<item> -> /<current driveletter>/<item>/item>
+// relative paths are translated to absolute with drive letter
+// returns null if the string is illegal
+//
+// The string  must be freed
+// ATTN: we don't handle paths which start with the "\\?\" thing. don't really
+// think we need them
+//
+char* win_path_to_posix(const char* path)
+{
+    size_t required_size = 0;
+    size_t current_dir_len = 0;
+    char* current_dir = NULL;
+    char* enclave_path = NULL;
+
+    if (!path)
+    {
+        return NULL;
+    }
+    // Relative or incomplete path?
+
+    // absolute path with drive letter.
+    // we do not handle device type paths ("CON:) or double-letter paths in case
+    // of really large numbers of disks (>26). If you have those, mount on
+    // windows
+    //
+    if (isalpha(path[0]) && path[1] == ':')
+    {
+        // Abosolute path is drive letter
+        required_size = strlen(path) + 1;
+    }
+    else if (path[0] == '/' || path[0] == '\\')
+    {
+        required_size = strlen(path) + 3; // Add a drive letter to the path
+    }
+    else
+    {
+        current_dir = _getcwd(NULL, 32767);
+        current_dir_len = strlen(current_dir);
+
+        if (isalpha(*current_dir) && (current_dir[1] == ':'))
+        {
+            // This is expected. We convert drive: to /drive.
+
+            char drive_letter = *current_dir;
+            *current_dir = '/';
+            current_dir[1] = drive_letter;
+        }
+        // relative path. If the path starts with "." or ".." we accomodate
+        required_size = strlen(path) + current_dir_len + 1;
+    }
+
+    enclave_path = (char*)calloc(1, required_size);
+
+    const char* psrc = path;
+    const char* plimit = path + strlen(path);
+    char* pdst = enclave_path;
+
+    if (isalpha(*psrc) && psrc[1] == ':')
+    {
+        *pdst++ = '/';
+        *pdst++ = *psrc;
+        psrc += 2;
+    }
+    else if (*psrc == '/')
+    {
+        *pdst++ = '/';
+        *pdst++ = _getdrive() + 'a';
+    }
+    else if (*psrc == '.')
+    {
+        memcpy(pdst, current_dir, current_dir_len);
+        if (psrc[1] == '/' || psrc[1] == '\\')
+        {
+            pdst += current_dir_len;
+            psrc++;
+        }
+        else if (psrc[1] == '.' && (psrc[2] == '/' || psrc[2] == '\\'))
+        {
+            char* rstr = strrchr(
+                current_dir, '\\'); // getcwd always returns at least '\'
+            pdst += current_dir_len - (rstr - current_dir);
+            // When we shortend the curdir by 1 slash, we perform the ".."
+            // operation we could leave it in here, but at least sometimes this
+            // will allow a path that would otherwise be too long
+            psrc += 2;
+        }
+        else
+        {
+            // It is an incomplete which starts with a file which starts with .
+            // so we dont increment psrc at all
+            pdst += current_dir_len;
+            *pdst = '/';
+        }
+    }
+    else
+    {
+        // Still a relative path
+        memcpy(pdst, current_dir, current_dir_len);
+        pdst += current_dir_len;
+        *pdst++ = '/';
+    }
+
+    // Since we have to translater slashes, use a loop rather than memcpy
+    while (psrc < plimit)
+    {
+        if (*psrc == '\\')
+        {
+            *pdst = '/';
+        }
+        else
+        {
+            *pdst = *psrc;
+        }
+        psrc++;
+        pdst++;
+    }
+    *pdst = '\0';
+
+    if (current_dir)
+    {
+        free(current_dir);
+    }
+    return enclave_path;
+}
+
+// Allocates WCHAR* string which follows the expected rules for
+// enclaves comminication with the host file system API. Paths in the format
+// /<driveletter>/<item>/<item>  become <driveletter>:/<item>/<item>
+//
+// The resulting string, especially with a relative path, will probably contain
+// mixed slashes. We beleive Windows handles this.
+//
+// Adds the string "post" to the resulting string end
+//
+// The string  must be freed
+WCHAR* posix_path_to_win(const char* path, const char* post)
+{
+    size_t required_size = 0;
+    size_t current_dir_len = 0;
+    char* current_dir = NULL;
+    int pathlen = MultiByteToWideChar(CP_UTF8, 0, path, -1, NULL, 0);
+    size_t postlen = MultiByteToWideChar(CP_UTF8, 0, post, -1, NULL, 0);
+    if (post)
+    {
+        postlen = MultiByteToWideChar(CP_UTF8, 0, post, -1, NULL, 0);
+    }
+
+    WCHAR* wpath = NULL;
+
+    if (path[0] == '/')
+    {
+        if (isalpha(path[1]) && path[2] == '/')
+        {
+            wpath =
+                (WCHAR*)(calloc((pathlen + postlen + 1) * sizeof(WCHAR), 1));
+            MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath, (int)pathlen);
+            if (postlen)
+            {
+                MultiByteToWideChar(
+                    CP_UTF8, 0, post, -1, wpath + pathlen - 1, (int)postlen);
+            }
+            WCHAR drive_letter = wpath[1];
+            wpath[0] = drive_letter;
+            wpath[1] = ':';
+        }
+        else
+        {
+            // Absolute path needs drive letter
+            wpath =
+                (WCHAR*)(calloc((pathlen + postlen + 3) * sizeof(WCHAR), 1));
+            MultiByteToWideChar(CP_UTF8, 0, path, -1, wpath + 2, (int)pathlen);
+            if (postlen)
+            {
+                MultiByteToWideChar(
+                    CP_UTF8, 0, post, -1, wpath + pathlen - 1, (int)postlen);
+            }
+            WCHAR drive_letter = _getdrive() + 'A';
+            wpath[0] = drive_letter;
+            wpath[1] = ':';
+        }
+    }
+    else
+    {
+        // Relative path
+        WCHAR* current_dir = _wgetcwd(NULL, 32767);
+        if (!current_dir)
+        {
+            _set_errno(OE_ENOMEM);
+            return NULL;
+        }
+        size_t current_dir_len = wcslen(current_dir);
+
+        wpath = (WCHAR*)(calloc(
+            (pathlen + current_dir_len + postlen + 1) * sizeof(WCHAR), 1));
+        memcpy(wpath, current_dir, current_dir_len);
+        wpath[current_dir_len] = '/';
+        MultiByteToWideChar(
+            CP_UTF8, 0, path, -1, wpath + current_dir_len, pathlen);
+        if (postlen)
+        {
+            MultiByteToWideChar(
+                CP_UTF8,
+                0,
+                path,
+                -1,
+                wpath + current_dir_len + pathlen - 1,
+                (int)postlen);
+        }
+
+        free(current_dir);
+    }
+    return wpath;
+}
+
+
 #endif /* _PLATFORM_WINDOWS_H */
