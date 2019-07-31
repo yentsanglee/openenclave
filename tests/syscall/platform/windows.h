@@ -9,6 +9,8 @@
 #include <openenclave/bits/defs.h>
 #include <openenclave/bits/types.h>
 
+#include <direct.h>
+#include <openenclave/corelibc/errno.h>
 // clang-format off
 #include <winsock2.h>
 #include <windows.h>
@@ -18,8 +20,82 @@
 
 typedef SOCKET socket_t;
 typedef int socklen_t;
+typedef unsigned short in_port_t;
 typedef int length_t;
 typedef void pthread_attr_t;
+
+struct errno_tab_entry
+{
+    DWORD winerr;
+    int error_no;
+};
+
+static struct errno_tab_entry errno2winsockerr[] = {
+    {WSAEINTR, OE_EINTR},
+    {WSAEBADF, OE_EBADF},
+    {WSAEACCES, OE_EACCES},
+    {WSAEFAULT, OE_EFAULT},
+    {WSAEINVAL, OE_EINVAL},
+    {WSAEMFILE, OE_EMFILE},
+    {WSAEWOULDBLOCK, OE_EWOULDBLOCK},
+    {WSAEINPROGRESS, OE_EINPROGRESS},
+    {WSAEALREADY, OE_EALREADY},
+    {WSAENOTSOCK, OE_ENOTSOCK},
+    {WSAEDESTADDRREQ, OE_EDESTADDRREQ},
+    {WSAEMSGSIZE, OE_EMSGSIZE},
+    {WSAEPROTOTYPE, OE_EPROTOTYPE},
+    {WSAENOPROTOOPT, OE_ENOPROTOOPT},
+    {WSAEPROTONOSUPPORT, OE_EPROTONOSUPPORT},
+    {WSAESOCKTNOSUPPORT, OE_ESOCKTNOSUPPORT},
+    {WSAEOPNOTSUPP, OE_EOPNOTSUPP},
+    {WSAEPFNOSUPPORT, OE_EPFNOSUPPORT},
+    {WSAEAFNOSUPPORT, OE_EAFNOSUPPORT},
+    {WSAEADDRINUSE, OE_EADDRINUSE},
+    {WSAEADDRNOTAVAIL, OE_EADDRNOTAVAIL},
+    {WSAENETDOWN, OE_ENETDOWN},
+    {WSAENETUNREACH, OE_ENETUNREACH},
+    {WSAENETRESET, OE_ENETRESET},
+    {WSAECONNABORTED, OE_ECONNABORTED},
+    {WSAECONNRESET, OE_ECONNRESET},
+    {WSAENOBUFS, OE_ENOBUFS},
+    {WSAEISCONN, OE_EISCONN},
+    {WSAENOTCONN, OE_ENOTCONN},
+    {WSAESHUTDOWN, OE_ESHUTDOWN},
+    {WSAETOOMANYREFS, OE_ETOOMANYREFS},
+    {WSAETIMEDOUT, OE_ETIMEDOUT},
+    {WSAECONNREFUSED, OE_ECONNREFUSED},
+    {WSAELOOP, OE_ELOOP},
+    {WSAENAMETOOLONG, OE_ENAMETOOLONG},
+    {WSAEHOSTDOWN, OE_EHOSTDOWN},
+    {WSAEHOSTUNREACH, OE_EHOSTUNREACH},
+    {WSAENOTEMPTY, OE_ENOTEMPTY},
+    {WSAEUSERS, OE_EUSERS},
+    {WSAEDQUOT, OE_EDQUOT},
+    {WSAESTALE, OE_ESTALE},
+    {WSAEREMOTE, OE_EREMOTE},
+    {WSAEDISCON, 199},
+    {WSAEPROCLIM, 200},
+    {WSASYSNOTREADY, 201}, // Made up number but close to adjacent
+    {WSAVERNOTSUPPORTED, 202},
+    {WSANOTINITIALISED, 203},
+    {0, 0}};
+
+OE_INLINE int _winsockerr_to_errno(DWORD winsockerr)
+{
+    struct errno_tab_entry* pent = errno2winsockerr;
+
+    do
+    {
+        if (pent->winerr == winsockerr)
+        {
+            return pent->error_no;
+        }
+        pent++;
+
+    } while (pent->winerr != 0);
+
+    return OE_EINVAL;
+}
 
 OE_INLINE int sleep(unsigned int seconds)
 {
@@ -56,7 +132,11 @@ sock_send(socket_t sockfd, const void* buf, size_t len, int flags)
 
 OE_INLINE ssize_t sock_recv(socket_t sockfd, void* buf, size_t len, int flags)
 {
-    return recv(sockfd, (char*)buf, (int)len, flags);
+    ssize_t ret = recv(sockfd, (char*)buf, (int)len, flags);
+    if (ret < 0)
+      _set_errno(_winsockerr_to_errno(WSAGetLastError()));
+
+    return ret;
 }
 
 OE_INLINE int sock_close(socket_t sock)
@@ -143,7 +223,6 @@ OE_INLINE bool test_would_block()
     return WSAGetLastError() == WSAEWOULDBLOCK;
 }
 
-r
 
 // Allocates char* string which follows the expected rules for
 // enclaves. Paths in the format
@@ -158,7 +237,7 @@ r
 // ATTN: we don't handle paths which start with the "\\?\" thing. don't really
 // think we need them
 //
-char* win_path_to_posix(const char* path)
+OE_INLINE char* win_path_to_posix(const char* path)
 {
     size_t required_size = 0;
     size_t current_dir_len = 0;
@@ -286,7 +365,7 @@ char* win_path_to_posix(const char* path)
 // Adds the string "post" to the resulting string end
 //
 // The string  must be freed
-WCHAR* posix_path_to_win(const char* path, const char* post)
+OE_INLINE WCHAR* posix_path_to_win(const char* path, const char* post)
 {
     size_t required_size = 0;
     size_t current_dir_len = 0;
@@ -338,7 +417,7 @@ WCHAR* posix_path_to_win(const char* path, const char* post)
         WCHAR* current_dir = _wgetcwd(NULL, 32767);
         if (!current_dir)
         {
-            _set_errno(OE_ENOMEM);
+            _set_errno(ENOMEM);
             return NULL;
         }
         size_t current_dir_len = wcslen(current_dir);

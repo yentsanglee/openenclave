@@ -2058,8 +2058,8 @@ oe_host_fd_t oe_syscall_accept_ocall(
 {
     oe_host_fd_t ret = -1;
 
-    // We are hoping, and think it is true, that accept in winsock returns the
-    // same error returns as accept everywhere else
+    // We expect that accept in winsock returns the
+    // same error returns as accept everywhere else once they are mapped
 
     if (addrlen_out)
     {

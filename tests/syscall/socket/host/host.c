@@ -87,6 +87,8 @@ char* host_client(in_port_t port)
     static char recvBuff[1024];
     struct sockaddr_in serv_addr = {0};
 
+    sock_startup();
+
     memset(recvBuff, '0', sizeof(recvBuff));
     if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
@@ -107,6 +109,35 @@ char* host_client(in_port_t port)
 
     while (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
     {
+#if defined(_MSC_VER)
+        bool done = false;
+        DWORD winerr = WSAGetLastError();
+        switch (winerr)
+        {
+            // Windows returns all kinds of complex errors in a nonblocking
+            // socket even when successful. This confuses the enclave so we
+            // have to handle them here. We just sleep and try again rather
+            // than waiting on the connection using WSAEventSelect
+            default:
+                _set_errno(_winsockerr_to_errno(winerr));
+                return NULL;
+
+            case WSAEALREADY:
+            case WSAEWOULDBLOCK:
+                Sleep(100);
+                continue;
+
+            case 10056: //WSAEISCONN:
+            {
+                done = true;
+            }
+            break;
+        }
+        if (done)  {
+            break;
+        }
+   
+#else
         if (retries++ > max_retries)
         {
             printf("\n Error : Connect Failed errno = %d\n", errno);
@@ -118,8 +149,10 @@ char* host_client(in_port_t port)
             printf("Connect Failed. errno = %d Retrying \n", errno);
             sleep_msec(100);
         }
+#endif
     }
 
+    printf("\n connected\n");
     do
     {
         if ((n = sock_recv(sockfd, recvBuff, sizeof(recvBuff), 0)) > 0)

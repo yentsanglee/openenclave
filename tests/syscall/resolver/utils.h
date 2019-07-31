@@ -6,7 +6,7 @@
 
 #if defined(_MSC_VER)
 typedef int64_t oe_socklen_t;
-#include <openenclave/corelibc/bits/addrinfo.h>
+#include <openenclave/internal/syscall/bits/addrinfo.h>
 #define __inline__ __inline
 #define addrinfo __OE_ADDRINFO
 #else

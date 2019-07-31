@@ -1,5 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
+#if defined(_MSC_VER)
+#include "../../platform/windows.h"
+#else
+#include "../../platform/linux.h"
+#endif
 
 #include <openenclave/host.h>
 #include <openenclave/internal/syscall/host.h>
@@ -28,7 +33,7 @@ int main(int argc, const char* argv[])
     OE_TEST(r == OE_OK);
 
 #if defined(_WIN32)
-    tmp_dir = oe_win_path_to_posix(tmp_dir);
+    tmp_dir = win_path_to_posix(tmp_dir);
 #endif
     r = test_hostfs(enclave, tmp_dir);
     OE_TEST(r == OE_OK);
