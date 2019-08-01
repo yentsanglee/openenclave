@@ -23,6 +23,7 @@
 #include <openenclave/host.h>
 #include <openenclave/internal/calls.h>
 #include <openenclave/internal/debugrt/host.h>
+#include <openenclave/internal/funcname.h>
 #include <openenclave/internal/raise.h>
 #include <openenclave/internal/registers.h>
 #include <openenclave/internal/sgxtypes.h>
@@ -310,6 +311,15 @@ static oe_result_t _handle_call_host_function(
 
     if ((args_ptr->output_buffer_size % OE_EDGER8R_BUFFER_ALIGNMENT) != 0)
         OE_RAISE(OE_INVALID_PARAMETER);
+
+#if defined(__linux__)
+    // Print the name of the function:
+    {
+        char buf[128];
+        OE_CHECK(oe_get_func_name(func, buf, sizeof(buf)));
+        printf("*** function name{%s}\n", buf);
+    }
+#endif
 
     // Call the function.
     func(

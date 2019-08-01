@@ -77,6 +77,7 @@ if (UNIX)
     crypto/openssl/random.c
     crypto/openssl/rsa.c
     crypto/openssl/sha.c
+    linux/funcname.c
     linux/hostthread.c
     linux/syscall.c
     linux/time.c
