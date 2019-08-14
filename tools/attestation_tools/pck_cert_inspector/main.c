@@ -26,6 +26,7 @@ oe_result_t oe_cert_read_pem(
 int pck_cert_inspector(const char* cert_path)
 {
     int ret = 0;
+    int successfully_parsed_tcb_info = 0;
 
     FILE* f = fopen(cert_path, "r");
     fseek(f, 0, SEEK_END);
@@ -45,9 +46,9 @@ int pck_cert_inspector(const char* cert_path)
     uint8_t buffer[16384];
     oe_result_t result =
         ParseSGXExtensions(&pck_cert, buffer, &buffer_size, &parsed_info);
-    if (result != OE_OK)
+    if (result == OE_OK)
     {
-        printf("Error: Unable to parse TCB info in certificate.\n");
+        successfully_parsed_tcb_info = 1;
     }
 
     // Use openssl's CLI to print out standard certificate info.
@@ -60,6 +61,12 @@ int pck_cert_inspector(const char* cert_path)
         cert_path);
     system(cmd_to_run);
     printf("\n");
+
+    if (successfully_parsed_tcb_info == 0)
+    {
+        fprintf(stderr, "Error: Unable to parse TCB info in certificate.\n");
+        return -1;
+    }
 
     printf("Extracted TCB values (displayed in hexadecimal):\n");
 
