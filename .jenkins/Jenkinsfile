@@ -100,6 +100,42 @@ def ACCContainerTest(String label, String version) {
     }
 }
 
+def ACCHostVerificationTest(String label, String version) {
+    stage("${label} Generate Quote") {
+        node("${label}") {
+            timeout(GLOBAL_TIMEOUT_MINUTES) {
+                cleanWs()
+                checkout scm
+                def task = """
+                           cmake ${WORKSPACE} -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -Wdev
+                           ninja -v
+                           ctest --output-on-failure --timeout ${CTEST_TIMEOUT_SECONDS}
+                           """
+                oe.ContainerRun("oetools-full-${version}", "clang-7", task, "--cap-add=SYS_PTRACE --device /dev/sgx:/dev/sgx")
+                stash includes: 'build/tests/report/data/generated_report.bytes', name: "linux_host_verify-${version}-${BUILD_NUMBER}"
+            }
+        }
+    }
+    stage("nonSGX Verify Quote") {
+        node("nonSGX") {
+            timeout(GLOBAL_TIMEOUT_MINUTES) {
+                cleanWs()
+                checkout scm
+                unstash "linux_host_verify-${version}-${BUILD_NUMBER}"
+                def task = """
+                           cmake ${WORKSPACE} -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -Wdev
+                           ninja -v
+                           """
+                // Note: Include the commands to build and run the quote verification test above
+                oe.ContainerRun("oetools-full-${version}", "clang-7", task, "--cap-add=SYS_PTRACE --device /dev/sgx:/dev/sgx")
+            }
+        }
+    }
+
+
+
+}
+
 def checkDevFlows(String version) {
     stage('Default compiler') {
         node("nonSGX") {
@@ -208,11 +244,13 @@ parallel "Check Developer Experience Ubuntu 16.04" :            { checkDevFlows(
          "ACC1604 gcc Debug" :                                  { ACCTest('ACC-1604', 'gcc', 'Debug') },
          "ACC1604 gcc Release" :                                { ACCTest('ACC-1604', 'gcc', 'Release') },
          "ACC1604 Container RelWithDebInfo" :                   { ACCContainerTest('ACC-1604', '16.04') },
+         "ACC1604 Host Verification Lib" :                      { ACCHostVerificationTest('ACC-1604', '16.04') },
          "ACC1804 clang-7 Debug" :                              { ACCTest('ACC-1804', 'clang-7', 'Debug') },
          "ACC1804 clang-7 Release" :                            { ACCTest('ACC-1804', 'clang-7', 'Release') },
          "ACC1804 gcc Debug" :                                  { ACCTest('ACC-1804', 'gcc', 'Debug') },
          "ACC1804 gcc Release" :                                { ACCTest('ACC-1804', 'gcc', 'Release') },
          "ACC1804 Container RelWithDebInfo" :                   { ACCContainerTest('ACC-1804', '18.04') },
+         "ACC1804 Host Verification Lib" :                      { ACCHostVerificationTest('ACC-1804', '18.04') },
          "ACC1804 GNU gcc SGX1FLC" :                            { ACCGNUTest() },
          "AArch64 1604 GNU gcc Debug" :                         { AArch64GNUTest('16.04', 'Debug')},
          "AArch64 1604 GNU gcc Release" :                       { AArch64GNUTest('16.04', 'Release')},
