@@ -9,7 +9,7 @@ OETOOLS_DOCKERHUB_REPO_CREDENTIAL_ID = "oeciteamdockerhub"
 
 def buildDockerImages() {
     stage("Windows Docker Images") {
-        node('SGXFLC-Windows') {
+        node('SGXFLC-Windows-DCAP') {
             stage("Checkout") {
                 cleanWs()
                 checkout scm
