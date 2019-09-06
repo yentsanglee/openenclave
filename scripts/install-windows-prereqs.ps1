@@ -588,6 +588,7 @@ try {
 
     Install-7Zip
     Install-Nuget
+    Install-PackageProvider -Name NuGet -Force
     Install-VisualStudio
     Install-LLVM
     Install-Git
