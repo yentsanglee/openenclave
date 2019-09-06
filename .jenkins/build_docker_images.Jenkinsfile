@@ -8,17 +8,6 @@ OETOOLS_REPO_CREDENTIAL_ID = "oejenkinscidockerregistry"
 OETOOLS_DOCKERHUB_REPO_CREDENTIAL_ID = "oeciteamdockerhub"
 
 def buildDockerImages() {
-parallel {
-    stage("Linux Docker Images") {
-        node("nonSGX") {
-            timeout(GLOBAL_TIMEOUT_MINUTES) {
-                stage("Checkout") {
-                    cleanWs()
-                    checkout scm
-                }
-            }
-        }
-    }
     stage("Windows Docker Images") {
         node('SGXFLC-Windows') {
             stage("Checkout") {
@@ -38,7 +27,6 @@ parallel {
             }
         }
     }
-}
 }
 
 buildDockerImages()
