@@ -17,7 +17,7 @@ oe_result_t oe_verify_remote_report(
 {
     oe_result_t result = OE_UNEXPECTED;
     oe_report_t oe_report = {0};
-    oe_report_header_t* header = (oe_report_header_t*)report;
+    oe_evidence_header_t* header = (oe_evidence_header_t*)report;
 
     if (report == NULL)
         OE_RAISE(OE_INVALID_PARAMETER);
@@ -32,12 +32,19 @@ oe_result_t oe_verify_remote_report(
     // Ensure that the report is parseable before using the header.
     OE_CHECK(oe_parse_report(report, report_size, &oe_report));
 
-    if (header->report_type != OE_REPORT_TYPE_SGX_REMOTE)
+    if (header->tee_evidence_type != OE_TEE_TYPE_SGX_REMOTE)
         OE_RAISE(OE_UNSUPPORTED);
 
     // Quote attestation can be done entirely on the host side.
     OE_CHECK(oe_verify_quote_internal(
-        header->report, header->report_size, NULL, 0, NULL, 0, NULL, 0));
+        header->tee_evidence,
+        header->tee_evidence_size,
+        NULL,
+        0,
+        NULL,
+        0,
+        NULL,
+        0));
 
     // Optionally return parsed report.
     if (parsed_report != NULL)

@@ -192,7 +192,7 @@ static oe_result_t _oe_get_report_internal(
         (void*)&header->evidence_format_uuid,
         0,
         sizeof(header->evidence_format_uuid));
-    header->tee_evidence_size = (uint32_t)report_buffer_size;
+    header->tee_evidence_size = (uint32_t)*report_buffer_size;
     header->custom_evidence_size = 0;
     OE_CHECK(oe_safe_add_u64(
         *report_buffer_size, sizeof(oe_evidence_header_t), report_buffer_size));
@@ -279,7 +279,6 @@ oe_result_t oe_verify_report(
 {
     oe_result_t result = OE_UNEXPECTED;
     oe_report_t oe_report = {0};
-    oe_verify_report_args_t arg = {0};
     oe_evidence_header_t* header = (oe_evidence_header_t*)report;
 
     if (report == NULL)
