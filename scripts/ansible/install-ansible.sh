@@ -10,3 +10,4 @@ DIR=$(dirname "$0")
 yum update
 yum install libssl-dev libffi-dev python3-pip -y
 pip3 install -U -r "$DIR/requirements.txt"
+yum install ansible
