@@ -11,6 +11,15 @@
   vars:
     apt_key_url: "https://packages.microsoft.com/keys/microsoft.asc"
     apt_repository: "deb [arch=amd64] https://packages.microsoft.com/ubuntu/{{ ansible_distribution_version }}/prod {{ ansible_distribution_release }} main"
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+- include_role:
+    name: linux/common
+    tasks_from: rpm-repo.yml
+  vars:
+    apt_key_url: "https://packages.microsoft.com/keys/microsoft.asc"
+    apt_repository: "deb [arch=amd64] https://packages.microsoft.com/ubuntu/{{ ansible_distribution_version }}/prod {{ ansible_distribution_release }} main"
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
 - include_role:
     name: linux/common
@@ -18,6 +27,15 @@
   vars:
     apt_key_url: "https://apt.llvm.org/llvm-snapshot.gpg.key"
     apt_repository: "deb http://apt.llvm.org/{{ ansible_distribution_release }} llvm-toolchain-{{ ansible_distribution_release }}-7 main"
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' 
+
+- include_role:
+    name: linux/common
+    tasks_from: rpm-repo.yml
+  vars:
+    apt_key_url: "https://apt.llvm.org/llvm-snapshot.gpg.key"
+    apt_repository: "deb http://apt.llvm.org/{{ ansible_distribution_release }} llvm-toolchain-{{ ansible_distribution_release }}-7 main"
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'  
 
 - name: Include distribution vars
   include_vars:
