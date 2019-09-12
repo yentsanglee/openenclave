@@ -28,7 +28,7 @@ ocaml_packages:
     url: "https://oejenkins.blob.core.windows.net/oejenkins/ocaml/ocaml_amd64.deb"
     local_path: "/tmp/ocaml_amd64.deb"
 
-apt_packages:
+rpm_packages:
   - "curl"
   - "clang-7"
   - "clang-format-7"
@@ -51,7 +51,7 @@ apt_packages:
   - "libx11-dev"
   - "libncurses5-dev"
 
-apt_arm_packages:
+rpm_arm_packages:
   - "gcc-arm-linux-gnueabi"
   - "gcc-arm-linux-gnueabihf"
   - "gcc-aarch64-linux-gnu"

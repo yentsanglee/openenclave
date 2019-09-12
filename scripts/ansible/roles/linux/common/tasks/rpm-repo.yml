@@ -1,13 +1,14 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
-
-- name: Add Microsoft RPM repository key
-  apt_key:
-    url: "{{ rpm_key_url }}"
-    state: present
-
-- name: Add Microsoft RPM repository
-  apt_repository:
-    repo: "{{ rpm_repository }}"
-    state: present
-    update_cache: yes
+#
+#---
+#- name: Add Microsoft RPM repository key
+#  apt_key:
+#    url: "{{ rpm_key_url }}"
+#    state: present
+#
+#- name: Add Microsoft RPM repository
+#  apt_repository:
+#    repo: "{{ rpm_repository }}"
+#    state: present
+#    update_cache: yes

@@ -50,6 +50,14 @@
     state: present
     update_cache: yes
     install_recommends: no
+  when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+- name: Install all the Open Enclave prerequisites RPM packages for development
+  yum:
+    name: "{{ rpm_packages }}"
+    state: present
+    update_cache: yes
+  when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
 
 - name: Download the OCaml deb packages
   get_url:
