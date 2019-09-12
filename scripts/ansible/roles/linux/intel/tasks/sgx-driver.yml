@@ -18,8 +18,8 @@
     update_cache: yes
     install_recommends: no
 
-- name: Populate service facts
-  service_facts:
+#- name: Populate service facts
+#  service_facts:
 
 - name: Ensure aesmd service stopped
   service:
