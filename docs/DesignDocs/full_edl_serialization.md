@@ -126,9 +126,9 @@ User Experience
 When using the generator, the user will see warnings when the following are
 encountered.
 
-    - Foreign structures
-    - Non-serializable local structures (lacking the appropriate annotations)
-    - Pointer return values
+- Foreign structures
+- Non-serializable local structures (lacking the appropriate annotations)
+- Pointer return values
 
 The user may wish to treat these warnings as errors using an option similar to
 GCC's **-Werror** option.
