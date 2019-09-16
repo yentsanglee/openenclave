@@ -300,6 +300,13 @@ if(NOT "${OEHOST_VERIFY_PRIVATE_DIRECTORIES}" STREQUAL "")
   target_include_directories(oehostverify PRIVATE ${OEHOST_VERIFY_PRIVATE_DIRECTORIES})
 endif()
 
+
+##==============================================================================
+##
+## LIBSGX logic //TODO: abstract out
+##
+##==============================================================================
+
 if (USE_LIBSGX)
   if (WIN32)
     set(LIBPATHS
@@ -338,17 +345,40 @@ if (USE_LIBSGX)
   target_compile_definitions(oehost PUBLIC OE_USE_LIBSGX)
 endif ()
 
-# Compile definitions and options
-target_compile_definitions(oehost
-  PUBLIC
+
+# oehost compile definitions
+#set(OEHOST_TARGET_COMPILE_PUBLIC_DEFINITIONS)
+##set(OEHOST_TARGET_COMPILE_PRIVATE_DEFINITIONS)
+
+# oehostverify libraries
+#set(OEHOST_VERIFY_PUBLIC_LIBRARIES)
+#set(OEHOST_VERIFY_PRIVATE_LIBRARIES)
+#set(OEHOST_VERIFY_INTERFACE_LIBRARIES)
+
+##==============================================================================
+##
+## Compile definitions
+##
+##==============================================================================
+
+list(APPEND OEHOST_TARGET_COMPILE_PUBLIC_DEFINITIONS
   # NOTE: This definition is public to the rest of our project's
   # targets, but should not yet be exposed to consumers of our
   # package.
-  $<BUILD_INTERFACE:OE_API_VERSION=2>
-  PRIVATE
+  $<BUILD_INTERFACE:OE_API_VERSION=2>)
+
+list(APPEND OEHOST_TARGET_COMPILE_PRIVATE_DEFINITIONS
   OE_BUILD_UNTRUSTED
   OE_REPO_BRANCH_NAME="${GIT_BRANCH}"
   OE_REPO_LAST_COMMIT="${GIT_COMMIT}")
+
+  if(NOT "${OEHOST_TARGET_COMPILE_PUBLIC_DEFINITIONS}" STREQUAL "")
+    target_compile_definitions(oehost PUBLIC ${OEHOST_TARGET_COMPILE_PUBLIC_DEFINITIONS})
+  endif()
+
+  if(NOT "${OEHOST_TARGET_COMPILE_PRIVATE_DEFINITIONS}" STREQUAL "")
+    target_compile_definitions(oehost PRIVATE ${OEHOST_TARGET_COMPILE_PRIVATE_DEFINITIONS})
+  endif()
 
 if (USE_DEBUG_MALLOC)
   target_compile_definitions(oehost PRIVATE OE_USE_DEBUG_MALLOC)
