@@ -286,8 +286,6 @@ if (UNIX)
   endif ()
 endif ()
 
-#find_package(Threads REQUIRED)
-
 ##==============================================================================
 ##
 ## Link target directories, as needed
@@ -300,14 +298,9 @@ endif()
 
 if (UNIX)
 elseif (WIN32)
-  target_include_directories(oehost PRIVATE
-    ${CMAKE_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/include)
   target_include_directories(oehostverify PRIVATE
     ${CMAKE_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/include)
 endif ()
-
-# For including edge routines.
-#target_include_directories(oehost PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 if (USE_LIBSGX)
   if (WIN32)
