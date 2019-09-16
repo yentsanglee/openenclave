@@ -296,11 +296,9 @@ if(NOT "${OEHOST_PRIVATE_DIRECTORIES}" STREQUAL "")
   target_include_directories(oehost PRIVATE ${OEHOST_PRIVATE_DIRECTORIES})
 endif()
 
-if (UNIX)
-elseif (WIN32)
-  target_include_directories(oehostverify PRIVATE
-    ${CMAKE_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/include)
-endif ()
+if(NOT "${OEHOST_VERIFY_PRIVATE_DIRECTORIES}" STREQUAL "")
+  target_include_directories(oehostverify PRIVATE ${OEHOST_VERIFY_PRIVATE_DIRECTORIES})
+endif()
 
 if (USE_LIBSGX)
   if (WIN32)
