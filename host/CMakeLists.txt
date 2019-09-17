@@ -389,9 +389,6 @@ if (UNIX)
   target_compile_options(oehost
      PRIVATE -Wno-attributes -Wmissing-prototypes -fPIC ${PLATFORM_FLAGS}
      PUBLIC -fstack-protector-strong)
-  target_compile_definitions(oehost
-     PRIVATE _GNU_SOURCE
-     PUBLIC $<$<NOT:$<CONFIG:debug>>:_FORTIFY_SOURCE=2>)
 endif ()
 
 if (CMAKE_C_COMPILER_ID MATCHES GNU)
