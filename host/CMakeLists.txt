@@ -345,16 +345,6 @@ if (USE_LIBSGX)
   target_compile_definitions(oehost PUBLIC OE_USE_LIBSGX)
 endif ()
 
-
-# oehost compile definitions
-#set(OEHOST_TARGET_COMPILE_PUBLIC_DEFINITIONS)
-##set(OEHOST_TARGET_COMPILE_PRIVATE_DEFINITIONS)
-
-# oehostverify libraries
-#set(OEHOST_VERIFY_PUBLIC_LIBRARIES)
-#set(OEHOST_VERIFY_PRIVATE_LIBRARIES)
-#set(OEHOST_VERIFY_INTERFACE_LIBRARIES)
-
 ##==============================================================================
 ##
 ## Compile definitions
@@ -385,6 +375,13 @@ if(NOT "${OEHOST_TARGET_COMPILE_PRIVATE_DEFINITIONS}" STREQUAL "")
   target_compile_definitions(oehost PRIVATE ${OEHOST_TARGET_COMPILE_PRIVATE_DEFINITIONS})
 endif()
 
+
+##==============================================================================
+##
+## Compile definitions
+##
+##==============================================================================
+
 if (UNIX)
   target_compile_options(oehost
      PRIVATE -Wno-attributes -Wmissing-prototypes -fPIC ${PLATFORM_FLAGS}
@@ -392,8 +389,15 @@ if (UNIX)
 endif ()
 
 if (CMAKE_C_COMPILER_ID MATCHES GNU)
-  target_compile_options(oehost PRIVATE -Wjump-misses-init)
+  list(APPEND OEHOST_TARGET_COMPILE_PRIVATE_OPTIONS
+    -Wjump
+    -misses
+    -init)
 endif ()
+
+if(NOT "${OEHOST_TARGET_COMPILE_PRIVATE_OPTIONS}" STREQUAL "")
+  target_compile_options(oehost PRIVATE ${OEHOST_TARGET_COMPILE_PRIVATE_OPTIONS})
+endif()
 
 # Use the same the compile options and definitions from oehost.
 target_compile_options(oehostverify
