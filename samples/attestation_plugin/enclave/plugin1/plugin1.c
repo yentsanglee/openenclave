@@ -1,122 +1,152 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include <mbedtls/sha256.h>
+#include <openenclave/bits/defs.h>
+#include <openenclave/bits/safemath.h>
 #include <openenclave/enclave.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// This plugin is an example for supporting custom evidence data
+#include "plugin1.h"
 
-static size_t g_custom_evidence_size = 1024;
+// This plugin emulates the functionality of `oe_get_report` and
+// `oe_verify_report`  for remote attestation reports through
+// the plugin interface.
 
-static int my_get_custom_evidence_data(
+static int oe_on_register(
     oe_quote_customization_plugin_context_t* plugin_context,
-    uint8_t** custom_evidence,
-    size_t* custom_evidence_size)
+    const void* config_data,
+    size_t config_data_size)
 {
-    int ret = 1;
-    uint8_t* buffer = NULL;
+    OE_UNUSED(plugin_context);
+    OE_UNUSED(config_data);
+    OE_UNUSED(config_data_size);
+    return 0;
+}
 
-    fprintf(stdout, "my_get_custom_evidence_data 1\n");
+static int oe_on_unregister(
+    oe_quote_customization_plugin_context_t* plugin_context)
+{
+    OE_UNUSED(plugin_context);
+    return 0;
+}
 
-    // create custom data here
-    *custom_evidence_size = g_custom_evidence_size;
-    buffer = (uint8_t*)malloc(g_custom_evidence_size);
-    if (buffer == NULL)
-    {
-        fprintf(stdout, "failed to allocate memory for custom evidence data");
+static int _calc_sha256(
+    const uint8_t* user_data,
+    size_t user_data_size,
+    uint8_t* output)
+{
+    mbedtls_sha256_context ctx;
+    mbedtls_sha256_init(&ctx);
+    int ret = -1;
+
+    if (mbedtls_sha256_starts_ret(&ctx, 0) != 0)
         goto done;
-    }
 
-    // fill in some test data
-    for (int i = 0; i < g_custom_evidence_size; i++)
-    {
-        buffer[i] = i % 256;
-    }
-    *custom_evidence = buffer;
+    if (mbedtls_sha256_update_ret(&ctx, user_data, user_data_size) != 0)
+        goto done;
+
+    if (mbedtls_sha256_finish_ret(&ctx, output) != 0)
+        goto done;
+
     ret = 0;
+
 done:
+    mbedtls_sha256_free(&ctx);
     return ret;
 }
 
-static int my_verify_custom_evidence(
+static int oe_get_evidence(
     oe_quote_customization_plugin_context_t* plugin_context,
-    const uint8_t* custom_evidence,
-    size_t custom_evidence_size,
-    oe_claim_element_t** claims,
-    size_t* claim_count)
+    const uint8_t* user_data,
+    size_t user_data_size,
+    uint8_t** evidence_buffer,
+    size_t* evidence_buffer_size)
 {
-    int ret = 1;
-    oe_claim_element_t* my_claims = NULL;
-    oe_claim_element_t* new_claim = NULL;
-    (void)plugin_context;
-    fprintf(stdout, "my_verify_custom_evidence 1\n");
+    // Need to hash the user data first.
+    uint8_t* report_data = NULL;
+    size_t report_data_size = 0;
+    uint8_t hash[32];
+    int ret = -1;
+    oe_result_t oe_ret;
+    uint8_t* report_buffer = NULL;
+    size_t report_buffer_size = 0;
+    size_t total_evidence_size = 0;
 
-    (void)claims;
-    (void)claim_count;
-
-    for (int i = 0; i < custom_evidence_size; i++)
+    if (user_data)
     {
-        if (custom_evidence[i] != (i % 256))
-        {
-            fprintf(stdout, "my_verify_custom_evidence failed 1\n");
+        if (_calc_sha256(user_data, user_data_size, hash) != 0)
             goto done;
-        }
+
+        report_data = hash;
+        report_data_size = sizeof(hash);
     }
 
-    // create new claim after processing above custom data
-    new_claim = (oe_claim_element_t*)malloc(sizeof(oe_claim_element_t));
-    if (new_claim == NULL)
-    {
-        goto done;
-    }
-    char* location_value = "East US";
-    new_claim->name = "geolocation";
-    new_claim->len = strlen(location_value) + 1;
-    new_claim->value = (uint8_t*)malloc(new_claim->len);
-    if (new_claim->value == NULL)
-    {
-        goto done;
-    }
-    memcpy((void*)new_claim->value, location_value, new_claim->len);
+    // Technically, this will wrap the sgx report with the OE header,
+    // which will get wrapped again in the caller of this function,
+    // but that's fine.
+    oe_ret = oe_get_report(
+        OE_REPORT_FLAGS_REMOTE_ATTESTATION,
+        report_data,
+        report_data_size,
+        NULL,
+        0,
+        &report_buffer,
+        &report_buffer_size);
 
-    // add new claim into the existing list
-    my_claims = (oe_claim_element_t*)malloc(
-        sizeof(oe_claim_element_t) * (*claim_count + 1));
-    if (my_claims == NULL)
+    if (oe_ret != OE_OK)
+        goto done;
+
+    if (!user_data)
     {
+        ret = 0;
         goto done;
     }
-    // copy existing claims to a new array
-    for (int i = 0; i < *claim_count; i++)
-    {
-        my_claims[i] = (*claims)[i];
-    }
-    // add one evidence here
-    my_claims[*claim_count] = *new_claim;
-    free(*claims);
 
-    *claims = my_claims;
-    *claim_count = *claim_count + 1;
+    // Now, we need to append the report data to the end of the report.
+    oe_ret = oe_safe_add_sizet(
+        report_data_size, report_buffer_size, &total_evidence_size);
+    if (oe_ret != OE_OK)
+        goto done;
+
+    *evidence_buffer = (uint8_t*)malloc(total_evidence_size);
+    if (*evidence_buffer == NULL)
+        goto done;
+
+    memcpy(*evidence_buffer, report_buffer, report_buffer_size);
+    memcpy(
+        *evidence_buffer + report_buffer_size, report_data, report_data_size);
+    *evidence_buffer_size = total_evidence_size;
+
     ret = 0;
-done:
 
+done:
     return ret;
 }
 
-static oe_quote_customization_plugin_callbacks_t attestation_callbacks = {
-    .get_custom_evidence = my_get_custom_evidence_data,
-    .verify_custom_evidence = my_verify_custom_evidence,
-    .verify_full_evidence = NULL,
-};
+static int oe_free_evidence(
+    oe_quote_customization_plugin_context_t* plugin_context,
+    uint8_t* evidence_buffer)
+{
+    oe_free_report(evidence_buffer);
+    return 0;
+}
 
-// // {6EBB65E5-F657-48B1-94DF-0EC0B671DA26}
-// static const GUID <<name>> =
-// { 0x6EBB65E5, 0xF657, 0x48B1, { 0x94, 0xdf, 0x0e, 0xc0, 0xb6, 0x71,0xda,
-// 0x26 } };
-oe_quote_customization_plugin_context_t my_plugin_context1 = {
-    .tee_evidence_type = OE_TEE_TYPE_SGX_REMOTE,
+static int oe_verify_evidence(
+    oe_quote_customization_plugin_context_t* plugin_context,
+    const uint8_t* evidence_buffer,
+    size_t evidence_buffer_size,
+    oe_claim_element_t** claims,
+    size_t* claim_count,
+    uint8_t** user_data,
+    size_t* user_data_size)
+{
+    return 0;
+}
+
+oe_quote_customization_plugin_context_t oe_plugin_context = {
     .evidence_format_uuid = UUID_INIT(
         0x6EBB65E5,
         0xF657,
@@ -129,5 +159,13 @@ oe_quote_customization_plugin_context_t my_plugin_context1 = {
         0x71,
         0xDA,
         0x26),
-    .callbacks = &attestation_callbacks,
-};
+    .on_register = oe_on_register,
+    .on_unregister = oe_on_unregister,
+    .get_evidence = oe_get_evidence,
+    .free_evidence = oe_free_evidence,
+    .verify_evidence = oe_verify_evidence};
+
+oe_quote_customization_plugin_context_t* create_oe_plugin()
+{
+    return &oe_plugin_context;
+}

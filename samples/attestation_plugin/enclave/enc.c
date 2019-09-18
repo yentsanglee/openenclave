@@ -16,31 +16,25 @@
 // sdk tool oeedger8r against the attestation_plugin.edl file.
 #include "attestation_plugin_t.h"
 
-extern oe_quote_customization_plugin_context_t my_plugin_context1;
-extern oe_quote_customization_plugin_context_t my_plugin_context2;
-extern oe_quote_customization_plugin_context_t my_plugin_context3;
+// Contains a helper function to generate the first plugin.
+#include "plugin1/plugin1.h"
 
-// This is the function that the host calls. It prints
-// a message in the enclave before calling back out to
-// the host to print a message from there too.
+// This is function demostrates how an attestation plugin is called.
 void enclave_attestation_plugin()
 {
     oe_result_t result = OE_FAILURE;
     uint8_t* evidence_buffer1 = NULL;
     size_t evidence_buffer1_size = 0;
-    uint8_t* evidence_buffer2 = NULL;
-    size_t evidence_buffer2_size = 0;
-    uint8_t* evidence_buffer3 = NULL;
-    size_t evidence_buffer3_size = 0;
-    uint8_t* custom_data = NULL;
-    size_t custom_evidence_size = 0;
-    void* context = NULL;
     oe_claim_element_t* claims = NULL;
     size_t claim_count = 0;
+    uint8_t* user_data1 = NULL;
+    size_t user_data_size1 = 0;
+    oe_quote_customization_plugin_context_t* plugin1 = create_oe_plugin();
 
-    fprintf(stdout, "Hello from encalve::enclave_attestation_plugin\n");
-    // unregister all attestation plugins
-    result = oe_register_attestation_plugin(&my_plugin_context1);
+    fprintf(stdout, "Hello from enclave::enclave_attestation_plugin\n");
+
+    // Register attestation plugins.
+    result = oe_register_attestation_plugin(plugin1, NULL, 0);
     if (result != OE_OK)
     {
         fprintf(
@@ -54,43 +48,21 @@ void enclave_attestation_plugin()
         "oe_register_attestation_plugin succeeded for "
         "evidence_format_uuid (1)\n");
 
-    result = oe_register_attestation_plugin(&my_plugin_context2);
-    if (result != OE_OK)
-    {
-        fprintf(
-            stdout,
-            "oe_register_attestation_plugin failed for "
-            "evidence_format_uuid (2)\n");
-        goto done;
-    }
-
-    fprintf(
-        stdout,
-        "oe_register_attestation_plugin succeeded for "
-        "evidence_format_uuid (2)\n");
-
-    result = oe_register_attestation_plugin(&my_plugin_context3);
-    if (result != OE_OK)
-    {
-        fprintf(
-            stdout,
-            "oe_register_attestation_plugin failed for "
-            "evidence_format_uuid (3)\n");
-        goto done;
-    }
-
-    fprintf(
-        stdout,
-        "oe_register_attestation_plugin succeeded for "
-        "evidence_format_uuid (3)\n");
-
     result = oe_get_attestation_evidence(
-        &my_plugin_context1.evidence_format_uuid,
+        &plugin1->evidence_format_uuid,
+        (const uint8_t*)"Hello World!",
+        sizeof("Hello World!") - 1,
         &evidence_buffer1,
         &evidence_buffer1_size);
     if (result != OE_OK)
+    {
+        fprintf(
+            stdout,
+            "oe_get_attestation_evidence failed for "
+            "evidence_format_uuid (1) with %s\n",
+            oe_result_str(result));
         goto done;
-
+    }
     fprintf(
         stdout,
         "oe_get_attestation_evidence succeeded with "
@@ -98,82 +70,28 @@ void enclave_attestation_plugin()
         evidence_buffer1_size);
 
     result = oe_verify_attestation_evidence(
-        context,
         evidence_buffer1,
         evidence_buffer1_size,
         &claims,
-        &claim_count); // TODO: need to release claim memory
+        &claim_count,
+        &user_data1,
+        &user_data_size1);
     if (result != OE_OK)
-        goto done;
-
-    fprintf(stdout, "oe_verify_attestation_evidence succeeded 1\n");
-
-    for (int i = 0; i < claim_count; i++)
     {
-        fprintf(stdout, "\nclaim-> name: [%s]\n value:", claims[i].name);
-        if (strcmp(claims[i].name, "geolocation") == 0)
-        {
-            fprintf(stdout, "\n %s", claims[i].value);
-        }
-        else
-        {
-            for (int k = 0; k < claims[i].len; k++)
-                fprintf(stdout, " 0x%0x", claims[i].value[k]);
-        }
+        fprintf(
+            stdout,
+            "oe_verify_attestation_evidence failed for "
+            "evidence_format_uuid (1) with %s\n",
+            oe_result_str(result));
+        goto done;
     }
-    oe_free_claim_list(claims, claim_count);
-
-    result = oe_get_attestation_evidence(
-        &my_plugin_context2.evidence_format_uuid,
-        &evidence_buffer2,
-        &evidence_buffer2_size);
-    if (result != OE_OK)
-        goto done;
 
     fprintf(
         stdout,
-        "oe_get_attestation_evidence succeeded with evidence_buffer_size 2"
-        "=%zu\n",
-        evidence_buffer2_size);
+        "oe_verify_attestation_evidence succeeded for evidence_format_uuid "
+        "(1)\n");
 
-    result = oe_verify_attestation_evidence(
-        context,
-        evidence_buffer2,
-        evidence_buffer2_size,
-        &claims,
-        &claim_count);
-    if (result != OE_OK)
-        goto done;
-
-    oe_free_claim_list(claims, claim_count);
-    fprintf(stdout, "oe_verify_attestation_evidence succeeded 2\n");
-
-    result = oe_get_attestation_evidence(
-        &my_plugin_context3.evidence_format_uuid,
-        &evidence_buffer3,
-        &evidence_buffer3_size);
-    if (result != OE_OK)
-        goto done;
-
-    fprintf(
-        stdout,
-        "oe_get_attestation_evidence succeeded with evidence_buffer_size 3"
-        "=%zu\n",
-        evidence_buffer3_size);
-
-    result = oe_verify_attestation_evidence(
-        context,
-        evidence_buffer3,
-        evidence_buffer3_size,
-        &claims,
-        &claim_count);
-    if (result != OE_OK)
-        goto done;
-
-    oe_free_claim_list(claims, claim_count);
-    fprintf(stdout, "oe_verify_attestation_evidence succeeded 3\n");
-
-    // Call back into the host
+    // Call back into the host to test the host side plugin.
     result = host_attestation_plugin();
     if (result != OE_OK)
     {
@@ -184,34 +102,15 @@ void enclave_attestation_plugin()
             oe_result_str(result));
     }
 
-    // unregister all attestation plugins
-    result = oe_unregister_attestation_plugin(&my_plugin_context1);
+    // Unregister all attestation plugins
+    result = oe_unregister_attestation_plugin(plugin1);
     if (result != OE_OK)
         goto done;
     fprintf(
         stdout,
         "oe_unregister_attestation_plugin succeeded for "
         "evidence_format_uuid (1)\n");
-
-    result = oe_unregister_attestation_plugin(&my_plugin_context2);
-    if (result != OE_OK)
-        goto done;
-    fprintf(
-        stdout,
-        "oe_unregister_attestation_plugin succeeded for "
-        "evidence_format_uuid (2)\n");
-
-    result = oe_unregister_attestation_plugin(&my_plugin_context3);
-    if (result != OE_OK)
-        goto done;
-    fprintf(
-        stdout,
-        "oe_unregister_attestation_plugin succeeded for "
-        "evidence_format_uuid (3)\n");
-
 done:
     oe_free_attestation_evidence(evidence_buffer1);
-    oe_free_attestation_evidence(evidence_buffer2);
-    oe_free_attestation_evidence(evidence_buffer3);
     return;
 }
