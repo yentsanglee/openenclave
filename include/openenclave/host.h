@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "attestation_plugin.h"
 #include "bits/defs.h"
 #include "bits/report.h"
 #include "bits/result.h"

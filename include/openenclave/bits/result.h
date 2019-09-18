@@ -314,6 +314,11 @@ typedef enum _oe_result
      */
     OE_VERIFY_FAILED_AES_CMAC_MISMATCH,
 
+    /**
+     * The resource already exists.
+     */
+    OE_ALREADY_EXISTS,
+
     __OE_RESULT_MAX = OE_ENUM_MAX,
 } oe_result_t;
 /**< typedef enum _oe_result oe_result_t*/
