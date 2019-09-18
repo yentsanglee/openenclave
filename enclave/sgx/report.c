@@ -70,11 +70,11 @@ oe_result_t oe_verify_report(
             header->tee_evidence,
             header->tee_evidence_size,
             NULL,
-	    0,
-	    NULL,
-	    0,
-	    NULL,
-	    0));
+            0,
+            NULL,
+            0,
+            NULL,
+            0));
     }
     else if (header->tee_evidence_type == OE_TEE_TYPE_SGX_LOCAL)
     {
