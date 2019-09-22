@@ -77,21 +77,6 @@ class oe_debug_enclave_t:
         return self.magic == self.MAGIC_VALUE
 
 
-# This constant definition must align with the OE enclave layout.
-TD_OFFSET_FROM_TCS =  0X4000
-
-# This constant definition must align with TD structure in internal\sgxtypes.h.
-TD_CALLSITE_OFFSET = 0XF0
-
-# This constant definition must align with Callsite structure in enclave\td.h.
-CALLSITE_OCALLCONTEXT_OFFSET = 0X40
-
-# These constant definitions must align with OCallContext structure in enclave\td.h.
-OCALLCONTEXT_LENGTH = 2 * 8
-OCALLCONTEXT_FORMAT = 'QQ'
-OCALLCONTEXT_RBP = 0
-OCALLCONTEXT_RET = 1
-
 # The set to store all loaded OE enclave base address.
 g_loaded_oe_enclave_addrs = set()
 
@@ -228,19 +213,6 @@ def enable_oeenclave_debug(oe_enclave_addr):
     print("oegdb: All tcs set to debug for enclave \n")
     return True
 
-def update_untrusted_ocall_frame(frame_pointer, ocallcontext_tuple):
-    """Update the untrusted ocall frame, so that untrusted stack can stitch withe the trusted stack"""
-    if frame_pointer == 0 or ocallcontext_tuple == 0:
-        return False
-    # print ("Trusted ocall context at:{:#x}, rbp:{:#x}, return address:{:#x}" .format(ocallcontext_tuple[0], ocallcontext_tuple[OCALLCONTEXT_RBP], ocallcontext_tuple[OCALLCONTEXT_RET]))
-    gdb_cmd = "set *(long *)%#x = %#x" %(frame_pointer, ocallcontext_tuple[OCALLCONTEXT_RBP])
-    # print ("set ocall frame to trusted rbp, {}" .format(gdb_cmd))
-    gdb.execute(gdb_cmd, False, True)
-    gdb_cmd = "set *(long *)%#x = %#x" %(frame_pointer + POINTER_SIZE, ocallcontext_tuple[OCALLCONTEXT_RET])
-    # print ("set ocall frame to trusted ret, {}" .format(gdb_cmd))
-    gdb.execute(gdb_cmd, False, True)
-    return True
-
 class EnclaveCreationBreakpoint(gdb.Breakpoint):
     def __init__(self):
         gdb.Breakpoint.__init__ (self, spec="oe_notify_debugger_enclave_creation", internal=1)
@@ -258,33 +230,6 @@ class EnclaveTerminationBreakpoint(gdb.Breakpoint):
         enclave_addr = int(gdb.parse_and_eval("$rdi"))
         enclave = oe_debug_enclave_t(enclave_addr)
         unload_enclave_symbol(enclave.path, enclave.base_address)
-        return False
-
-class OCallStartBreakpoint(gdb.Breakpoint):
-    def __init__(self):
-        gdb.Breakpoint.__init__ (self, spec="oe_notify_ocall_start", internal=1)
-
-    def stop(self):
-        # Get untrusted stack frame pointer and corresponding TCS.
-        frame_pointer = int(gdb.parse_and_eval("$rdi"))
-        tcs_addr = int(gdb.parse_and_eval("$rsi"))
-        # Get callsite of the TCS.
-        td_addr = tcs_addr + TD_OFFSET_FROM_TCS
-        callsite_pointer_addr = td_addr + TD_CALLSITE_OFFSET
-        callsite_addr_blob = read_from_memory(callsite_pointer_addr, POINTER_SIZE)
-        callsite_addr_tuple = struct.unpack_from('Q', callsite_addr_blob, 0)
-        # print ("TD:{:#x}, callsite pointer:{:#x}, callsite address:{:#x}" .format(td_addr, callsite_pointer_addr, callsite_addr_tuple[0]))
-        if callsite_addr_tuple[0] == 0:
-            print ("ERROR: detect a invalid callsite0]")
-            return False
-        # Get ocallcontext of the callsite.
-        ocallcontext_pointer_addr = callsite_addr_tuple[0] + CALLSITE_OCALLCONTEXT_OFFSET
-        ocallconetxt_addr_blob = read_from_memory(ocallcontext_pointer_addr,POINTER_SIZE)
-        ocallconetxt_addr_tuple = struct.unpack('Q', ocallconetxt_addr_blob)
-        ocallcontext_blob = read_from_memory(ocallconetxt_addr_tuple[0], OCALLCONTEXT_LENGTH)
-        ocallcontext_tuple = struct.unpack(OCALLCONTEXT_FORMAT, ocallcontext_blob)
-        # Update ocall frame.
-        update_untrusted_ocall_frame(frame_pointer, ocallcontext_tuple)
         return False
 
 def new_objfile_handler(event):

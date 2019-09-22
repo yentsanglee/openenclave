@@ -30,14 +30,15 @@ OE_STATIC_ASSERT(OE_OFFSETOF(td_t, oret_func) == td_oret_func);
 OE_STATIC_ASSERT(OE_OFFSETOF(td_t, oret_arg) == td_oret_arg);
 OE_STATIC_ASSERT(OE_OFFSETOF(td_t, callsites) == td_callsites);
 OE_STATIC_ASSERT(OE_OFFSETOF(td_t, simulate) == td_simulate);
+OE_STATIC_ASSERT(
+    OE_OFFSETOF(td_t, host_eexit_frame_info_save_location) ==
+    td_host_eexit_frame_info_save_location);
 
 // Static asserts for consistency with
 // debugger/pythonExtension/gdb_sgx_plugin.py
 #if defined(__linux__)
 OE_STATIC_ASSERT(td_callsites == 0xf0);
-OE_STATIC_ASSERT(OE_OFFSETOF(Callsite, ocall_context) == 0x40);
 OE_STATIC_ASSERT(TD_FROM_TCS == 0x4000);
-OE_STATIC_ASSERT(sizeof(oe_ocall_context_t) == (2 * sizeof(uintptr_t)));
 #endif
 
 /*

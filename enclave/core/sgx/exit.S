@@ -70,7 +70,7 @@ oe_asm_exit:
     push %r14
     push %r15
 
-    // Construct the oe_ocall_context_t(rbp, return address).
+    // Construct the oe_eexit_frame_info_t(rbp, return address).
     mov (4*OE_WORD_SIZE)(%rsp), %r12
     push %r12
     push %rbp
@@ -80,10 +80,10 @@ oe_asm_exit:
     push %rdi
     push %rsi
 
-    // Notify a nested exit happens.
-    // oe_notify_nested_exit_start(rdi=arg1, rsi=ocall_context)
+    // For debug enclaves, save the eexit frame info in host memory.
+    // oe_save_eexit_frame_info_in_host_memory(rdi=arg1, rsi=eexit_frame_info)
     mov %r12, %rsi
-    call oe_notify_nested_exit_start
+    call oe_save_eexit_frame_in_host_memory
 
     // Restore the parameters of oe_asm_exit from stack.
     pop %rsi

@@ -565,9 +565,15 @@ oe_thread_data_t* oe_get_thread_data(void);
 
 #define TD_MAGIC 0xc90afe906c5d19a3
 
-#define OE_THREAD_LOCAL_SPACE (3840)
+#define OE_THREAD_LOCAL_SPACE (3832)
 
 typedef struct _callsite Callsite;
+
+typedef struct _oe_eexit_frame_info
+{
+    uint64_t rbp;
+    uint64_t ret;
+} oe_eexit_frame_info_t;
 
 /* Thread specific TLS atexit call parameters */
 typedef struct _oe_tls_atexit
@@ -606,6 +612,9 @@ typedef struct _td
     /* Simulation mode is active if non-zero */
     uint64_t simulate;
 
+    /* For debug enclaves, location in the host to save enclave frame for ocall
+     * stack stitching */
+    oe_eexit_frame_info_t* host_eexit_frame_info_save_location;
     /* Reserved for thread-local variables. */
     uint8_t thread_local_data[OE_THREAD_LOCAL_SPACE];
 } td_t;

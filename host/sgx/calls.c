@@ -220,21 +220,27 @@ static oe_result_t _do_eenter(
         uint64_t arg1 = oe_make_call_arg1(code_in, func_in, 0, OE_OK);
         uint64_t arg2 = (uint64_t)arg_in;
         uint64_t arg3 = 0;
-        uint64_t arg4 = 0;
+        struct
+        {
+            uint64_t arg_out;
+            uint64_t padding;
+            oe_eexit_frame_info_t save_location;
+        } arg4 = {0, 0, {0, 0}};
 
         if (enclave->simulate)
         {
-            OE_CHECK(_enter_sim(enclave, tcs, aep, arg1, arg2, &arg3, &arg4));
+            OE_CHECK(_enter_sim(
+                enclave, tcs, aep, arg1, arg2, &arg3, &arg4.arg_out));
         }
         else
         {
-            oe_enter(tcs, aep, arg1, arg2, &arg3, &arg4, enclave);
+            oe_enter(tcs, aep, arg1, arg2, &arg3, &arg4.arg_out, enclave);
         }
 
         *code_out = oe_get_code_from_call_arg1(arg3);
         *func_out = oe_get_func_from_call_arg1(arg3);
         *result_out = oe_get_result_from_call_arg1(arg3);
-        *arg_out = arg4;
+        *arg_out = arg4.arg_out;
     }
 
     result = OE_OK;

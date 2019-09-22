@@ -37,6 +37,7 @@
 #define td_oret_arg (td_oret_func + 8)
 #define td_callsites (td_oret_arg + 8)
 #define td_simulate (td_callsites + 8)
+#define td_host_eexit_frame_info_save_location (td_simulate + 8)
 
 #define oe_exit_enclave __morestack
 #ifndef __ASSEMBLER__
@@ -57,12 +58,6 @@ void __oe_handle_main(
     uint64_t* output_arg2);
 
 void oe_exception_dispatcher(void* context);
-#endif
-
-#ifndef __ASSEMBLER__
-void oe_notify_nested_exit_start(
-    uint64_t arg1,
-    oe_ocall_context_t* ocall_context);
 #endif
 
 #endif /* _ASMDEFS_H */

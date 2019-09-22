@@ -78,7 +78,7 @@ __morestack:
 
     // The EENTER(RBX=TCS, RCX=AEP, RDI=ARG1, RSI=ARG2) contract:
     // Input:
-    //      RBX=TCS, RCX=AEP, RDI=ARG1, RSI=ARG2,
+    //      RBX=TCS, RCX=AEP, RDI=ARG1, RSI=ARG2,R9=ARG3
     //      RBP=Current host stack rbp,
     //      RSP=Current host stack sp.
     //      All other registers are NOT used/ignored.
@@ -91,6 +91,10 @@ __morestack:
     mov AEP, %rcx
     mov ARG1, %rdi
     mov ARG2, %rsi
+    // eexit frame info save location must be passed in as ARG3 in R9
+    // This is available as ARG4 + 16
+    mov ARG4, %r9
+    add $16, %r9
     mov $ENCLU_EENTER, %rax
     ENCLU
 
@@ -133,13 +137,17 @@ __morestack:
     //     RDX=arg1_out
     //     RCX=arg2_out
     //     R8=TCS,
-    //     R9=RSP)
+    //     R9=RSP,
+    //     R12=eexit-frame-info-save-location)
     mov ARG1OUT, %rdi
     mov ARG2OUT, %rsi
     leaq ARG1OUT, %rdx
     leaq ARG2OUT, %rcx
     mov TCS, %r8
     mov RSP, %r9
+    // ARG4+16 is eexit frame info save location.
+    mov ARG4, %r12
+    add $16, %r12
     push ENCLAVE // push enclave parameter
     call __oe_host_stack_bridge@PLT
     add $8, %rsp // pop enclave parameter
@@ -225,8 +233,6 @@ __morestack:
 .type __oe_host_stack_bridge, @function
 .type oe_notify_ocall_start,@function
 .hidden oe_notify_ocall_start
-.type oe_notify_ocall_end,@function
-.hidden oe_notify_ocall_end
 __oe_host_stack_bridge:
 .cfi_startproc
     push %rbp
@@ -253,11 +259,13 @@ __oe_host_stack_bridge:
     mov 16(%rbp), %rax          // enclave
     mov %rax, HB_SAVED_ENCLAVE
 
-    // Notify that an ocall happens in current host thread.
-    // oe_notify_ocall_start(rdi=host_frame_pointer, rsi=tcs)
+    // Stitch the ocall-stack
     mov %rbp, %rdi
-    mov %r8,  %rsi
-    call oe_notify_ocall_start@PLT
+    mov (%r12), %r8  // Load eexit rbp
+    mov %r8, (%rdi)  // Save eexit rbp
+    mov 8(%r12), %r8 // Load eexit return address
+    mov %r8, 8(%rdi) // Save eexit return address
+
 
     // Restore the parameters for __oe_dispatch_ocall.
     mov HB_SAVED_ARG1, %rdi

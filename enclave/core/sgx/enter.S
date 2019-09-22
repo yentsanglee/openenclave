@@ -7,7 +7,7 @@
 
 //==============================================================================
 //
-// oe_enter(RAX=CSSA, RBX=TCS, RCX=RETADDR, RDI=ARG1, RSI=ARG2)
+// oe_enter(RAX=CSSA, RBX=TCS, RCX=RETADDR, RDI=ARG1, RSI=ARG2, R9=ARG3)
 //
 //     The EENTER instruction (executed by the host) calls this function to
 //     enter the enclave.
@@ -20,6 +20,7 @@
 //     Registers from host caller of EENTER:
 //         RDI - ARG1
 //         RSI - ARG2
+//         R9  - ARG3
 //
 //     This function performs the following tasks:
 //
@@ -44,6 +45,11 @@ oe_enter:
     mov %r8, %gs:td_host_previous_rbp
     mov %gs:td_host_rsp, %r8
     mov %r8, %gs:td_host_previous_rsp
+
+    // Save host location for ocall stack stitching
+    // This location will be validated and only debug enclaves
+    // will write to it.
+    mov %r9, %gs:td_host_eexit_frame_info_save_location
 
     // Save host registers (restored on EEXIT)
     mov %rcx, %gs:td_host_rcx // host return address here
@@ -178,7 +184,7 @@ oe_enter:
     // exit-type-check.
     lfence
 
-    // Construct the oe_ocall_context_t(rbp, return address).
+    // Construct the oe_eexit_frame_info_t(rbp, return address).
     mov (4*OE_WORD_SIZE)(%rsp), %r12
     push %r12
     push %rbp
@@ -188,10 +194,10 @@ oe_enter:
     push %rdi
     push %rsi
 
-    // Notify a nested exit happens.
-    // oe_notify_nested_exit_start(rdi=arg1, rsi=ocall_context)
+    // For debug enclave, save the eexit frame in host memory.
+    // oe_save_eexit_frame_in_host_memory(rdi=arg1, rsi=eexit_frame_info)
     mov %r12, %rsi
-    call oe_notify_nested_exit_start
+    call oe_save_eexit_frame_in_host_memory
 
     // Restore the parameters of oe_asm_exit from stack.
     pop %rsi

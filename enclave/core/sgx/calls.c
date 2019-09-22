@@ -24,6 +24,7 @@
 #include "../arena.h"
 #include "../atexit.h"
 #include "../switchlesscalls.h"
+#include "../tracee.h"
 #include "asmdefs.h"
 #include "cpuid.h"
 #include "init.h"
@@ -856,40 +857,61 @@ void __oe_handle_main(
 /*
 **==============================================================================
 **
-** oe_notify_nested_exit_start()
+** oe_save_eexit_frame_in_host_memory()
 **
-**     Notify the nested exit happens.
+**     Save eexit frame in host memory.
 **
-**     This function saves the current ocall context to the thread data. The
-**     ocall context contains the stack pointer and the return address of the
-**     function when ocall happens inside enclave (i.e. one type of nested
-**     exit).
-**     When debugger does stack stitching, it will update the untrusted ocall
-**     frame's previous stack frame pointer and return address with the ocall
-**     context from trusted thread data. When GDB does stack walking, the parent
-**     stack of an untrusted ocall will be stack of the _OE_EXIT trusted
-**     function instead of stack of oe_enter/__morestack untrusted function.
-**     Refer to the oe_notify_ocall_start function in host side, and the
-**     OCallStartBreakpoint and update_untrusted_ocall_frame function in the
-**     python plugin.
+**     This function saves the current eexit frame in host specified location.
+**     This allows the host to stitch the stack, instead of the debugger as
+**     was done before. The frame is save only for debug enclaves.
 **
 **==============================================================================
 */
-void oe_notify_nested_exit_start(
+void oe_save_eexit_frame_in_host_memory(
     uint64_t arg1,
-    oe_ocall_context_t* ocall_context)
+    oe_eexit_frame_info_t* eexit_frame_info)
 {
     // Check if it is an OCALL.
     oe_code_t code = oe_get_code_from_call_arg1(arg1);
     if (code != OE_CODE_OCALL)
         return;
 
-    // Save the ocall_context to the callsite of current enclave thread.
-    td_t* td = oe_get_td();
-    Callsite* callsite = td->callsites;
-    callsite->ocall_context = ocall_context;
+    static bool is_debug = false;
+    static bool is_debug_initialized = false;
 
-    return;
+    /**
+     * Determine whether the enclave is debug enabled or not.
+     * is_enclave_debug_allowed creates an sgx report and is quite
+     * costly. Therefore we need to cache the results.
+     * Normally, we'd use oe_once to initialize is_debug.
+     * However, this function is called just before exiting the enclave
+     * and very few functions are safe to call here. Additionally,
+     * we want this function to be fast.
+     * Therefore we just use a 'initialized' boolean variable to
+     * see if is_debug has been initialized or not.
+     * We use acquire-release; however since it is ok for is_debug
+     * to be simultaneously initialized, we don't use any locking.
+     */
+    OE_ATOMIC_MEMORY_BARRIER_ACQUIRE();
+    if (!is_debug_initialized)
+    {
+        is_debug = is_enclave_debug_allowed();
+        OE_ATOMIC_MEMORY_BARRIER_RELEASE();
+        is_debug_initialized = true;
+    }
+
+    if (is_debug)
+    {
+        td_t* td = oe_get_td();
+        oe_eexit_frame_info_t* host_save_location =
+            td->host_eexit_frame_info_save_location;
+
+        if (oe_is_outside_enclave(
+                host_save_location, sizeof(*host_save_location)))
+        {
+            *host_save_location = *eexit_frame_info;
+        }
+    }
 }
 
 void oe_abort(void)
