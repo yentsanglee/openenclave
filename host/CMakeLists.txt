@@ -317,8 +317,8 @@ if (USE_LIBSGX)
   add_library(sgx_dcap_ql SHARED IMPORTED)
 
   if (UNIX)
-    set_target_properties(sgx_enclave_common PROPERTIES IMPORTED_LOCATION ${LIBSGX_COMMON})
-    set_target_properties(sgx_dcap_ql PROPERTIES IMPORTED_LOCATION ${LIBSGX_QE})
+    set_target_properties(sgx_enclave_common ${SGX_ENCLAVE_COMMON_PROPERTIES})
+    set_target_properties(sgx_dcap_ql ${SGX_DCAP_Q1_PROPERTIES})
   elseif (WIN32)
     set_target_properties(sgx_enclave_common PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES "${INCPATHS}"
