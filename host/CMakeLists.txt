@@ -300,7 +300,6 @@ if(NOT "${OEHOST_VERIFY_PRIVATE_DIRECTORIES}" STREQUAL "")
   target_include_directories(oehostverify PRIVATE ${OEHOST_VERIFY_PRIVATE_DIRECTORIES})
 endif()
 
-
 ##==============================================================================
 ##
 ## LIBSGX logic //TODO: abstract out
@@ -308,16 +307,6 @@ endif()
 ##==============================================================================
 
 if (USE_LIBSGX)
-  #if (WIN32)
-  #  set(LIBPATHS
-  #    ${CMAKE_SOURCE_DIR}/prereqs/nuget/EnclaveCommonAPI/lib/native/x64-Release
-  #    ${CMAKE_SOURCE_DIR}/prereqs/nuget/DCAP_Components/build/lib/native/Libraries)
-  #  set(INCPATHS
-  #    "${CMAKE_SOURCE_DIR}/prereqs/nuget/EnclaveCommonAPI/Header Files"
-  #    "${CMAKE_SOURCE_DIR}/prereqs/nuget/DCAP_Components/build/Header Files")
-  #  set(WINSYSLOCATION
-  #     $ENV{WINDIR}/System32)
-  #endif ()
 
   find_library(LIBSGX_COMMON NAMES sgx_enclave_common PATHS ${LIBPATHS})
   find_library(LIBSGX_QE NAMES sgx_dcap_ql PATHS ${LIBPATHS})
