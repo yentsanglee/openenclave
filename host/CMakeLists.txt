@@ -302,7 +302,7 @@ endif()
 
 ##==============================================================================
 ##
-## LIBSGX logic //TODO: abstract out
+## LIBSGX logic
 ##
 ##==============================================================================
 
@@ -316,33 +316,12 @@ if (USE_LIBSGX)
   add_library(sgx_enclave_common SHARED IMPORTED)
   add_library(sgx_dcap_ql SHARED IMPORTED)
 
-  if (UNIX)
-    set_target_properties(sgx_enclave_common PROPERTIES IMPORTED_LOCATION ${LIBSGX_COMMON})
-    set_target_properties(sgx_dcap_ql PROPERTIES IMPORTED_LOCATION ${LIBSGX_QE})
-  elseif (WIN32)
-    set_target_properties(sgx_enclave_common PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES "${INCPATHS}"
-      IMPORTED_LOCATION ${WINSYSLOCATION}
-      IMPORTED_IMPLIB ${LIBSGX_COMMON})
-    set_target_properties(sgx_dcap_ql PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES "${INCPATHS}"
-      IMPORTED_LOCATION ${WINSYSLOCATION}
-      IMPORTED_IMPLIB ${LIBSGX_QE})
-  endif ()
+  set_target_properties(sgx_enclave_common ${SGX_ENCLAVE_COMMON_PROPERTIES})
+  set_target_properties(sgx_dcap_ql ${SGX_DCAP_Q1_PROPERTIES})
 
   target_link_libraries(oehost PUBLIC sgx_enclave_common sgx_dcap_ql)
   target_compile_definitions(oehost PUBLIC OE_USE_LIBSGX)
 endif ()
-
-
-# oehost compile definitions
-#set(OEHOST_TARGET_COMPILE_PUBLIC_DEFINITIONS)
-##set(OEHOST_TARGET_COMPILE_PRIVATE_DEFINITIONS)
-
-# oehostverify libraries
-#set(OEHOST_VERIFY_PUBLIC_LIBRARIES)
-#set(OEHOST_VERIFY_PRIVATE_LIBRARIES)
-#set(OEHOST_VERIFY_INTERFACE_LIBRARIES)
 
 ##==============================================================================
 ##
