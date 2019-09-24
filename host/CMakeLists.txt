@@ -302,7 +302,7 @@ endif()
 
 ##==============================================================================
 ##
-## LIBSGX logic //TODO: abstract out
+## LIBSGX logic
 ##
 ##==============================================================================
 
@@ -316,19 +316,11 @@ if (USE_LIBSGX)
   add_library(sgx_enclave_common SHARED IMPORTED)
   add_library(sgx_dcap_ql SHARED IMPORTED)
 
-  if (UNIX)
-    set_target_properties(sgx_enclave_common ${SGX_ENCLAVE_COMMON_PROPERTIES})
-    set_target_properties(sgx_dcap_ql ${SGX_DCAP_Q1_PROPERTIES})
-  elseif (WIN32)
-    set_target_properties(sgx_enclave_common PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES "${INCPATHS}"
-      IMPORTED_LOCATION ${WINSYSLOCATION}
-      IMPORTED_IMPLIB ${LIBSGX_COMMON})
-    set_target_properties(sgx_dcap_ql PROPERTIES
-      INTERFACE_INCLUDE_DIRECTORIES "${INCPATHS}"
-      IMPORTED_LOCATION ${WINSYSLOCATION}
-      IMPORTED_IMPLIB ${LIBSGX_QE})
-  endif ()
+  message("SGX Enclave Common " ${SGX_ENCLAVE_COMMON_PROPERTIES})
+  message("SGX DCAP Q1 Properties " ${SGX_DCAP_Q1_PROPERTIES})
+
+  set_target_properties(sgx_enclave_common PROPERTIES ${SGX_ENCLAVE_COMMON_PROPERTIES})
+  set_target_properties(sgx_dcap_ql PROPERTIES ${SGX_DCAP_Q1_PROPERTIES})
 
   target_link_libraries(oehost PUBLIC sgx_enclave_common sgx_dcap_ql)
   target_compile_definitions(oehost PUBLIC OE_USE_LIBSGX)

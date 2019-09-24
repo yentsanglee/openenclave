@@ -54,6 +54,12 @@ list(APPEND OEHOST_PRIVATE_DIRECTORIES
 list(APPEND OEHOST_VERIFY_PRIVATE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/3rdparty/mbedtls/mbedtls/include)
 
+##==============================================================================
+##
+## LIBSGX logic
+##
+##==============================================================================
+
 if(USE_LIBSGX)
   set(LIBPATHS
     ${CMAKE_SOURCE_DIR}/prereqs/nuget/EnclaveCommonAPI/lib/native/x64-Release
@@ -65,15 +71,21 @@ if(USE_LIBSGX)
   
   set(WINSYSLOCATION $ENV{WINDIR}/System32)
 
+  find_library(LIBSGX_COMMON NAMES sgx_enclave_common PATHS ${LIBPATHS})
+  find_library(LIBSGX_QE NAMES sgx_dcap_ql PATHS ${LIBPATHS})
+  if (NOT LIBSGX_COMMON OR NOT LIBSGX_QE)
+    message(FATAL_ERROR "No SGX libraries found, aborting! Set -DUSE_LIBSGX=OFF to ignore.")
+  endif ()
+
   list(APPEND SGX_ENCLAVE_COMMON_PROPERTIES
-    PROPERTIES
-    IMPORTED_LOCATION
-    ${LIBSGX_COMMON})
+    INTERFACE_INCLUDE_DIRECTORIES "${INCPATHS}"
+    IMPORTED_LOCATION ${WINSYSLOCATION}
+    IMPORTED_IMPLIB ${LIBSGX_COMMON})
 
   list(APPEND SGX_DCAP_Q1_PROPERTIES
-    PROPERTIES
-    IMPORTED_LOCATION
-    ${LIBSGX_QE})
+    INTERFACE_INCLUDE_DIRECTORIES "${INCPATHS}"
+    IMPORTED_LOCATION ${WINSYSLOCATION}
+    IMPORTED_IMPLIB ${LIBSGX_QE})
 
   set(LIBSGX_COMMON ${LIBSGX_COMMON} PARENT_SCOPE)
   set(SGX_ENCLAVE_COMMON_PROPERTIES ${SGX_ENCLAVE_COMMON_PROPERTIES} PARENT_SCOPE)
