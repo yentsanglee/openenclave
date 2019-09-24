@@ -8,6 +8,9 @@ add_custom_command(OUTPUT helloworld_t.h helloworld_t.c helloworld_args.h
 
 add_executable(enclave enc.c ${CMAKE_CURRENT_BINARY_DIR}/helloworld_t.c)
 
+include(maybe_build_using_clangw)
+maybe_build_using_clangw(enclave)
+
 target_compile_definitions(enclave PUBLIC OE_API_VERSION=2)
 
 # Need for the generated file helloworld_t.h

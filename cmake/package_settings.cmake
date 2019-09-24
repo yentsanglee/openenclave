@@ -55,15 +55,17 @@ install(
   RENAME README.md
   COMPONENT OEHOSTVERIFY)
 
-# Generate the openenclaverc script.
-configure_file(
+if (UNIX)
+  # Generate the openenclaverc script.
+  configure_file(
     ${PROJECT_SOURCE_DIR}/cmake/openenclaverc.in
     ${CMAKE_BINARY_DIR}/output/share/openenclave/openenclaverc
     @ONLY)
 
-# Install the openenclaverc script.
-install(FILES
+  # Install the openenclaverc script.
+  install(FILES
     ${CMAKE_BINARY_DIR}/output/share/openenclave/openenclaverc
     DESTINATION
     "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/openenclave"
     COMPONENT OEHOSTVERIFY)
+endif()
