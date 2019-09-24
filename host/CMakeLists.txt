@@ -334,16 +334,6 @@ if (USE_LIBSGX)
   target_compile_definitions(oehost PUBLIC OE_USE_LIBSGX)
 endif ()
 
-
-# oehost compile definitions
-#set(OEHOST_TARGET_COMPILE_PUBLIC_DEFINITIONS)
-##set(OEHOST_TARGET_COMPILE_PRIVATE_DEFINITIONS)
-
-# oehostverify libraries
-#set(OEHOST_VERIFY_PUBLIC_LIBRARIES)
-#set(OEHOST_VERIFY_PRIVATE_LIBRARIES)
-#set(OEHOST_VERIFY_INTERFACE_LIBRARIES)
-
 ##==============================================================================
 ##
 ## Compile definitions
