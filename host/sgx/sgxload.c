@@ -759,7 +759,7 @@ oe_result_t oe_sgx_load_enclave_data(
             if (!VirtualProtect((LPVOID)addr, OE_PAGE_SIZE, prot, &old))
                 OE_RAISE_MSG(
                     OE_FAILURE,
-                    "VirtualProtect failed (addr=%#llx, prot=%#llx)",
+                    "VirtualProtect failed (addr=%#llx, prot=%#x)",
                     OE_LLX(addr),
                     prot);
 #endif
