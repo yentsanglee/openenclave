@@ -208,9 +208,9 @@ static oe_result_t _do_eenter(
         OE_RAISE(OE_INVALID_PARAMETER);
 
     OE_TRACE_VERBOSE(
-        "_do_eenter(tcs=%p aep=%llu codeIn=%d, funcIn=%x argIn=%llx)\n",
+        "_do_eenter(tcs=%p aep=%p codeIn=%d, funcIn=%x argIn=%llx)\n",
         tcs,
-        OE_LLU(aep),
+        (void*)aep,
         code_in,
         func_in,
         OE_LLX(arg_in));

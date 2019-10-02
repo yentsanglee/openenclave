@@ -751,7 +751,7 @@ oe_result_t oe_sgx_load_enclave_data(
             if (mprotect((void*)addr, OE_PAGE_SIZE, prot) != 0)
                 OE_RAISE_MSG(
                     OE_FAILURE,
-                    "mprotect failed (addr=%#llx, prot=%#llx)",
+                    "mprotect failed (addr=%#llx, prot=%#x)",
                     OE_LLX(addr),
                     prot);
 #elif defined(_WIN32)
