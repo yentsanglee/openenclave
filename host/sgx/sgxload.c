@@ -782,8 +782,8 @@ oe_result_t oe_sgx_load_enclave_data(
                 &enclave_error) != OE_PAGE_SIZE)
             OE_RAISE_MSG(
                 OE_PLATFORM_ERROR,
-                "enclave_load_data failed (addr=%#x, prot=%#x, err=%#x)",
-                addr,
+                "enclave_load_data failed (addr=%#llx, prot=%#x, err=%#x)",
+                OE_LLX(addr),
                 protect,
                 enclave_error);
 
