@@ -46,7 +46,7 @@ int main(int argc, const char* argv[])
         oe_put_err("oe_create_enclave(): result=%u", result);
     }
 
-#ifdef OE_USE_LIBSGX
+#ifdef OE_HAS_QUOTE_PROVIDER
 
     run_qe_identity_test_cases(enclave);
 

@@ -1,6 +1,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-#ifdef OE_USE_LIBSGX
+#ifdef OE_HAS_QUOTE_PROVIDER
 
 #include <openenclave/host.h>
 #include <openenclave/internal/aesm.h>

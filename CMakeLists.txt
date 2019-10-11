@@ -167,9 +167,9 @@ include(add_enclave)
 # User configurable options
 # DCAP library support on Windows is experimental and is disabled by default
 if (UNIX)
-  option(USE_LIBSGX "Build oehost using SGX library requiring FLC" ON)
+  option(HAS_QUOTE_PROVIDER "Get/verify quotes using DCAP requiring FLC" ON)
 elseif (WIN32)
-  option(USE_LIBSGX "Build oehost using SGX library requiring FLC" OFF)
+  option(HAS_QUOTE_PROVIDER "Get/verify quotes using DCAP requiring FLC" OFF)
 endif ()
 
 # TODO: See #756: Fix this because it is incompatible with

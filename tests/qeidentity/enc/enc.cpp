@@ -16,7 +16,7 @@ oe_result_t test_verify_qe_identity_info(
     const char* info_json,
     oe_parsed_qe_identity_info_t* parsed_info)
 {
-#ifdef OE_USE_LIBSGX
+#ifdef OE_HAS_QUOTE_PROVIDER
     return oe_parse_qe_identity_info_json(
         (const uint8_t*)info_json, strlen(info_json) + 1, parsed_info);
 #else

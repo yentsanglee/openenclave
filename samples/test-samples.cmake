@@ -4,7 +4,7 @@
 # This script requires the variables SOURCE_DIR, BUILD_DIR, and
 # PREFIX_DIR to be defined:
 #
-#     cmake -DUSE_LIBSGX=ON -DSOURCE_DIR=~/openenclave -DBUILD_DIR=~/openenclave/build -DPREFIX_DIR=/opt/openenclave -P ~/openenclave/samples/test-samples.cmake
+#     cmake -DHAS_QUOTE_PROVIDER=ON -DSOURCE_DIR=~/openenclave -DBUILD_DIR=~/openenclave/build -DPREFIX_DIR=/opt/openenclave -P ~/openenclave/samples/test-samples.cmake
 
 # These three samples can run in simulation, and therefore run in every configuration.
 set(SAMPLES_LIST helloworld file-encryptor switchless)
@@ -23,8 +23,8 @@ else ()
 
   # These tests can only run with SGX-FLC, meaning they were built
   # against SGX.
-  if (USE_LIBSGX)
-    list(APPEND SAMPLES_LIST local_attestation remote_attestation)
+  if (HAS_QUOTE_PROVIDER)
+    list(APPEND SAMPLES_LIST remote_attestation local_attestation)
     # The attested_tls test is not supported on Windows at this time.
     if (UNIX)
 	    list(APPEND SAMPLES_LIST attested_tls)
@@ -54,7 +54,7 @@ foreach (SAMPLE ${SAMPLES_LIST})
   # Configure, build, and run the installed sample with CMake.
   if (WIN32)
     execute_process(
-      COMMAND ${CMAKE_COMMAND} -DCMAKE_PREFIX_PATH=${INSTALL_DIR}/lib/openenclave/cmake -G Ninja -DNUGET_PACKAGE_PATH=${NUGET_PACKAGE_PATH} ${SAMPLE_SOURCE_DIR}
+      COMMAND ${CMAKE_COMMAND} -DCMAKE_PREFIX_PATH=${INSTALL_DIR}/lib/openenclave/cmake -G Ninja -DNUGET_PACKAGE_PATH=${NUGET_PACKAGE_PATH} -DHAS_QUOTE_PROVIDER=${HAS_QUOTE_PROVIDER} ${SAMPLE_SOURCE_DIR}
       WORKING_DIRECTORY ${SAMPLE_BUILD_DIR})
   else ()
     execute_process(
