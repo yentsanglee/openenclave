@@ -6,7 +6,7 @@
 # do not emit to the current working directory, they always emit to
 # the location of the input file.
 
-find_program(ESY esy)
+find_program(ESY esy PATHS "$ENV{APPDATA}/npm")
 if (NOT ESY)
   message(FATAL_ERROR "Please check your esy installation")
 endif ()
