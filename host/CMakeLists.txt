@@ -312,8 +312,12 @@ target_include_directories(oehost PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 if (OE_SGX)
   # Always link with the EnclaveCommonAPI
-  set(LIBPATHS ${NUGET_PACKAGE_PATH}/EnclaveCommonAPI/lib/native/x64-Release)
-  set(INCPATHS "${NUGET_PACKAGE_PATH}/EnclaveCommonAPI/Header Files")
+  if (UNIX)
+    set(LIBPATHS, "/usr")
+  elseif (WIN32)
+    set(LIBPATHS ${NUGET_PACKAGE_PATH}/EnclaveCommonAPI/lib/native/x64-Release)
+    set(INCPATHS "${NUGET_PACKAGE_PATH}/EnclaveCommonAPI/Header Files")
+  endif ()
   find_library(LIBSGX_COMMON NAMES sgx_enclave_common HINTS ${LIBPATHS})
   if (NOT LIBSGX_COMMON)
     message(FATAL_ERROR "Intel SGX EnclaveCommonAPI library not found, aborting!")
@@ -331,10 +335,12 @@ if (OE_SGX)
 
   # Optionally link in DCAP library
   if (HAS_QUOTE_PROVIDER)
-    list(APPEND LIBPATHS
-        ${NUGET_PACKAGE_PATH}/DCAP_Components/build/lib/native/Libraries)
-    list(APPEND INCPATHS
-        "${NUGET_PACKAGE_PATH}/DCAP_Components/build/Header Files")
+    if (WIN32)
+      list(APPEND LIBPATHS
+          ${NUGET_PACKAGE_PATH}/DCAP_Components/build/lib/native/Libraries)
+      list(APPEND INCPATHS
+          "${NUGET_PACKAGE_PATH}/DCAP_Components/build/Header Files")
+    endif ()
     find_library(LIBSGX_QE NAMES sgx_dcap_ql HINTS ${LIBPATHS})
     if (NOT LIBSGX_QE)
       message(FATAL_ERROR "No quote provider library found, aborting! Set -DHAS_QUOTE_PROVIDER=OFF to ignore.")
@@ -349,6 +355,7 @@ if (OE_SGX)
       set_target_properties(sgx_dcap_ql PROPERTIES IMPORTED_LOCATION ${LIBSGX_QE})
     endif ()
     target_link_libraries(oehost PUBLIC $<BUILD_INTERFACE:sgx_dcap_ql>)
+    # turn on 'OE_HAS_QUOTE_PROVIDER' for the preprocessor
     target_compile_definitions(oehost PUBLIC OE_HAS_QUOTE_PROVIDER)
   endif ()
 endif ()
