@@ -72,40 +72,42 @@ elseif (WIN32)
   endif()
 endif ()
 
-if (NOT TARGET openenclave::sgx_enclave_common)
-  find_library(SGX_ENCLAVE_COMMON_LIB NAMES sgx_enclave_common
-	       HINTS ${NUGET_PACKAGE_PATH}/EnclaveCommonAPI/lib/native/x64-Release)
-  if (NOT SGX_ENCLAVE_COMMON_LIB)
-    message(FATAL_ERROR "-- Looking for sgx_enclave_common library - not found")
-  else ()
-    message(VERBOSE "-- Looking for sgx_enclave_common library - found")
-    add_library(openenclave::sgx_enclave_common SHARED IMPORTED)
-    if (UNIX)
-      set_target_properties(openenclave::sgx_enclave_common PROPERTIES IMPORTED_LOCATION ${SGX_ENCLAVE_COMMON_LIB})
-    elseif (WIN32)
-      set_target_properties(openenclave::sgx_enclave_common PROPERTIES
-                            IMPORTED_LOCATION $ENV{WINDIR}/System32
-                            IMPORTED_IMPLIB ${SGX_ENCLAVE_COMMON_LIB})
+if (OE_SGX)
+  if (NOT TARGET openenclave::sgx_enclave_common)
+    find_library(SGX_ENCLAVE_COMMON_LIB NAMES sgx_enclave_common
+           HINTS ${NUGET_PACKAGE_PATH}/EnclaveCommonAPI/lib/native/x64-Release)
+    if (NOT SGX_ENCLAVE_COMMON_LIB)
+      message(FATAL_ERROR "-- Looking for sgx_enclave_common library - not found")
+    else ()
+      message(VERBOSE "-- Looking for sgx_enclave_common library - found")
+      add_library(openenclave::sgx_enclave_common SHARED IMPORTED)
+      if (UNIX)
+        set_target_properties(openenclave::sgx_enclave_common PROPERTIES IMPORTED_LOCATION ${SGX_ENCLAVE_COMMON_LIB})
+      elseif (WIN32)
+        set_target_properties(openenclave::sgx_enclave_common PROPERTIES
+                              IMPORTED_LOCATION $ENV{WINDIR}/System32
+                              IMPORTED_IMPLIB ${SGX_ENCLAVE_COMMON_LIB})
+      endif ()
     endif ()
   endif ()
-endif ()
 
-if (NOT TARGET openenclave::sgx_dcap_ql)
-  find_library(SGX_DCAP_QL_LIB NAMES sgx_dcap_ql
-               HINTS ${NUGET_PACKAGE_PATH}/DCAP_Components/build/lib/native/Libraries)
-  if (NOT SGX_DCAP_QL_LIB)
-    message(WARNING "-- Looking for sgx_dcap_ql library - not found")
-  else ()
-    message(VERBOSE "-- Looking for sgx_dcap_ql library - found")
-    add_library(openenclave::sgx_dcap_ql SHARED IMPORTED)
-    if (UNIX)
-      set_target_properties(openenclave::sgx_dcap_ql PROPERTIES IMPORTED_LOCATION ${SGX_DCAP_QL_LIB})
-    elseif (WIN32)
-      set_target_properties(openenclave::sgx_dcap_ql PROPERTIES
-                            IMPORTED_LOCATION $ENV{WINDIR}/System32
-                            IMPORTED_IMPLIB ${SGX_DCAP_QL_LIB})
+  if (NOT TARGET openenclave::sgx_dcap_ql)
+    find_library(SGX_DCAP_QL_LIB NAMES sgx_dcap_ql
+                 HINTS ${NUGET_PACKAGE_PATH}/DCAP_Components/build/lib/native/Libraries)
+    if (NOT SGX_DCAP_QL_LIB)
+      message(WARNING "-- Looking for sgx_dcap_ql library - not found")
+    else ()
+      message(VERBOSE "-- Looking for sgx_dcap_ql library - found")
+      add_library(openenclave::sgx_dcap_ql SHARED IMPORTED)
+      if (UNIX)
+        set_target_properties(openenclave::sgx_dcap_ql PROPERTIES IMPORTED_LOCATION ${SGX_DCAP_QL_LIB})
+      elseif (WIN32)
+        set_target_properties(openenclave::sgx_dcap_ql PROPERTIES
+                              IMPORTED_LOCATION $ENV{WINDIR}/System32
+                              IMPORTED_IMPLIB ${SGX_DCAP_QL_LIB})
+      endif ()
+      set(USE_DCAP_LIB ON)
     endif ()
-    set(USE_DCAP_LIB ON)
   endif ()
 endif ()
 
