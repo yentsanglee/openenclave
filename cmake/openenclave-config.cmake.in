@@ -104,8 +104,8 @@ if (NOT TARGET openenclave::sgx_dcap_ql)
       set_target_properties(openenclave::sgx_dcap_ql PROPERTIES
                             IMPORTED_LOCATION $ENV{WINDIR}/System32
                             IMPORTED_IMPLIB ${SGX_DCAP_QL_LIB})
-      set(USE_DCAP_LIB ON)
     endif ()
+    set(USE_DCAP_LIB ON)
   endif ()
 endif ()
 

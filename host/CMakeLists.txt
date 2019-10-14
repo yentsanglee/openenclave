@@ -333,7 +333,7 @@ if (HAS_QUOTE_PROVIDER)
   list(APPEND LIBPATHS
       ${NUGET_PACKAGE_PATH}/DCAP_Components/build/lib/native/Libraries)
   list(APPEND INCPATHS
-      ${NUGET_PACKAGE_PATH}/DCAP_Components/build/Header Files)
+      "${NUGET_PACKAGE_PATH}/DCAP_Components/build/Header Files")
   find_library(LIBSGX_QE NAMES sgx_dcap_ql HINTS ${LIBPATHS})
   if (NOT LIBSGX_QE)
     message(FATAL_ERROR "No quote provider library found, aborting! Set -DHAS_QUOTE_PROVIDER=OFF to ignore.")
