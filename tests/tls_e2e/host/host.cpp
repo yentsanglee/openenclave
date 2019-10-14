@@ -391,11 +391,12 @@ done:
 
     return 0;
 #else
-    // this test should not run on any platforms where OE_HAS_QUOTE_PROVIDER is not
-    // defined
+    // this test should not run on any platforms where OE_HAS_QUOTE_PROVIDER is
+    // not defined
     OE_UNUSED(argc);
     OE_UNUSED(argv);
-    OE_TRACE_INFO("=== tests skipped when built with OE_HAS_QUOTE_PROVIDER=OFF\n");
+    OE_TRACE_INFO(
+        "=== tests skipped when built with OE_HAS_QUOTE_PROVIDER=OFF\n");
     return SKIP_RETURN_CODE;
 #endif
 }
