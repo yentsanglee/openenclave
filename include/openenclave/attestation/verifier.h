@@ -5,7 +5,7 @@
  * @file verifier.h
  *
  * This file defines the programming interface for application software
- * to access OE SDK verifier functionality for evidence verification.
+ * to access the OE SDK verifier functionality for evidence verification.
  *
  */
 
@@ -48,7 +48,7 @@ oe_result_t oe_verifier_initialize(void);
  * @param[out] format_ids_length A pointer that points to the length of the
  * returned format id list (number of format id entries).
  * @retval OE_OK on success.
- * @retval OE_INVALID_PARAMETER At least one of the parameters is invalid.
+ * @retval OE_INVALID_PARAMETER at least one of the parameters is invalid.
  * @retval other appropriate error code.
  */
 oe_result_t oe_verifier_get_formats(
@@ -83,7 +83,7 @@ oe_result_t oe_verifier_free_formats(oe_uuid_t* format_ids);
  * @param[out] settings_size A pointer that points to the size of the returned
  * format settings buffer (number of bytes).
  * @retval OE_OK on success.
- * @retval OE_INVALID_PARAMETER At least one of the parameters is invalid.
+ * @retval OE_INVALID_PARAMETER at least one of the parameters is invalid.
  * @retval other appropriate error code.
  */
 oe_result_t oe_verifier_get_format_settings(
@@ -152,7 +152,7 @@ oe_result_t oe_verifier_free_format_settings(uint8_t* settings);
  * @param[out] claims The list of claims (including base and custom).
  * @param[out] claims_length The length of the claims list.
  * @retval OE_OK The function succeeded.
- * @retval OE_INVALID_PARAMETER At least one of the parameters is invalid.
+ * @retval OE_INVALID_PARAMETER at least one of the parameters is invalid.
  * @retval other appropriate error code.
  */
 oe_result_t oe_verify_evidence(
@@ -194,7 +194,7 @@ typedef oe_result_t (*oe_verify_claims_callback_t)(
  * when setting callback
  * @retval OE_OK on a successful validation
  * @retval OE_VERIFY_FAILED on quote failure
- * @retval OE_INVALID_PARAMETER At least one parameter is invalid
+ * @retval OE_INVALID_PARAMETER at least one parameter is invalid
  * @retval OE_FAILURE general failure
  * @retval other appropriate error code
  */

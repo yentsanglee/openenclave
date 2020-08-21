@@ -1,6 +1,14 @@
 // Copyright (c) Open Enclave SDK contributors.
 // Licensed under the MIT License.
 
+/**
+ * @file custom_claims.h
+ *
+ * This file defines the programming interface for application software
+ * to access the OE SDK attestation custom claims functionality.
+ *
+ */
+
 #ifndef _OE_CUSTOM_CLAIMS
 #define _OE_CUSTOM_CLAIMS
 
@@ -45,8 +53,8 @@ oe_result_t oe_free_custom_claims(
  * allocated buffer holding the serialized custom claims.
  * @param[out] claims_size_out Size of the serialized custom claims.
  * @retval OE_OK on success.
- * @retval OE_INVALID_PARAMETER At least one parameter is invalid.
- * @retval An appropriate error code on failure.
+ * @retval OE_INVALID_PARAMETER at least one parameter is invalid.
+ * @retval other appropriate error code.
  */
 oe_result_t oe_serialize_custom_claims(
     const oe_claim_t* custom_claims,
@@ -66,8 +74,8 @@ oe_result_t oe_serialize_custom_claims(
  * buffer holding the list of custom claims.
  * @param[out] claims_length_out The length of the claims_out list.
  * @retval OE_OK on success.
- * @retval OE_INVALID_PARAMETER At least one parameter is invalid.
- * @retval An appropriate error code on failure.
+ * @retval OE_INVALID_PARAMETER at least one parameter is invalid.
+ * @retval other appropriate error code.
  */
 oe_result_t oe_deserialize_custom_claims(
     const uint8_t* claims_buffer,
